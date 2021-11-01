@@ -1,6 +1,4 @@
-import numpy as np
 import unyt as u
-from os import path
 from astropy.coordinates.matrix_utilities import rotation_matrix
 from astropy.coordinates import CartesianRepresentation, \
     SphericalRepresentation, CylindricalRepresentation, \
@@ -13,14 +11,15 @@ from velociraptor.swift.swift import generate_spatial_mask, generate_bound_mask
 
 
 def _apply_box_wrap(coords, boxsize):
-    too_high = coords > boxsize / 2.
-    while too_high.any():
-        coords[too_high] -= boxsize
-        too_high = coords > boxsize / 2.
-    too_low = coords < -boxsize / 2.
-    while too_low.any():
-        coords[too_low] += boxsize
-        too_low = coords < -boxsize / 2.
+    for axis in range(3):
+        too_high = coords[:, axis] > boxsize[axis] / 2.
+        while too_high.any():
+            coords[too_high, axis] -= boxsize[axis]
+            too_high = coords[:, axis] > boxsize[axis] / 2.
+        too_low = coords[:, axis] <= -boxsize[axis] / 2.
+        while too_low.any():
+            coords[too_low, axis] += boxsize[axis]
+            too_low = coords[:, axis] <= -boxsize[axis] / 2.
     return coords
 
 
@@ -70,8 +69,6 @@ class _SWIFTParticleDatasetHelper(object):
             rotatable=tuple(),
             transform_stack=list()
     ):
-        # keep this lightweight since we're going to make
-        # these on-the-fly at every call
         self._ptype = ptype
         self._particle_dataset = particle_dataset
         self._extra_mask = getattr(extra_mask, ptype) \
@@ -80,6 +77,7 @@ class _SWIFTParticleDatasetHelper(object):
         self._boostable = boostable
         self._rotatable = rotatable
         self._transform_stack = transform_stack
+        self._particle_dataset._cartesian_representation = None
         self._initialised = True
         return
 
@@ -88,12 +86,8 @@ class _SWIFTParticleDatasetHelper(object):
         metadata = object.__getattribute__(self, '_particle_dataset').metadata
         field_names = \
             getattr(metadata, '{:s}_properties'.format(ptype)).field_names
-        try:
-            boxsize = metadata.boxsize
-        except AttributeError:
-            boxsize = None
-        particle_dataset = object.__getattribute__(self, '_particle_dataset')
         transform_stack = object.__getattribute__(self, '_transform_stack')
+        particle_dataset = object.__getattribute__(self, '_particle_dataset')
         if attr in field_names:
             # we're dealing with a particle data table
             # TODO: named columns
@@ -104,6 +98,10 @@ class _SWIFTParticleDatasetHelper(object):
                 translatable = object.__getattribute__(self, '_translatable')
                 rotatable = object.__getattribute__(self, '_rotatable')
                 boostable = object.__getattribute__(self, '_boostable')
+                try:
+                    boxsize = metadata.boxsize
+                except AttributeError:
+                    boxsize = None
                 data = _apply_transform_stack(
                     data,
                     transform_stack,
@@ -120,6 +118,8 @@ class _SWIFTParticleDatasetHelper(object):
             else:
                 # just return the data
                 pass
+        if attr == 'cartesian_coordinates':
+            return object.__getattribute__(self, '_cartesian_coordinates')()
         try:
             # beware collisions with SWIFTDataset namespace
             return object.__getattribute__(self, attr)
@@ -151,6 +151,32 @@ class _SWIFTParticleDatasetHelper(object):
     def _apply_mask(self, data):
         if self._extra_mask is not None:
             return data[self._extra_mask]
+        else:
+            return data
+
+    def _cartesian_coordinates(self):
+        if self._particle_dataset._cartresian_representation is None:
+            # lose the extra cosmo array attributes here
+            self._particle_dataset._cartesian_representation = \
+                CartesianRepresentation(
+                    self._particle_dataset.coordinates.ndarray_view(),
+                    unit=str(self._particle_dataset.coordinates.units),
+                    xyz_axis=1
+                )
+        self._cartesian_coordinates = \
+            self._particle_dataset._cartesian_representation
+        return self._cartesian_coordinates
+
+    # @property
+    # def spherical_coordinates(self):
+    #     if self._particle_dataset._cartresian_representation is None:
+    #         # lose the extra cosmo array attributes here
+    #         self._particle_dataset._cartesian_representation = \
+    #             CartesianRepresentation(
+    #                 self._particle_dataset.coordinates.ndarray_view(),
+    #                 unit=str(self._particle_dataset.coordinates.units),
+    #                 xyz_axis=1
+    #             )
 
 
 class SWIFTGalaxy(SWIFTDataset):
@@ -173,14 +199,13 @@ class SWIFTGalaxy(SWIFTDataset):
         self.translatable = translatable
         self.boostable = boostable
         self._transform_stack = list()
-        catalogue = load_catalogue(
-            path.join(base_dir, f'{velociraptor_filebase}.properties')
-        )
+        self._particle_dataset_helpers = dict()
+        catalogue = load_catalogue(f'{velociraptor_filebase}.properties')
         # currently halo_id is actually the index, not the id!
         # self._catalogue_mask = (catalogue.ids.id == halo_id).nonzero()
         self._catalogue_mask = halo_id
         groups = load_groups(
-            path.join(base_dir, f'{velociraptor_filebase}.catalog_groups'),
+            f'{velociraptor_filebase}.catalog_groups',
             catalogue=catalogue
         )
         particles, unbound_particles = groups.extract_halo(halo_id=halo_id)
@@ -240,30 +265,42 @@ class SWIFTGalaxy(SWIFTDataset):
                 # We are entering a <ParticleType>Dataset:
                 # intercept this and wrap it in a class that we
                 # can use to manipulate it.
-                # We'll make a custom type to present a nice name to the user.
-                nice_name = \
-                    swiftsimio_metadata.particle_types.particle_name_class[
-                        getattr(
-                            metadata,
-                            '{:s}_properties'.format(attr)
-                        ).particle_type
-                    ]
-                TypeDatasetHelper = type(
-                    '{:s}DatasetHelper'.format(nice_name),
-                    (_SWIFTParticleDatasetHelper, object),
-                    dict()
-                )
-                return TypeDatasetHelper(
-                    attr,
-                    super().__getattribute__(attr),
-                    extra_mask=object.__getattribute__(self, 'extra_mask'),
-                    translatable=object.__getattribute__(self, 'translatable'),
-                    boostable=object.__getattribute__(self, 'boostable'),
-                    rotatable=object.__getattribute__(self, 'rotatable'),
-                    transform_stack=object.__getattribute__(
-                        self, '_transform_stack'
+                if attr not in object.__getattribute__(
+                        self,
+                        '_particle_dataset_helpers'
+                ).keys():
+                    # We'll make a custom type to present a nice name to the user.
+                    nice_name = \
+                        swiftsimio_metadata.particle_types.particle_name_class[
+                            getattr(
+                                metadata,
+                                '{:s}_properties'.format(attr)
+                            ).particle_type
+                        ]
+                    TypeDatasetHelper = type(
+                        '{:s}DatasetHelper'.format(nice_name),
+                        (_SWIFTParticleDatasetHelper, object),
+                        dict()
                     )
-                )
+                    object.__getattribute__(
+                        self, '_particle_dataset_helpers'
+                    )[attr] = TypeDatasetHelper(
+                        attr,
+                        super().__getattribute__(attr),
+                        extra_mask=object.__getattribute__(self, 'extra_mask'),
+                        translatable=object.__getattribute__(
+                            self, 'translatable'
+                        ),
+                        boostable=object.__getattribute__(self, 'boostable'),
+                        rotatable=object.__getattribute__(self, 'rotatable'),
+                        transform_stack=object.__getattribute__(
+                            self, '_transform_stack'
+                        )
+                    )
+                return object.__getattribute__(
+                    self,
+                    '_particle_dataset_helpers'
+                )[attr]
             else:
                 return super().__getattribute__(attr)
 
@@ -328,36 +365,3 @@ class SWIFTGalaxy(SWIFTDataset):
                         field_data
                     )
         return
-
-
-snapnum = 23
-base_dir = '/cosma/home/durham/dc-oman1/ColibreTestData/'\
-    '106e3_104b2_norm_0p3_new_cooling_L006N188/'
-velociraptor_filebase = path.join(base_dir, 'halo_{:04d}'.format(snapnum))
-snapshot_filename = path.join(base_dir, 'colibre_{:04d}.hdf5'.format(snapnum))
-
-catalogue = load_catalogue(
-    path.join(base_dir, f'{velociraptor_filebase}.properties')
-)
-target_mask = np.logical_and.reduce((
-    catalogue.ids.hosthaloid == -1,
-    catalogue.velocities.vmax > 50 * u.km / u.s,
-    catalogue.velocities.vmax < 100 * u.km / u.s
-))
-target_halo_ids = catalogue.ids.id[target_mask]
-target_halo_id = target_halo_ids[0]
-groups = load_groups(
-    path.join(base_dir, f'{velociraptor_filebase}.catalog_groups'),
-    catalogue=catalogue
-)
-particles, unbound_particles = groups.extract_halo(halo_id=int(target_halo_id))
-
-SG = SWIFTGalaxy(
-    snapshot_filename,
-    velociraptor_filebase,
-    int(target_halo_id),
-    extra_mask='bound_only'
-)
-print(SG.gas.coordinates)
-SG.rotate(angle_axis=(90 * u.deg, 'z'))
-print(SG.gas.coordinates)
