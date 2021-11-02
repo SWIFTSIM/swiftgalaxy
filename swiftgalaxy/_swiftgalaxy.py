@@ -63,21 +63,12 @@ class _SWIFTParticleDatasetHelper(object):
             self,
             ptype,  # can determine by introspection instead?
             particle_dataset,
-            extra_mask=None,
-            translatable=tuple(),
-            boostable=tuple(),
-            rotatable=tuple(),
-            transform_stack=list()
+            swiftgalaxy
     ):
         self._ptype = ptype
         self._particle_dataset = particle_dataset
-        self._extra_mask = getattr(extra_mask, ptype) \
-            if extra_mask is not None else None
-        self._translatable = translatable
-        self._boostable = boostable
-        self._rotatable = rotatable
-        self._transform_stack = transform_stack
-        self._particle_dataset._cartesian_representation = None
+        self._swiftgalaxy = swiftgalaxy
+        self._cartesian_representation = None
         self._initialised = True
         return
 
@@ -86,7 +77,7 @@ class _SWIFTParticleDatasetHelper(object):
         metadata = object.__getattribute__(self, '_particle_dataset').metadata
         field_names = \
             getattr(metadata, '{:s}_properties'.format(ptype)).field_names
-        transform_stack = object.__getattribute__(self, '_transform_stack')
+        swiftgalaxy = object.__getattribute__(self, '_swiftgalaxy')
         particle_dataset = object.__getattribute__(self, '_particle_dataset')
         if attr in field_names:
             # we're dealing with a particle data table
@@ -95,16 +86,16 @@ class _SWIFTParticleDatasetHelper(object):
                 # going to read from file: apply masks, transforms
                 data = getattr(particle_dataset, attr)  # raw data loaded
                 data = object.__getattribute__(self, '_apply_mask')(data)
-                translatable = object.__getattribute__(self, '_translatable')
-                rotatable = object.__getattribute__(self, '_rotatable')
-                boostable = object.__getattribute__(self, '_boostable')
+                translatable = swiftgalaxy.translatable
+                rotatable = swiftgalaxy.rotatable
+                boostable = swiftgalaxy.boostable
                 try:
                     boxsize = metadata.boxsize
                 except AttributeError:
                     boxsize = None
                 data = _apply_transform_stack(
                     data,
-                    transform_stack,
+                    swiftgalaxy._transform_stack,
                     is_translatable=attr in translatable,
                     is_rotatable=attr in rotatable,
                     is_boostable=attr in boostable,
@@ -145,14 +136,16 @@ class _SWIFTParticleDatasetHelper(object):
                 value
             )
             return
-        object.__setattr__(self, attr, value)
-        return
+        else:
+            object.__setattr__(self, attr, value)
+            return
 
     def _apply_mask(self, data):
-        if self._extra_mask is not None:
-            return data[self._extra_mask]
-        else:
-            return data
+        if self._swiftgalaxy._extra_mask is not None:
+            mask = self._swiftgalaxy._extra_mask.__getattribute__(self._ptype)
+            if mask is not None:
+                return data[mask]
+        return data
 
     def _cartesian_coordinates(self):
         if self._particle_dataset._cartresian_representation is None:
@@ -194,12 +187,11 @@ class SWIFTGalaxy(SWIFTDataset):
             rotatable=('coordinates', 'velocities'),
             id_particle_dataset_name='particle_ids'
     ):
-        self.extra_mask = None  # needed for initialisation, overwritten below
+        self._extra_mask = None  # needed for initialisation, overwritten below
         self.rotatable = rotatable
         self.translatable = translatable
         self.boostable = boostable
         self._transform_stack = list()
-        self._particle_dataset_helpers = dict()
         catalogue = load_catalogue(f'{velociraptor_filebase}.properties')
         # currently halo_id is actually the index, not the id!
         # self._catalogue_mask = (catalogue.ids.id == halo_id).nonzero()
@@ -211,16 +203,37 @@ class SWIFTGalaxy(SWIFTDataset):
         particles, unbound_particles = groups.extract_halo(halo_id=halo_id)
         swift_mask = generate_spatial_mask(particles, snapshot_filename)
         super().__init__(snapshot_filename, mask=swift_mask)
+        self._particle_dataset_helpers = dict()
+        for ptype in self.metadata.present_particle_names:
+            # We'll make a custom type to present a nice name to the user.
+            nice_name = \
+                swiftsimio_metadata.particle_types.particle_name_class[
+                    getattr(
+                        self.metadata,
+                        '{:s}_properties'.format(ptype)
+                    ).particle_type
+                ]
+            TypeDatasetHelper = type(
+                '{:s}DatasetHelper'.format(nice_name),
+                (_SWIFTParticleDatasetHelper, object),
+                dict()
+            )
+            self._particle_dataset_helpers[ptype] = TypeDatasetHelper(
+                ptype,
+                super().__getattribute__(ptype),
+                self
+            )
+
         if extra_mask == 'bound_only':
-            self.extra_mask = generate_bound_mask(self, particles)
+            self._extra_mask = generate_bound_mask(self, particles)
         else:
-            self.extra_mask = extra_mask  # user can provide mask
+            self._extra_mask = extra_mask  # user can provide mask
             # would be nice to check here that this looks like a mask
             # to avoid a typo'd string waiting until after an expensive
             # read to raise an exception
             # Note this will also cover the default None case,
             # we should guard against applying None as a mask later.
-        if self.extra_mask is not None:
+        if self._extra_mask is not None:
             # only particle ids should be loaded so far, need to mask these
             for ptype in self.metadata.present_particle_names:
                 particle_ids = getattr(
@@ -230,7 +243,7 @@ class SWIFTGalaxy(SWIFTDataset):
                 setattr(
                     super().__getattribute__(ptype),  # bypass our helper
                     '_{:s}'.format(id_particle_dataset_name),
-                    particle_ids[getattr(self.extra_mask, ptype)]
+                    particle_ids[getattr(self._extra_mask, ptype)]
                 )
         if auto_recentre:
             centre = u.uhstack(
@@ -265,38 +278,6 @@ class SWIFTGalaxy(SWIFTDataset):
                 # We are entering a <ParticleType>Dataset:
                 # intercept this and wrap it in a class that we
                 # can use to manipulate it.
-                if attr not in object.__getattribute__(
-                        self,
-                        '_particle_dataset_helpers'
-                ).keys():
-                    # We'll make a custom type to present a nice name to the user.
-                    nice_name = \
-                        swiftsimio_metadata.particle_types.particle_name_class[
-                            getattr(
-                                metadata,
-                                '{:s}_properties'.format(attr)
-                            ).particle_type
-                        ]
-                    TypeDatasetHelper = type(
-                        '{:s}DatasetHelper'.format(nice_name),
-                        (_SWIFTParticleDatasetHelper, object),
-                        dict()
-                    )
-                    object.__getattribute__(
-                        self, '_particle_dataset_helpers'
-                    )[attr] = TypeDatasetHelper(
-                        attr,
-                        super().__getattribute__(attr),
-                        extra_mask=object.__getattribute__(self, 'extra_mask'),
-                        translatable=object.__getattribute__(
-                            self, 'translatable'
-                        ),
-                        boostable=object.__getattribute__(self, 'boostable'),
-                        rotatable=object.__getattribute__(self, 'rotatable'),
-                        transform_stack=object.__getattribute__(
-                            self, '_transform_stack'
-                        )
-                    )
                 return object.__getattribute__(
                     self,
                     '_particle_dataset_helpers'
