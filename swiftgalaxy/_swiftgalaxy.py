@@ -69,6 +69,7 @@ class _SWIFTParticleDatasetHelper(object):
         self._particle_dataset = particle_dataset
         self._swiftgalaxy = swiftgalaxy
         self._cartesian_representation = None
+        self._spherical_representation = None
         self._initialised = True
         return
 
@@ -109,8 +110,8 @@ class _SWIFTParticleDatasetHelper(object):
             else:
                 # just return the data
                 pass
-        if attr == 'cartesian_coordinates':
-            return object.__getattribute__(self, '_cartesian_coordinates')()
+        if attr in ('cartesian_coordinates', 'spherical_coordinates'):
+            return object.__getattribute__(self, '_{:s}'.format(attr))()
         try:
             # beware collisions with SWIFTDataset namespace
             return object.__getattribute__(self, attr)
@@ -148,28 +149,35 @@ class _SWIFTParticleDatasetHelper(object):
         return data
 
     def _cartesian_coordinates(self):
-        if self._particle_dataset._cartresian_representation is None:
+        if self._cartesian_representation is None:
             # lose the extra cosmo array attributes here
-            self._particle_dataset._cartesian_representation = \
+            self._cartesian_representation = \
                 CartesianRepresentation(
-                    self._particle_dataset.coordinates.ndarray_view(),
-                    unit=str(self._particle_dataset.coordinates.units),
-                    xyz_axis=1
+                    self.coordinates.ndarray_view(),
+                    unit=str(self.coordinates.units),
+                    xyz_axis=1,
+                    copy=False
                 )
-        self._cartesian_coordinates = \
-            self._particle_dataset._cartesian_representation
-        return self._cartesian_coordinates
+        # should wrap the astropy representation to be unyt-like?
+        return self._cartesian_representation
 
-    # @property
-    # def spherical_coordinates(self):
-    #     if self._particle_dataset._cartresian_representation is None:
-    #         # lose the extra cosmo array attributes here
-    #         self._particle_dataset._cartesian_representation = \
-    #             CartesianRepresentation(
-    #                 self._particle_dataset.coordinates.ndarray_view(),
-    #                 unit=str(self._particle_dataset.coordinates.units),
-    #                 xyz_axis=1
-    #             )
+    def _spherical_coordinates(self):
+        if self._spherical_representation is None:
+            # lose the extra cosmo array attributes here
+            self._spherical_representation = \
+                SphericalRepresentation.from_cartesian(
+                    self.cartesian_coordinates  # careful if we wrap this
+                )
+        return self._spherical_representation
+
+    def _cylindrical_coordinates(self):
+        if self._cylindrical_representation is None:
+            # lose the extra cosmo array attributes here
+            self._cylindrical_representation = \
+                CylindricalRepresentation.from_cartesian(
+                    self.cartesian_coordinates
+                )
+        return self._cylindrical_representation
 
 
 class SWIFTGalaxy(SWIFTDataset):
@@ -302,7 +310,7 @@ class SWIFTGalaxy(SWIFTDataset):
                         '_{:s}'.format(field_name),
                         field_data
                     )
-        self._transform_stack.append(('R', rotmat))
+        self._append_to_transform_stack(('R', rotmat))
         self.wrap_box()
         return
 
@@ -319,7 +327,7 @@ class SWIFTGalaxy(SWIFTDataset):
                         '_{:s}'.format(field_name),
                         field_data
                     )
-        self._transform_stack.append(
+        self._append_to_transform_stack(
             ({True: 'B', False: 'T'}[velocity], translation)
         )
         if not velocity:
@@ -346,3 +354,13 @@ class SWIFTGalaxy(SWIFTDataset):
                         field_data
                     )
         return
+
+    def _append_to_transform_stack(self, transform):
+        self._transform_stack.append(transform)
+        self._void_derived_representations()
+        return
+
+    def _void_derived_representations(self):
+        for ptype in self.metadata.present_particle_names:
+            getattr(self, ptype)._spherical_representation = None
+            getattr(self, ptype)._cylindrical_representation = None
