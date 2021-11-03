@@ -12,14 +12,13 @@ target_halo_index = 3
 SG = SWIFTGalaxy(
     snapshot_filename,
     velociraptor_filebase,
-    int(target_halo_index),
+    target_halo_index,
     extra_mask='bound_only'
 )
 
-import unyt as u
-import numpy as np
-print(SG.gas.spherical_coordinates.distance)
-print(SG.gas._spherical_representation)
-SG.translate(np.array([2, 0, 0]) * u.Mpc)
-print(SG.gas._spherical_representation)
-print(SG.gas.spherical_coordinates.distance)
+print(SG.gas.cartesian_coordinates.x)
+print(SG.gas.cartesian_velocities.x)
+print(SG.gas.spherical_coordinates.r)
+print(SG.gas.spherical_velocities.r)
+print(SG.gas.cylindrical_coordinates.R)
+print(SG.gas.cylindrical_velocities.R)

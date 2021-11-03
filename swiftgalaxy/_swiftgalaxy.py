@@ -1,10 +1,12 @@
 import unyt as u
+from sympy import Rational
 from astropy.coordinates.matrix_utilities import rotation_matrix
 from astropy.coordinates import CartesianRepresentation, \
     SphericalRepresentation, CylindricalRepresentation, \
     CartesianDifferential, SphericalDifferential, CylindricalDifferential
 from swiftsimio import metadata as swiftsimio_metadata
 from swiftsimio.reader import SWIFTDataset
+from swiftsimio.objects import cosmo_array
 from velociraptor import load as load_catalogue
 from velociraptor.particles import load_groups
 from velociraptor.swift.swift import generate_spatial_mask, generate_bound_mask
@@ -57,15 +59,52 @@ def _apply_transform_stack(
     return data
 
 
+class _AstropyRepresentationOrDifferentialHelper(object):
+    def __init__(
+            self,
+            representation_or_differential,
+            name_map
+    ):
+        self._representation_or_differential = representation_or_differential
+        self._name_map = name_map
+
+    def __getattr__(self, attr):
+        astropy_quantity = getattr(
+            self._representation_or_differential,
+            self._name_map[attr]
+        )
+        # borrow some code from unyt_array.from_astropy for conversion
+        units = astropy_quantity.unit
+        ap_units = []
+        for base, exponent in zip(units.bases, units.powers):
+            unit_str = base.to_string()
+            # we have to do this because AstroPy is silly and defines
+            # hour as 'h'
+            if unit_str == 'h':
+                unit_str = 'hr'
+            ap_units.append(
+                "%s**(%s)" % (unit_str, Rational(exponent))
+            )
+        ap_units = '*'.join(ap_units)
+        # explicitly avoid copying by using a view
+        return_array = \
+            astropy_quantity.view(type=cosmo_array) * u.Unit(ap_units)
+        # could restore the cosmo_array attributes here, if we still knew
+        # what they were (also, comoving angular coordinates is pretty
+        # non-sensical, avoid that)
+        return return_array
+
+    # def __str__(self):
+        # should probably print something nicer
+
+
 class _SWIFTParticleDatasetHelper(object):
 
     def __init__(
             self,
-            ptype,  # can determine by introspection instead?
             particle_dataset,
             swiftgalaxy
     ):
-        self._ptype = ptype
         self._particle_dataset = particle_dataset
         self._swiftgalaxy = swiftgalaxy
         self._cartesian_representation = None
@@ -74,10 +113,13 @@ class _SWIFTParticleDatasetHelper(object):
         return
 
     def __getattribute__(self, attr):
-        ptype = object.__getattribute__(self, '_ptype')
+        particle_name = \
+            object.__getattribute__(self, '_particle_dataset').particle_name
         metadata = object.__getattribute__(self, '_particle_dataset').metadata
-        field_names = \
-            getattr(metadata, '{:s}_properties'.format(ptype)).field_names
+        field_names = getattr(
+            metadata,
+            '{:s}_properties'.format(particle_name)
+        ).field_names
         swiftgalaxy = object.__getattribute__(self, '_swiftgalaxy')
         particle_dataset = object.__getattribute__(self, '_particle_dataset')
         if attr in field_names:
@@ -110,7 +152,14 @@ class _SWIFTParticleDatasetHelper(object):
             else:
                 # just return the data
                 pass
-        if attr in ('cartesian_coordinates', 'spherical_coordinates'):
+        if attr in (
+                'cartesian_coordinates',
+                'spherical_coordinates',
+                'cylindrical_coordinates',
+                'cartesian_velocities',
+                'spherical_velocities',
+                'cylindrical_velocities'
+        ):
             return object.__getattribute__(self, '_{:s}'.format(attr))()
         try:
             # beware collisions with SWIFTDataset namespace
@@ -127,7 +176,7 @@ class _SWIFTParticleDatasetHelper(object):
             return
         field_names = getattr(
             self._particle_dataset.metadata,
-            '{:s}_properties'.format(self._ptype)
+            '{:s}_properties'.format(self._particle_dataset.particle_name)
         ).field_names
         if (attr in field_names) or \
            ((attr[0] == '_') and (attr[1:] in field_names)):
@@ -143,7 +192,9 @@ class _SWIFTParticleDatasetHelper(object):
 
     def _apply_mask(self, data):
         if self._swiftgalaxy._extra_mask is not None:
-            mask = self._swiftgalaxy._extra_mask.__getattribute__(self._ptype)
+            mask = self._swiftgalaxy._extra_mask.__getattribute__(
+                self._particle_dataset.particle_name
+            )
             if mask is not None:
                 return data[mask]
         return data
@@ -154,30 +205,102 @@ class _SWIFTParticleDatasetHelper(object):
             self._cartesian_representation = \
                 CartesianRepresentation(
                     self.coordinates.ndarray_view(),
+                    # Tempting to use unyt's to/from astropy,
+                    # but that forces a copy.
+                    # unyt relies on str representation in
+                    # to_astropy, so should be safe to do same.
                     unit=str(self.coordinates.units),
                     xyz_axis=1,
                     copy=False
                 )
-        # should wrap the astropy representation to be unyt-like?
-        return self._cartesian_representation
+        return _AstropyRepresentationOrDifferentialHelper(
+            self._cartesian_representation,
+            dict(x='x', y='y', z='z', xyz='xyz')
+        )
+
+    def _cartesian_velocities(self):
+        if self._cartesian_representation is None:
+            self._cartesian_coordinates()
+        if 's' not in self._cartesian_representation.differentials.keys():
+            self._cartesian_representation.differentials['s'] = \
+                CartesianDifferential(
+                    self.velocities.ndarray_view(),
+                    unit=str(self.velocities.units),
+                    xyz_axis=1,
+                    copy=False
+                )
+        return _AstropyRepresentationOrDifferentialHelper(
+            self._cartesian_representation.differentials['s'],
+            dict(x='d_x', y='d_y', z='d_z', xyz='xyz')
+        )
 
     def _spherical_coordinates(self):
+        if self._cartesian_representation is None:
+            self._cartesian_coordinates()
         if self._spherical_representation is None:
             # lose the extra cosmo array attributes here
             self._spherical_representation = \
                 SphericalRepresentation.from_cartesian(
-                    self.cartesian_coordinates  # careful if we wrap this
+                    self._cartesian_representation
                 )
-        return self._spherical_representation
+        return _AstropyRepresentationOrDifferentialHelper(
+            self._spherical_representation,
+            dict(lon='lon', lat='lat', r='distance')
+        )
+
+    def _spherical_velocities(self):
+        # possible to be slightly more efficient by initialising
+        # both the rep and the diff together if neither exist?
+        if self._spherical_representation is None:
+            self._spherical_representation()
+        # existence of self._cartesian_representation guaranteed by
+        # initialisation of self._spherical_representation immediately above
+        if 's' not in self._cartesian_representation.differentials.keys():
+            self._cartesian_velocities()
+        if 's' not in self._spherical_representation.differentials.keys():
+            self._spherical_representation.differentials['s'] = \
+                self._cartesian_representation.differentials['s'].represent_as(
+                    SphericalDifferential,
+                    self._spherical_representation
+                )
+        return _AstropyRepresentationOrDifferentialHelper(
+            self._spherical_representation.differentials['s'],
+            dict(lon='d_lon', lat='d_lat', r='d_distance')
+        )
 
     def _cylindrical_coordinates(self):
+        if self._cartesian_representation is None:
+            self._cartesian_coordinates()
         if self._cylindrical_representation is None:
             # lose the extra cosmo array attributes here
             self._cylindrical_representation = \
                 CylindricalRepresentation.from_cartesian(
-                    self.cartesian_coordinates
+                    self._cartesian_representation
                 )
-        return self._cylindrical_representation
+        return _AstropyRepresentationOrDifferentialHelper(
+            self._cylindrical_representation,
+            dict(R='rho', rho='rho', phi='phi', lon='phi', z='z')
+        )
+
+    def _cylindrical_velocities(self):
+        # possible to be slightly more efficient by initialising
+        # both the rep and the diff together if neither exist?
+        if self._cylindrical_representation is None:
+            self._cylindrical_representation()
+        # existence of self._cartesian_representation guaranteed by
+        # initialisation of self._cylindrical_representation immediately above
+        if 's' not in self._cartesian_representation.differentials.keys():
+            self._cartesian_velocities()
+        if 's' not in self._cylindrical_representation.differentials.keys():
+            self._cylindrical_representation.differentials['s'] = \
+                self._cartesian_representation.differentials['s'].represent_as(
+                    CylindricalDifferential,
+                    self._cylindrical_representation
+                )
+        return _AstropyRepresentationOrDifferentialHelper(
+            self._cylindrical_representation.differentials['s'],
+            dict(R='d_rho', rho='d_rho', phi='d_phi', lon='d_phi', z='d_z')
+        )
 
 
 class SWIFTGalaxy(SWIFTDataset):
@@ -212,13 +335,13 @@ class SWIFTGalaxy(SWIFTDataset):
         swift_mask = generate_spatial_mask(particles, snapshot_filename)
         super().__init__(snapshot_filename, mask=swift_mask)
         self._particle_dataset_helpers = dict()
-        for ptype in self.metadata.present_particle_names:
+        for particle_name in self.metadata.present_particle_names:
             # We'll make a custom type to present a nice name to the user.
             nice_name = \
                 swiftsimio_metadata.particle_types.particle_name_class[
                     getattr(
                         self.metadata,
-                        '{:s}_properties'.format(ptype)
+                        '{:s}_properties'.format(particle_name)
                     ).particle_type
                 ]
             TypeDatasetHelper = type(
@@ -226,9 +349,8 @@ class SWIFTGalaxy(SWIFTDataset):
                 (_SWIFTParticleDatasetHelper, object),
                 dict()
             )
-            self._particle_dataset_helpers[ptype] = TypeDatasetHelper(
-                ptype,
-                super().__getattribute__(ptype),
+            self._particle_dataset_helpers[particle_name] = TypeDatasetHelper(
+                super().__getattribute__(particle_name),
                 self
             )
 
@@ -243,15 +365,15 @@ class SWIFTGalaxy(SWIFTDataset):
             # we should guard against applying None as a mask later.
         if self._extra_mask is not None:
             # only particle ids should be loaded so far, need to mask these
-            for ptype in self.metadata.present_particle_names:
+            for particle_name in self.metadata.present_particle_names:
                 particle_ids = getattr(
-                    getattr(self, ptype),
+                    getattr(self, particle_name),
                     '_{:s}'.format(id_particle_dataset_name)
                 )
                 setattr(
-                    super().__getattribute__(ptype),  # bypass our helper
+                    super().__getattribute__(particle_name),  # bypass helper
                     '_{:s}'.format(id_particle_dataset_name),
-                    particle_ids[getattr(self._extra_mask, ptype)]
+                    particle_ids[getattr(self._extra_mask, particle_name)]
                 )
         if auto_recentre:
             centre = u.uhstack(
@@ -299,8 +421,8 @@ class SWIFTGalaxy(SWIFTDataset):
                              ' not both.')
         if angle_axis is not None:
             rotmat = rotation_matrix(*angle_axis)
-        for ptype in self.metadata.present_particle_names:
-            dataset = getattr(self, ptype)
+        for particle_name in self.metadata.present_particle_names:
+            dataset = getattr(self, particle_name)
             for field_name in self.rotatable:
                 field_data = getattr(dataset, '_{:s}'.format(field_name))
                 if field_data is not None:
@@ -316,8 +438,8 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def translate(self, translation, velocity=False):
         do_fields = self.boostable if velocity else self.translatable
-        for ptype in self.metadata.present_particle_names:
-            dataset = getattr(self, ptype)
+        for particle_name in self.metadata.present_particle_names:
+            dataset = getattr(self, particle_name)
             for field_name in do_fields:
                 field_data = getattr(dataset, '_{:s}'.format(field_name))
                 if field_data is not None:
@@ -339,8 +461,8 @@ class SWIFTGalaxy(SWIFTDataset):
         return
 
     def wrap_box(self):
-        for ptype in self.metadata.present_particle_names:
-            dataset = getattr(self, ptype)
+        for particle_name in self.metadata.present_particle_names:
+            dataset = getattr(self, particle_name)
             for field_name in self.translatable:
                 field_data = getattr(dataset, '_{:s}'.format(field_name))
                 if field_data is not None:
@@ -361,6 +483,13 @@ class SWIFTGalaxy(SWIFTDataset):
         return
 
     def _void_derived_representations(self):
-        for ptype in self.metadata.present_particle_names:
-            getattr(self, ptype)._spherical_representation = None
-            getattr(self, ptype)._cylindrical_representation = None
+        # Transforming representations actually converts back to cartesian,
+        # transforms, and then converts forward to the representation in
+        # question. It's therefore cheaper to just delete any non-cartesian
+        # representations when a transform occurs and lazily re-calculate
+        # them as needed. Note any attached differentials get chopped at the
+        # same time.
+        for particle_name in self.metadata.present_particle_names:
+            getattr(self, particle_name)._spherical_representation = None
+            getattr(self, particle_name)._cylindrical_representation = None
+        return
