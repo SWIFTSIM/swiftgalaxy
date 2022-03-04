@@ -1,7 +1,7 @@
 import socket
 import unyt as u
 from os import path
-from ._swiftgalaxy import SWIFTGalaxy
+from _swiftgalaxy import SWIFTGalaxy
 
 snapnum = 23
 if 'cosma' in socket.gethostname():
