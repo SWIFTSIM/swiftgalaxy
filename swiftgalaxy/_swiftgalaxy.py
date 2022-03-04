@@ -7,9 +7,6 @@ from astropy.coordinates import CartesianRepresentation, \
 from swiftsimio import metadata as swiftsimio_metadata
 from swiftsimio.reader import SWIFTDataset
 from swiftsimio.objects import cosmo_array
-from velociraptor import load as load_catalogue
-from velociraptor.particles import load_groups
-from velociraptor.swift.swift import generate_spatial_mask, generate_bound_mask
 
 
 def _apply_box_wrap(coords, boxsize):
@@ -191,8 +188,8 @@ class _SWIFTParticleDatasetHelper(object):
             return
 
     def _apply_mask(self, data):
-        if self._swiftgalaxy._extra_mask is not None:
-            mask = self._swiftgalaxy._extra_mask.__getattribute__(
+        if self._swiftgalaxy.halo_finder.extra_mask is not None:
+            mask = self._swiftgalaxy.halo_finder.extra_mask.__getattribute__(
                 self._particle_dataset.particle_name
             )
             if mask is not None:
@@ -308,32 +305,21 @@ class SWIFTGalaxy(SWIFTDataset):
     def __init__(
             self,
             snapshot_filename,
-            velociraptor_filebase,
-            halo_id,
-            extra_mask=None,
-            centre_type='minpot',  # _gas _star mbp minpot
+            halo_finder,
             auto_recentre=True,
             translatable=('coordinates', ),
             boostable=('velocities', ),
             rotatable=('coordinates', 'velocities'),
             id_particle_dataset_name='particle_ids'
     ):
-        self._extra_mask = None  # needed for initialisation, overwritten below
+        self.snapshot_filename = snapshot_filename
+        self.halo_finder = halo_finder
+        self.halo_finder.init_spatial_mask(self)
         self.rotatable = rotatable
         self.translatable = translatable
         self.boostable = boostable
         self._transform_stack = list()
-        catalogue = load_catalogue(f'{velociraptor_filebase}.properties')
-        # currently halo_id is actually the index, not the id!
-        # self._catalogue_mask = (catalogue.ids.id == halo_id).nonzero()
-        self._catalogue_mask = halo_id
-        groups = load_groups(
-            f'{velociraptor_filebase}.catalog_groups',
-            catalogue=catalogue
-        )
-        particles, unbound_particles = groups.extract_halo(halo_id=halo_id)
-        swift_mask = generate_spatial_mask(particles, snapshot_filename)
-        super().__init__(snapshot_filename, mask=swift_mask)
+        super().__init__(snapshot_filename, mask=self.halo_finder.spatial_mask)
         self._particle_dataset_helpers = dict()
         for particle_name in self.metadata.present_particle_names:
             # We'll make a custom type to present a nice name to the user.
@@ -354,16 +340,8 @@ class SWIFTGalaxy(SWIFTDataset):
                 self
             )
 
-        if extra_mask == 'bound_only':
-            self._extra_mask = generate_bound_mask(self, particles)
-        else:
-            self._extra_mask = extra_mask  # user can provide mask
-            # would be nice to check here that this looks like a mask
-            # to avoid a typo'd string waiting until after an expensive
-            # read to raise an exception
-            # Note this will also cover the default None case,
-            # we should guard against applying None as a mask later.
-        if self._extra_mask is not None:
+        self.halo_finder.init_extra_mask(self)
+        if self.halo_finder.extra_mask is not None:
             # only particle ids should be loaded so far, need to mask these
             for particle_name in self.metadata.present_particle_names:
                 particle_ids = getattr(
@@ -373,23 +351,13 @@ class SWIFTGalaxy(SWIFTDataset):
                 setattr(
                     super().__getattribute__(particle_name),  # bypass helper
                     '_{:s}'.format(id_particle_dataset_name),
-                    particle_ids[getattr(self._extra_mask, particle_name)]
+                    particle_ids[
+                        getattr(self.halo_finder.extra_mask, particle_name)
+                    ]
                 )
         if auto_recentre:
-            centre = u.uhstack(
-                [getattr(
-                    catalogue.positions,
-                    '{:s}c{:s}'.format(c, centre_type)
-                )[self._catalogue_mask] for c in 'xyz']
-            )
-            self.recentre(centre)
-            vcentre = u.uhstack(
-                [getattr(
-                    catalogue.velocities,
-                    'v{:s}c{:s}'.format(c, centre_type)
-                )[self._catalogue_mask] for c in 'xyz']
-            )
-            self.recentre(vcentre, velocity=True)
+            self.recentre(self.halo_finder.centre())
+            self.recentre(self.halo_finder.vcentre(), velocity=True)
         return
 
     def __getattribute__(self, attr):
