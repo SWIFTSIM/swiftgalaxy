@@ -1,7 +1,7 @@
 import socket
 from os import path
 from _swiftgalaxy import SWIFTGalaxy
-from _halofinder import Velociraptor
+from _halo_finders import Velociraptor
 
 snapnum = 23
 if 'cosma' in socket.gethostname():
