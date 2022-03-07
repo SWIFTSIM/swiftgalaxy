@@ -188,8 +188,8 @@ class _SWIFTParticleDatasetHelper(object):
             return
 
     def _apply_mask(self, data):
-        if self._swiftgalaxy.halo_finder.extra_mask is not None:
-            mask = self._swiftgalaxy.halo_finder.extra_mask.__getattribute__(
+        if self._swiftgalaxy.halo_finder._extra_mask is not None:
+            mask = self._swiftgalaxy.halo_finder._extra_mask.__getattribute__(
                 self._particle_dataset.particle_name
             )
             if mask is not None:
@@ -314,12 +314,12 @@ class SWIFTGalaxy(SWIFTDataset):
     ):
         self.snapshot_filename = snapshot_filename
         self.halo_finder = halo_finder
-        self.halo_finder.init_spatial_mask(self)
+        self.halo_finder._init_spatial_mask(self)
         self.rotatable = rotatable
         self.translatable = translatable
         self.boostable = boostable
         self._transform_stack = list()
-        super().__init__(snapshot_filename, mask=self.halo_finder.spatial_mask)
+        super().__init__(snapshot_filename, mask=self.halo_finder._spatial_mask)
         self._particle_dataset_helpers = dict()
         for particle_name in self.metadata.present_particle_names:
             # We'll make a custom type to present a nice name to the user.
@@ -340,8 +340,8 @@ class SWIFTGalaxy(SWIFTDataset):
                 self
             )
 
-        self.halo_finder.init_extra_mask(self)
-        if self.halo_finder.extra_mask is not None:
+        self.halo_finder._init_extra_mask(self)
+        if self.halo_finder._extra_mask is not None:
             # only particle ids should be loaded so far, need to mask these
             for particle_name in self.metadata.present_particle_names:
                 particle_ids = getattr(
@@ -352,12 +352,12 @@ class SWIFTGalaxy(SWIFTDataset):
                     super().__getattribute__(particle_name),  # bypass helper
                     '_{:s}'.format(id_particle_dataset_name),
                     particle_ids[
-                        getattr(self.halo_finder.extra_mask, particle_name)
+                        getattr(self.halo_finder._extra_mask, particle_name)
                     ]
                 )
         if auto_recentre:
-            self.recentre(self.halo_finder.centre())
-            self.recentre(self.halo_finder.vcentre(), velocity=True)
+            self.recentre(self.halo_finder._centre())
+            self.recentre(self.halo_finder._vcentre(), velocity=True)
         return
 
     def __getattribute__(self, attr):
