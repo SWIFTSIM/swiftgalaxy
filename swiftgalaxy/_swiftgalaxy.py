@@ -319,7 +319,10 @@ class SWIFTGalaxy(SWIFTDataset):
         self.translatable = translatable
         self.boostable = boostable
         self._transform_stack = list()
-        super().__init__(snapshot_filename, mask=self.halo_finder._spatial_mask)
+        super().__init__(
+            snapshot_filename,
+            mask=self.halo_finder._spatial_mask
+        )
         self._particle_dataset_helpers = dict()
         for particle_name in self.metadata.present_particle_names:
             # We'll make a custom type to present a nice name to the user.
@@ -359,6 +362,12 @@ class SWIFTGalaxy(SWIFTDataset):
             self.recentre(self.halo_finder._centre())
             self.recentre(self.halo_finder._vcentre(), velocity=True)
         return
+
+    # # Could implement:
+    # def __getitem__(self, mask):
+    #     # If mask is a MaskCollection, could return a copy suitably masked.
+    #     # Would need to be careful to preserve loaded data, rotations, etc.
+    #     return SWIFTGalaxy(...)
 
     def __getattribute__(self, attr):
         # __getattr__ is only checked if the attribute is not found
