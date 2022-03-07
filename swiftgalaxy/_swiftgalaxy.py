@@ -1,9 +1,6 @@
+import numpy as np
 import unyt as u
-from sympy import Rational
 from astropy.coordinates.matrix_utilities import rotation_matrix
-from astropy.coordinates import CartesianRepresentation, \
-    SphericalRepresentation, CylindricalRepresentation, \
-    CartesianDifferential, SphericalDifferential, CylindricalDifferential
 from swiftsimio import metadata as swiftsimio_metadata
 from swiftsimio.reader import SWIFTDataset
 from swiftsimio.objects import cosmo_array
@@ -56,43 +53,20 @@ def _apply_transform_stack(
     return data
 
 
-class _AstropyRepresentationOrDifferentialHelper(object):
-    def __init__(
-            self,
-            representation_or_differential,
-            name_map
-    ):
-        self._representation_or_differential = representation_or_differential
-        self._name_map = name_map
+class _CoordinateHelper(object):
+
+    def __init__(self, coordinates, masks):
+        self._coordinates = coordinates
+        self._masks = masks
+        return
 
     def __getattr__(self, attr):
-        astropy_quantity = getattr(
-            self._representation_or_differential,
-            self._name_map[attr]
-        )
-        # borrow some code from unyt_array.from_astropy for conversion
-        units = astropy_quantity.unit
-        ap_units = []
-        for base, exponent in zip(units.bases, units.powers):
-            unit_str = base.to_string()
-            # we have to do this because AstroPy is silly and defines
-            # hour as 'h'
-            if unit_str == 'h':
-                unit_str = 'hr'
-            ap_units.append(
-                "%s**(%s)" % (unit_str, Rational(exponent))
-            )
-        ap_units = '*'.join(ap_units)
-        # explicitly avoid copying by using a view
-        return_array = \
-            astropy_quantity.view(type=cosmo_array) * u.Unit(ap_units)
-        # could restore the cosmo_array attributes here, if we still knew
-        # what they were (also, comoving angular coordinates is pretty
-        # non-sensical, avoid that)
-        return return_array
+        return self._coordinates[self._masks[attr]]
 
-    # def __str__(self):
-        # should probably print something nicer
+    def __repr__(self):
+        return 'Available coordinates: {:s}.'.format(
+            ', '.join(self._masks.keys())
+        )
 
 
 class _SWIFTParticleDatasetHelper(object):
@@ -106,6 +80,10 @@ class _SWIFTParticleDatasetHelper(object):
         self._swiftgalaxy = swiftgalaxy
         self._cartesian_representation = None
         self._spherical_representation = None
+        self._cylindrical_representation = None
+        self._cartesian_v_representation = None
+        self._spherical_v_representation = None
+        self._cylindrical_v_representation = None
         self._initialised = True
         return
 
@@ -198,105 +176,163 @@ class _SWIFTParticleDatasetHelper(object):
 
     def _cartesian_coordinates(self):
         if self._cartesian_representation is None:
-            # lose the extra cosmo array attributes here
             self._cartesian_representation = \
-                CartesianRepresentation(
-                    self.coordinates.ndarray_view(),
-                    # Tempting to use unyt's to/from astropy,
-                    # but that forces a copy.
-                    # unyt relies on str representation in
-                    # to_astropy, so should be safe to do same.
-                    unit=str(self.coordinates.units),
-                    xyz_axis=1,
-                    copy=False
-                )
-        return _AstropyRepresentationOrDifferentialHelper(
+                self.coordinates.view()
+        return _CoordinateHelper(
             self._cartesian_representation,
-            dict(x='x', y='y', z='z', xyz='xyz')
+            dict(
+                x=np.s_[:, 0],
+                y=np.s_[:, 1],
+                z=np.s_[:, 2],
+                xyz=np.s_[...]
+            )
         )
 
     def _cartesian_velocities(self):
         if self._cartesian_representation is None:
             self._cartesian_coordinates()
-        if 's' not in self._cartesian_representation.differentials.keys():
-            self._cartesian_representation.differentials['s'] = \
-                CartesianDifferential(
-                    self.velocities.ndarray_view(),
-                    unit=str(self.velocities.units),
-                    xyz_axis=1,
-                    copy=False
-                )
-        return _AstropyRepresentationOrDifferentialHelper(
-            self._cartesian_representation.differentials['s'],
-            dict(x='d_x', y='d_y', z='d_z', xyz='xyz')
+        if self._cartesian_v_representation is None:
+            self._cartesian_v_representation = \
+                self.velocities.view()
+        return _CoordinateHelper(
+            self._cartesian_v_representation,
+            dict(
+                x=np.s_[:, 0],
+                y=np.s_[:, 1],
+                z=np.s_[:, 2],
+                xyz=np.s_[...]
+            )
         )
 
     def _spherical_coordinates(self):
         if self._cartesian_representation is None:
             self._cartesian_coordinates()
         if self._spherical_representation is None:
-            # lose the extra cosmo array attributes here
-            self._spherical_representation = \
-                SphericalRepresentation.from_cartesian(
-                    self._cartesian_representation
+            r = np.sqrt(
+                np.sum(
+                    np.power(self._cartesian_representation, 2),
+                    axis=1
                 )
-        return _AstropyRepresentationOrDifferentialHelper(
+            )
+            theta = np.arcsin(self._cartesian_representation[:, 2] / r)
+            theta = cosmo_array(theta, units=u.rad)
+            if self._cylindrical_representation is not None:
+                phi = self._cylindrical_representation['_phi']
+            else:
+                phi = np.arctan2(
+                    self._cartesian_representation[:, 1],
+                    self._cartesian_representation[:, 0]
+                )
+                phi = np.where(phi < 0, phi + 2 * np.pi, phi)
+                phi = cosmo_array(phi, units=u.rad)
+            self._spherical_representation = dict(
+                _r=r,
+                _theta=theta,
+                _phi=phi
+            )
+        return _CoordinateHelper(
             self._spherical_representation,
-            dict(lon='lon', lat='lat', r='distance')
+            dict(
+                r='_r',
+                radius='_r',
+                lon='_phi',
+                longitude='_phi',
+                az='_phi',
+                azimuth='_phi',
+                phi='_phi',
+                lat='_theta',
+                latitude='_theta',
+                pol='_theta',
+                polar='_theta',
+                theta='_theta'
+            )
         )
 
     def _spherical_velocities(self):
-        # possible to be slightly more efficient by initialising
-        # both the rep and the diff together if neither exist?
         if self._spherical_representation is None:
             self._spherical_representation()
         # existence of self._cartesian_representation guaranteed by
         # initialisation of self._spherical_representation immediately above
-        if 's' not in self._cartesian_representation.differentials.keys():
+        if self._cartesian_v_representation is None:
             self._cartesian_velocities()
-        if 's' not in self._spherical_representation.differentials.keys():
-            self._spherical_representation.differentials['s'] = \
-                self._cartesian_representation.differentials['s'].represent_as(
-                    SphericalDifferential,
-                    self._spherical_representation
-                )
-        return _AstropyRepresentationOrDifferentialHelper(
-            self._spherical_representation.differentials['s'],
-            dict(lon='d_lon', lat='d_lat', r='d_distance')
+        if self._spherical_v_representation is None:
+            self._spherical_v_representation = None
+            # calculate transformed coordinates from cartesian
+            raise NotImplementedError
+        return _CoordinateHelper(
+            self._spherical_v_representation,
+            dict(
+                v_r=np.s_[:, 0],
+                v_lon=np.s_[:, 1],
+                v_az=np.s_[:, 1],
+                v_phi=np.s_[:, 1],
+                v_lat=np.s_[:, 2],
+                v_pol=np.s_[:, 2],
+                v_theta=np.s_[:, 2]
+            )
         )
 
     def _cylindrical_coordinates(self):
         if self._cartesian_representation is None:
             self._cartesian_coordinates()
         if self._cylindrical_representation is None:
-            # lose the extra cosmo array attributes here
-            self._cylindrical_representation = \
-                CylindricalRepresentation.from_cartesian(
-                    self._cartesian_representation
+            rho = np.sqrt(
+                np.sum(
+                    np.power(self._cartesian_representation[:, :2], 2),
+                    axis=1
                 )
-        return _AstropyRepresentationOrDifferentialHelper(
+            )
+            if self._spherical_representation is not None:
+                phi = self._spherical_representation['_phi']
+            else:
+                phi = np.arctan2(
+                    self._cartesian_representation[:, 1],
+                    self._cartesian_representation[:, 0]
+                )
+                phi = np.where(phi < 0, phi + 2 * np.pi, phi)
+                phi = cosmo_array(phi, units=u.rad)
+            z = self._cartesian_representation[:, 2]
+            self._cylindrical_representation = dict(
+                _rho=rho,
+                _phi=phi,
+                _z=z
+            )
+        return _CoordinateHelper(
             self._cylindrical_representation,
-            dict(R='rho', rho='rho', phi='phi', lon='phi', z='z')
+            dict(
+                R='_rho',
+                rho='_rho',
+                radius='_rho',
+                lon='_phi',
+                longitude='_phi',
+                az='_phi',
+                azimuth='_phi',
+                phi='_phi',
+                z='_z'
+            )
         )
 
     def _cylindrical_velocities(self):
-        # possible to be slightly more efficient by initialising
-        # both the rep and the diff together if neither exist?
         if self._cylindrical_representation is None:
             self._cylindrical_representation()
         # existence of self._cartesian_representation guaranteed by
         # initialisation of self._cylindrical_representation immediately above
-        if 's' not in self._cartesian_representation.differentials.keys():
+        if self._cartesian_v_representation is None:
             self._cartesian_velocities()
-        if 's' not in self._cylindrical_representation.differentials.keys():
-            self._cylindrical_representation.differentials['s'] = \
-                self._cartesian_representation.differentials['s'].represent_as(
-                    CylindricalDifferential,
-                    self._cylindrical_representation
-                )
-        return _AstropyRepresentationOrDifferentialHelper(
-            self._cylindrical_representation.differentials['s'],
-            dict(R='d_rho', rho='d_rho', phi='d_phi', lon='d_phi', z='d_z')
+        if self._cylindrical_v_representation is None:
+            self._cylindrical_v_representation = None
+            # calculate transformed coordinates from cartesian
+            raise NotImplementedError
+        return _CoordinateHelper(
+            self._cylindrical_v_representation,
+            dict(
+                v_R=np.s_[:, 0],
+                v_rho=np.s_[:, 0],
+                v_lon=np.s_[:, 1],
+                v_az=np.s_[:, 1],
+                v_phi=np.s_[:, 1],
+                v_z=np.s_[:, 2]
+            )
         )
 
 
@@ -460,13 +496,12 @@ class SWIFTGalaxy(SWIFTDataset):
         return
 
     def _void_derived_representations(self):
-        # Transforming representations actually converts back to cartesian,
-        # transforms, and then converts forward to the representation in
-        # question. It's therefore cheaper to just delete any non-cartesian
-        # representations when a transform occurs and lazily re-calculate
-        # them as needed. Note any attached differentials get chopped at the
-        # same time.
+        # Transforming implies conversion back to cartesian, it's therefore
+        # cheaper to just delete any non-cartesian representations when a
+        # transform occurs and lazily re-calculate them as needed.
         for particle_name in self.metadata.present_particle_names:
             getattr(self, particle_name)._spherical_representation = None
             getattr(self, particle_name)._cylindrical_representation = None
+            getattr(self, particle_name)._spherical_v_representation = None
+            getattr(self, particle_name)._cylindrical_v_representation = None
         return

@@ -11,6 +11,7 @@ elif ('autarch' in socket.gethostname()) \
      or ('farseer' in socket.gethostname()):
     base_dir = '/home/koman/'\
         '106e3_104b2_norm_0p3_new_cooling_L006N188/'
+
 velociraptor_filebase = path.join(base_dir, 'halo_{:04d}'.format(snapnum))
 snapshot_filename = path.join(base_dir, 'colibre_{:04d}.hdf5'.format(snapnum))
 
@@ -26,4 +27,9 @@ SG = SWIFTGalaxy(
     auto_recentre=True
 )
 
-print(SG.halo_finder.ids)
+print(SG.gas.spherical_coordinates.r)
+print(SG.gas.spherical_coordinates.theta)
+print(SG.gas.spherical_coordinates.phi)
+print(SG.gas.cylindrical_coordinates.rho)
+print(SG.gas.cylindrical_coordinates.phi)
+print(SG.gas.cylindrical_coordinates.z)
