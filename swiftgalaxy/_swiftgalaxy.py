@@ -250,7 +250,7 @@ class _SWIFTParticleDatasetHelper(object):
 
     def _spherical_velocities(self):
         if self._spherical_representation is None:
-            self._spherical_representation()
+            self._spherical_coordinates()
         # existence of self._cartesian_representation guaranteed by
         # initialisation of self._spherical_representation immediately above
         if self._cartesian_v_representation is None:
@@ -328,7 +328,7 @@ class _SWIFTParticleDatasetHelper(object):
 
     def _cylindrical_velocities(self):
         if self._cylindrical_representation is None:
-            self._cylindrical_representation()
+            self._cylindrical_coordinates()
         # existence of self._cartesian_representation guaranteed by
         # initialisation of self._cylindrical_representation immediately above
         if self._cartesian_v_representation is None:
@@ -340,15 +340,15 @@ class _SWIFTParticleDatasetHelper(object):
                     axis=1
                 )
             )
-            if self._spherical_representation is not None:
-                v_phi = self._spherical_representation['_v_p']
+            if self._spherical_v_representation is not None:
+                v_phi = self._spherical_v_representation['_v_p']
             else:
                 _sin_p = np.sin(self._cylindrical_representation['_phi'])
                 _cos_p = np.cos(self._cylindrical_representation['_phi'])
                 v_phi = -_sin_p * self._cartesian_v_representation[:, 0] \
                     + _cos_p * self._cartesian_v_representation[:, 1]
             v_z = self._cartesian_v_representation[:, 2]
-            self._cylindrical_representation = dict(
+            self._cylindrical_v_representation = dict(
                 _v_rho=v_rho,
                 _v_phi=v_phi,
                 _v_z=v_z
@@ -356,12 +356,12 @@ class _SWIFTParticleDatasetHelper(object):
         return _CoordinateHelper(
             self._cylindrical_v_representation,
             dict(
-                v_R=np.s_[:, 0],
-                v_rho=np.s_[:, 0],
-                v_lon=np.s_[:, 1],
-                v_az=np.s_[:, 1],
-                v_phi=np.s_[:, 1],
-                v_z=np.s_[:, 2]
+                v_R='_v_rho',
+                v_rho='_v_rho',
+                v_lon='_v_phi',
+                v_az='_v_phi',
+                v_phi='_v_phi',
+                v_z='_v_z'
             )
         )
 

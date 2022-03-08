@@ -27,9 +27,9 @@ SG = SWIFTGalaxy(
     auto_recentre=True
 )
 
-print(SG.gas.spherical_coordinates.r)
-print(SG.gas.spherical_coordinates.theta)
-print(SG.gas.spherical_coordinates.phi)
-print(SG.gas.cylindrical_coordinates.rho)
-print(SG.gas.cylindrical_coordinates.phi)
-print(SG.gas.cylindrical_coordinates.z)
+print(SG.gas.spherical_velocities.v_r)
+print(SG.gas.spherical_velocities.v_theta)
+print(SG.gas.spherical_velocities.v_phi)
+print(SG.gas.cylindrical_velocities.v_rho)
+print(SG.gas.cylindrical_velocities.v_phi)
+print(SG.gas.cylindrical_velocities.v_z)
