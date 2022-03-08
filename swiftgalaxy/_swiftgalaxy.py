@@ -256,19 +256,33 @@ class _SWIFTParticleDatasetHelper(object):
         if self._cartesian_v_representation is None:
             self._cartesian_velocities()
         if self._spherical_v_representation is None:
-            self._spherical_v_representation = None
-            # calculate transformed coordinates from cartesian
-            raise NotImplementedError
+            _sin_t = np.sin(self._spherical_representation['_theta'])
+            _cos_t = np.cos(self._spherical_representation['_theta'])
+            _sin_p = np.sin(self._spherical_representation['_phi'])
+            _cos_p = np.cos(self._spherical_representation['_phi'])
+            v_r = _cos_t * _cos_p * self._cartesian_v_representation[:, 0] \
+                + _cos_t * _sin_p * self._cartesian_v_representation[:, 1] \
+                + _sin_t * self._cartesian_v_representation[:, 2]
+            v_t = _sin_t * _cos_p * self._cartesian_v_representation[:, 0] \
+                + _sin_t * _sin_p * self._cartesian_v_representation[:, 1] \
+                - _cos_t * self._cartesian_v_representation[:, 2]
+            v_p = -_sin_p * self._cartesian_v_representation[:, 0] \
+                + _cos_p * self._cartesian_v_representation[:, 1]
+            self._spherical_v_representation = dict(
+                _v_r=v_r,
+                _v_t=v_t,
+                _v_p=v_p
+            )
         return _CoordinateHelper(
             self._spherical_v_representation,
             dict(
-                v_r=np.s_[:, 0],
-                v_lon=np.s_[:, 1],
-                v_az=np.s_[:, 1],
-                v_phi=np.s_[:, 1],
-                v_lat=np.s_[:, 2],
-                v_pol=np.s_[:, 2],
-                v_theta=np.s_[:, 2]
+                v_r='_v_r',
+                v_lon='_v_p',
+                v_az='_v_p',
+                v_phi='_v_p',
+                v_lat='_v_t',
+                v_pol='_v_t',
+                v_theta='_v_t'
             )
         )
 
@@ -320,9 +334,25 @@ class _SWIFTParticleDatasetHelper(object):
         if self._cartesian_v_representation is None:
             self._cartesian_velocities()
         if self._cylindrical_v_representation is None:
-            self._cylindrical_v_representation = None
-            # calculate transformed coordinates from cartesian
-            raise NotImplementedError
+            v_rho = np.sqrt(
+                np.sum(
+                    np.power(self._cartesian_v_representation[:, :2], 2),
+                    axis=1
+                )
+            )
+            if self._spherical_representation is not None:
+                v_phi = self._spherical_representation['_v_p']
+            else:
+                _sin_p = np.sin(self._cylindrical_representation['_phi'])
+                _cos_p = np.cos(self._cylindrical_representation['_phi'])
+                v_phi = -_sin_p * self._cartesian_v_representation[:, 0] \
+                    + _cos_p * self._cartesian_v_representation[:, 1]
+            v_z = self._cartesian_v_representation[:, 2]
+            self._cylindrical_representation = dict(
+                _v_rho=v_rho,
+                _v_phi=v_phi,
+                _v_z=v_z
+            )
         return _CoordinateHelper(
             self._cylindrical_v_representation,
             dict(
