@@ -30,28 +30,12 @@ def _apply_rotmat(coords, rotmat):
     return coords.dot(rotmat)
 
 
-def _apply_transform_stack(
-        data,
-        transform_stack,
-        is_translatable=None,
-        is_rotatable=None,
-        is_boostable=None,
-        boxsize=None
-):
-    for transform_type, transform in transform_stack:
-        if (transform_type == 'T') and is_translatable:
-            data = _apply_translation(data, transform)
-        elif (transform_type == 'B') and is_boostable:
-            data = _apply_translation(data, transform)
-        elif (transform_type == 'R') and is_rotatable:
-            data = _apply_rotmat(data, transform)
-        if is_translatable and boxsize is not None:
-            # this is a position-like dataset, so wrap box,
-            # either translation or rotation can in principle
-            # require a wrap
-            # for a non-periodic box boxsize=None should be passed
-            data = _apply_box_wrap(data, boxsize)
-    return data
+def _apply_4transform(coords, transform):
+    coords4 = u.array.uhstack((
+        coords,
+        np.ones(coords.shape[0])[:, np.newaxis] * coords.units
+    ))
+    return coords4.dot(transform)[:, :3]
 
 
 class _CoordinateHelper(object):
@@ -105,21 +89,20 @@ class _SWIFTParticleDatasetHelper(object):
                 # going to read from file: apply masks, transforms
                 data = getattr(particle_dataset, attr)  # raw data loaded
                 data = object.__getattribute__(self, '_apply_mask')(data)
-                translatable = swiftgalaxy.translatable
-                rotatable = swiftgalaxy.rotatable
-                boostable = swiftgalaxy.boostable
+                if attr in swiftgalaxy.transforms_like_coordinates:
+                    transform = swiftgalaxy._coordinate_like_transform
+                elif attr in swiftgalaxy.transforms_like_velocities:
+                    transform = swiftgalaxy._velocity_like_transform
+                else:
+                    transform = None
+                if transform is not None:
+                    data = _apply_4transform(data, transform)
                 try:
                     boxsize = metadata.boxsize
                 except AttributeError:
                     boxsize = None
-                data = _apply_transform_stack(
-                    data,
-                    swiftgalaxy._transform_stack,
-                    is_translatable=attr in translatable,
-                    is_rotatable=attr in rotatable,
-                    is_boostable=attr in boostable,
-                    boxsize=boxsize
-                )
+                if attr in swiftgalaxy.transforms_like_coordinates:
+                    data = _apply_box_wrap(data, boxsize)
                 setattr(
                     particle_dataset,
                     '_{:s}'.format(attr),
@@ -381,9 +364,8 @@ class SWIFTGalaxy(SWIFTDataset):
             snapshot_filename,
             halo_finder,
             auto_recentre=True,
-            translatable=('coordinates', ),
-            boostable=('velocities', ),
-            rotatable=('coordinates', 'velocities'),
+            transforms_like_coordinates={'coordinates', },
+            transforms_like_velocities={'velocities', },
             id_particle_dataset_name='particle_ids',
             coordinates_dataset_name='coordinates',
             velocities_dataset_name='velocities'
@@ -391,13 +373,13 @@ class SWIFTGalaxy(SWIFTDataset):
         self.snapshot_filename = snapshot_filename
         self.halo_finder = halo_finder
         self.halo_finder._init_spatial_mask(self)
-        self.translatable = translatable
-        self.boostable = boostable
-        self.rotatable = rotatable
+        self.transforms_like_coordinates = transforms_like_coordinates
+        self.transforms_like_velocities = transforms_like_velocities
         self.id_particle_dataset_name = id_particle_dataset_name
         self.coordinates_dataset_name = coordinates_dataset_name
         self.velocities_dataset_name = velocities_dataset_name
-        self._transform_stack = list()
+        self._coordinate_like_transform = np.eye(4)
+        self._velocity_like_transform = np.eye(4)
         super().__init__(
             snapshot_filename,
             mask=self.halo_finder._spatial_mask
@@ -439,7 +421,7 @@ class SWIFTGalaxy(SWIFTDataset):
                 )
         if auto_recentre:
             self.recentre(self.halo_finder._centre())
-            self.recentre(self.halo_finder._vcentre(), velocity=True)
+            self.recentre_velocity(self.halo_finder._vcentre())
         return
 
     # # Could implement:
@@ -477,9 +459,13 @@ class SWIFTGalaxy(SWIFTDataset):
                              ' not both.')
         if angle_axis is not None:
             rotmat = rotation_matrix(*angle_axis)
+        rotatable = (
+            self.transforms_like_coordinates
+            | self.transforms_like_velocities
+        )
         for particle_name in self.metadata.present_particle_names:
             dataset = getattr(self, particle_name)
-            for field_name in self.rotatable:
+            for field_name in rotatable:
                 field_data = getattr(dataset, '_{:s}'.format(field_name))
                 if field_data is not None:
                     field_data = _apply_rotmat(field_data, rotmat)
@@ -488,15 +474,19 @@ class SWIFTGalaxy(SWIFTDataset):
                         '_{:s}'.format(field_name),
                         field_data
                     )
-        self._append_to_transform_stack(('R', rotmat))
+        rotmat4 = np.eye(4)
+        rotmat4[:3, :3] = rotmat
+        self._append_to_coordinate_like_transform(rotmat4)
+        self._append_to_velocity_like_transform(rotmat4)
         self.wrap_box()
         return
 
     def _translate(self, translation, boost=False):
-        do_fields = self.boostable if boost else self.translatable
+        translatable = self.transforms_like_velocities if boost \
+            else self.transforms_like_coordinates
         for particle_name in self.metadata.present_particle_names:
             dataset = getattr(self, particle_name)
-            for field_name in do_fields:
+            for field_name in translatable:
                 field_data = getattr(dataset, '_{:s}'.format(field_name))
                 if field_data is not None:
                     field_data = _apply_translation(field_data, translation)
@@ -505,12 +495,18 @@ class SWIFTGalaxy(SWIFTDataset):
                         '_{:s}'.format(field_name),
                         field_data
                     )
-        self._append_to_transform_stack(
-            ({True: 'B', False: 'T'}[boost], translation)
-        )
+        translation4 = np.eye(4)
+        translation4[3, :3] = translation
+        if boost:
+            self._append_to_velocity_like_transform(translation4)
+        else:
+            self._append_to_coordinate_like_transform(translation4)
         if not boost:
             self.wrap_box()
         return
+
+    def translate(self, translation):
+        self._translate(translation)
 
     def boost(self, boost):
         self._translate(boost, boost=True)
@@ -526,7 +522,7 @@ class SWIFTGalaxy(SWIFTDataset):
     def wrap_box(self):
         for particle_name in self.metadata.present_particle_names:
             dataset = getattr(self, particle_name)
-            for field_name in self.translatable:
+            for field_name in self.transforms_like_coordinates:
                 field_data = getattr(dataset, '_{:s}'.format(field_name))
                 if field_data is not None:
                     field_data = _apply_box_wrap(
@@ -540,8 +536,15 @@ class SWIFTGalaxy(SWIFTDataset):
                     )
         return
 
-    def _append_to_transform_stack(self, transform):
-        self._transform_stack.append(transform)
+    def _append_to_coordinate_like_transform(self, transform):
+        self._coordinate_like_transform = \
+            self._coordinate_like_transform.dot(transform)
+        self._void_derived_coordinates()
+        return
+
+    def _append_to_velocity_like_transform(self, transform):
+        self._velocity_like_transform = \
+            self._velocity_like_transform.dot(transform)
         self._void_derived_coordinates()
         return
 
