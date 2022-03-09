@@ -1,7 +1,9 @@
 import socket
+import unyt as u
 from os import path
 from _swiftgalaxy import SWIFTGalaxy
 from _halo_finders import Velociraptor
+import numpy as np
 
 snapnum = 23
 if 'cosma' in socket.gethostname():
@@ -26,10 +28,21 @@ SG = SWIFTGalaxy(
     ),
     auto_recentre=True
 )
+SG.gas.coordinates, SG.gas.velocities
 
-print(SG.gas.spherical_velocities.v_r)
-print(SG.gas.spherical_velocities.v_theta)
-print(SG.gas.spherical_velocities.v_phi)
-print(SG.gas.cylindrical_velocities.v_rho)
-print(SG.gas.cylindrical_velocities.v_phi)
-print(SG.gas.cylindrical_velocities.v_z)
+
+def f(SG):
+    print('v_r=', SG.gas.spherical_velocities.v_r[0].to(u.km / u.s))
+    print('v_t=', SG.gas.spherical_velocities.v_theta[0].to(u.km / u.s))
+    print('v_p=', SG.gas.spherical_velocities.v_phi[0].to(u.km / u.s))
+    SG._void_derived_representations()
+    print('v_R=', SG.gas.cylindrical_velocities.v_rho[0].to(u.km / u.s))
+    print('v_p=', SG.gas.cylindrical_velocities.v_phi[0].to(u.km / u.s))
+    print('v_z=', SG.gas.cylindrical_velocities.v_z[0].to(u.km / u.s))
+    SG._void_derived_representations()
+    return
+
+
+SG.gas.coordinates[0] = [0, 0, 1]
+SG.gas.velocities[0] = [1, 0, 0]
+f(SG)

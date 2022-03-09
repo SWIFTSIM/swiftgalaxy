@@ -334,17 +334,13 @@ class _SWIFTParticleDatasetHelper(object):
         if self._cartesian_v_representation is None:
             self._cartesian_velocities()
         if self._cylindrical_v_representation is None:
-            v_rho = np.sqrt(
-                np.sum(
-                    np.power(self._cartesian_v_representation[:, :2], 2),
-                    axis=1
-                )
-            )
+            _sin_p = np.sin(self._cylindrical_representation['_phi'])
+            _cos_p = np.cos(self._cylindrical_representation['_phi'])
+            v_rho = _cos_p * self._cartesian_v_representation[:, 0] \
+                + _sin_p * self._cartesian_v_representation[:, 1]
             if self._spherical_v_representation is not None:
                 v_phi = self._spherical_v_representation['_v_p']
             else:
-                _sin_p = np.sin(self._cylindrical_representation['_phi'])
-                _cos_p = np.cos(self._cylindrical_representation['_phi'])
                 v_phi = -_sin_p * self._cartesian_v_representation[:, 0] \
                     + _cos_p * self._cartesian_v_representation[:, 1]
             v_z = self._cartesian_v_representation[:, 2]
