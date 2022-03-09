@@ -28,21 +28,10 @@ SG = SWIFTGalaxy(
     ),
     auto_recentre=True
 )
-SG.gas.coordinates, SG.gas.velocities
 
-
-def f(SG):
-    print('v_r=', SG.gas.spherical_velocities.v_r[0].to(u.km / u.s))
-    print('v_t=', SG.gas.spherical_velocities.v_theta[0].to(u.km / u.s))
-    print('v_p=', SG.gas.spherical_velocities.v_phi[0].to(u.km / u.s))
-    SG._void_derived_representations()
-    print('v_R=', SG.gas.cylindrical_velocities.v_rho[0].to(u.km / u.s))
-    print('v_p=', SG.gas.cylindrical_velocities.v_phi[0].to(u.km / u.s))
-    print('v_z=', SG.gas.cylindrical_velocities.v_z[0].to(u.km / u.s))
-    SG._void_derived_representations()
-    return
-
-
-SG.gas.coordinates[0] = [0, 0, 1]
-SG.gas.velocities[0] = [1, 0, 0]
-f(SG)
+print(SG.gas.cartesian_coordinates.x)
+print(SG.gas.spherical_coordinates.phi)
+print(SG.gas.cylindrical_coordinates.rho)
+print(SG.gas.cartesian_velocities.x)
+print(SG.gas.spherical_velocities.phi)
+print(SG.gas.cylindrical_velocities.rho)

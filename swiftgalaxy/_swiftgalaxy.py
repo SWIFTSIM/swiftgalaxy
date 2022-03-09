@@ -78,12 +78,12 @@ class _SWIFTParticleDatasetHelper(object):
     ):
         self._particle_dataset = particle_dataset
         self._swiftgalaxy = swiftgalaxy
-        self._cartesian_representation = None
-        self._spherical_representation = None
-        self._cylindrical_representation = None
-        self._cartesian_v_representation = None
-        self._spherical_v_representation = None
-        self._cylindrical_v_representation = None
+        self._cartesian_coordinates = None
+        self._spherical_coordinates = None
+        self._cylindrical_coordinates = None
+        self._cartesian_velocities = None
+        self._spherical_velocities = None
+        self._cylindrical_velocities = None
         self._initialised = True
         return
 
@@ -127,15 +127,6 @@ class _SWIFTParticleDatasetHelper(object):
             else:
                 # just return the data
                 pass
-        if attr in (
-                'cartesian_coordinates',
-                'spherical_coordinates',
-                'cylindrical_coordinates',
-                'cartesian_velocities',
-                'spherical_velocities',
-                'cylindrical_velocities'
-        ):
-            return object.__getattribute__(self, '_{:s}'.format(attr))()
         try:
             # beware collisions with SWIFTDataset namespace
             return object.__getattribute__(self, attr)
@@ -174,12 +165,16 @@ class _SWIFTParticleDatasetHelper(object):
                 return data[mask]
         return data
 
-    def _cartesian_coordinates(self):
-        if self._cartesian_representation is None:
-            self._cartesian_representation = \
-                self.coordinates.view()
+    @property
+    def cartesian_coordinates(self):
+        if self._cartesian_coordinates is None:
+            self._cartesian_coordinates = \
+                getattr(
+                    self,
+                    self._swiftgalaxy.coordinates_dataset_name
+                ).view()
         return _CoordinateHelper(
-            self._cartesian_representation,
+            self._cartesian_coordinates,
             dict(
                 x=np.s_[:, 0],
                 y=np.s_[:, 1],
@@ -188,14 +183,18 @@ class _SWIFTParticleDatasetHelper(object):
             )
         )
 
-    def _cartesian_velocities(self):
-        if self._cartesian_representation is None:
-            self._cartesian_coordinates()
-        if self._cartesian_v_representation is None:
-            self._cartesian_v_representation = \
-                self.velocities.view()
+    @property
+    def cartesian_velocities(self):
+        if self._cartesian_coordinates is None:
+            self.cartesian_coordinates
+        if self._cartesian_velocities is None:
+            self._cartesian_velocities = \
+                getattr(
+                    self,
+                    self._swiftgalaxy.velocities_dataset_name
+                ).view()
         return _CoordinateHelper(
-            self._cartesian_v_representation,
+            self._cartesian_velocities,
             dict(
                 x=np.s_[:, 0],
                 y=np.s_[:, 1],
@@ -204,34 +203,35 @@ class _SWIFTParticleDatasetHelper(object):
             )
         )
 
-    def _spherical_coordinates(self):
-        if self._cartesian_representation is None:
-            self._cartesian_coordinates()
-        if self._spherical_representation is None:
+    @property
+    def spherical_coordinates(self):
+        if self._cartesian_coordinates is None:
+            self.cartesian_coordinates
+        if self._spherical_coordinates is None:
             r = np.sqrt(
                 np.sum(
-                    np.power(self._cartesian_representation, 2),
+                    np.power(self.cartesian_coordinates.xyz, 2),
                     axis=1
                 )
             )
-            theta = np.arcsin(self._cartesian_representation[:, 2] / r)
+            theta = np.arcsin(self.cartesian_coordinates.z / r)
             theta = cosmo_array(theta, units=u.rad)
-            if self._cylindrical_representation is not None:
-                phi = self._cylindrical_representation['_phi']
+            if self.cylindrical_coordinates is not None:
+                phi = self.cylindrical_coordinates.phi
             else:
                 phi = np.arctan2(
-                    self._cartesian_representation[:, 1],
-                    self._cartesian_representation[:, 0]
+                    self.cartesian_coordinates.y,
+                    self.cartesian_coordinates.x
                 )
                 phi = np.where(phi < 0, phi + 2 * np.pi, phi)
                 phi = cosmo_array(phi, units=u.rad)
-            self._spherical_representation = dict(
+            self._spherical_coordinates = dict(
                 _r=r,
                 _theta=theta,
                 _phi=phi
             )
         return _CoordinateHelper(
-            self._spherical_representation,
+            self._spherical_coordinates,
             dict(
                 r='_r',
                 radius='_r',
@@ -248,71 +248,78 @@ class _SWIFTParticleDatasetHelper(object):
             )
         )
 
-    def _spherical_velocities(self):
-        if self._spherical_representation is None:
-            self._spherical_coordinates()
-        # existence of self._cartesian_representation guaranteed by
-        # initialisation of self._spherical_representation immediately above
-        if self._cartesian_v_representation is None:
-            self._cartesian_velocities()
-        if self._spherical_v_representation is None:
-            _sin_t = np.sin(self._spherical_representation['_theta'])
-            _cos_t = np.cos(self._spherical_representation['_theta'])
-            _sin_p = np.sin(self._spherical_representation['_phi'])
-            _cos_p = np.cos(self._spherical_representation['_phi'])
-            v_r = _cos_t * _cos_p * self._cartesian_v_representation[:, 0] \
-                + _cos_t * _sin_p * self._cartesian_v_representation[:, 1] \
-                + _sin_t * self._cartesian_v_representation[:, 2]
-            v_t = _sin_t * _cos_p * self._cartesian_v_representation[:, 0] \
-                + _sin_t * _sin_p * self._cartesian_v_representation[:, 1] \
-                - _cos_t * self._cartesian_v_representation[:, 2]
-            v_p = -_sin_p * self._cartesian_v_representation[:, 0] \
-                + _cos_p * self._cartesian_v_representation[:, 1]
-            self._spherical_v_representation = dict(
+    @property
+    def spherical_velocities(self):
+        if self._spherical_coordinates is None:
+            self.spherical_coordinates
+        # existence of self.cartesian_coordinates guaranteed by
+        # initialisation of self.spherical_coordinates immediately above
+        if self._cartesian_velocities is None:
+            self.cartesian_velocities
+        if self._spherical_velocities is None:
+            _sin_t = np.sin(self.spherical_coordinates.theta)
+            _cos_t = np.cos(self.spherical_coordinates.theta)
+            _sin_p = np.sin(self.spherical_coordinates.phi)
+            _cos_p = np.cos(self.spherical_coordinates.phi)
+            v_r = _cos_t * _cos_p * self.cartesian_velocities.x \
+                + _cos_t * _sin_p * self.cartesian_velocities.y \
+                + _sin_t * self.cartesian_velocities.z
+            v_t = _sin_t * _cos_p * self.cartesian_velocities.x \
+                + _sin_t * _sin_p * self.cartesian_velocities.y \
+                - _cos_t * self.cartesian_velocities.z
+            v_p = -_sin_p * self.cartesian_velocities.x \
+                + _cos_p * self.cartesian_velocities.y
+            self._spherical_velocities = dict(
                 _v_r=v_r,
                 _v_t=v_t,
                 _v_p=v_p
             )
         return _CoordinateHelper(
-            self._spherical_v_representation,
+            self._spherical_velocities,
             dict(
-                v_r='_v_r',
-                v_lon='_v_p',
-                v_az='_v_p',
-                v_phi='_v_p',
-                v_lat='_v_t',
-                v_pol='_v_t',
-                v_theta='_v_t'
+                r='_v_r',
+                radius='_v_r',
+                lon='_v_p',
+                longitude='_v_p',
+                az='_v_p',
+                azimuth='_v_p',
+                phi='_v_p',
+                lat='_v_t',
+                latitude='_v_t',
+                pol='_v_t',
+                polar='_v_t',
+                theta='_v_t'
             )
         )
 
-    def _cylindrical_coordinates(self):
-        if self._cartesian_representation is None:
-            self._cartesian_coordinates()
-        if self._cylindrical_representation is None:
+    @property
+    def cylindrical_coordinates(self):
+        if self._cartesian_coordinates is None:
+            self.cartesian_coordinates
+        if self._cylindrical_coordinates is None:
             rho = np.sqrt(
                 np.sum(
-                    np.power(self._cartesian_representation[:, :2], 2),
+                    np.power(self.cartesian_coordinates.xyz[:, :2], 2),
                     axis=1
                 )
             )
-            if self._spherical_representation is not None:
-                phi = self._spherical_representation['_phi']
+            if self._spherical_coordinates is not None:
+                phi = self.spherical_coordinates.phi
             else:
                 phi = np.arctan2(
-                    self._cartesian_representation[:, 1],
-                    self._cartesian_representation[:, 0]
+                    self.cartesian_coordinates.y,
+                    self.cartesian_coordinates.x
                 )
                 phi = np.where(phi < 0, phi + 2 * np.pi, phi)
                 phi = cosmo_array(phi, units=u.rad)
-            z = self._cartesian_representation[:, 2]
-            self._cylindrical_representation = dict(
+            z = self.cartesian_coordinates.z
+            self._cylindrical_coordinates = dict(
                 _rho=rho,
                 _phi=phi,
                 _z=z
             )
         return _CoordinateHelper(
-            self._cylindrical_representation,
+            self._cylindrical_coordinates,
             dict(
                 R='_rho',
                 rho='_rho',
@@ -326,38 +333,42 @@ class _SWIFTParticleDatasetHelper(object):
             )
         )
 
-    def _cylindrical_velocities(self):
-        if self._cylindrical_representation is None:
-            self._cylindrical_coordinates()
-        # existence of self._cartesian_representation guaranteed by
-        # initialisation of self._cylindrical_representation immediately above
-        if self._cartesian_v_representation is None:
-            self._cartesian_velocities()
-        if self._cylindrical_v_representation is None:
-            _sin_p = np.sin(self._cylindrical_representation['_phi'])
-            _cos_p = np.cos(self._cylindrical_representation['_phi'])
-            v_rho = _cos_p * self._cartesian_v_representation[:, 0] \
-                + _sin_p * self._cartesian_v_representation[:, 1]
-            if self._spherical_v_representation is not None:
-                v_phi = self._spherical_v_representation['_v_p']
+    @property
+    def cylindrical_velocities(self):
+        if self._cylindrical_coordinates is None:
+            self.cylindrical_coordinates
+        # existence of self.cartesian_coordinates guaranteed by
+        # initialisation of self.cylindrical_coordinates immediately above
+        if self._cartesian_velocities is None:
+            self.cartesian_velocities
+        if self._cylindrical_velocities is None:
+            _sin_p = np.sin(self.cylindrical_coordinates.phi)
+            _cos_p = np.cos(self.cylindrical_coordinates.phi)
+            v_rho = _cos_p * self.cartesian_velocities.x \
+                + _sin_p * self.cartesian_velocities.y
+            if self._spherical_velocities is not None:
+                v_phi = self.spherical_velocities.phi
             else:
-                v_phi = -_sin_p * self._cartesian_v_representation[:, 0] \
-                    + _cos_p * self._cartesian_v_representation[:, 1]
-            v_z = self._cartesian_v_representation[:, 2]
-            self._cylindrical_v_representation = dict(
+                v_phi = -_sin_p * self.cartesian_velocities.x \
+                    + _cos_p * self.cartesian_velocities.y
+            v_z = self.cartesian_velocities.z
+            self._cylindrical_velocities = dict(
                 _v_rho=v_rho,
                 _v_phi=v_phi,
                 _v_z=v_z
             )
         return _CoordinateHelper(
-            self._cylindrical_v_representation,
+            self._cylindrical_velocities,
             dict(
-                v_R='_v_rho',
-                v_rho='_v_rho',
-                v_lon='_v_phi',
-                v_az='_v_phi',
-                v_phi='_v_phi',
-                v_z='_v_z'
+                R='_v_rho',
+                rho='_v_rho',
+                radius='_v_rho',
+                lon='_v_phi',
+                longitude='_v_phi',
+                az='_v_phi',
+                azimuth='_v_phi',
+                phi='_v_phi',
+                z='_v_z'
             )
         )
 
@@ -372,14 +383,19 @@ class SWIFTGalaxy(SWIFTDataset):
             translatable=('coordinates', ),
             boostable=('velocities', ),
             rotatable=('coordinates', 'velocities'),
-            id_particle_dataset_name='particle_ids'
+            id_particle_dataset_name='particle_ids',
+            coordinates_dataset_name='coordinates',
+            velocities_dataset_name='velocities'
     ):
         self.snapshot_filename = snapshot_filename
         self.halo_finder = halo_finder
         self.halo_finder._init_spatial_mask(self)
-        self.rotatable = rotatable
         self.translatable = translatable
         self.boostable = boostable
+        self.rotatable = rotatable
+        self.id_particle_dataset_name = id_particle_dataset_name
+        self.coordinates_dataset_name = coordinates_dataset_name
+        self.velocities_dataset_name = velocities_dataset_name
         self._transform_stack = list()
         super().__init__(
             snapshot_filename,
@@ -411,11 +427,11 @@ class SWIFTGalaxy(SWIFTDataset):
             for particle_name in self.metadata.present_particle_names:
                 particle_ids = getattr(
                     getattr(self, particle_name),
-                    '_{:s}'.format(id_particle_dataset_name)
+                    '_{:s}'.format(self.id_particle_dataset_name)
                 )
                 setattr(
                     super().__getattribute__(particle_name),  # bypass helper
-                    '_{:s}'.format(id_particle_dataset_name),
+                    '_{:s}'.format(self.id_particle_dataset_name),
                     particle_ids[
                         getattr(self.halo_finder._extra_mask, particle_name)
                     ]
@@ -518,16 +534,16 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def _append_to_transform_stack(self, transform):
         self._transform_stack.append(transform)
-        self._void_derived_representations()
+        self._void_derived_coordinates()
         return
 
-    def _void_derived_representations(self):
+    def _void_derived_coordinates(self):
         # Transforming implies conversion back to cartesian, it's therefore
-        # cheaper to just delete any non-cartesian representations when a
+        # cheaper to just delete any non-cartesian coordinates when a
         # transform occurs and lazily re-calculate them as needed.
         for particle_name in self.metadata.present_particle_names:
-            getattr(self, particle_name)._spherical_representation = None
-            getattr(self, particle_name)._cylindrical_representation = None
-            getattr(self, particle_name)._spherical_v_representation = None
-            getattr(self, particle_name)._cylindrical_v_representation = None
+            getattr(self, particle_name)._spherical_coordinates = None
+            getattr(self, particle_name)._cylindrical_coordinates = None
+            getattr(self, particle_name)._spherical_velocities = None
+            getattr(self, particle_name)._cylindrical_velocities = None
         return
