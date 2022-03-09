@@ -7,28 +7,27 @@ from swiftsimio.objects import cosmo_array
 
 
 def _apply_box_wrap(coords, boxsize):
+    retval = coords
     if boxsize is None:
-        return coords
+        return retval
     for axis in range(3):
-        too_high = coords[:, axis] > boxsize[axis] / 2.
+        too_high = retval[:, axis] > boxsize[axis] / 2.
         while too_high.any():
-            coords[too_high, axis] -= boxsize[axis]
-            too_high = coords[:, axis] > boxsize[axis] / 2.
-        too_low = coords[:, axis] <= -boxsize[axis] / 2.
+            retval[too_high, axis] -= boxsize[axis]
+            too_high = retval[:, axis] > boxsize[axis] / 2.
+        too_low = retval[:, axis] <= -boxsize[axis] / 2.
         while too_low.any():
-            coords[too_low, axis] += boxsize[axis]
-            too_low = coords[:, axis] <= -boxsize[axis] / 2.
-    return coords
+            retval[too_low, axis] += boxsize[axis]
+            too_low = retval[:, axis] <= -boxsize[axis] / 2.
+    return retval
 
 
 def _apply_translation(coords, offset):
-    coords += offset
-    return coords
+    return coords + offset
 
 
 def _apply_rotmat(coords, rotmat):
-    coords = coords.dot(rotmat)
-    return coords
+    return coords.dot(rotmat)
 
 
 def _apply_transform_stack(
