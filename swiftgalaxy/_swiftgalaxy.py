@@ -7,6 +7,8 @@ from swiftsimio.objects import cosmo_array
 
 
 def _apply_box_wrap(coords, boxsize):
+    if boxsize is None:
+        return coords
     for axis in range(3):
         too_high = coords[:, axis] > boxsize[axis] / 2.
         while too_high.any():
@@ -48,7 +50,7 @@ def _apply_transform_stack(
             # this is a position-like dataset, so wrap box,
             # either translation or rotation can in principle
             # require a wrap
-            # for a non-periodic box lbox=None should be passed
+            # for a non-periodic box boxsize=None should be passed
             data = _apply_box_wrap(data, boxsize)
     return data
 
@@ -491,8 +493,8 @@ class SWIFTGalaxy(SWIFTDataset):
         self.wrap_box()
         return
 
-    def translate(self, translation, velocity=False):
-        do_fields = self.boostable if velocity else self.translatable
+    def _translate(self, translation, boost=False):
+        do_fields = self.boostable if boost else self.translatable
         for particle_name in self.metadata.present_particle_names:
             dataset = getattr(self, particle_name)
             for field_name in do_fields:
@@ -505,15 +507,22 @@ class SWIFTGalaxy(SWIFTDataset):
                         field_data
                     )
         self._append_to_transform_stack(
-            ({True: 'B', False: 'T'}[velocity], translation)
+            ({True: 'B', False: 'T'}[boost], translation)
         )
-        if not velocity:
+        if not boost:
             self.wrap_box()
         return
 
-    def recentre(self, new_centre, velocity=False):
-        self.translate(-new_centre, velocity=velocity)
+    def boost(self, boost):
+        self._translate(boost, boost=True)
         return
+
+    def recentre(self, new_centre):
+        self._translate(-new_centre)
+        return
+
+    def recentre_velocity(self, new_centre):
+        self._translate(-new_centre, boost=True)
 
     def wrap_box(self):
         for particle_name in self.metadata.present_particle_names:
