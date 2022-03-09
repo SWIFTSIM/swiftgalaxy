@@ -1,5 +1,6 @@
 import numpy as np
 import unyt as u
+# remove dependence on astropy:
 from astropy.coordinates.matrix_utilities import rotation_matrix
 from swiftsimio import metadata as swiftsimio_metadata
 from swiftsimio.reader import SWIFTDataset
