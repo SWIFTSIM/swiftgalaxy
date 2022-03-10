@@ -25,26 +25,12 @@ SG = SWIFTGalaxy(
     Velociraptor(
         velociraptor_filebase,
         halo_index=target_halo_index,
-        extra_mask='bound_only',
+        extra_mask='bound_only'
     ),
-    auto_recentre=True
+    auto_recentre=False,
+    transforms_like_coordinates={'coordinates', 'element_mass_fractions.carbon'}
 )
 
-SGR = SWIFTGalaxy(
-    snapshot_filename,
-    Velociraptor(
-        velociraptor_filebase,
-        halo_index=target_halo_index,
-        extra_mask='bound_only',
-    ),
-    auto_recentre=True
-)
-
-rotmat = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
-
-SG.rotate(rotmat=rotmat)
-
-R = Rotation.from_matrix(rotmat)
-SGR.rotate(rotmat=R.as_matrix())
-
-assert (SG.gas.coordinates == SGR.gas.coordinates).all()
+SG.gas.element_mass_fractions.carbon
+SG.translate(np.array([1, 1, 1]) * u.Mpc)
+print(SG.gas.element_mass_fractions.carbon)

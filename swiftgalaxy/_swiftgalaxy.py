@@ -5,6 +5,31 @@ from swiftsimio.reader import SWIFTDataset
 from swiftsimio.objects import cosmo_array
 
 
+def _getattr_with_dots(obj, attr):
+    attrs = attr.split('.')
+    retval = obj.__dict__.get(attrs[0])
+    if retval is None:
+        return retval
+    for attr in attrs[1:]:
+        retval = getattr(retval, attr)
+        if retval is None:
+            return retval
+    return retval
+
+
+def _setattr_with_dots(obj, attr, value):
+    attrs = attr.split('.')
+    print(attrs)
+    if len(attrs) == 1:
+        setattr(obj, attr, value)
+    else:
+        target = getattr(obj, attrs[0])
+        for attr in attrs[1:-1]:
+            target = getattr(target, attr)
+        setattr(target, attrs[-1], value)
+    return
+
+
 def _apply_box_wrap(coords, boxsize):
     retval = coords
     if boxsize is None:
@@ -50,9 +75,50 @@ class _CoordinateHelper(object):
         return self._coordinates[self._masks[attr]]
 
     def __repr__(self):
-        return 'Available coordinates: {:s}.'.format(
-            ', '.join(self._masks.keys())
-        )
+        keys = ', '.join(self._masks.keys())
+        return f'Available coordinates: {keys}.'
+
+
+class _SWIFTNamedColumnDatasetHelper(object):
+
+    def __init__(
+            self,
+            named_column_dataset,
+            particle_dataset_helper
+    ):
+        self._named_column_dataset = named_column_dataset
+        self._particle_dataset_helper = particle_dataset_helper
+        return
+
+    def __getattribute__(self, attr):
+        named_column_dataset = \
+            object.__getattribute__(self, '_named_column_dataset')
+        particle_dataset_helper = \
+            object.__getattribute__(self, '_particle_dataset_helper')
+        if attr in named_column_dataset.named_columns:
+            # we're dealing with one of the named columns
+            if named_column_dataset.__dict__.get(f'_{attr}') is None:
+                # going to read from file: apply masks, transforms
+                data = getattr(named_column_dataset, attr)  # raw data loaded
+                data = np.array([data, data, data]).T * u.Mpc  # TESTING ONLY!!!!!!!!!!!!
+                data = particle_dataset_helper._apply_mask(
+                    data
+                )
+                data = particle_dataset_helper._apply_transforms(
+                    data,
+                    f'{named_column_dataset.name}.{attr}'
+                )
+                setattr(
+                    named_column_dataset,
+                    f'_{attr}',
+                    data
+                )
+        try:
+            # beware collisions with SWIFTParticleDataset namespace
+            return object.__getattribute__(self, attr)
+        except AttributeError:
+            # exposes everything else in __dict__
+            return getattr(named_column_dataset, attr)
 
 
 class _SWIFTParticleDatasetHelper(object):
@@ -79,37 +145,45 @@ class _SWIFTParticleDatasetHelper(object):
         metadata = object.__getattribute__(self, '_particle_dataset').metadata
         field_names = getattr(
             metadata,
-            '{:s}_properties'.format(particle_name)
+            f'{particle_name}_properties'
         ).field_names
-        swiftgalaxy = object.__getattribute__(self, '_swiftgalaxy')
         particle_dataset = object.__getattribute__(self, '_particle_dataset')
         if attr in field_names:
-            # we're dealing with a particle data table
-            # TODO: named columns
-            if particle_dataset.__dict__.get('_{:s}'.format(attr)) is None:
+            # we're dealing with a particle data table, or named_columns
+            if particle_dataset.__dict__.get(f'_{attr}') is None:
                 # going to read from file: apply masks, transforms
                 data = getattr(particle_dataset, attr)  # raw data loaded
-                data = object.__getattribute__(self, '_apply_mask')(data)
-                if attr in swiftgalaxy.transforms_like_coordinates:
-                    transform_units = swiftgalaxy.metadata.units.length
-                    transform = swiftgalaxy._coordinate_like_transform
-                elif attr in swiftgalaxy.transforms_like_velocities:
-                    transform_units = swiftgalaxy.metadata.units.length \
-                        / swiftgalaxy.metadata.units.time
-                    transform = swiftgalaxy._velocity_like_transform
-                else:
-                    transform = None
-                if transform is not None:
-                    data = _apply_4transform(data, transform, transform_units)
-                try:
-                    boxsize = metadata.boxsize
-                except AttributeError:
-                    boxsize = None
-                if attr in swiftgalaxy.transforms_like_coordinates:
-                    data = _apply_box_wrap(data, boxsize)
+
+                if hasattr(data, 'named_columns'):
+                    particle_nice_name = \
+                        swiftsimio_metadata.particle_types.particle_name_class[
+                            getattr(
+                                self.metadata,
+                                f'{particle_name}_properties'
+                            ).particle_type
+                        ]
+                    nice_name = f"{particle_nice_name}"\
+                        f"{data.field_path.split('/')[-1]}ColumnsHelper"
+                    TypeNamedColumnDatasetHelper = type(
+                        nice_name,
+                        (_SWIFTNamedColumnDatasetHelper, object),
+                        dict()
+                    )
+                    return TypeNamedColumnDatasetHelper(
+                        data,
+                        self
+                    )
+
+                data = object.__getattribute__(self, '_apply_mask')(
+                    data
+                )
+                data = object.__getattribute__(self, '_apply_transforms')(
+                    data,
+                    attr
+                )
                 setattr(
                     particle_dataset,
-                    '_{:s}'.format(attr),
+                    f'_{attr}',
                     data
                 )
             else:
@@ -130,7 +204,7 @@ class _SWIFTParticleDatasetHelper(object):
             return
         field_names = getattr(
             self._particle_dataset.metadata,
-            '{:s}_properties'.format(self._particle_dataset.particle_name)
+            f'{self._particle_dataset.particle_name}_properties'
         ).field_names
         if (attr in field_names) or \
            ((attr.startswith('_')) and (attr[1:] in field_names)):
@@ -151,6 +225,26 @@ class _SWIFTParticleDatasetHelper(object):
             )
             if mask is not None:
                 return data[mask]
+        return data
+
+    def _apply_transforms(self, data, dataset_name):
+        if dataset_name in self._swiftgalaxy.transforms_like_coordinates:
+            transform_units = self._swiftgalaxy.metadata.units.length
+            transform = self._swiftgalaxy._coordinate_like_transform
+        elif dataset_name in self._swiftgalaxy.transforms_like_velocities:
+            transform_units = self._swiftgalaxy.metadata.units.length \
+                / self._swiftgalaxy.metadata.units.time
+            transform = self._swiftgalaxy._velocity_like_transform
+        else:
+            transform = None
+        if transform is not None:
+            data = _apply_4transform(data, transform, transform_units)
+        try:
+            boxsize = self._particle_dataset.metadata.boxsize
+        except AttributeError:
+            boxsize = None
+        if dataset_name in self._swiftgalaxy.transforms_like_coordinates:
+            data = _apply_box_wrap(data, boxsize)
         return data
 
     @property
@@ -395,11 +489,11 @@ class SWIFTGalaxy(SWIFTDataset):
                 swiftsimio_metadata.particle_types.particle_name_class[
                     getattr(
                         self.metadata,
-                        '{:s}_properties'.format(particle_name)
+                        f'{particle_name}_properties'
                     ).particle_type
                 ]
             TypeDatasetHelper = type(
-                '{:s}DatasetHelper'.format(nice_name),
+                f'{nice_name}DatasetHelper',
                 (_SWIFTParticleDatasetHelper, object),
                 dict()
             )
@@ -414,11 +508,11 @@ class SWIFTGalaxy(SWIFTDataset):
             for particle_name in self.metadata.present_particle_names:
                 particle_ids = getattr(
                     getattr(self, particle_name),
-                    '_{:s}'.format(self.id_particle_dataset_name)
+                    f'_{self.id_particle_dataset_name}'
                 )
                 setattr(
                     super().__getattribute__(particle_name),  # bypass helper
-                    '_{:s}'.format(self.id_particle_dataset_name),
+                    f'_{self.id_particle_dataset_name}',
                     particle_ids[
                         getattr(self.halo_finder._extra_mask, particle_name)
                     ]
@@ -467,12 +561,12 @@ class SWIFTGalaxy(SWIFTDataset):
         for particle_name in self.metadata.present_particle_names:
             dataset = getattr(self, particle_name)
             for field_name in rotatable:
-                field_data = getattr(dataset, '_{:s}'.format(field_name))
+                field_data = _getattr_with_dots(dataset, f'_{field_name}')
                 if field_data is not None:
                     field_data = _apply_rotmat(field_data, rotation_matrix)
                     setattr(
                         dataset,
-                        '_{:s}'.format(field_name),
+                        f'_{field_name}',
                         field_data
                     )
         rotmat4 = np.eye(4)
@@ -488,13 +582,14 @@ class SWIFTGalaxy(SWIFTDataset):
         for particle_name in self.metadata.present_particle_names:
             dataset = getattr(self, particle_name)
             for field_name in translatable:
-                field_data = getattr(dataset, '_{:s}'.format(field_name))
+                field_data = _getattr_with_dots(dataset, f'_{field_name}')  # the underscore needs to be after the last dot!
                 if field_data is not None:
                     field_data = _apply_translation(field_data, translation)
-                    setattr(
+                    _setattr_with_dots(
                         dataset,
-                        '_{:s}'.format(field_name),
-                        field_data
+                        # f'_{field_name}',  # also needs to be after the last dot here! and in rotate, wrap_box!
+                        'element_mass_fractions._carbon',
+                        999  # field_data  # TESTING ONLY!!!!!!!!!!
                     )
         if boost:
             transform_units = self.metadata.units.length \
@@ -529,7 +624,7 @@ class SWIFTGalaxy(SWIFTDataset):
         for particle_name in self.metadata.present_particle_names:
             dataset = getattr(self, particle_name)
             for field_name in self.transforms_like_coordinates:
-                field_data = getattr(dataset, '_{:s}'.format(field_name))
+                field_data = _getattr_with_dots(dataset, f'_{field_name}')
                 if field_data is not None:
                     field_data = _apply_box_wrap(
                         field_data,
@@ -537,7 +632,7 @@ class SWIFTGalaxy(SWIFTDataset):
                     )
                     setattr(
                         dataset,
-                        '_{:s}'.format(field_name),
+                        f'_{field_name}',
                         field_data
                     )
         return
