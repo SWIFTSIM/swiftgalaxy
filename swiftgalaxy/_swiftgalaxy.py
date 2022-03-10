@@ -1,7 +1,5 @@
 import numpy as np
 import unyt as u
-# remove dependence on astropy:
-from astropy.coordinates.matrix_utilities import rotation_matrix
 from swiftsimio import metadata as swiftsimio_metadata
 from swiftsimio.reader import SWIFTDataset
 from swiftsimio.objects import cosmo_array
@@ -27,8 +25,8 @@ def _apply_translation(coords, offset):
     return coords + offset
 
 
-def _apply_rotmat(coords, rotmat):
-    return coords.dot(rotmat)
+def _apply_rotmat(coords, rotation_matrix):
+    return coords.dot(rotation_matrix)
 
 
 def _apply_4transform(coords, transform, transform_units):
@@ -459,12 +457,8 @@ class SWIFTGalaxy(SWIFTDataset):
             else:
                 return super().__getattribute__(attr)
 
-    def rotate(self, angle_axis=None, rotmat=None):
-        if (angle_axis is not None) and (rotmat is not None):
-            raise ValueError('Provide angle_axis or rotmat to rotate,'
-                             ' not both.')
-        if angle_axis is not None:
-            rotmat = rotation_matrix(*angle_axis)
+    def rotate(self, rotation):
+        rotation_matrix = rotation.as_matrix()
         rotatable = (
             self.transforms_like_coordinates
             | self.transforms_like_velocities
@@ -474,14 +468,14 @@ class SWIFTGalaxy(SWIFTDataset):
             for field_name in rotatable:
                 field_data = getattr(dataset, '_{:s}'.format(field_name))
                 if field_data is not None:
-                    field_data = _apply_rotmat(field_data, rotmat)
+                    field_data = _apply_rotmat(field_data, rotation_matrix)
                     setattr(
                         dataset,
                         '_{:s}'.format(field_name),
                         field_data
                     )
         rotmat4 = np.eye(4)
-        rotmat4[:3, :3] = rotmat
+        rotmat4[:3, :3] = rotation_matrix
         self._append_to_coordinate_like_transform(rotmat4)
         self._append_to_velocity_like_transform(rotmat4)
         self.wrap_box()

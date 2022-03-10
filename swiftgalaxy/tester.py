@@ -4,6 +4,7 @@ from os import path
 from _swiftgalaxy import SWIFTGalaxy
 from _halo_finders import Velociraptor
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 snapnum = 23
 if 'cosma' in socket.gethostname():
@@ -29,7 +30,7 @@ SG = SWIFTGalaxy(
     auto_recentre=True
 )
 
-SG2 = SWIFTGalaxy(
+SGR = SWIFTGalaxy(
     snapshot_filename,
     Velociraptor(
         velociraptor_filebase,
@@ -39,19 +40,11 @@ SG2 = SWIFTGalaxy(
     auto_recentre=True
 )
 
-rotmat = np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
-trans = np.array([0.1, 0, 0]) * u.Mpc
-boost = np.array([100, 0, 0]) * u.km / u.s  # transform4 matrices are not unit-aware enough!
-# store an assumed unit based on metadata and assert that data units match?
-SG2.gas.coordinates
-print(SG2.gas.velocities[0].to(u.km / u.s))
-SG.translate(trans)
-SG.boost(boost)
-# SG.rotate(rotmat=rotmat)
-SG2.translate(trans)
-SG2.boost(boost)
-# SG2.rotate(rotmat=rotmat)
-print(SG.gas.velocities[0].to(u.km / u.s))
-print(SG2.gas.velocities[0].to(u.km / u.s))
-assert np.isclose(SG.gas.coordinates.to_value(u.Mpc), SG2.gas.coordinates.to_value(u.Mpc)).all()
-assert np.isclose(SG.gas.velocities.to_value(u.km / u.s), SG2.gas.velocities.to_value(u.km / u.s)).all()
+rotmat = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
+
+SG.rotate(rotmat=rotmat)
+
+R = Rotation.from_matrix(rotmat)
+SGR.rotate(rotmat=R.as_matrix())
+
+assert (SG.gas.coordinates == SGR.gas.coordinates).all()
