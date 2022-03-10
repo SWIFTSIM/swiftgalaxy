@@ -133,7 +133,7 @@ class _SWIFTParticleDatasetHelper(object):
             '{:s}_properties'.format(self._particle_dataset.particle_name)
         ).field_names
         if (attr in field_names) or \
-           ((attr[0] == '_') and (attr[1:] in field_names)):
+           ((attr.startswith('_')) and (attr[1:] in field_names)):
             setattr(
                 self._particle_dataset,
                 attr,
@@ -458,6 +458,7 @@ class SWIFTGalaxy(SWIFTDataset):
                 return super().__getattribute__(attr)
 
     def rotate(self, rotation):
+        # expect a scipy.spatial.transform.Rotation
         rotation_matrix = rotation.as_matrix()
         rotatable = (
             self.transforms_like_coordinates
