@@ -31,12 +31,14 @@ def _apply_rotmat(coords, rotmat):
     return coords.dot(rotmat)
 
 
-def _apply_4transform(coords, transform):
-    coords4 = u.array.uhstack((
-        coords,
-        np.ones(coords.shape[0])[:, np.newaxis] * coords.units
-    ))
-    return coords4.dot(transform)[:, :3]
+def _apply_4transform(coords, transform, transform_units):
+    # A 4x4 transformation matrix has mixed units, so need to
+    # assume a consistent unit for all transformations and
+    # work with raw arrays.
+    return np.hstack((
+        coords.to_value(transform_units),
+        np.ones(coords.shape[0])[:, np.newaxis]
+    )).dot(transform)[:, :3] * transform_units
 
 
 class _CoordinateHelper(object):
@@ -91,13 +93,16 @@ class _SWIFTParticleDatasetHelper(object):
                 data = getattr(particle_dataset, attr)  # raw data loaded
                 data = object.__getattribute__(self, '_apply_mask')(data)
                 if attr in swiftgalaxy.transforms_like_coordinates:
+                    transform_units = swiftgalaxy.metadata.units.length
                     transform = swiftgalaxy._coordinate_like_transform
                 elif attr in swiftgalaxy.transforms_like_velocities:
+                    transform_units = swiftgalaxy.metadata.units.length \
+                        / swiftgalaxy.metadata.units.time
                     transform = swiftgalaxy._velocity_like_transform
                 else:
                     transform = None
                 if transform is not None:
-                    data = _apply_4transform(data, transform)
+                    data = _apply_4transform(data, transform, transform_units)
                 try:
                     boxsize = metadata.boxsize
                 except AttributeError:
@@ -496,8 +501,13 @@ class SWIFTGalaxy(SWIFTDataset):
                         '_{:s}'.format(field_name),
                         field_data
                     )
+        if boost:
+            transform_units = self.metadata.units.length \
+                / self.metadata.units.time
+        else:
+            transform_units = self.metadata.units.length
         translation4 = np.eye(4)
-        translation4[3, :3] = translation
+        translation4[3, :3] = translation.to_value(transform_units)
         if boost:
             self._append_to_velocity_like_transform(translation4)
         else:

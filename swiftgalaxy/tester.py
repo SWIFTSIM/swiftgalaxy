@@ -41,7 +41,7 @@ SG2 = SWIFTGalaxy(
 
 rotmat = np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
 trans = np.array([0.1, 0, 0]) * u.Mpc
-boost = np.array([100 * 1000, 0, 0]) * u.m / u.s  # transform4 matrices are not unit-aware enough!
+boost = np.array([100, 0, 0]) * u.km / u.s  # transform4 matrices are not unit-aware enough!
 # store an assumed unit based on metadata and assert that data units match?
 SG2.gas.coordinates
 print(SG2.gas.velocities[0].to(u.km / u.s))
