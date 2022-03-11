@@ -31,6 +31,4 @@ SG = SWIFTGalaxy(
     transforms_like_coordinates={'coordinates', 'element_mass_fractions.carbon'}
 )
 
-SG.gas.element_mass_fractions.carbon
-SG.translate(np.array([1, 1, 1]) * u.Mpc)
 print(SG.gas.element_mass_fractions.carbon)

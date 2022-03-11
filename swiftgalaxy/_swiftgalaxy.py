@@ -7,19 +7,14 @@ from swiftsimio.objects import cosmo_array
 
 def _getattr_with_dots(obj, attr):
     attrs = attr.split('.')
-    retval = obj.__dict__.get(attrs[0])
-    if retval is None:
-        return retval
+    retval = getattr(obj, attrs[0], None)
     for attr in attrs[1:]:
-        retval = getattr(retval, attr)
-        if retval is None:
-            return retval
+        retval = getattr(retval, attr, None)
     return retval
 
 
 def _setattr_with_dots(obj, attr, value):
     attrs = attr.split('.')
-    print(attrs)
     if len(attrs) == 1:
         setattr(obj, attr, value)
     else:
@@ -88,6 +83,7 @@ class _SWIFTNamedColumnDatasetHelper(object):
     ):
         self._named_column_dataset = named_column_dataset
         self._particle_dataset_helper = particle_dataset_helper
+        self._initialised = True
         return
 
     def __getattribute__(self, attr):
@@ -97,10 +93,9 @@ class _SWIFTNamedColumnDatasetHelper(object):
             object.__getattribute__(self, '_particle_dataset_helper')
         if attr in named_column_dataset.named_columns:
             # we're dealing with one of the named columns
-            if named_column_dataset.__dict__.get(f'_{attr}') is None:
+            if getattr(named_column_dataset, f'_{attr}') is None:
                 # going to read from file: apply masks, transforms
                 data = getattr(named_column_dataset, attr)  # raw data loaded
-                data = np.array([data, data, data]).T * u.Mpc  # TESTING ONLY!!!!!!!!!!!!
                 data = particle_dataset_helper._apply_mask(
                     data
                 )
@@ -119,6 +114,28 @@ class _SWIFTNamedColumnDatasetHelper(object):
         except AttributeError:
             # exposes everything else in __dict__
             return getattr(named_column_dataset, attr)
+
+    def __setattr__(self, attr, value):
+        # pass particle data through to actual SWIFTNamedColumnDataset
+        if not hasattr(self, '_initialised'):
+            # guard during initialisation
+            object.__setattr__(self, attr, value)
+            return
+        field_names = getattr(
+            self._particle_dataset.metadata,
+            f'{self._particle_dataset.particle_name}_properties'
+        ).field_names
+        if (attr in field_names) or \
+           ((attr.startswith('_')) and (attr[1:] in field_names)):
+            setattr(
+                self._particle_dataset,
+                attr,
+                value
+            )
+            return
+        else:
+            object.__setattr__(self, attr, value)
+            return
 
 
 class _SWIFTParticleDatasetHelper(object):
@@ -143,37 +160,38 @@ class _SWIFTParticleDatasetHelper(object):
         particle_name = \
             object.__getattribute__(self, '_particle_dataset').particle_name
         metadata = object.__getattribute__(self, '_particle_dataset').metadata
-        field_names = getattr(
-            metadata,
-            f'{particle_name}_properties'
-        ).field_names
+        particle_metadata = getattr(metadata, f'{particle_name}_properties')
         particle_dataset = object.__getattribute__(self, '_particle_dataset')
-        if attr in field_names:
-            # we're dealing with a particle data table, or named_columns
-            if particle_dataset.__dict__.get(f'_{attr}') is None:
+        if attr in particle_metadata.field_names:
+            # check if we're dealing with a named columns field
+            field_path = dict(zip(
+                particle_metadata.field_names,
+                particle_metadata.field_paths
+            ))[attr]
+            if particle_metadata.named_columns[field_path] is not None:
+                named_columns = getattr(particle_dataset, attr)  # to wrap
+                particle_nice_name = \
+                    swiftsimio_metadata.particle_types.particle_name_class[
+                        getattr(
+                            self.metadata,
+                            f'{particle_name}_properties'
+                        ).particle_type
+                    ]
+                nice_name = f"{particle_nice_name}"\
+                    f"{named_columns.field_path.split('/')[-1]}ColumnsHelper"
+                TypeNamedColumnDatasetHelper = type(
+                    nice_name,
+                    (_SWIFTNamedColumnDatasetHelper, object),
+                    dict()
+                )
+                return TypeNamedColumnDatasetHelper(
+                    named_columns,
+                    self
+                )
+            # otherwise we're dealing with a particle data table
+            if getattr(particle_dataset, f'_{attr}') is None:
                 # going to read from file: apply masks, transforms
                 data = getattr(particle_dataset, attr)  # raw data loaded
-
-                if hasattr(data, 'named_columns'):
-                    particle_nice_name = \
-                        swiftsimio_metadata.particle_types.particle_name_class[
-                            getattr(
-                                self.metadata,
-                                f'{particle_name}_properties'
-                            ).particle_type
-                        ]
-                    nice_name = f"{particle_nice_name}"\
-                        f"{data.field_path.split('/')[-1]}ColumnsHelper"
-                    TypeNamedColumnDatasetHelper = type(
-                        nice_name,
-                        (_SWIFTNamedColumnDatasetHelper, object),
-                        dict()
-                    )
-                    return TypeNamedColumnDatasetHelper(
-                        data,
-                        self
-                    )
-
                 data = object.__getattribute__(self, '_apply_mask')(
                     data
                 )
@@ -559,14 +577,19 @@ class SWIFTGalaxy(SWIFTDataset):
             | self.transforms_like_velocities
         )
         for particle_name in self.metadata.present_particle_names:
-            dataset = getattr(self, particle_name)
+            dataset = getattr(self, particle_name)._particle_dataset
             for field_name in rotatable:
-                field_data = _getattr_with_dots(dataset, f'_{field_name}')
+                field_location = f"{'._'.join(field_name.rsplit('.', 1))}" \
+                    if '.' in field_name else f'_{field_name}'
+                field_data = _getattr_with_dots(
+                    dataset,
+                    field_location
+                )
                 if field_data is not None:
                     field_data = _apply_rotmat(field_data, rotation_matrix)
                     setattr(
                         dataset,
-                        f'_{field_name}',
+                        field_location,
                         field_data
                     )
         rotmat4 = np.eye(4)
@@ -580,16 +603,20 @@ class SWIFTGalaxy(SWIFTDataset):
         translatable = self.transforms_like_velocities if boost \
             else self.transforms_like_coordinates
         for particle_name in self.metadata.present_particle_names:
-            dataset = getattr(self, particle_name)
+            dataset = getattr(self, particle_name)._particle_dataset
             for field_name in translatable:
-                field_data = _getattr_with_dots(dataset, f'_{field_name}')  # the underscore needs to be after the last dot!
+                field_location = f"{'._'.join(field_name.rsplit('.', 1))}" \
+                    if '.' in field_name else f'_{field_name}'
+                field_data = _getattr_with_dots(
+                    dataset,
+                    field_location
+                )
                 if field_data is not None:
                     field_data = _apply_translation(field_data, translation)
                     _setattr_with_dots(
                         dataset,
-                        # f'_{field_name}',  # also needs to be after the last dot here! and in rotate, wrap_box!
-                        'element_mass_fractions._carbon',
-                        999  # field_data  # TESTING ONLY!!!!!!!!!!
+                        field_location,
+                        field_data
                     )
         if boost:
             transform_units = self.metadata.units.length \
@@ -622,9 +649,14 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def wrap_box(self):
         for particle_name in self.metadata.present_particle_names:
-            dataset = getattr(self, particle_name)
+            dataset = getattr(self, particle_name)._particle_dataset
             for field_name in self.transforms_like_coordinates:
-                field_data = _getattr_with_dots(dataset, f'_{field_name}')
+                field_location = f"{'._'.join(field_name.rsplit('.', 1))}" \
+                    if '.' in field_name else f'_{field_name}'
+                field_data = _getattr_with_dots(
+                    dataset,
+                    field_location
+                )
                 if field_data is not None:
                     field_data = _apply_box_wrap(
                         field_data,
@@ -632,7 +664,7 @@ class SWIFTGalaxy(SWIFTDataset):
                     )
                     setattr(
                         dataset,
-                        f'_{field_name}',
+                        field_location,
                         field_data
                     )
         return
