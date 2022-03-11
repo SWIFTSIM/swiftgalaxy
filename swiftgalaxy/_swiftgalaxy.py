@@ -108,6 +108,9 @@ class _SWIFTNamedColumnDatasetHelper(object):
                     f'_{attr}',
                     data
                 )
+            else:
+                # just return the data
+                pass
         try:
             # beware collisions with SWIFTParticleDataset namespace
             return object.__getattribute__(self, attr)
@@ -121,14 +124,11 @@ class _SWIFTNamedColumnDatasetHelper(object):
             # guard during initialisation
             object.__setattr__(self, attr, value)
             return
-        field_names = getattr(
-            self._particle_dataset.metadata,
-            f'{self._particle_dataset.particle_name}_properties'
-        ).field_names
-        if (attr in field_names) or \
-           ((attr.startswith('_')) and (attr[1:] in field_names)):
+        column_names = self._named_column_dataset.named_columns
+        if (attr in column_names) or \
+           ((attr.startswith('_')) and (attr[1:] in column_names)):
             setattr(
-                self._particle_dataset,
+                self._named_column_dataset,
                 attr,
                 value
             )
@@ -147,6 +147,43 @@ class _SWIFTParticleDatasetHelper(object):
     ):
         self._particle_dataset = particle_dataset
         self._swiftgalaxy = swiftgalaxy
+        self._named_column_dataset_helpers = dict()
+        particle_metadata = getattr(
+            self.metadata,
+            f'{self.particle_name}_properties'
+        )
+        named_columns_names = [
+            fn
+            for (fn, fp)
+            in zip(
+                particle_metadata.field_names,
+                particle_metadata.field_paths
+            )
+            if particle_metadata.named_columns[fp] is not None
+        ]
+        for named_columns_name in named_columns_names:
+            # This is the named_columns instance to wrap:
+            named_columns = getattr(self._particle_dataset, named_columns_name)
+            # We'll make a custom type to present a nice name to the user.
+            particle_nice_name = \
+                swiftsimio_metadata.particle_types.particle_name_class[
+                    getattr(
+                        self.metadata,
+                        f'{self.particle_name}_properties'
+                    ).particle_type
+                ]
+            nice_name = f"{particle_nice_name}"\
+                f"{named_columns.field_path.split('/')[-1]}ColumnsHelper"
+            TypeNamedColumnDatasetHelper = type(
+                nice_name,
+                (_SWIFTNamedColumnDatasetHelper, object),
+                dict()
+            )
+            self._named_column_dataset_helpers[named_columns_name] = \
+                TypeNamedColumnDatasetHelper(
+                    named_columns,
+                    self
+                )
         self._cartesian_coordinates = None
         self._spherical_coordinates = None
         self._cylindrical_coordinates = None
@@ -169,25 +206,7 @@ class _SWIFTParticleDatasetHelper(object):
                 particle_metadata.field_paths
             ))[attr]
             if particle_metadata.named_columns[field_path] is not None:
-                named_columns = getattr(particle_dataset, attr)  # to wrap
-                particle_nice_name = \
-                    swiftsimio_metadata.particle_types.particle_name_class[
-                        getattr(
-                            self.metadata,
-                            f'{particle_name}_properties'
-                        ).particle_type
-                    ]
-                nice_name = f"{particle_nice_name}"\
-                    f"{named_columns.field_path.split('/')[-1]}ColumnsHelper"
-                TypeNamedColumnDatasetHelper = type(
-                    nice_name,
-                    (_SWIFTNamedColumnDatasetHelper, object),
-                    dict()
-                )
-                return TypeNamedColumnDatasetHelper(
-                    named_columns,
-                    self
-                )
+                return self._named_column_dataset_helpers[attr]
             # otherwise we're dealing with a particle data table
             if getattr(particle_dataset, f'_{attr}') is None:
                 # going to read from file: apply masks, transforms
@@ -257,10 +276,7 @@ class _SWIFTParticleDatasetHelper(object):
             transform = None
         if transform is not None:
             data = _apply_4transform(data, transform, transform_units)
-        try:
-            boxsize = self._particle_dataset.metadata.boxsize
-        except AttributeError:
-            boxsize = None
+        boxsize = getattr(self._particle_dataset.metadata, 'boxsize', None)
         if dataset_name in self._swiftgalaxy.transforms_like_coordinates:
             data = _apply_box_wrap(data, boxsize)
         return data
@@ -559,9 +575,7 @@ class SWIFTGalaxy(SWIFTDataset):
             return super().__getattribute__(attr)
         else:
             if attr in metadata.present_particle_names:
-                # We are entering a <ParticleType>Dataset:
-                # intercept this and wrap it in a class that we
-                # can use to manipulate it.
+                # We are entering a <ParticleType>Dataset, return helper.
                 return object.__getattribute__(
                     self,
                     '_particle_dataset_helpers'

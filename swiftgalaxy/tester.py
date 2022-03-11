@@ -28,7 +28,9 @@ SG = SWIFTGalaxy(
         extra_mask='bound_only'
     ),
     auto_recentre=False,
-    transforms_like_coordinates={'coordinates', 'element_mass_fractions.carbon'}
+    transforms_like_coordinates={'coordinates'}
 )
 
-print(SG.gas.element_mass_fractions.carbon)
+print(SG.gas.coordinates)
+del SG.gas.coordinates
+print(SG.gas._particle_dataset._coordinates)
