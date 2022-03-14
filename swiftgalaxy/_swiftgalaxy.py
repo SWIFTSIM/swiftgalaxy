@@ -1,4 +1,3 @@
-from _halo_finders import MaskCollection
 import numpy as np
 import unyt as u
 from swiftsimio import metadata as swiftsimio_metadata
@@ -58,6 +57,16 @@ def _apply_4transform(coords, transform, transform_units):
         coords.to_value(transform_units),
         np.ones(coords.shape[0])[:, np.newaxis]
     )).dot(transform)[:, :3] * transform_units
+
+
+class MaskCollection(object):
+
+    # Could use dataclasses module, but requires python 3.7+
+
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+        return
 
 
 class _CoordinateHelper(object):
@@ -137,6 +146,21 @@ class _SWIFTNamedColumnDatasetHelper(object):
         else:
             object.__setattr__(self, attr, value)
             return
+
+    def __getitem__(self, mask):
+        return self._data_copy(mask=mask)
+
+    def _empty_copy(self):
+        return getattr(
+            self._particle_dataset_helper._empty_copy(),
+            self.name
+        )
+
+    def _data_copy(self, mask=None):
+        return getattr(
+            self._particle_dataset_helper._data_copy(mask=mask),
+            self.name
+        )
 
 
 class _SWIFTParticleDatasetHelper(object):
@@ -255,6 +279,27 @@ class _SWIFTParticleDatasetHelper(object):
             object.__setattr__(self, attr, value)
             return
 
+    def __getitem__(self, mask):
+        return self._data_copy(mask=mask)
+
+    def _empty_copy(self):
+        return getattr(
+            self._swiftgalaxy._empty_copy(),
+            self.particle_name
+        )
+
+    def _data_copy(self, mask=None):
+        mask_collection = MaskCollection(
+            **{
+                k: None if k != self.particle_name else mask
+                for k in self.metadata.present_particle_names
+            }
+        )
+        return getattr(
+            self._swiftgalaxy._data_copy(mask_collection=mask_collection),
+            self.particle_name
+        )
+
     def _is_namedcolumns(self, field_name):
         particle_name = self._particle_dataset.particle_name
         particle_metadata = getattr(
@@ -268,8 +313,8 @@ class _SWIFTParticleDatasetHelper(object):
         return particle_metadata.named_columns[field_path] is not None
 
     def _apply_data_mask(self, data):
-        if self._swiftgalaxy.halo_finder._extra_mask is not None:
-            mask = self._swiftgalaxy.halo_finder._extra_mask.__getattribute__(
+        if self._swiftgalaxy._extra_mask is not None:
+            mask = self._swiftgalaxy._extra_mask.__getattribute__(
                 self._particle_dataset.particle_name
             )
             if mask is not None:
@@ -304,29 +349,29 @@ class _SWIFTParticleDatasetHelper(object):
                     getattr(self, f'_{field_name}')[mask]
                 )
         if getattr(
-            self._swiftgalaxy.halo_finder._extra_mask,
+            self._swiftgalaxy._extra_mask,
             particle_name
         ) is None:
             setattr(
-                self._swiftgalaxy.halo_finder._extra_mask,
+                self._swiftgalaxy._extra_mask,
                 particle_name,
                 mask
             )
         else:
             realised_mask = np.zeros(
                 getattr(
-                    self._swiftgalaxy.halo_finder._extra_mask,
+                    self._swiftgalaxy._extra_mask,
                     particle_name
                 ).sum(),
                 dtype=bool
             )
             realised_mask[mask] = True
             getattr(
-                self._swiftgalaxy.halo_finder._extra_mask,
+                self._swiftgalaxy._extra_mask,
                 particle_name
             )[
                 getattr(
-                    self._swiftgalaxy.halo_finder._extra_mask,
+                    self._swiftgalaxy._extra_mask,
                     particle_name
                 )
             ] = realised_mask
@@ -568,21 +613,35 @@ class SWIFTGalaxy(SWIFTDataset):
             transforms_like_velocities={'velocities', },
             id_particle_dataset_name='particle_ids',
             coordinates_dataset_name='coordinates',
-            velocities_dataset_name='velocities'
+            velocities_dataset_name='velocities',
+            _spatial_mask=None,
+            _extra_mask=None,
+            _coordinate_like_transform=None,
+            _velocity_like_transform=None
     ):
         self.snapshot_filename = snapshot_filename
         self.halo_finder = halo_finder
-        self.halo_finder._init_spatial_mask(self)
+        self.auto_recentre = auto_recentre
+        if _spatial_mask is not None:
+            self._spatial_mask = _spatial_mask
+        else:
+            self.halo_finder._init_spatial_mask(self)
         self.transforms_like_coordinates = transforms_like_coordinates
         self.transforms_like_velocities = transforms_like_velocities
         self.id_particle_dataset_name = id_particle_dataset_name
         self.coordinates_dataset_name = coordinates_dataset_name
         self.velocities_dataset_name = velocities_dataset_name
-        self._coordinate_like_transform = np.eye(4)
-        self._velocity_like_transform = np.eye(4)
+        if _coordinate_like_transform is not None:
+            self._coordinate_like_transform = _coordinate_like_transform
+        else:
+            self._coordinate_like_transform = np.eye(4)
+        if _velocity_like_transform is not None:
+            self._velocity_like_transform = _velocity_like_transform
+        else:
+            self._velocity_like_transform = np.eye(4)
         super().__init__(
             snapshot_filename,
-            mask=self.halo_finder._spatial_mask
+            mask=self._spatial_mask
         )
         self._particle_dataset_helpers = dict()
         for particle_name in self.metadata.present_particle_names:
@@ -604,41 +663,107 @@ class SWIFTGalaxy(SWIFTDataset):
                 self
             )
 
-        self.halo_finder._init_extra_mask(self)
-        if self.halo_finder._extra_mask is not None:
-            # only particle ids should be loaded so far, need to mask these
-            for particle_name in self.metadata.present_particle_names:
-                particle_ids = getattr(
-                    getattr(self, particle_name),
-                    f'_{self.id_particle_dataset_name}'
-                )
-                setattr(
-                    super().__getattribute__(particle_name),  # bypass helper
-                    f'_{self.id_particle_dataset_name}',
-                    particle_ids[
-                        getattr(self.halo_finder._extra_mask, particle_name)
-                    ]
-                )
+        if _extra_mask is not None:
+            self._extra_mask = _extra_mask
         else:
-            self.halo_finder._extra_mask = MaskCollection(
-                **{k: None for k in self.metadata.present_particle_names}
-            )
+            self._extra_mask = None
+            self.halo_finder._init_extra_mask(self)
+            if self._extra_mask is not None:
+                # only particle ids should be loaded so far, need to mask these
+                for particle_name in self.metadata.present_particle_names:
+                    particle_ids = getattr(
+                        getattr(self, particle_name),
+                        f'_{self.id_particle_dataset_name}'
+                    )
+                    if getattr(self._extra_mask, particle_name) is not None:
+                        setattr(
+                            # bypass helper:
+                            super().__getattribute__(particle_name),
+                            f'_{self.id_particle_dataset_name}',
+                            particle_ids[
+                                getattr(self._extra_mask, particle_name)
+                            ]
+                        )
+            else:
+                self._extra_mask = MaskCollection(
+                    **{k: None for k in self.metadata.present_particle_names}
+                )
+
         if auto_recentre:
             self.recentre(self.halo_finder._centre())
             self.recentre_velocity(self.halo_finder._vcentre())
+
         return
 
-    # # Could implement:
-    # def __getitem__(self, mask):
-    #     # If mask is a MaskCollection, could return a copy suitably masked.
-    #     # Would need to be careful to preserve loaded data, rotations, etc.
-    #     # Should update the extra_masks so that more data can be loaded
-    #     # with matching output. Should also implement __getitem__ for
-    #     # the particle dataset helper (use here to re-mask), to also
-    #     # enable remasking a single particle type. The new mask needs
-    #     # to propagate up to the swiftgalaxy which will give it to the
-    #     # halo_finder instance to store for future use.
-    #     return SWIFTGalaxy(...)
+    def __getitem__(self, mask_collection):
+        return self._data_copy(mask_collection=mask_collection)
+
+    def _empty_copy(self):
+        SG = SWIFTGalaxy(
+            self.snapshot_filename,
+            self.halo_finder,
+            auto_recentre=False,  # transforms overwritten below
+            transforms_like_coordinates=self.transforms_like_coordinates,
+            transforms_like_velocities=self.transforms_like_velocities,
+            id_particle_dataset_name=self.id_particle_dataset_name,
+            coordinates_dataset_name=self.coordinates_dataset_name,
+            velocities_dataset_name=self.velocities_dataset_name,
+            _spatial_mask=self._spatial_mask,
+            _extra_mask=self._extra_mask,
+            _coordinate_like_transform=self._coordinate_like_transform,
+            _velocity_like_transform=self._velocity_like_transform
+        )
+        return SG
+
+    def _data_copy(self, mask_collection=None):
+        SG = self._empty_copy()
+        for particle_name in SG.metadata.present_particle_names:
+            particle_metadata = getattr(
+                SG.metadata,
+                f'{particle_name}_properties'
+            )
+            particle_dataset_helper = getattr(self, particle_name)
+            new_particle_dataset_helper = getattr(SG, particle_name)
+            if mask_collection is not None:
+                mask = getattr(mask_collection, particle_name)
+                if mask is None:
+                    mask = Ellipsis
+            else:
+                mask = Ellipsis
+            getattr(SG, particle_name)._mask_dataset(mask)
+            for field_name in particle_metadata.field_names:
+                if particle_dataset_helper._is_namedcolumns(field_name):
+                    named_columns_helper = getattr(
+                        particle_dataset_helper,
+                        field_name
+                    )
+                    new_named_columns_helper = getattr(
+                        new_particle_dataset_helper,
+                        field_name
+                    )
+                    for named_column in named_columns_helper.named_columns:
+                        data = getattr(
+                            named_columns_helper,
+                            f'_{named_column}'
+                        )
+                        if data is not None:
+                            setattr(
+                                new_named_columns_helper,
+                                f'_{named_column}',
+                                data[mask]
+                            )
+                else:
+                    data = getattr(
+                        particle_dataset_helper,
+                        f'_{field_name}'
+                    )
+                    if data is not None:
+                        setattr(
+                            new_particle_dataset_helper,
+                            f'_{field_name}',
+                            data[mask]
+                        )
+        return SG
 
     def __getattribute__(self, attr):
         # __getattr__ is only checked if the attribute is not found

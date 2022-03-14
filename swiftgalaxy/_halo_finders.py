@@ -1,21 +1,11 @@
 from abc import ABC, abstractmethod
 import unyt as u
-
-
-class MaskCollection(object):
-
-    # Could use dataclasses module, but requires python 3.7+
-
-    def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-        return
+from _swiftgalaxy import MaskCollection
 
 
 class _HaloFinder(ABC):
 
     def __init__(self, extra_mask='bound_only'):
-        self._extra_mask = None
         self.extra_mask = extra_mask
         self._load()
         return
@@ -26,12 +16,12 @@ class _HaloFinder(ABC):
 
     @abstractmethod
     def _init_spatial_mask(self, SG):
-        # define self._spatial_mask
+        # define SG._spatial_mask
         pass
 
     @abstractmethod
     def _init_extra_mask(self, SG):
-        # define self._extra_mask
+        # define SG._extra_mask
         pass
 
     @abstractmethod
@@ -90,7 +80,7 @@ class Velociraptor(_HaloFinder):
         # extract_halo requests a "halo_id", but actually wants an index!
         self._particles, unbound_particles = \
             groups.extract_halo(halo_id=self.halo_index)
-        self._spatial_mask = generate_spatial_mask(
+        SG._spatial_mask = generate_spatial_mask(
             self._particles,
             SG.snapshot_filename
         )
@@ -99,11 +89,11 @@ class Velociraptor(_HaloFinder):
     def _init_extra_mask(self, SG):
         from velociraptor.swift.swift import generate_bound_mask
         if self.extra_mask == 'bound_only':
-            self._extra_mask = MaskCollection(
+            SG._extra_mask = MaskCollection(
                 **generate_bound_mask(SG, self._particles)._asdict()
             )
         elif self.extra_mask is None:
-            self._extra_mask = MaskCollection(
+            SG._extra_mask = MaskCollection(
                 **{k: None for k in SG.metadata.present_particle_names}
             )
         else:
@@ -112,7 +102,7 @@ class Velociraptor(_HaloFinder):
                 hasattr(self.extra_mask, name)
                 for name in SG.metadata.present_particle_names
             ])
-            self._extra_mask = MaskCollection(
+            SG._extra_mask = MaskCollection(
                 **{name: getattr(self.extra_mask, name)
                    for name in SG.metadata.present_particle_names}
             )
