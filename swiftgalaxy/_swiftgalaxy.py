@@ -327,7 +327,7 @@ class _SWIFTParticleDatasetHelper(object):
                 return data[mask]
         return data
 
-    def _mask_dataset(self, mask):
+    def _mask_dataset(self, mask):  # SHOULD EXPOSE TO USERS FROM SWIFTGALAXY LEVEL?
         particle_name = self._particle_dataset.particle_name
         particle_metadata = getattr(
             self._particle_dataset.metadata,
@@ -354,6 +354,7 @@ class _SWIFTParticleDatasetHelper(object):
                     f'_{field_name}',
                     getattr(self, f'_{field_name}')[mask]
                 )
+        self._mask_derived_coordinates(mask)
         if getattr(
             self._swiftgalaxy._extra_mask,
             particle_name
@@ -607,6 +608,36 @@ class _SWIFTParticleDatasetHelper(object):
             )
         )
 
+    def _mask_derived_coordinates(self, mask):
+        if self._cartesian_coordinates is not None:
+            self._cartesian_coordinates = self._cartesian_coordinates[mask]
+        if self._cartesian_velocities is not None:
+            self._cartesian_velocities = self._cartesian_velocities[mask]
+        if self._spherical_coordinates is not None:
+            for coord in ('r', 'theta', 'phi'):
+                self._spherical_coordinates[f'_{coord}'] = \
+                    self._spherical_coordinates[f'_{coord}'][mask]
+        if self._spherical_velocities is not None:
+            for coord in ('v_r', 'v_t', 'v_p'):
+                self._spherical_velocities[f'_{coord}'] = \
+                    self._spherical_velocities[f'_{coord}'][mask]
+        if self._cylindrical_coordinates is not None:
+            for coord in ('rho', 'phi', 'z'):
+                self._cylindrical_coordinates[f'_{coord}'] = \
+                    self._cylindrical_coordinates[f'_{coord}'][mask]
+        if self._cylindrical_velocities is not None:
+            for coord in ('v_rho', 'v_phi', 'v_z'):
+                self._cylindrical_velocities[f'_{coord}'] = \
+                    self._cylindrical_velocities[f'_{coord}'][mask]
+        return
+
+    def _void_derived_coordinates(self):
+        self._spherical_coordinates = None
+        self._cylindrical_coordinates = None
+        self._spherical_velocities = None
+        self._cylindrical_velocities = None
+        return
+
 
 class SWIFTGalaxy(SWIFTDataset):
 
@@ -772,6 +803,35 @@ class SWIFTGalaxy(SWIFTDataset):
                             f'_{field_name}',
                             data[mask]
                         )
+            # Don't link across objects with a view!
+            if particle_dataset_helper._cartesian_coordinates is not None:
+                new_particle_dataset_helper.cartesian_coordinates  # initialise
+            if particle_dataset_helper._cartesian_velocities is not None:
+                new_particle_dataset_helper.cartesian_velocities  # initialise
+            if particle_dataset_helper._spherical_coordinates is not None:
+                new_particle_dataset_helper._spherical_coordinates = dict()
+                for c in ('_r', '_theta', '_phi'):
+                    new_particle_dataset_helper._spherical_coordinates[c] = \
+                        particle_dataset_helper._spherical_coordinates[c][mask]
+            if particle_dataset_helper._spherical_velocities is not None:
+                new_particle_dataset_helper._spherical_velocities = dict()
+                for c in ('_v_r', '_v_t', '_v_p'):
+                    new_particle_dataset_helper._spherical_velocities[c] = \
+                        particle_dataset_helper._spherical_velocities[c][mask]
+            if particle_dataset_helper._cylindrical_coordinates is not None:
+                new_particle_dataset_helper._cylindrical_coordinates = dict()
+                for c in ('_rho', '_phi', '_z'):
+                    new_particle_dataset_helper._cylindrical_coordinates[c] = \
+                        particle_dataset_helper._cylindrical_coordinates[c][
+                            mask
+                        ]
+            if particle_dataset_helper._cylindrical_velocities is not None:
+                new_particle_dataset_helper._cylindrical_velocities = dict()
+                for c in ('_v_rho', '_v_phi', '_v_z'):
+                    new_particle_dataset_helper._cylindrical_velocities[c] = \
+                        particle_dataset_helper._cylindrical_velocities[c][
+                            mask
+                        ]
         return SG
 
     def __getattribute__(self, attr):
@@ -912,8 +972,5 @@ class SWIFTGalaxy(SWIFTDataset):
         # cheaper to just delete any non-cartesian coordinates when a
         # transform occurs and lazily re-calculate them as needed.
         for particle_name in self.metadata.present_particle_names:
-            getattr(self, particle_name)._spherical_coordinates = None
-            getattr(self, particle_name)._cylindrical_coordinates = None
-            getattr(self, particle_name)._spherical_velocities = None
-            getattr(self, particle_name)._cylindrical_velocities = None
+            getattr(self, particle_name)._void_derived_coordinates()
         return
