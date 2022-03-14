@@ -30,8 +30,3 @@ SG = SWIFTGalaxy(
     auto_recentre=False,
     transforms_like_coordinates={'coordinates'}
 )
-
-
-print(SG.gas.element_mass_fractions.carbon.shape)
-print(SG.gas.element_mass_fractions[np.s_[:123]].carbon.shape)
-print(SG.gas.element_mass_fractions[np.s_[:123]].nitrogen.shape)

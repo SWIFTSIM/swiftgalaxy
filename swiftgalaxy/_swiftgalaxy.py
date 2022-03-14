@@ -150,11 +150,14 @@ class _SWIFTNamedColumnDatasetHelper(object):
     def __getitem__(self, mask):
         return self._data_copy(mask=mask)
 
-    def _empty_copy(self):
+    def __copy__(self):
         return getattr(
-            self._particle_dataset_helper._empty_copy(),
+            self._particle_dataset_helper.__copy__(),
             self.name
         )
+
+    def __deepcopy__(self, memo=None):
+        return self._data_copy()
 
     def _data_copy(self, mask=None):
         return getattr(
@@ -282,11 +285,14 @@ class _SWIFTParticleDatasetHelper(object):
     def __getitem__(self, mask):
         return self._data_copy(mask=mask)
 
-    def _empty_copy(self):
+    def __copy__(self):
         return getattr(
-            self._swiftgalaxy._empty_copy(),
+            self._swiftgalaxy.__copy__(),
             self.particle_name
         )
+
+    def __deepcopy__(self, memo=None):
+        return self._data_copy()
 
     def _data_copy(self, mask=None):
         mask_collection = MaskCollection(
@@ -698,7 +704,7 @@ class SWIFTGalaxy(SWIFTDataset):
     def __getitem__(self, mask_collection):
         return self._data_copy(mask_collection=mask_collection)
 
-    def _empty_copy(self):
+    def __copy__(self):
         SG = SWIFTGalaxy(
             self.snapshot_filename,
             self.halo_finder,
@@ -715,8 +721,11 @@ class SWIFTGalaxy(SWIFTDataset):
         )
         return SG
 
+    def __deepcopy__(self, memo=None):
+        return self._data_copy()
+
     def _data_copy(self, mask_collection=None):
-        SG = self._empty_copy()
+        SG = self.__copy__()
         for particle_name in SG.metadata.present_particle_names:
             particle_metadata = getattr(
                 SG.metadata,
