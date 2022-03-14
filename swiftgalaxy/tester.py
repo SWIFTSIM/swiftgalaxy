@@ -31,6 +31,10 @@ SG = SWIFTGalaxy(
     transforms_like_coordinates={'coordinates'}
 )
 
-print(SG.gas.coordinates)
-del SG.gas.coordinates
-print(SG.gas._particle_dataset._coordinates)
+print(SG.gas.element_mass_fractions.carbon)
+mask = np.zeros(SG.gas.element_mass_fractions.carbon.size, dtype=bool)
+mask[:123] = True
+SG.gas._mask_dataset(mask)
+print(SG.gas.element_mass_fractions.carbon.shape)
+print(SG.gas.element_mass_fractions.nitrogen.shape)
+print(SG.gas.dust_mass_fractions.silicates.shape)

@@ -2,6 +2,16 @@ from abc import ABC, abstractmethod
 import unyt as u
 
 
+class MaskCollection(object):
+
+    # Could use dataclasses module, but requires python 3.7+
+
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+        return
+
+
 class _HaloFinder(ABC):
 
     def __init__(self, extra_mask='bound_only'):
@@ -89,15 +99,23 @@ class Velociraptor(_HaloFinder):
     def _init_extra_mask(self, SG):
         from velociraptor.swift.swift import generate_bound_mask
         if self.extra_mask == 'bound_only':
-            self._extra_mask = generate_bound_mask(SG, self._particles)
+            self._extra_mask = MaskCollection(
+                **generate_bound_mask(SG, self._particles)._asdict()
+            )
         elif self.extra_mask is None:
-            pass
+            self._extra_mask = MaskCollection(
+                **{k: None for k in SG.metadata.present_particle_names}
+            )
         else:
             # Keep user provided mask.
-            self._extra_mask = self.extra_mask
-            # Would be nice to check here that this looks like a mask
-            # to avoid a typo'd string waiting until after an expensive
-            # read to raise an exception.
+            assert all([
+                hasattr(self.extra_mask, name)
+                for name in SG.metadata.present_particle_names
+            ])
+            self._extra_mask = MaskCollection(
+                **{name: getattr(self.extra_mask, name)
+                   for name in SG.metadata.present_particle_names}
+            )
 
     def _centre(self):
         return u.uhstack(
@@ -118,6 +136,8 @@ class Velociraptor(_HaloFinder):
     def __getattr__(self, attr):
         # Invoked if attribute not found.
         # Use to expose the masked catalogue.
+        if attr == '_catalogue':
+            return object.__getattribute__(self, '_catalogue')
         return getattr(self._catalogue, attr)
 
     def __repr__(self):
