@@ -1,8 +1,9 @@
 from setuptools import setup
+from swiftgalaxy import __version__
 
 setup(
     name='swiftgalaxy',
-    version='0.0',
+    version=__version__,
     description='Code abstraction of objects (galaxies) in simulations.',
     url='https://github.com/kyleaoman/swiftgalaxy',
     author='Kyle Oman',
