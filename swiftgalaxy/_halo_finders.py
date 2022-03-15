@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import unyt as u
 from swiftgalaxy._masks import MaskCollection
 from swiftsimio.objects import cosmo_array
+from swiftsimio.masks import SWIFTMask
 
 from typing import Any, Union, Optional, TYPE_CHECKING
 from swiftgalaxy._types import MaskType
@@ -22,13 +23,13 @@ class _HaloFinder(ABC):
         pass
 
     @abstractmethod
-    def _init_spatial_mask(self, SG: 'SWIFTGalaxy') -> None:
-        # define SG._spatial_mask
+    def _get_spatial_mask(self, SG: 'SWIFTGalaxy') -> SWIFTMask:
+        # return _spatial_mask
         pass
 
     @abstractmethod
-    def _init_extra_mask(self, SG: 'SWIFTGalaxy') -> None:
-        # define SG._extra_mask
+    def _get_extra_mask(self, SG: 'SWIFTGalaxy') -> MaskCollection:
+        # return _extra_mask
         pass
 
     @abstractmethod
@@ -67,6 +68,7 @@ class Velociraptor(_HaloFinder):
             self.halo_index: int = halo_index
         self.centre_type: str = centre_type
         self._catalogue: Optional[VelociraptorCatalogue] = None
+        self._particles: Optional[None] = None
         super().__init__()
         # currently velociraptor_python works with a halo index, not halo_id!
         # self.catalogue_mask = (catalogue.ids.id == halo_id).nonzero()
@@ -78,7 +80,7 @@ class Velociraptor(_HaloFinder):
             f'{self.velociraptor_filebase}.properties', mask=self.halo_index)
         return
 
-    def _init_spatial_mask(self, SG: 'SWIFTGalaxy') -> None:
+    def _get_spatial_mask(self, SG: 'SWIFTGalaxy') -> None:
         from velociraptor import load as load_catalogue
         from velociraptor.particles import load_groups
         from velociraptor.swift.swift import generate_spatial_mask
@@ -88,17 +90,15 @@ class Velociraptor(_HaloFinder):
         # extract_halo requests a "halo_id", but actually wants an index!
         self._particles, unbound_particles = \
             groups.extract_halo(halo_id=self.halo_index)
-        SG._spatial_mask = generate_spatial_mask(self._particles,
-                                                 SG.snapshot_filename)
-        return
+        return generate_spatial_mask(self._particles, SG.snapshot_filename)
 
-    def _init_extra_mask(self, SG: 'SWIFTGalaxy') -> None:
+    def _get_extra_mask(self, SG: 'SWIFTGalaxy') -> MaskCollection:
         from velociraptor.swift.swift import generate_bound_mask
         if self.extra_mask == 'bound_only':
-            SG._extra_mask = MaskCollection(
+            return MaskCollection(
                 **generate_bound_mask(SG, self._particles)._asdict())
         elif self.extra_mask is None:
-            SG._extra_mask = MaskCollection(
+            return MaskCollection(
                 **{k: None
                    for k in SG.metadata.present_particle_names})
         else:
@@ -107,7 +107,7 @@ class Velociraptor(_HaloFinder):
                 hasattr(self.extra_mask, name)
                 for name in SG.metadata.present_particle_names
             ])
-            SG._extra_mask = MaskCollection(
+            return MaskCollection(
                 **{
                     name: getattr(self.extra_mask, name)
                     for name in SG.metadata.present_particle_names

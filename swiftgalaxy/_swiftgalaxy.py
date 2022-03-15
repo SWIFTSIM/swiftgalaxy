@@ -97,9 +97,6 @@ class _SWIFTNamedColumnDatasetHelper(object):
     def __init__(
             self, named_column_dataset: '__SWIFTNamedColumnDataset',
             particle_dataset_helper: '_SWIFTParticleDatasetHelper') -> None:
-    # def __init__(
-    #         self, named_column_dataset: __SWIFTNamedColumnDataset,
-    #         particle_dataset_helper: '_SWIFTParticleDatasetHelper') -> None:
         self._named_column_dataset: __SWIFTNamedColumnDataset \
             = named_column_dataset
         self._particle_dataset_helper: '_SWIFTParticleDatasetHelper' \
@@ -558,7 +555,7 @@ class SWIFTGalaxy(SWIFTDataset):
         if _spatial_mask is not None:
             self._spatial_mask = _spatial_mask
         else:
-            self.halo_finder._init_spatial_mask(self)
+            self._spatial_mask = self.halo_finder._get_spatial_mask(self)
         self.transforms_like_coordinates: set[
             str] = transforms_like_coordinates
         self.transforms_like_velocities: set[str] = transforms_like_velocities
@@ -590,12 +587,11 @@ class SWIFTGalaxy(SWIFTDataset):
             self._particle_dataset_helpers[particle_name] = TypeDatasetHelper(
                 super().__getattribute__(particle_name), self)
 
-        self._extra_mask: Optional[MaskCollection]
+        self._extra_mask: Optional[MaskCollection] = None
         if _extra_mask is not None:
             self._extra_mask = _extra_mask
         else:
-            self._extra_mask = None
-            self.halo_finder._init_extra_mask(self)
+            self._extra_mask = self.halo_finder._get_extra_mask(self)
             if self._extra_mask is not None:
                 # only particle ids should be loaded so far, need to mask these
                 for particle_name in self.metadata.present_particle_names:
