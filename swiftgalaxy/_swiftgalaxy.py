@@ -1,31 +1,43 @@
 import numpy as np
-import unyt as u
+from scipy.spatial.transform import Rotation
+import unyt
 from swiftsimio import metadata as swiftsimio_metadata
-from swiftsimio.reader import SWIFTDataset
+from swiftsimio.reader import SWIFTDataset, __SWIFTNamedColumnDataset, \
+    __SWIFTParticleDataset
 from swiftsimio.objects import cosmo_array
+from swiftsimio.masks import SWIFTMask
+from swiftgalaxy._halo_finders import _HaloFinder
+from swiftgalaxy._masks import MaskCollection
+
+# __getattribute__ and setattr overloads use Any, should this be avoided?
+from typing import Union, Any, Optional
+from swiftgalaxy._types import MaskType
 
 
-def _getattr_with_dots(obj, attr):
+def _getattr_with_dots(dataset: SWIFTDataset,
+                       attr: str) -> Union[None, cosmo_array]:
     attrs = attr.split('.')
-    retval = getattr(obj, attrs[0], None)
+    retval = getattr(dataset, attrs[0], None)
     for attr in attrs[1:]:
         retval = getattr(retval, attr, None)
     return retval
 
 
-def _setattr_with_dots(obj, attr, value):
+def _setattr_with_dots(dataset: SWIFTDataset, attr: str,
+                       value: Union[None, cosmo_array]) -> None:
     attrs = attr.split('.')
     if len(attrs) == 1:
-        setattr(obj, attr, value)
+        setattr(dataset, attr, value)
     else:
-        target = getattr(obj, attrs[0])
+        target = getattr(dataset, attrs[0])
         for attr in attrs[1:-1]:
             target = getattr(target, attr)
         setattr(target, attrs[-1], value)
     return
 
 
-def _apply_box_wrap(coords, boxsize):
+def _apply_box_wrap(coords: cosmo_array,
+                    boxsize: Union[None, cosmo_array]) -> cosmo_array:
     retval = coords
     if boxsize is None:
         return retval
@@ -41,61 +53,61 @@ def _apply_box_wrap(coords, boxsize):
     return retval
 
 
-def _apply_translation(coords, offset):
+def _apply_translation(coords: cosmo_array,
+                       offset: cosmo_array) -> cosmo_array:
     return coords + offset
 
 
-def _apply_rotmat(coords, rotation_matrix):
+def _apply_rotmat(coords: cosmo_array,
+                  rotation_matrix: np.ndarray) -> cosmo_array:
     return coords.dot(rotation_matrix)
 
 
-def _apply_4transform(coords, transform, transform_units):
+def _apply_4transform(coords: cosmo_array, transform: cosmo_array,
+                      transform_units: unyt.unyt_quantity) -> cosmo_array:
     # A 4x4 transformation matrix has mixed units, so need to
     # assume a consistent unit for all transformations and
-    # work with raw arrays.
-    return np.hstack((coords.to_value(transform_units), np.ones(
-        coords.shape[0])[:,
-                         np.newaxis])).dot(transform)[:, :3] * transform_units
-
-
-class MaskCollection(object):
-
-    # Could use dataclasses module, but requires python 3.7+
-
-    def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-        return
-
-    def __getattr__(self, attr):
-        # If attribute does not exist.
-        return None
+    # work with bare arrays.
+    return cosmo_array(np.hstack(
+        (coords.to_value(transform_units),
+         np.ones(coords.shape[0])[:, np.newaxis])).dot(transform)[:, :3],
+                       units=transform_units,
+                       cosmo_factor=coords.cosmo_factor,
+                       comoving=coords.comoving)
 
 
 class _CoordinateHelper(object):
 
-    def __init__(self, coordinates, masks):
-        self._coordinates = coordinates
-        self._masks = masks
+    def __init__(self, coordinates: Union[dict, cosmo_array],
+                 masks: dict) -> None:
+        self._coordinates: Union[np.ndarray, dict] = coordinates
+        self._masks: dict = masks
         return
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> cosmo_array:
         return self._coordinates[self._masks[attr]]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         keys = ', '.join(self._masks.keys())
         return f'Available coordinates: {keys}.'
 
 
 class _SWIFTNamedColumnDatasetHelper(object):
 
-    def __init__(self, named_column_dataset, particle_dataset_helper):
-        self._named_column_dataset = named_column_dataset
-        self._particle_dataset_helper = particle_dataset_helper
-        self._initialised = True
+    def __init__(
+            self, named_column_dataset: '__SWIFTNamedColumnDataset',
+            particle_dataset_helper: '_SWIFTParticleDatasetHelper') -> None:
+    # def __init__(
+    #         self, named_column_dataset: __SWIFTNamedColumnDataset,
+    #         particle_dataset_helper: '_SWIFTParticleDatasetHelper') -> None:
+        self._named_column_dataset: __SWIFTNamedColumnDataset \
+            = named_column_dataset
+        self._particle_dataset_helper: '_SWIFTParticleDatasetHelper' \
+            = particle_dataset_helper
+        self._initialised: bool = True
         return
 
-    def __getattribute__(self, attr):
+    def __getattribute__(self, attr: str) -> Any:
         named_column_dataset = \
             object.__getattribute__(self, '_named_column_dataset')
         particle_dataset_helper = \
@@ -119,7 +131,7 @@ class _SWIFTNamedColumnDatasetHelper(object):
             # exposes everything else in __dict__
             return getattr(named_column_dataset, attr)
 
-    def __setattr__(self, attr, value):
+    def __setattr__(self, attr: str, value: Any) -> None:
         # pass particle data through to actual SWIFTNamedColumnDataset
         if not hasattr(self, '_initialised'):
             # guard during initialisation
@@ -134,26 +146,34 @@ class _SWIFTNamedColumnDatasetHelper(object):
             object.__setattr__(self, attr, value)
             return
 
-    def __getitem__(self, mask):
+    def __getitem__(self, mask: MaskType) -> '_SWIFTNamedColumnDatasetHelper':
         return self._data_copy(mask=mask)
 
-    def __copy__(self):
+    def __copy__(self) -> '_SWIFTNamedColumnDatasetHelper':
         return getattr(self._particle_dataset_helper.__copy__(), self.name)
 
-    def __deepcopy__(self, memo=None):
+    def __deepcopy__(
+            self,
+            memo: Optional[dict] = None) -> '_SWIFTNamedColumnDatasetHelper':
         return self._data_copy()
 
-    def _data_copy(self, mask=None):
+    def _data_copy(
+            self,
+            mask: Optional[MaskType] = None
+    ) -> '_SWIFTNamedColumnDatasetHelper':
         return getattr(self._particle_dataset_helper._data_copy(mask=mask),
                        self.name)
 
 
 class _SWIFTParticleDatasetHelper(object):
 
-    def __init__(self, particle_dataset, swiftgalaxy):
-        self._particle_dataset = particle_dataset
-        self._swiftgalaxy = swiftgalaxy
-        self._named_column_dataset_helpers = dict()
+    def __init__(self, particle_dataset: '__SWIFTParticleDataset',
+                 swiftgalaxy: 'SWIFTGalaxy') -> None:
+        self._particle_dataset: __SWIFTParticleDataset = particle_dataset
+        self._swiftgalaxy: 'SWIFTGalaxy' = swiftgalaxy
+        self._named_column_dataset_helpers: \
+            dict[str, _SWIFTNamedColumnDatasetHelper] \
+            = dict()
         particle_metadata = getattr(self.metadata,
                                     f'{self.particle_name}_properties')
         named_columns_names = [
@@ -181,16 +201,16 @@ class _SWIFTParticleDatasetHelper(object):
                     named_columns,
                     self
                 )
-        self._cartesian_coordinates = None
-        self._spherical_coordinates = None
-        self._cylindrical_coordinates = None
-        self._cartesian_velocities = None
-        self._spherical_velocities = None
-        self._cylindrical_velocities = None
-        self._initialised = True
+        self._cartesian_coordinates: Optional[np.ndarray] = None
+        self._spherical_coordinates: Optional[dict] = None
+        self._cylindrical_coordinates: Optional[dict] = None
+        self._cartesian_velocities: Optional[np.ndarray] = None
+        self._spherical_velocities: Optional[dict] = None
+        self._cylindrical_velocities: Optional[dict] = None
+        self._initialised: bool = True
         return
 
-    def __getattribute__(self, attr):
+    def __getattribute__(self, attr: str) -> Any:
         particle_name = \
             object.__getattribute__(self, '_particle_dataset').particle_name
         metadata = object.__getattribute__(self, '_particle_dataset').metadata
@@ -219,7 +239,7 @@ class _SWIFTParticleDatasetHelper(object):
             # exposes everything else in __dict__
             return getattr(particle_dataset, attr)
 
-    def __setattr__(self, attr, value):
+    def __setattr__(self, attr: str, value: Any) -> None:
         # pass particle data through to actual SWIFTDataset
         if not hasattr(self, '_initialised'):
             # guard during initialisation
@@ -236,16 +256,20 @@ class _SWIFTParticleDatasetHelper(object):
             object.__setattr__(self, attr, value)
             return
 
-    def __getitem__(self, mask):
+    def __getitem__(self, mask: MaskType) -> '_SWIFTParticleDatasetHelper':
         return self._data_copy(mask=mask)
 
-    def __copy__(self):
+    def __copy__(self) -> '_SWIFTParticleDatasetHelper':
         return getattr(self._swiftgalaxy.__copy__(), self.particle_name)
 
-    def __deepcopy__(self, memo=None):
+    def __deepcopy__(
+            self,
+            memo: Optional[dict] = None) -> '_SWIFTParticleDatasetHelper':
         return self._data_copy()
 
-    def _data_copy(self, mask=None):
+    def _data_copy(
+            self,
+            mask: Optional[MaskType] = None) -> '_SWIFTParticleDatasetHelper':
         mask_collection = MaskCollection(
             **{
                 k: None if k != self.particle_name else mask
@@ -255,7 +279,7 @@ class _SWIFTParticleDatasetHelper(object):
             self._swiftgalaxy._data_copy(mask_collection=mask_collection),
             self.particle_name)
 
-    def _is_namedcolumns(self, field_name):
+    def _is_namedcolumns(self, field_name: str) -> bool:
         particle_name = self._particle_dataset.particle_name
         particle_metadata = getattr(self._particle_dataset.metadata,
                                     f'{particle_name}_properties')
@@ -264,7 +288,7 @@ class _SWIFTParticleDatasetHelper(object):
                 particle_metadata.field_paths))[field_name]
         return particle_metadata.named_columns[field_path] is not None
 
-    def _apply_data_mask(self, data):
+    def _apply_data_mask(self, data: cosmo_array) -> cosmo_array:
         if self._swiftgalaxy._extra_mask is not None:
             mask = self._swiftgalaxy._extra_mask.__getattribute__(
                 self._particle_dataset.particle_name)
@@ -272,7 +296,7 @@ class _SWIFTParticleDatasetHelper(object):
                 return data[mask]
         return data
 
-    def _mask_dataset(self, mask):
+    def _mask_dataset(self, mask: MaskType) -> None:
         particle_name = self._particle_dataset.particle_name
         particle_metadata = getattr(self._particle_dataset.metadata,
                                     f'{particle_name}_properties')
@@ -301,7 +325,8 @@ class _SWIFTParticleDatasetHelper(object):
                                            particle_name)] = realised_mask
         return
 
-    def _apply_transforms(self, data, dataset_name):
+    def _apply_transforms(self, data: cosmo_array,
+                          dataset_name: str) -> cosmo_array:
         if dataset_name in self._swiftgalaxy.transforms_like_coordinates:
             transform_units = self._swiftgalaxy.metadata.units.length
             transform = self._swiftgalaxy._coordinate_like_transform
@@ -319,7 +344,7 @@ class _SWIFTParticleDatasetHelper(object):
         return data
 
     @property
-    def cartesian_coordinates(self):
+    def cartesian_coordinates(self) -> _CoordinateHelper:
         if self._cartesian_coordinates is None:
             self._cartesian_coordinates = \
                 getattr(
@@ -331,7 +356,7 @@ class _SWIFTParticleDatasetHelper(object):
             dict(x=np.s_[:, 0], y=np.s_[:, 1], z=np.s_[:, 2], xyz=np.s_[...]))
 
     @property
-    def cartesian_velocities(self):
+    def cartesian_velocities(self) -> _CoordinateHelper:
         if self._cartesian_coordinates is None:
             self.cartesian_coordinates
         if self._cartesian_velocities is None:
@@ -345,21 +370,21 @@ class _SWIFTParticleDatasetHelper(object):
             dict(x=np.s_[:, 0], y=np.s_[:, 1], z=np.s_[:, 2], xyz=np.s_[...]))
 
     @property
-    def spherical_coordinates(self):
+    def spherical_coordinates(self) -> _CoordinateHelper:
         if self._cartesian_coordinates is None:
             self.cartesian_coordinates
         if self._spherical_coordinates is None:
             r = np.sqrt(
                 np.sum(np.power(self.cartesian_coordinates.xyz, 2), axis=1))
             theta = np.arcsin(self.cartesian_coordinates.z / r)
-            theta = cosmo_array(theta, units=u.rad)
+            theta = cosmo_array(theta, units=unyt.rad)
             if self.cylindrical_coordinates is not None:
                 phi = self.cylindrical_coordinates.phi
             else:
                 phi = np.arctan2(self.cartesian_coordinates.y,
                                  self.cartesian_coordinates.x)
                 phi = np.where(phi < 0, phi + 2 * np.pi, phi)
-                phi = cosmo_array(phi, units=u.rad)
+                phi = cosmo_array(phi, units=unyt.rad)
             self._spherical_coordinates = dict(_r=r, _theta=theta, _phi=phi)
         return _CoordinateHelper(
             self._spherical_coordinates,
@@ -377,7 +402,7 @@ class _SWIFTParticleDatasetHelper(object):
                  theta='_theta'))
 
     @property
-    def spherical_velocities(self):
+    def spherical_velocities(self) -> _CoordinateHelper:
         if self._spherical_coordinates is None:
             self.spherical_coordinates
         # existence of self.cartesian_coordinates guaranteed by
@@ -414,7 +439,7 @@ class _SWIFTParticleDatasetHelper(object):
                  theta='_v_t'))
 
     @property
-    def cylindrical_coordinates(self):
+    def cylindrical_coordinates(self) -> _CoordinateHelper:
         if self._cartesian_coordinates is None:
             self.cartesian_coordinates
         if self._cylindrical_coordinates is None:
@@ -427,7 +452,7 @@ class _SWIFTParticleDatasetHelper(object):
                 phi = np.arctan2(self.cartesian_coordinates.y,
                                  self.cartesian_coordinates.x)
                 phi = np.where(phi < 0, phi + 2 * np.pi, phi)
-                phi = cosmo_array(phi, units=u.rad)
+                phi = cosmo_array(phi, units=unyt.rad)
             z = self.cartesian_coordinates.z
             self._cylindrical_coordinates = dict(_rho=rho, _phi=phi, _z=z)
         return _CoordinateHelper(
@@ -443,7 +468,7 @@ class _SWIFTParticleDatasetHelper(object):
                  z='_z'))
 
     @property
-    def cylindrical_velocities(self):
+    def cylindrical_velocities(self) -> _CoordinateHelper:
         if self._cylindrical_coordinates is None:
             self.cylindrical_coordinates
         # existence of self.cartesian_coordinates guaranteed by
@@ -476,7 +501,7 @@ class _SWIFTParticleDatasetHelper(object):
                  phi='_v_phi',
                  z='_v_z'))
 
-    def _mask_derived_coordinates(self, mask):
+    def _mask_derived_coordinates(self, mask: MaskType) -> None:
         if self._cartesian_coordinates is not None:
             self._cartesian_coordinates = self._cartesian_coordinates[mask]
         if self._cartesian_velocities is not None:
@@ -499,7 +524,7 @@ class _SWIFTParticleDatasetHelper(object):
                     self._cylindrical_velocities[f'_{coord}'][mask]
         return
 
-    def _void_derived_coordinates(self):
+    def _void_derived_coordinates(self) -> None:
         self._spherical_coordinates = None
         self._cylindrical_coordinates = None
         self._spherical_velocities = None
@@ -510,31 +535,33 @@ class _SWIFTParticleDatasetHelper(object):
 class SWIFTGalaxy(SWIFTDataset):
 
     def __init__(self,
-                 snapshot_filename,
-                 halo_finder,
-                 auto_recentre=True,
-                 transforms_like_coordinates={
+                 snapshot_filename: str,
+                 halo_finder: _HaloFinder,
+                 auto_recentre: bool = True,
+                 transforms_like_coordinates: set[str] = {
                      'coordinates',
                  },
-                 transforms_like_velocities={
+                 transforms_like_velocities: set[str] = {
                      'velocities',
                  },
-                 id_particle_dataset_name='particle_ids',
-                 coordinates_dataset_name='coordinates',
-                 velocities_dataset_name='velocities',
-                 _spatial_mask=None,
-                 _extra_mask=None,
-                 _coordinate_like_transform=None,
-                 _velocity_like_transform=None):
-        self.snapshot_filename = snapshot_filename
-        self.halo_finder = halo_finder
-        self.auto_recentre = auto_recentre
+                 id_particle_dataset_name: str = 'particle_ids',
+                 coordinates_dataset_name: str = 'coordinates',
+                 velocities_dataset_name: str = 'velocities',
+                 _spatial_mask: Optional[SWIFTMask] = None,
+                 _extra_mask: Optional[MaskCollection] = None,
+                 _coordinate_like_transform: Optional[np.ndarray] = None,
+                 _velocity_like_transform: Optional[np.ndarray] = None):
+        self.snapshot_filename: str = snapshot_filename
+        self.halo_finder: _HaloFinder = halo_finder
+        self.auto_recentre: bool = auto_recentre
+        self._spatial_mask: SWIFTMask
         if _spatial_mask is not None:
             self._spatial_mask = _spatial_mask
         else:
             self.halo_finder._init_spatial_mask(self)
-        self.transforms_like_coordinates = transforms_like_coordinates
-        self.transforms_like_velocities = transforms_like_velocities
+        self.transforms_like_coordinates: set[
+            str] = transforms_like_coordinates
+        self.transforms_like_velocities: set[str] = transforms_like_velocities
         self.id_particle_dataset_name = id_particle_dataset_name
         self.coordinates_dataset_name = coordinates_dataset_name
         self.velocities_dataset_name = velocities_dataset_name
@@ -563,6 +590,7 @@ class SWIFTGalaxy(SWIFTDataset):
             self._particle_dataset_helpers[particle_name] = TypeDatasetHelper(
                 super().__getattribute__(particle_name), self)
 
+        self._extra_mask: Optional[MaskCollection]
         if _extra_mask is not None:
             self._extra_mask = _extra_mask
         else:
@@ -592,10 +620,10 @@ class SWIFTGalaxy(SWIFTDataset):
 
         return
 
-    def __getitem__(self, mask_collection):
+    def __getitem__(self, mask_collection: MaskCollection) -> 'SWIFTGalaxy':
         return self._data_copy(mask_collection=mask_collection)
 
-    def __copy__(self):
+    def __copy__(self) -> 'SWIFTGalaxy':
         SG = SWIFTGalaxy(
             self.snapshot_filename,
             self.halo_finder,
@@ -611,10 +639,10 @@ class SWIFTGalaxy(SWIFTDataset):
             _velocity_like_transform=self._velocity_like_transform)
         return SG
 
-    def __deepcopy__(self, memo=None):
+    def __deepcopy__(self, memo: Optional[dict] = None) -> 'SWIFTGalaxy':
         return self._data_copy()
 
-    def _data_copy(self, mask_collection=None):
+    def _data_copy(self, mask_collection: Optional[MaskCollection] = None):
         SG = self.__copy__()
         for particle_name in SG.metadata.present_particle_names:
             particle_metadata = getattr(SG.metadata,
@@ -676,7 +704,7 @@ class SWIFTGalaxy(SWIFTDataset):
                         ]
         return SG
 
-    def __getattribute__(self, attr):
+    def __getattribute__(self, attr: str) -> Any:
         # __getattr__ is only checked if the attribute is not found
         # __getattribute__ is checked promptly
         # Note always use super().__getattribute__(...)
@@ -695,8 +723,7 @@ class SWIFTGalaxy(SWIFTDataset):
             else:
                 return super().__getattribute__(attr)
 
-    def rotate(self, rotation):
-        # expect a scipy.spatial.transform.Rotation
+    def rotate(self, rotation: Rotation) -> None:
         rotation_matrix = rotation.as_matrix()
         rotatable = (self.transforms_like_coordinates
                      | self.transforms_like_velocities)
@@ -716,7 +743,9 @@ class SWIFTGalaxy(SWIFTDataset):
         self.wrap_box()
         return
 
-    def _translate(self, translation, boost=False):
+    def _translate(self,
+                   translation: cosmo_array,
+                   boost: bool = False) -> None:
         translatable = self.transforms_like_velocities if boost \
             else self.transforms_like_coordinates
         for particle_name in self.metadata.present_particle_names:
@@ -743,21 +772,22 @@ class SWIFTGalaxy(SWIFTDataset):
             self.wrap_box()
         return
 
-    def translate(self, translation):
+    def translate(self, translation: cosmo_array) -> None:
         self._translate(translation)
+        return
 
-    def boost(self, boost):
+    def boost(self, boost: cosmo_array) -> None:
         self._translate(boost, boost=True)
         return
 
-    def recentre(self, new_centre):
+    def recentre(self, new_centre: cosmo_array) -> None:
         self._translate(-new_centre)
         return
 
-    def recentre_velocity(self, new_centre):
+    def recentre_velocity(self, new_centre: cosmo_array) -> None:
         self._translate(-new_centre, boost=True)
 
-    def wrap_box(self):
+    def wrap_box(self) -> None:
         for particle_name in self.metadata.present_particle_names:
             dataset = getattr(self, particle_name)._particle_dataset
             for field_name in self.transforms_like_coordinates:
@@ -770,26 +800,28 @@ class SWIFTGalaxy(SWIFTDataset):
                     setattr(dataset, field_location, field_data)
         return
 
-    def mask_particles(self, mask_collection):
+    def mask_particles(self, mask_collection: MaskCollection) -> None:
         for particle_name in self.metadata.present_particle_names:
             mask = getattr(mask_collection, particle_name)
             if mask is not None:
                 getattr(self, particle_name)._mask_dataset(mask)
         return
 
-    def _append_to_coordinate_like_transform(self, transform):
+    def _append_to_coordinate_like_transform(self,
+                                             transform: np.ndarray) -> None:
         self._coordinate_like_transform = \
             self._coordinate_like_transform.dot(transform)
         self._void_derived_coordinates()
         return
 
-    def _append_to_velocity_like_transform(self, transform):
+    def _append_to_velocity_like_transform(self,
+                                           transform: np.ndarray) -> None:
         self._velocity_like_transform = \
             self._velocity_like_transform.dot(transform)
         self._void_derived_coordinates()
         return
 
-    def _void_derived_coordinates(self):
+    def _void_derived_coordinates(self) -> None:
         # Transforming implies conversion back to cartesian, it's therefore
         # cheaper to just delete any non-cartesian coordinates when a
         # transform occurs and lazily re-calculate them as needed.
