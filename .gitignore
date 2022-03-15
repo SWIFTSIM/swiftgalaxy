@@ -4,5 +4,6 @@
 /*.egg-info
 *~
 \#*
+/docs/build/
 swiftgalaxy/SwiftGalaxy\ Demo.ipynb
 swiftgalaxy/.ipynb_checkpoints
