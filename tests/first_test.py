@@ -1,10 +1,7 @@
 import socket
-import unyt as u
 from os import path
-from _swiftgalaxy import SWIFTGalaxy, MaskCollection
-from _halo_finders import Velociraptor
-import numpy as np
-from scipy.spatial.transform import Rotation
+from swiftgalaxy import SWIFTGalaxy
+from swiftgalaxy import Velociraptor
 
 snapnum = 23
 if 'cosma' in socket.gethostname():
@@ -20,13 +17,14 @@ snapshot_filename = path.join(base_dir, 'colibre_{:04d}.hdf5'.format(snapnum))
 
 target_halo_index = 3
 
-SG = SWIFTGalaxy(
-    snapshot_filename,
-    Velociraptor(
-        velociraptor_filebase,
-        halo_index=target_halo_index,
-        extra_mask='bound_only'
-    ),
-    auto_recentre=False,
-    transforms_like_coordinates={'coordinates'}
-)
+
+def test_creation():
+
+    SG = SWIFTGalaxy(
+        snapshot_filename,
+        Velociraptor(
+            velociraptor_filebase,
+            halo_index=target_halo_index,
+            extra_mask='bound_only'
+        )
+    )
