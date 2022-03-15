@@ -30,3 +30,10 @@ SG = SWIFTGalaxy(
     auto_recentre=False,
     transforms_like_coordinates={'coordinates'}
 )
+
+MC = MaskCollection(gas=np.s_[:], dark_matter=np.s_[:123], stars=np.ones(10876, dtype=bool))
+SG.mask_particles(MC)
+SG.gas.coordinates.shape
+SG.dark_matter.coordinates.shape
+SG.stars.coordinates.shape
+SG.black_holes.coordinates.shape
