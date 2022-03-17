@@ -15,6 +15,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath("."))
 import swiftgalaxy
+import swiftgalaxy.halo_finders
 
 
 # -- Project information -----------------------------------------------------
@@ -70,7 +71,7 @@ html_static_path = []
 # -- Options for automatic API doc
 
 autodoc_member_order = "bysource"
-autodoc_default_flags = ["members"]
+autodoc_default_flags = ["members", "private-members"]
 autosummary_generate = True
 
 
@@ -89,7 +90,7 @@ def run_apidoc(_):
         os.path.join(cur_dir, "../..", "tests"),
     ]
 
-    os.environ["SPHINX_APIDOC_OPTIONS"] = "members,undoc-members,show-inheritance"
+    os.environ["SPHINX_APIDOC_OPTIONS"] = "members,private-members,show-inheritance"
     main(["-M", "-f", "-e", "-T", "-d 0", "-o", api_doc_dir, module, *ignore])
 
 

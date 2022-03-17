@@ -52,6 +52,10 @@ class _HaloFinder(ABC):
 
 class Velociraptor(_HaloFinder):
 
+    """
+    The Velociraptor docstring!
+    """
+
     def __init__(
             self,
             velociraptor_filebase: str,

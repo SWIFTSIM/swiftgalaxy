@@ -6,7 +6,7 @@ from swiftsimio.reader import SWIFTDataset, __SWIFTNamedColumnDataset, \
     __SWIFTParticleDataset
 from swiftsimio.objects import cosmo_array
 from swiftsimio.masks import SWIFTMask
-from swiftgalaxy._halo_finders import _HaloFinder
+from swiftgalaxy.halo_finders import _HaloFinder
 from swiftgalaxy._masks import MaskCollection
 
 # __getattribute__ and setattr overloads use Any, should this be avoided?
@@ -342,6 +342,9 @@ class _SWIFTParticleDatasetHelper(object):
 
     @property
     def cartesian_coordinates(self) -> _CoordinateHelper:
+        """
+        The cartesian coordinates docstring!
+        """
         if self._cartesian_coordinates is None:
             self._cartesian_coordinates = \
                 getattr(
@@ -530,6 +533,10 @@ class _SWIFTParticleDatasetHelper(object):
 
 
 class SWIFTGalaxy(SWIFTDataset):
+
+    """
+    The SWIFTGalaxy docstring!
+    """
 
     def __init__(self,
                  snapshot_filename: str,
@@ -720,6 +727,11 @@ class SWIFTGalaxy(SWIFTDataset):
                 return super().__getattribute__(attr)
 
     def rotate(self, rotation: Rotation) -> None:
+
+        """
+        The rotate docstring!
+        """
+
         rotation_matrix = rotation.as_matrix()
         rotatable = (self.transforms_like_coordinates
                      | self.transforms_like_velocities)

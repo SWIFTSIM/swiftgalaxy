@@ -8,8 +8,7 @@ Welcome to SWIFTGalaxy's documentation!
 .. toctree::
    :maxdepth: 2
 
-   modules/index
-
+   modules/swiftgalaxy
 
 Indices and tables
 ==================
