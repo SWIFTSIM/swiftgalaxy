@@ -7,7 +7,7 @@ from swiftsimio.reader import SWIFTDataset, __SWIFTNamedColumnDataset, \
 from swiftsimio.objects import cosmo_array
 from swiftsimio.masks import SWIFTMask
 from swiftgalaxy.halo_finders import _HaloFinder
-from swiftgalaxy._masks import MaskCollection
+from swiftgalaxy.masks import MaskCollection
 
 # __getattribute__ and setattr overloads use Any, should this be avoided?
 from typing import Union, Any, Optional
@@ -15,7 +15,7 @@ from swiftgalaxy._types import MaskType
 
 
 def _getattr_with_dots(dataset: SWIFTDataset,
-                       attr: str) -> Union[None, cosmo_array]:
+                       attr: str) -> Optional[cosmo_array]:
     attrs = attr.split('.')
     retval = getattr(dataset, attrs[0], None)
     for attr in attrs[1:]:
@@ -24,7 +24,7 @@ def _getattr_with_dots(dataset: SWIFTDataset,
 
 
 def _setattr_with_dots(dataset: SWIFTDataset, attr: str,
-                       value: Union[None, cosmo_array]) -> None:
+                       value: Optional[cosmo_array]) -> None:
     attrs = attr.split('.')
     if len(attrs) == 1:
         setattr(dataset, attr, value)
@@ -37,7 +37,7 @@ def _setattr_with_dots(dataset: SWIFTDataset, attr: str,
 
 
 def _apply_box_wrap(coords: cosmo_array,
-                    boxsize: Union[None, cosmo_array]) -> cosmo_array:
+                    boxsize: Optional[cosmo_array]) -> cosmo_array:
     retval = coords
     if boxsize is None:
         return retval

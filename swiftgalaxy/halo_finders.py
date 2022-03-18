@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 import unyt as u
-from swiftgalaxy._masks import MaskCollection
+from swiftgalaxy.masks import MaskCollection
 from swiftsimio.objects import cosmo_array
 from swiftsimio.masks import SWIFTMask
 
 from typing import Any, Union, Optional, TYPE_CHECKING
 from swiftgalaxy._types import MaskType
 if TYPE_CHECKING:
-    from swiftgalaxy._swiftgalaxy import SWIFTGalaxy
+    from swiftgalaxy.reader import SWIFTGalaxy
 
 
 class _HaloFinder(ABC):

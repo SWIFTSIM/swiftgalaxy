@@ -15,7 +15,6 @@ import sys
 
 sys.path.insert(0, os.path.abspath("."))
 import swiftgalaxy
-import swiftgalaxy.halo_finders
 
 
 # -- Project information -----------------------------------------------------
@@ -65,14 +64,23 @@ html_theme = "sphinx_rtd_theme"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = []
+html_static_path = ['_static']
 
 
 # -- Options for automatic API doc
 
-autodoc_member_order = "bysource"
-autodoc_default_flags = ["members", "private-members"]
-autosummary_generate = True
+# These options seem unused? Comment out to avoid confusion.
+# autodoc_member_order = "bysource"
+# autodoc_default_flags = ["members", "private-members"]
+# autosummary_generate = True
+
+# this must be outside run_apidoc definition to be recognized
+os.environ["SPHINX_APIDOC_OPTIONS"] = ",".join((
+    "members",
+    "private-members",
+    "show-inheritance",
+    "undoc-members",
+))
 
 
 def run_apidoc(_):
@@ -90,7 +98,6 @@ def run_apidoc(_):
         os.path.join(cur_dir, "../..", "tests"),
     ]
 
-    os.environ["SPHINX_APIDOC_OPTIONS"] = "members,private-members,show-inheritance"
     main(["-M", "-f", "-e", "-T", "-d 0", "-o", api_doc_dir, module, *ignore])
 
 

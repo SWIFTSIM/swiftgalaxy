@@ -3,12 +3,12 @@
 Welcome to SWIFTGalaxy's documentation!
 =======================================
 
-``swiftgalaxy`` Hello world!
+Hello world!
 
 .. toctree::
    :maxdepth: 2
 
-   modules/swiftgalaxy
+   modules/index
 
 Indices and tables
 ==================
