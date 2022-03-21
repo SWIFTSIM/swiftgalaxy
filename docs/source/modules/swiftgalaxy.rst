@@ -3,9 +3,9 @@ swiftgalaxy package
 
 .. automodule:: swiftgalaxy
    :members:
-   :private-members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
+   :inherited-members:
 
 Submodules
 ----------
@@ -14,4 +14,5 @@ Submodules
    :maxdepth: 0
 
    swiftgalaxy.halo_finders
+   swiftgalaxy.masks
    swiftgalaxy.reader

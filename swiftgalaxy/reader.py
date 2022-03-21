@@ -1,3 +1,7 @@
+"""
+DOCSTRING
+"""
+
 import numpy as np
 from scipy.spatial.transform import Rotation
 import unyt
@@ -78,6 +82,24 @@ def _apply_4transform(coords: cosmo_array, transform: cosmo_array,
 
 class _CoordinateHelper(object):
 
+    """
+    Container class for coordinates.
+
+    Stores a dictionary of coordinate arrays and names (and aliases) for these,
+    and enables accessing the arrays via ``__getattr__`` (dot syntax). For
+    interactive use, printing a :obj:`~_CoordinateHelper`
+    lists the available coordinate names and aliases.
+
+    Parameters
+    ----------
+    coordinates: ``Union[dict, cosmo_array]``
+        The coordinate array(s) to be stored.
+
+    masks: ``dict``
+        Available coordinate names and their aliases with corresponding masks
+        (or keys) into the coordinate array or dictionary for each.
+    """
+
     def __init__(self, coordinates: Union[dict, cosmo_array],
                  masks: dict) -> None:
         self._coordinates: Union[np.ndarray, dict] = coordinates
@@ -93,6 +115,10 @@ class _CoordinateHelper(object):
 
 
 class _SWIFTNamedColumnDatasetHelper(object):
+
+    """
+    DOCSTRING
+    """
 
     def __init__(
             self, named_column_dataset: '__SWIFTNamedColumnDataset',
@@ -163,6 +189,79 @@ class _SWIFTNamedColumnDatasetHelper(object):
 
 
 class _SWIFTParticleDatasetHelper(object):
+
+    """
+    A wrapper class to enable :obj:`~SWIFTGalaxy`
+    functionality for :obj:`swiftsimio.reader.SWIFTParticleDataset`.
+
+    Unlike the :obj:`~SWIFTGalaxy` class that inherits
+    directly from :obj:`swiftsimio.reader.SWIFTDataset`, for technical
+    reasons this class does *not* inherit
+    :obj:`~swiftsimio.reader.__SWIFTParticleDataset`. It does, however, expose
+    the functionality of that class by maintaining an instance internally and
+    forwarding any attribute lookups that it does not handle itself to its
+    internal particle dataset.
+
+    In addition to handling the transformation and masking of data from calls
+    to :obj:`~SWIFTGalaxy` routines, this class provides
+    particle coordinates and velocities in cartesian, spherical and cylindrical
+    coordinates through the properties:
+
+    + :obj:`~_SWIFTParticleDatasetHelper.cartesian_coordinates`
+    + :obj:`~_SWIFTParticleDatasetHelper.cartesian_velocities`
+    + :obj:`~_SWIFTParticleDatasetHelper.spherical_coordinates`
+    + :obj:`~_SWIFTParticleDatasetHelper.spherical_velocities`
+    + :obj:`~_SWIFTParticleDatasetHelper.cylindrical_coordinates`
+    + :obj:`~_SWIFTParticleDatasetHelper.cylindrical_velocities`
+
+    These are evaluated lazily and automatically re-calculated if necessary,
+    such as after a coordinate rotation.
+
+    Instances of this helper class should in general not be created separately
+    since they require an instance of :obj:`SWIFTGalaxy` to function and will
+    be created automatically by that class.
+
+    Parameters
+    ----------
+    particle_dataset: :obj:`swiftsimio.reader.__SWIFTParticleDataset`
+        The particle dataset to be wrapped.
+
+    swiftgalaxy: :obj:`~SWIFTGalaxy`
+        Used to store a reference to the parent :obj:`~SWIFTGalaxy`.
+
+    See Also
+    --------
+    :obj:`~SWIFTGalaxy`
+    :obj:`~_CoordinateHelper`
+
+    Examples
+    --------
+
+    The cartesian, spherical and cylindrical coordinates of gas particles can
+    be accessed, for example, by (``mygalaxy`` is a :obj:`~SWIFTGalaxy`):
+
+    ::
+
+        mygalaxy.gas.cartesian_coordinates.x
+        mygalaxy.gas.cartesian_coordinates.y
+        mygalaxy.gas.cartesian_coordinates.z
+        mygalaxy.gas.cartesian_velocities.x
+        mygalaxy.gas.cartesian_velocities.y
+        mygalaxy.gas.cartesian_velocities.z
+        mygalaxy.gas.spherical_coordinates.r
+        mygalaxy.gas.spherical_coordinates.theta
+        mygalaxy.gas.spherical_coordinates.phi
+        mygalaxy.gas.spherical_velocities.r
+        mygalaxy.gas.spherical_velocities.theta
+        mygalaxy.gas.spherical_velocities.phi
+        mygalaxy.gas.cylindrical_coordinates.rho
+        mygalaxy.gas.cylindrical_coordinates.phi
+        mygalaxy.gas.cylindrical_coordinates.z
+        mygalaxy.gas.cylindrical_velocities.rho
+        mygalaxy.gas.cylindrical_velocities.phi
+        mygalaxy.gas.cylindrical_velocities.z
+
+    """
 
     def __init__(self, particle_dataset: '__SWIFTParticleDataset',
                  swiftgalaxy: 'SWIFTGalaxy') -> None:
@@ -343,7 +442,7 @@ class _SWIFTParticleDatasetHelper(object):
     @property
     def cartesian_coordinates(self) -> _CoordinateHelper:
         """
-        The cartesian coordinates docstring!
+        DOCSTRING
         """
         if self._cartesian_coordinates is None:
             self._cartesian_coordinates = \
@@ -357,6 +456,9 @@ class _SWIFTParticleDatasetHelper(object):
 
     @property
     def cartesian_velocities(self) -> _CoordinateHelper:
+        """
+        DOCSTRING
+        """
         if self._cartesian_coordinates is None:
             self.cartesian_coordinates
         if self._cartesian_velocities is None:
@@ -371,6 +473,9 @@ class _SWIFTParticleDatasetHelper(object):
 
     @property
     def spherical_coordinates(self) -> _CoordinateHelper:
+        """
+        DOCSTRING
+        """
         if self._cartesian_coordinates is None:
             self.cartesian_coordinates
         if self._spherical_coordinates is None:
@@ -403,6 +508,9 @@ class _SWIFTParticleDatasetHelper(object):
 
     @property
     def spherical_velocities(self) -> _CoordinateHelper:
+        """
+        DOCSTRING
+        """
         if self._spherical_coordinates is None:
             self.spherical_coordinates
         # existence of self.cartesian_coordinates guaranteed by
@@ -440,6 +548,9 @@ class _SWIFTParticleDatasetHelper(object):
 
     @property
     def cylindrical_coordinates(self) -> _CoordinateHelper:
+        """
+        DOCSTRING
+        """
         if self._cartesian_coordinates is None:
             self.cartesian_coordinates
         if self._cylindrical_coordinates is None:
@@ -469,6 +580,9 @@ class _SWIFTParticleDatasetHelper(object):
 
     @property
     def cylindrical_velocities(self) -> _CoordinateHelper:
+        """
+        DOCSTRING
+        """
         if self._cylindrical_coordinates is None:
             self.cylindrical_coordinates
         # existence of self.cartesian_coordinates guaranteed by
@@ -535,7 +649,120 @@ class _SWIFTParticleDatasetHelper(object):
 class SWIFTGalaxy(SWIFTDataset):
 
     """
-    The SWIFTGalaxy docstring!
+    A representation of a simulated galaxy.
+
+    A :obj:`~SWIFTGalaxy` represents a galaxy from a
+    simulation, including both its particles and integrated properties. A halo
+    finder catalogue is required to define which particles belong to the galaxy
+    and to provide integrated properties. The implementation is an extension of
+    the :mod:`swiftsimio.reader.SWIFTDataset` class, so all the functionality
+    of such a dataset is also available for a
+    :obj:`~SWIFTGalaxy`. The :obj:`__SWIFTParticleDataset`
+    objects familiar to SWIFTSimIO users (e.g. a :obj:`GasDataset`).
+
+    Parameters
+    ----------
+    snapshot_filename: ``str``
+        Name of file containing snapshot.
+
+    halo_finder: ``_HaloFinder``
+        A halo_finder instance from :mod:`swiftgalaxy.halo_finders`, e.g. a
+        :obj:`swiftgalaxy.halo_finders.Velociraptor` instance.
+
+    auto_recentre: ``bool``, default: ``True``
+        If ``True``, the coordinate system will be automatically recentred on
+        the position *and* velocity centres defined by the ``halo_finder``.
+
+    transforms_like_coordinates: ``set[str]``, default: ``{'coordinates'}``
+        Names of fields that behave as spatial coordinates. It is assumed that
+        these exist for all present particle types. When the coordinate system
+        is rotated or translated, the associated arrays will be transformed
+        accordingly.
+
+    transforms_like_velocities: ``set[str]``, default: ``{'velocities'}``
+        Names of fields that behave as velocities. It is assumed that these
+        exist for all present particle types. When the coordinate system is
+        rotated or boosted, the associated arrays will be transformed
+        accordingly.
+
+    id_particle_dataset_name: ``str``, default: ``'particle_ids'``
+        Name of the dataset containing the particle IDs, assumed to be the same
+        for all present particle types.
+
+    coordinates_dataset_name: ``str``, default: ``'velocities'``
+        Name of the dataset containing the particle spatial coordinates,
+        assumed to be the same for all present particle types.
+
+    velocities_dataset_name: ``str``, default: ``'velocities'``
+        Name of the dataset containing the particle velocities, assumed to be
+        the same for all present particle types.
+
+    See Also
+    --------
+    :obj:`~_SWIFTParticleDatasetHelper`
+    :obj:`~_SWIFTNamedColumnDatasetHelper`
+    :mod:`swiftgalaxy.halo_finders`
+
+    Examples
+    --------
+
+    Assuming we have a snapshot file ``snap.hdf5``, and velociraptor outputs
+    ``halos.properties``, ``halos.catalog_groups``, etc., with the default
+    names for coordinates, velocities and particle_ids, we can initialise a
+    :obj:`~SWIFTGalaxy` for the first row (indexed from 0)
+    in the halo catalogue very easily:
+
+    ::
+
+        from swiftgalaxy import SWIFTGalaxy, Velociraptor
+        mygalaxy = SWIFTGalaxy(
+            'snap.hdf5',
+            Velociraptor(
+                'halos',
+                halo_index=0
+            )
+        )
+
+    Like a :obj:`swiftsimio.reader.SWIFTDataset`, the particle datasets are
+    accessed as below, and all data are loaded 'lazily', on demand.
+
+    ::
+
+        mygalaxy.gas.particle_ids
+        mygalaxy.dark_matter.coordinates
+
+    However, information from the halo finder is used to select only the
+    particles identified as bound to this galaxy. The coordinate system is
+    centred in both position and velocity on the centre and peculiar velocity
+    of the galaxy, as determined by the halo finder. The coordinate system can
+    be further manipulated, and all particle arrays will stay in a consistent
+    reference frame at all times.
+
+    Again like for a :obj:`swiftsimio.reader.SWIFTDataset`, the units and
+    metadata are available:
+
+    ::
+
+        mygalaxy.units
+        mygalaxy.metadata
+
+    The halo finder interface is accessible as shown below. What this interface
+    looks like depends on the halo finder being used, but will provide values
+    for the individual galaxy of interest.
+
+    ::
+
+        mygalaxy.halo_finder
+
+    In this case with :obj:`swiftgalaxy.halo_finders.Velociraptor`, we can get
+    the virial radius like this:
+
+    ::
+
+        mygalaxy.halo_finder.masses.mvir
+
+    For a complete description of available features see the narrative
+    documentation pages.
     """
 
     def __init__(self,
@@ -727,11 +954,22 @@ class SWIFTGalaxy(SWIFTDataset):
                 return super().__getattribute__(attr)
 
     def rotate(self, rotation: Rotation) -> None:
+        """
+        Apply a rotation to the particle spatial coordinates.
+
+        The provided rotation is applied to all particle coordinates. All
+        datasets specified in the ``transforms_like_coordinates`` and
+        ``transforms_like_velocities`` arguments to
+        :obj:`~SWIFTGalaxy` are transformed (by default
+        ``coordinates`` and ``velocities`` for all present particle types).
+
+        Parameters
+        ----------
+        rotation: ``scipy.spatial.transform.Rotation``
+            The rotation to be applied. ``Rotation`` supports several input
+            formats, including axis-angle, rotation matrices, and others.
 
         """
-        The rotate docstring!
-        """
-
         rotation_matrix = rotation.as_matrix()
         rotatable = (self.transforms_like_coordinates
                      | self.transforms_like_velocities)
@@ -781,21 +1019,113 @@ class SWIFTGalaxy(SWIFTDataset):
         return
 
     def translate(self, translation: cosmo_array) -> None:
+        """
+        Apply a translation to the particle spatial coordinates.
+
+        The provided translation vector is added to all particle coordinates.
+        If the new centre position that should be set to zero is known, use
+        :func:`~SWIFTGalaxy.recentre` instead. All datasets
+        specified in the ``transforms_like_coordinates`` argument to
+        :obj:`~SWIFTGalaxy` are transformed (by default
+        ``coordinates`` for all present particle types).
+
+        Parameters
+        ----------
+        translation: ``cosmo_array``
+            The vector to translate by.
+
+        See Also
+        --------
+        :func:`~SWIFTGalaxy.recentre`
+        """
         self._translate(translation)
         return
 
     def boost(self, boost: cosmo_array) -> None:
+        """
+        Apply a 'boost' to the velocity coordinates.
+
+        The provided velocity vector is added to all particle velocities. If
+        the 'reference velocity' that should be set to zero is known, use
+        :func:`~SWIFTGalaxy.recentre_velocity` instead. All
+        datasets specified in the ``transforms_like_velocities`` argument to
+        :obj:`~SWIFTGalaxy` are transformed (by default
+        ``velocities`` for all present particle types).
+
+        Parameters
+        ----------
+        boost: ``cosmo_array``
+            The velocity to boost by.
+
+        See Also
+        --------
+        :func:`~SWIFTGalaxy.recentre_velocity`
+        """
         self._translate(boost, boost=True)
         return
 
     def recentre(self, new_centre: cosmo_array) -> None:
+        """
+        Set a new centre for the particle spatial coordinates.
+
+        The provided (spatial) coordinate centre is set to zero by subtracting
+        it from the particle coordinates. Note that this is the new centre in
+        the current coordinate system (not e.g. the simulation box
+        coordinates). If the coordinate offset to be applied is known, use
+        :func:`~SWIFTGalaxy.translate` instead. All datasets
+        specified in the ``transforms_like_coordinates`` argument to
+        :obj:`~SWIFTGalaxy` are transformed (by default
+        ``coordinates`` for all present particle types).
+
+        Parameters
+        ----------
+        new_centre: ``cosmo_array``
+            The new centre for the (spatial) coordinate system.
+
+        See Also
+        --------
+        :func:`~SWIFTGalaxy.translate`
+        """
         self._translate(-new_centre)
         return
 
     def recentre_velocity(self, new_centre: cosmo_array) -> None:
+        """
+        Recentre the velocity coordinates.
+
+        The provided velocity coordinate is set to zero by subtracting it from
+        the particle velocities. Note that this is the new velocity centre in
+        the current coordinate system (not e.g. the simulation box
+        coordinates). If the velocity offset to be applied is known, use
+        :func:`~SWIFTGalaxy.boost` instead. All
+        datasets specified in the ``transforms_like_velocities`` argument to
+        :obj:`~SWIFTGalaxy` are transformed (by default
+        ``velocities`` for all present particle types).
+
+        Parameters
+        ----------
+        new_centre: ``cosmo_array``
+            The new centre for the velocity coordinate system.
+
+        See also
+        --------
+        :func:`~SWIFTGalaxy.boost`
+        """
         self._translate(-new_centre, boost=True)
 
     def wrap_box(self) -> None:
+        """
+        Wrap the particle coordinates in a periodic box.
+
+        Recentres a particle coordinates from a periodic simulation volume such
+        that the coordinate (0, 0, 0) is in the centre and the axes of the
+        volume are aligned with the coordinate axes.
+
+        .. note::
+            This is invoked automatically after any coordinate translations or
+            rotations, so manually calling this function should usually not be
+            necessary.
+        """
         for particle_name in self.metadata.present_particle_names:
             dataset = getattr(self, particle_name)._particle_dataset
             for field_name in self.transforms_like_coordinates:
@@ -809,6 +1139,32 @@ class SWIFTGalaxy(SWIFTDataset):
         return
 
     def mask_particles(self, mask_collection: MaskCollection) -> None:
+        """
+        Select a subset of the currently selected particles.
+
+        The masks to be applied can by in any format accepted by a
+        :obj:`swiftsimio.objects.cosmo_array` via ``__getitem__`` and should be
+        collected in a :obj:`~swiftgalaxy.masks.MaskCollection`. The selection
+        is applied permanently to all particle datasets for this galaxy.
+        Temporary masks (e.g. for interactive use) can be created by using the
+        ``__getitem__`` (square brackets) method of the
+        :obj:`~SWIFTGalaxy`, any of its associated
+        :obj:`~_SWIFTParticleDatasetHelper` or
+        :obj:`~_SWIFTNamedColumnDatasetHelper` objects, but
+        note that to ensure internal consistency, these return a masked copy of
+        the *entire* :obj:`~SWIFTGalaxy`, and are therefore
+        relatively memory-intensive. Masking individual
+        :obj:`swiftsimio.objects.cosmo_array` datasets with ``__getitem__``
+        avoids this: only masked copies of the individual arrays are returned
+        in this case.
+
+        Parameters
+        ----------
+        mask_collection: :obj:`~swiftgalaxy.masks.MaskCollection`
+            Set of masks to be applied to each particle type. Particle types
+            may be omitted by setting their mask to None, or simply omitting
+            them from the :obj:`~swiftgalaxy.masks.MaskCollection`.
+        """
         for particle_name in self.metadata.present_particle_names:
             mask = getattr(mask_collection, particle_name)
             if mask is not None:

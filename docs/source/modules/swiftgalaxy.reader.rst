@@ -3,6 +3,6 @@ swiftgalaxy.reader module
 
 .. automodule:: swiftgalaxy.reader
    :members:
-   :private-members:
    :show-inheritance:
-   :undoc-members:
+   :inherited-members:
+   :private-members: _SWIFTParticleDatasetHelper, _SWIFTNamedColumnDatasetHelper, _CoordinateHelper

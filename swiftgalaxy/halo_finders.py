@@ -1,3 +1,14 @@
+"""
+This module contains classes providing interfaces to halo finders used with
+SWIFT so that :mod:`swiftgalaxy` can obtain the information it requires in a
+streamlined way. Currently only the Velociraptor_ halo finder is supported, but
+support for other halo finders (e.g. `HBT+`_) is planned.
+
+.. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/\
+abstract
+.. _HBT+: https://ui.adsabs.harvard.edu/abs/2018MNRAS.474..604H/abstract
+"""
+
 from abc import ABC, abstractmethod
 import unyt as u
 from swiftgalaxy.masks import MaskCollection
@@ -53,7 +64,100 @@ class _HaloFinder(ABC):
 class Velociraptor(_HaloFinder):
 
     """
-    The Velociraptor docstring!
+    Interface to velociraptor halo catalogues for use with :mod:`swiftgalaxy`.
+
+    Takes a set of :mod:`velociraptor` output files and configuration options
+    and provides an interface that :mod:`swiftgalaxy` understands. Also exposes
+    the halo/galaxy properties computed by :mod:`velociraptor` for a single
+    object of interest with the same interface_ provided by the
+    :mod:`velociraptor` python package. Reading of properties is done
+    on-the-fly, and only rows corresponding to the object of interest are read
+    from disk.
+
+    .. _interface: https://velociraptor-python.readthedocs.io/en/latest/
+
+    Parameters
+    ----------
+
+    velociraptor_filebase: ``str``
+        The initial part of the velociraptor filenames (possibly including
+        path), e.g. if there is a ``halos.properties`` file, pass ``halos`` as
+        this argument.
+
+    halo_index: ``int``
+        Position of the object of interest in the catalogue arrays.
+
+    extra_mask: ``Union[str, MaskType]``, default: ``'bound_only'``
+        Mask to apply to particles after spatial masking. If ``'bound_only'``,
+        then the galaxy is masked to include only the gravitationally bound
+        particles as determined by :mod:`velociraptor`. A user-defined mask
+        can also be provided as an an object (such as a
+        :obj:`swiftgalaxy.masks.MaskCollection`) that has attributes
+        corresponding to each present particle name (e.g. gas, dark_matter,
+        etc.) each containing a mask.
+
+    centre_type: ``str``, default: ``'minpot'``
+        Type of centre, chosen from those provided by :mod:`velociraptor`.
+        Default is the position of the particle with the minimum potential,
+        ``'minpot'``; other possibilities may include ``''``, ``'_gas'``,
+        ``'_star'``, ``'mbp'`` (most bound particle).
+
+    Notes
+    -----
+
+    .. note::
+        :mod:`velociraptor` only supports index access to catalogue arrays, not
+        identifier access. This means that the ``halo_index`` is simply the
+        position of the object of interest in the catalogue arrays.
+
+    Examples
+    --------
+    Given a file ``halos.properties`` (and also ``halos.catalog_groups``, etc.)
+    at ``/output/path/``, the following creates a
+    :obj:swiftgalaxy.halo_finders.Velociraptor object for the entry at index
+    ``3`` in the catalogue (i.e. the 4th row, indexed from 0) and demonstrates
+    retrieving its virial mass.
+
+    ::
+
+        >>> cat = Velociraptor(
+        >>>     '/output/path/out',  # out.properties file is at /output/path/
+        >>>     halo_index=3,  # 4th entry in catalogue (indexed from 0)
+        >>> )
+        >>> cat
+        Masked velociraptor catalogue at /path/to/output/out.properties.
+        Contains the following field collections: metallicity, ids, energies,
+        stellar_age, spherical_overdensities, rotational_support,
+        star_formation_rate, masses, eigenvectors, radii, temperature, veldisp,
+        structure_type, velocities, positions, concentration, rvmax_quantities,
+        angular_momentum, projected_apertures, apertures,
+        element_mass_fractions, dust_mass_fractions, number,
+        hydrogen_phase_fractions, black_hole_masses, stellar_birth_densities,
+        snii_thermal_feedback_densities, species_fractions,
+        gas_hydrogen_species_masses, gas_H_and_He_masses,
+        gas_diffuse_element_masses, dust_masses_from_table, dust_masses,
+        stellar_luminosities, cold_dense_gas_properties,
+        log_element_ratios_times_masses, lin_element_ratios_times_masses,
+        element_masses_in_stars, fail_all
+        >>> cat.masses
+        Contains the following fields: mass_200crit, mass_200crit_excl,
+        mass_200crit_excl_gas, mass_200crit_excl_gas_nsf,
+        mass_200crit_excl_gas_sf, mass_200crit_excl_star, mass_200crit_gas,
+        mass_200crit_gas_nsf, mass_200crit_gas_sf, mass_200crit_star,
+        mass_200mean, mass_200mean_excl, mass_200mean_excl_gas,
+        mass_200mean_excl_gas_nsf, mass_200mean_excl_gas_sf,
+        mass_200mean_excl_star, mass_200mean_gas, mass_200mean_gas_nsf,
+        mass_200mean_gas_sf, mass_200mean_star, mass_bn98, mass_bn98_excl,
+        mass_bn98_excl_gas, mass_bn98_excl_gas_nsf, mass_bn98_excl_gas_sf,
+        mass_bn98_excl_star, mass_bn98_gas, mass_bn98_gas_nsf,
+        mass_bn98_gas_sf, mass_bn98_star, mass_fof, mass_bh, mass_gas,
+        mass_gas_30kpc, mass_gas_500c, mass_gas_rvmax, mass_gas_hight_excl,
+        mass_gas_hight_incl, mass_gas_incl, mass_gas_nsf, mass_gas_nsf_incl,
+        mass_gas_sf, mass_gas_sf_incl, mass_star, mass_star_30kpc,
+        mass_star_500c, mass_star_rvmax, mass_star_incl, mass_tot,
+        mass_tot_incl, mvir
+        >>> cat.masses.mvir
+        unyt_array(14.73875777, '10000000000.0*Msun')
     """
 
     def __init__(
