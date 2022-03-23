@@ -442,7 +442,31 @@ class _SWIFTParticleDatasetHelper(object):
     @property
     def cartesian_coordinates(self) -> _CoordinateHelper:
         """
-        DOCSTRING
+        Utility to access the cartesian coordinates of particles.
+
+        Returns a view into the coordinate array which can be accessed using
+        attribute syntax. Cartesian coordinates can be accessed separately:
+
+        + ``cartesian_coordinates.x``
+        + ``cartesian_coordinates.y``
+        + ``cartesian_coordinates.z``
+
+        or as a 2D array:
+
+        + ``cartesian_coordinates.xyz``
+
+        Since a view is used, the coordinates are automatically updated if the
+        coordinate arrays are modified (e.g. following a rotation or other
+        transformation).
+
+        By default the coorinate array is assumed to be called ``coordinates``,
+        but this can be overridden with the ``coordinates_dataset_name``
+        argument to :obj:`~SWIFTGalaxy`.
+
+        Returns
+        -------
+        coordinate_helper: :obj:`~_CoordinateHelper`
+            Container providing particle cartesian coordinates as attributes.
         """
         if self._cartesian_coordinates is None:
             self._cartesian_coordinates = \
@@ -457,7 +481,31 @@ class _SWIFTParticleDatasetHelper(object):
     @property
     def cartesian_velocities(self) -> _CoordinateHelper:
         """
-        DOCSTRING
+        Utility to access the cartesian components of particle velocities.
+
+        Returns a view into the velocity array which can be accessed using
+        attribute syntax. Cartesian coordinates can be accessed separately:
+
+        + ``cartesian_velocities.x``
+        + ``cartesian_velocities.y``
+        + ``cartesian_velocities.z``
+
+        or as a 2D array:
+
+        + ``cartesian_velocities.xyz``
+
+        Since a view is used, the velocities are automatically updated if the
+        underlying arrays are modified (e.g. following a rotation or other
+        transformation).
+
+        By default the array of velocities is assumed to be called
+        ``velocities``, but this can be overridden with the
+        ``velocities_dataset_name`` argument to :obj:`~SWIFTGalaxy`.
+
+        Returns
+        -------
+        coordinate_helper: :obj:`~_CoordinateHelper`
+            Container providing particle cartesian velocities as attributes.
         """
         if self._cartesian_coordinates is None:
             self.cartesian_coordinates
@@ -474,7 +522,47 @@ class _SWIFTParticleDatasetHelper(object):
     @property
     def spherical_coordinates(self) -> _CoordinateHelper:
         """
-        DOCSTRING
+        Utility to access the spherical coordinates of particles.
+
+        The spherical coordinates of particles are calculated the first time
+        this attribute is accessed. If a coordinate transformation (e.g. a
+        rotation) or other operation is applied to the :obj:`~SWIFTGalaxy`
+        that would invalidate the derived spherical coordinates, they are
+        erased and will be recalculated at the next access of this attribute.
+        The coordinates could be transformed when they change instead, but in
+        general this requires transforming back through cartesian coordinates,
+        so the more efficient "lazy" approach of recalculating on demand is
+        used instead.
+
+        The "physics" notation convention, where
+        :math:`-\\frac{\\pi}{2} \\leq \\theta \\leq \\frac{\\pi}{2}` is the
+        polar angle and :math:`0 < \\phi \\leq 2\\pi` is the azimuthal angle,
+        is assumed.
+
+        Several attribute names are supported for each coordinate. They can be
+        accessed with the aliases:
+
+        + ``spherical_coordinates.r``:
+            + ``spherical_coordinates.radius``
+        + ``spherical_coordinates.theta``:
+            + ``spherical_coordinates.lat``
+            + ``spherical_coordinates.latitude``
+            + ``spherical_coordinates.pol``
+            + ``spherical_coordinates.polar``
+        + ``spherical_coordinates.phi``:
+            + ``spherical_coordinates.lon``
+            + ``spherical_coordinates.longitude``
+            + ``spherical_coordinates.az``
+            + ``spherical_coordinates.azimuth``
+
+        By default the coorinate array is assumed to be called ``coordinates``,
+        but this can be overridden with the ``coordinates_dataset_name``
+        argument to :obj:`~SWIFTGalaxy`.
+
+        Returns
+        -------
+        coordinate_helper: :obj:`~_CoordinateHelper`
+            Container providing particle spherical coordinates as attributes.
         """
         if self._cartesian_coordinates is None:
             self.cartesian_coordinates
@@ -509,7 +597,48 @@ class _SWIFTParticleDatasetHelper(object):
     @property
     def spherical_velocities(self) -> _CoordinateHelper:
         """
-        DOCSTRING
+        Utility to access the velocities of particles in spherical coordinates.
+
+        The particle velocities in spherical coordinates are calculated the
+        first time this attribute is accessed. If a coordinate transformation
+        (e.g. a rotation) or other operation is applied to the
+        :obj:`~SWIFTGalaxy` that would invalidate the derived spherical
+        velocities, they are erased and will be recalculated at the next access
+        of this attribute. The velocities could be transformed when they change
+        instead, but in general this requires transforming back through
+        cartesian coordinates, so the more efficient "lazy" approach of
+        recalculating on demand is used instead.
+
+        The "physics" notation convention, where
+        :math:`-\\frac{\\pi}{2} \\leq \\theta \\leq \\frac{\\pi}{2}` is the
+        polar angle and :math:`0 < \\phi \\leq 2\\pi` is the azimuthal angle,
+        is assumed.
+
+        Several attribute names are supported for each velocity component. They
+        can be accessed with the aliases:
+
+        + ``spherical_velocities.r``:
+            + ``spherical_velocities.radius``
+        + ``spherical_velocities.theta``:
+            + ``spherical_velocities.lat``
+            + ``spherical_velocities.latitude``
+            + ``spherical_velocities.pol``
+            + ``spherical_velocities.polar``
+        + ``spherical_velocities.phi``:
+            + ``spherical_velocities.lon``
+            + ``spherical_velocities.longitude``
+            + ``spherical_velocities.az``
+            + ``spherical_velocities.azimuth``
+
+        By default the array of velocities is assumed to be called
+        ``velocities``, but this can be overridden with the
+        ``velocities_dataset_name`` argument to :obj:`~SWIFTGalaxy`.
+
+        Returns
+        -------
+        coordinate_helper: :obj:`~_CoordinateHelper`
+            Container providing particle velocities in spherical coordinates as
+            attributes.
         """
         if self._spherical_coordinates is None:
             self.spherical_coordinates
@@ -549,7 +678,42 @@ class _SWIFTParticleDatasetHelper(object):
     @property
     def cylindrical_coordinates(self) -> _CoordinateHelper:
         """
-        DOCSTRING
+        Utility to access the cylindrical coordinates of particles.
+
+        The cylindrical coordinates of particles are calculated the first time
+        this attribute is accessed. If a coordinate transformation (e.g. a
+        rotation) or other operation is applied to the :obj:`~SWIFTGalaxy`
+        that would invalidate the derived cylindrical coordinates, they are
+        erased and will be recalculated at the next access of this attribute.
+        The coordinates could be transformed when they change instead, but in
+        general this requires transforming back through cartesian coordinates,
+        so the more efficient "lazy" approach of recalculating on demand is
+        used instead.
+
+        The coordinate components are named :math:`(\\rho, \\phi, z)` by
+        default, and assume a convention where :math:`0 < \\phi \\leq 2\\pi`.
+
+        Several attribute names are supported for each coordinate. They can be
+        accessed with the aliases:
+
+        + ``cylindrical_coordinates.rho``:
+            + ``cylindrical_coordinates.R``
+            + ``cylindrical_coordinates.radius``
+        + ``cylindrical_coordinates.phi``:
+            + ``cylindrical_coordinates.lon``
+            + ``cylindrical_coordinates.longitude``
+            + ``cylindrical_coordinates.az``
+            + ``cylindrical_coordinates.azimuth``
+        + ``cylindrical_coordinates.z``
+
+        By default the coorinate array is assumed to be called ``coordinates``,
+        but this can be overridden with the ``coordinates_dataset_name``
+        argument to :obj:`~SWIFTGalaxy`.
+
+        Returns
+        -------
+        coordinate_helper: :obj:`~_CoordinateHelper`
+            Container providing particle cylindrical coordinates as attributes.
         """
         if self._cartesian_coordinates is None:
             self.cartesian_coordinates
@@ -581,7 +745,49 @@ class _SWIFTParticleDatasetHelper(object):
     @property
     def cylindrical_velocities(self) -> _CoordinateHelper:
         """
-        DOCSTRING
+        Utility to access the velocities of particles in cylindrical
+        coordinates.
+
+        The particle velocities in cylindrical coordinates are calculated the
+        first time this attribute is accessed. If a coordinate transformation
+        (e.g. a rotation) or other operation is applied to the
+        :obj:`~SWIFTGalaxy` that would invalidate the derived cylindrical
+        velocities, they are erased and will be recalculated at the next access
+        of this attribute. The velocities could be transformed when they change
+        instead, but in general this requires transforming back through
+        cartesian coordinates, so the more efficient "lazy" approach of
+        recalculating on demand is used instead.
+
+        The "physics" notation convention, where
+        :math:`-\\frac{\\pi}{2} \\leq \\theta \\leq \\frac{\\pi}{2}` is the
+        polar angle and :math:`0 < \\phi \\leq 2\\pi` is the azimuthal angle,
+        is assumed.
+
+        The coordinate components are named :math:`(\\rho, \\phi, z)` by
+        default, and assume a convention where :math:`0 < \\phi \\leq 2\\pi`.
+
+        Several attribute names are supported for each velocity component. They
+        can be accessed with the aliases:
+
+        + ``cylindrical_velocities.rho``:
+            + ``cylindrical_velocities.R``
+            + ``cylindrical_velocities.radius``
+        + ``cylindrical_coordinates.phi``:
+            + ``cylindrical_velocities.lon``
+            + ``cylindrical_velocities.longitude``
+            + ``cylindrical_velocities.az``
+            + ``cylindrical_velocities.azimuth``
+        + ``cylindrical_velocities.z``
+
+        By default the array of velocities is assumed to be called
+        ``velocities``, but this can be overridden with the
+        ``velocities_dataset_name`` argument to :obj:`~SWIFTGalaxy`.
+
+        Returns
+        -------
+        coordinate_helper: :obj:`~_CoordinateHelper`
+            Container providing particle velocities in cylindrical coordinates
+            as attributes.
         """
         if self._cylindrical_coordinates is None:
             self.cylindrical_coordinates
