@@ -863,8 +863,15 @@ class SWIFTGalaxy(SWIFTDataset):
     and to provide integrated properties. The implementation is an extension of
     the :mod:`swiftsimio.reader.SWIFTDataset` class, so all the functionality
     of such a dataset is also available for a
-    :obj:`~SWIFTGalaxy`. The :obj:`__SWIFTParticleDataset`
-    objects familiar to SWIFTSimIO users (e.g. a :obj:`GasDataset`).
+    :obj:`~SWIFTGalaxy`. The :obj:`swiftsimio.reader.__SWIFTParticleDataset`
+    objects familiar to :mod:`swiftsimio` users (e.g. a :obj:`GasDataset`) are
+    wrapped by a :obj:`~_SWIFTParticleDatasetHelper` class that exposes their
+    usual functionality and extends it with new features.
+    :obj:`swiftsimio.reader.__SWIFTNamedColumnDataset` instances are also
+    wrapped, using a :obj:`~_SWIFTNamedColumnDatasetHelper` class.
+
+    For an overview of available features see the examples below, and the
+    narrative documentation pages.
 
     Parameters
     ----------
