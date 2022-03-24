@@ -117,7 +117,45 @@ class _CoordinateHelper(object):
 class _SWIFTNamedColumnDatasetHelper(object):
 
     """
-    DOCSTRING
+    A wrapper class to enable :obj:`~SWIFTGalaxy`
+    functionality for a :obj:`swiftsimio.reader.__SWIFTNamedColumnDataset`.
+
+    Unlike the :obj:`~SWIFTGalaxy` class that inherits
+    directly from :obj:`swiftsimio.reader.SWIFTDataset`, for technical
+    reasons this class does *not* inherit
+    :obj:`~swiftsimio.reader.__SWIFTNamedColumnDataset`. It does, however,
+    expose the functionality of that class by maintaining an instance
+    internally and forwarding any attribute lookups that it does not handle
+    itself to its internal named column dataset.
+
+    Like :obj:`~_SWIFTParticleDatasetHelper`, this class handles the
+    transformation and masking of data from calls to :obj:`~SWIFTGalaxy`
+    routines.
+
+    Instances of this helper class should in general not be created separately
+    since they require an instance of :obj:`SWIFTGalaxy` to function and will
+    be created automatically by that class.
+
+    If any datasets contained in a named column dataset should transform like
+    particle coordinates or velocities, these can be specified in the arguments
+    ``transforms_like_coordinates`` and ``transforms_like_velocities`` to
+    :obj:`~SWIFTGalaxy` as a string containing a dot, e.g. the argument
+    ``transforms_like_coordinates={'coordinates',
+    'extra_coordinates.an_extra_coordinate'}`` is syntactically valid.
+
+    Parameters
+    ----------
+    named_column_dataset: :obj:`swiftsimio.reader.__SWIFTNamedColumnDataset`
+        The named column dataset to be wrapped.
+
+    particle_dataset_helper: :obj:`~_SWIFTParticleDatasetHelper`
+        Used to store a reference to the parent
+        :obj:`~_SWIFTParticleDatasetHelper` object.
+
+    See Also
+    --------
+    :obj:`~SWIFTGalaxy`
+    :obj:`~_SWIFTParticleDatasetHelper`
     """
 
     def __init__(
@@ -192,7 +230,7 @@ class _SWIFTParticleDatasetHelper(object):
 
     """
     A wrapper class to enable :obj:`~SWIFTGalaxy`
-    functionality for :obj:`swiftsimio.reader.SWIFTParticleDataset`.
+    functionality for a :obj:`swiftsimio.reader.__SWIFTParticleDataset`.
 
     Unlike the :obj:`~SWIFTGalaxy` class that inherits
     directly from :obj:`swiftsimio.reader.SWIFTDataset`, for technical
