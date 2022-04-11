@@ -595,7 +595,7 @@ class _SWIFTParticleDatasetHelper(object):
         Several attribute names are supported for each coordinate. They can be
         accessed with the aliases:
 
-rk        + ``spherical_coordinates.r``:
+        + ``spherical_coordinates.r``:
             + ``spherical_coordinates.radius``
         + ``spherical_coordinates.theta``:
             + ``spherical_coordinates.lat``
