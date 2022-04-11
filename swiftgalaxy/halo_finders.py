@@ -81,8 +81,8 @@ class Velociraptor(_HaloFinder):
 
     velociraptor_filebase: ``str``
         The initial part of the velociraptor filenames (possibly including
-        path), e.g. if there is a ``halos.properties`` file, pass ``halos`` as
-        this argument.
+        path), e.g. if there is a :file:`{halos}.properties` file, pass
+        ``halos`` as this argument.
 
     halo_index: ``int``
         Position of the object of interest in the catalogue arrays.
@@ -92,7 +92,7 @@ class Velociraptor(_HaloFinder):
         then the galaxy is masked to include only the gravitationally bound
         particles as determined by :mod:`velociraptor`. A user-defined mask
         can also be provided as an an object (such as a
-        :obj:`swiftgalaxy.masks.MaskCollection`) that has attributes
+        :class:`swiftgalaxy.masks.MaskCollection`) that has attributes
         corresponding to each present particle name (e.g. gas, dark_matter,
         etc.) each containing a mask.
 
@@ -112,9 +112,9 @@ class Velociraptor(_HaloFinder):
 
     Examples
     --------
-    Given a file ``halos.properties`` (and also ``halos.catalog_groups``, etc.)
-    at ``/output/path/``, the following creates a
-    :obj:swiftgalaxy.halo_finders.Velociraptor object for the entry at index
+    Given a file :file:`{halos}.properties` (and also
+    :file:`{halos}.catalog_groups`, etc.) at :file:`/output/path/`, the
+    following creates a :class:`Velociraptor` object for the entry at index
     ``3`` in the catalogue (i.e. the 4th row, indexed from 0) and demonstrates
     retrieving its virial mass.
 
