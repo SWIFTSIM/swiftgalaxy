@@ -80,4 +80,12 @@ intersphinx_mapping = dict(
         'https://docs.scipy.org/doc/scipy/',
         None
     ),
+    unyt=(
+        'https://unyt.readthedocs.io/en/stable/',
+        None
+    ),
+    numpy=(
+        'https://numpy.org/doc/stable/',
+        None
+    ),
 )

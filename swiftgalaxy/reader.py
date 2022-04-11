@@ -595,7 +595,7 @@ class _SWIFTParticleDatasetHelper(object):
         Several attribute names are supported for each coordinate. They can be
         accessed with the aliases:
 
-        + ``spherical_coordinates.r``:
+rk        + ``spherical_coordinates.r``:
             + ``spherical_coordinates.radius``
         + ``spherical_coordinates.theta``:
             + ``spherical_coordinates.lat``
@@ -975,7 +975,7 @@ class SWIFTGalaxy(SWIFTDataset):
     --------
 
     Assuming we have a snapshot file :file:`{snap}.hdf5`, and velociraptor
-    outputs file:`{halos}.properties`, :file:`{halos}.catalog_groups`, etc.,
+    outputs :file:`{halos}.properties`, :file:`{halos}.catalog_groups`, etc.,
     with the default names for coordinates, velocities and particle_ids, we can
     initialise a :class:`SWIFTGalaxy` for the first row (indexed from 0) in the
     halo catalogue very easily:
@@ -1022,8 +1022,8 @@ class SWIFTGalaxy(SWIFTDataset):
 
         mygalaxy.halo_finder
 
-    In this case with :class:`swiftgalaxy.halo_finders.Velociraptor`, we can
-    get the virial radius like this:
+    In this case with :class:`~swiftgalaxy.halo_finders.Velociraptor`, we can
+    get the virial mass like this:
 
     ::
 
