@@ -133,7 +133,6 @@ For completeness, the cartesian coordinates :math:`(x, y, z)` are made available
 
 .. code-block:: python
 
-    sg = SWIFTGalaxy(...)
     sg.gas.cartesian_coordinates.x
     sg.gas.cartesian_coordinates.y
     sg.gas.cartesian_coordinates.z
