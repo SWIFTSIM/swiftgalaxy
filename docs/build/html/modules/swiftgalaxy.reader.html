@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>swiftgalaxy.reader module &mdash; SWIFTGalaxy 0.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="swiftgalaxy.masks module" href="swiftgalaxy.masks.html" />
+ <script type="text/javascript">
+    $(document).ready(function() {
+        //
+        //
+        $(".toggle > *").hide();
+        $(".toggle .admonition-title").show();
+        $(".toggle .admonition-title").click(function() {
+            $(this).parent().children().not(".admonition-title").toggle(400);
+            $(this).parent().children(".admonition-title").toggleClass("open");
+        })
+    });
+</script>
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> SWIFTGalaxy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../coordinate_transformations/index.html">Coordinate transformations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../additional_coordinates/index.html">Additional coordinates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../halo_finders/index.html">Halo finders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../masking/index.html">Particle masking</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="swiftgalaxy.html">swiftgalaxy package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="swiftgalaxy.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="swiftgalaxy.halo_finders.html">swiftgalaxy.halo_finders module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="swiftgalaxy.masks.html">swiftgalaxy.masks module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">swiftgalaxy.reader module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SWIFTGalaxy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">API Documentation</a> &raquo;</li>
+          <li><a href="swiftgalaxy.html">swiftgalaxy package</a> &raquo;</li>
+      <li>swiftgalaxy.reader module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/modules/swiftgalaxy.reader.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-swiftgalaxy.reader">
+<span id="swiftgalaxy-reader-module"></span><h1>swiftgalaxy.reader module<a class="headerlink" href="#module-swiftgalaxy.reader" title="Permalink to this headline"></a></h1>
+<p>This module contains wrappers for the parts making up a <a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.html#module-swiftsimio" title="(in SWIFTsimIO)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">swiftsimio</span></code></a>
+dataset to facilitate analyses of individual simulated galaxies.</p>
+<p>The top-level wrapper is <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>, which inherits from
+<a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.reader.html#swiftsimio.reader.SWIFTDataset" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTDataset</span></code></a>. It extends the functionality of a
+dataset to select particles belonging to a single galaxy, handle coordinate
+transformations while keeping all particles in a consistent frame of reference,
+providing spherical and cylindrical coordinates, and more.</p>
+<p>Additional wrappers are provided for
+<code class="xref py py-class docutils literal notranslate"><span class="pre">swiftsimio.reader.__SWIFTParticleDataset</span></code> and
+<code class="xref py py-class docutils literal notranslate"><span class="pre">swiftsimio.reader.__SWIFTNamedColumnDataset</span></code>:
+<a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_SWIFTParticleDatasetHelper</span></code></a> and
+<a class="reference internal" href="#swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper" title="swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_SWIFTNamedColumnDatasetHelper</span></code></a>, respectively. In general objects of
+these types should not be created directly by users, but rather by an object of
+the <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> class.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="swiftgalaxy.reader.SWIFTGalaxy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">swiftgalaxy.reader.</span></span><span class="sig-name descname"><span class="pre">SWIFTGalaxy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">snapshot_filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">halo_finder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">swiftgalaxy.halo_finders._HaloFinder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_recentre</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transforms_like_coordinates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'coordinates'}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transforms_like_velocities</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'velocities'}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id_particle_dataset_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'particle_ids'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coordinates_dataset_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'coordinates'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">velocities_dataset_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'velocities'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_spatial_mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.masks.html#swiftsimio.masks.SWIFTMask" title="(in SWIFTsimIO)"><span class="pre">swiftsimio.masks.SWIFTMask</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_extra_mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="swiftgalaxy.masks.html#swiftgalaxy.masks.MaskCollection" title="swiftgalaxy.masks.MaskCollection"><span class="pre">swiftgalaxy.masks.MaskCollection</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_coordinate_like_transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.22)"><span class="pre">numpy.ndarray</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_velocity_like_transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.22)"><span class="pre">numpy.ndarray</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/swiftgalaxy/reader.html#SWIFTGalaxy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#swiftgalaxy.reader.SWIFTGalaxy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.reader.html#swiftsimio.reader.SWIFTDataset" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">swiftsimio.reader.SWIFTDataset</span></code></a></p>
+<p>A representation of a simulated galaxy.</p>
+<p>A <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> represents a galaxy from a
+simulation, including both its particles and integrated properties. A halo
+finder catalogue is required to define which particles belong to the galaxy
+and to provide integrated properties. The implementation is an extension of
+the <a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.reader.html#swiftsimio.reader.SWIFTDataset" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTDataset</span></code></a> class, so all the
+functionality of such a dataset is also available for a
+<a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>. The <code class="xref py py-class docutils literal notranslate"><span class="pre">swiftsimio.reader.__SWIFTParticleDataset</span></code>
+objects familiar to <a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.html#module-swiftsimio" title="(in SWIFTsimIO)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">swiftsimio</span></code></a> users (e.g. a <code class="docutils literal notranslate"><span class="pre">GasDataset</span></code>) are
+wrapped by a <a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_SWIFTParticleDatasetHelper</span></code></a> class that exposes their
+usual functionality and extends it with new features.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">swiftsimio.reader.__SWIFTNamedColumnDataset</span></code> instances are also
+wrapped, using a <a class="reference internal" href="#swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper" title="swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_SWIFTNamedColumnDatasetHelper</span></code></a> class.</p>
+<p>For an overview of available features see the examples below, and the
+narrative documentation pages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>snapshot_filename</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>) – Name of file containing snapshot.</p></li>
+<li><p><strong>halo_finder</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">_HaloFinder</span></code>) – A halo_finder instance from <a class="reference internal" href="swiftgalaxy.halo_finders.html#module-swiftgalaxy.halo_finders" title="swiftgalaxy.halo_finders"><code class="xref py py-mod docutils literal notranslate"><span class="pre">swiftgalaxy.halo_finders</span></code></a>, e.g. a
+<a class="reference internal" href="swiftgalaxy.halo_finders.html#swiftgalaxy.halo_finders.Velociraptor" title="swiftgalaxy.halo_finders.Velociraptor"><code class="xref py py-class docutils literal notranslate"><span class="pre">swiftgalaxy.halo_finders.Velociraptor</span></code></a> instance.</p></li>
+<li><p><strong>auto_recentre</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, default: <code class="docutils literal notranslate"><span class="pre">True</span></code>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the coordinate system will be automatically recentred on
+the position <em>and</em> velocity centres defined by the <code class="docutils literal notranslate"><span class="pre">halo_finder</span></code>.</p></li>
+<li><p><strong>transforms_like_coordinates</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">set</span></code> [<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>],     default: <code class="docutils literal notranslate"><span class="pre">{'coordinates'}</span></code>) – Names of fields that behave as spatial coordinates. It is assumed that
+these exist for all present particle types. When the coordinate system
+is rotated or translated, the associated arrays will be transformed
+accordingly.</p></li>
+<li><p><strong>transforms_like_velocities</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">set</span></code> [<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>],     default: <code class="docutils literal notranslate"><span class="pre">{'velocities'}</span></code>) – Names of fields that behave as velocities. It is assumed that these
+exist for all present particle types. When the coordinate system is
+rotated or boosted, the associated arrays will be transformed
+accordingly.</p></li>
+<li><p><strong>id_particle_dataset_name</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, default: <code class="docutils literal notranslate"><span class="pre">'particle_ids'</span></code>) – Name of the dataset containing the particle IDs, assumed to be the same
+for all present particle types.</p></li>
+<li><p><strong>coordinates_dataset_name</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, default: <code class="docutils literal notranslate"><span class="pre">'velocities'</span></code>) – Name of the dataset containing the particle spatial coordinates,
+assumed to be the same for all present particle types.</p></li>
+<li><p><strong>velocities_dataset_name</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, default: <code class="docutils literal notranslate"><span class="pre">'velocities'</span></code>) – Name of the dataset containing the particle velocities, assumed to be
+the same for all present particle types.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_SWIFTParticleDatasetHelper</span></code></a>, <a class="reference internal" href="#swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper" title="swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_SWIFTNamedColumnDatasetHelper</span></code></a>, <a class="reference internal" href="swiftgalaxy.halo_finders.html#module-swiftgalaxy.halo_finders" title="swiftgalaxy.halo_finders"><code class="xref py py-mod docutils literal notranslate"><span class="pre">swiftgalaxy.halo_finders</span></code></a></p>
+</div>
+<p class="rubric">Examples</p>
+<p>Assuming we have a snapshot file <code class="file docutils literal notranslate"><em><span class="pre">snap</span></em><span class="pre">.hdf5</span></code>, and velociraptor
+outputs <code class="file docutils literal notranslate"><em><span class="pre">halos</span></em><span class="pre">.properties</span></code>, <code class="file docutils literal notranslate"><em><span class="pre">halos</span></em><span class="pre">.catalog_groups</span></code>, etc.,
+with the default names for coordinates, velocities and particle_ids, we can
+initialise a <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> for the first row (indexed from 0) in the
+halo catalogue very easily:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">swiftgalaxy</span> <span class="kn">import</span> <span class="n">SWIFTGalaxy</span><span class="p">,</span> <span class="n">Velociraptor</span>
+<span class="n">mygalaxy</span> <span class="o">=</span> <span class="n">SWIFTGalaxy</span><span class="p">(</span>
+    <span class="s1">&#39;snap.hdf5&#39;</span><span class="p">,</span>
+    <span class="n">Velociraptor</span><span class="p">(</span>
+        <span class="s1">&#39;halos&#39;</span><span class="p">,</span>
+        <span class="n">halo_index</span><span class="o">=</span><span class="mi">0</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Like a <a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.reader.html#swiftsimio.reader.SWIFTDataset" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTDataset</span></code></a>, the particle datasets are
+accessed as below, and all data are loaded ‘lazily’, on demand.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">particle_ids</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">dark_matter</span><span class="o">.</span><span class="n">coordinates</span>
+</pre></div>
+</div>
+<p>However, information from the halo finder is used to select only the
+particles identified as bound to this galaxy. The coordinate system is
+centred in both position and velocity on the centre and peculiar velocity
+of the galaxy, as determined by the halo finder. The coordinate system can
+be further manipulated, and all particle arrays will stay in a consistent
+reference frame at all times.</p>
+<p>Again like for a <a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.reader.html#swiftsimio.reader.SWIFTDataset" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTDataset</span></code></a>, the units and
+metadata are available:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mygalaxy</span><span class="o">.</span><span class="n">units</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">metadata</span>
+</pre></div>
+</div>
+<p>The halo finder interface is accessible as shown below. What this interface
+looks like depends on the halo finder being used, but will provide values
+for the individual galaxy of interest.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mygalaxy</span><span class="o">.</span><span class="n">halo_finder</span>
+</pre></div>
+</div>
+<p>In this case with <a class="reference internal" href="swiftgalaxy.halo_finders.html#swiftgalaxy.halo_finders.Velociraptor" title="swiftgalaxy.halo_finders.Velociraptor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Velociraptor</span></code></a>, we can
+get the virial mass like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mygalaxy</span><span class="o">.</span><span class="n">halo_finder</span><span class="o">.</span><span class="n">masses</span><span class="o">.</span><span class="n">mvir</span>
+</pre></div>
+</div>
+<p>For a complete description of available features see the narrative
+documentation pages.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="swiftgalaxy.reader.SWIFTGalaxy.boost">
+<span class="sig-name descname"><span class="pre">boost</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">boost</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.objects.html#swiftsimio.objects.cosmo_array" title="(in SWIFTsimIO)"><span class="pre">swiftsimio.objects.cosmo_array</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/swiftgalaxy/reader.html#SWIFTGalaxy.boost"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#swiftgalaxy.reader.SWIFTGalaxy.boost" title="Permalink to this definition"></a></dt>
+<dd><p>Apply a ‘boost’ to the velocity coordinates.</p>
+<p>The provided velocity vector is added to all particle velocities. If
+the ‘reference velocity’ that should be set to zero is known, use
+<a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy.recentre_velocity" title="swiftgalaxy.reader.SWIFTGalaxy.recentre_velocity"><code class="xref py py-meth docutils literal notranslate"><span class="pre">recentre_velocity()</span></code></a> instead. All
+datasets specified in the <code class="docutils literal notranslate"><span class="pre">transforms_like_velocities</span></code> argument to
+<a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> are transformed (by default
+<code class="docutils literal notranslate"><span class="pre">velocities</span></code> for all present particle types).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>boost</strong> (<a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.objects.html#swiftsimio.objects.cosmo_array" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">cosmo_array</span></code></a>) – The velocity to boost by.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy.recentre_velocity" title="swiftgalaxy.reader.SWIFTGalaxy.recentre_velocity"><code class="xref py py-meth docutils literal notranslate"><span class="pre">recentre_velocity()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="swiftgalaxy.reader.SWIFTGalaxy.create_particle_datasets">
+<span class="sig-name descname"><span class="pre">create_particle_datasets</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#swiftgalaxy.reader.SWIFTGalaxy.create_particle_datasets" title="Permalink to this definition"></a></dt>
+<dd><p>Creates particle datasets for whatever particle types and names
+are specified in metadata.particle_types.</p>
+<p>These can then be accessed using their underscore names, e.g. gas.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="swiftgalaxy.reader.SWIFTGalaxy.get_metadata">
+<span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#swiftgalaxy.reader.SWIFTGalaxy.get_metadata" title="Permalink to this definition"></a></dt>
+<dd><p>Loads the metadata from the SWIFT snapshot.</p>
+<p>Ordinarily this happens automatically, but you can call
+this function again if you mess things up.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="swiftgalaxy.reader.SWIFTGalaxy.get_units">
+<span class="sig-name descname"><span class="pre">get_units</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#swiftgalaxy.reader.SWIFTGalaxy.get_units" title="Permalink to this definition"></a></dt>
+<dd><p>Loads the units from the SWIFT snapshot.</p>
+<p>Ordinarily this happens automatically, but you can call
+this function again if you mess things up.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="swiftgalaxy.reader.SWIFTGalaxy.mask_particles">
+<span class="sig-name descname"><span class="pre">mask_particles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask_collection</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="swiftgalaxy.masks.html#swiftgalaxy.masks.MaskCollection" title="swiftgalaxy.masks.MaskCollection"><span class="pre">swiftgalaxy.masks.MaskCollection</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/swiftgalaxy/reader.html#SWIFTGalaxy.mask_particles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#swiftgalaxy.reader.SWIFTGalaxy.mask_particles" title="Permalink to this definition"></a></dt>
+<dd><p>Select a subset of the currently selected particles.</p>
+<p>The masks to be applied can by in any format accepted by a
+<a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.objects.html#swiftsimio.objects.cosmo_array" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">cosmo_array</span></code></a> via
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">__getitem__()</span></code> and should be
+collected in a <a class="reference internal" href="swiftgalaxy.masks.html#swiftgalaxy.masks.MaskCollection" title="swiftgalaxy.masks.MaskCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">swiftgalaxy.masks.MaskCollection</span></code></a>. The
+selection is applied permanently to all particle datasets for this
+galaxy. Temporary masks (e.g. for interactive use) can be created by
+using the <code class="xref py py-meth docutils literal notranslate"><span class="pre">__getitem__()</span></code> (square brackets) method of
+the <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>, any of its associated
+<a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_SWIFTParticleDatasetHelper</span></code></a> or
+<a class="reference internal" href="#swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper" title="swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_SWIFTNamedColumnDatasetHelper</span></code></a> objects, but
+note that to ensure internal consistency, these return a masked copy of
+the <em>entire</em> <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>, and are therefore
+relatively memory-intensive. Masking individual
+<a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.objects.html#swiftsimio.objects.cosmo_array" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">cosmo_array</span></code></a> datasets with
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">__getitem__()</span></code>
+avoids this: only masked copies of the individual arrays are returned
+in this case.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mask_collection</strong> (<a class="reference internal" href="swiftgalaxy.masks.html#swiftgalaxy.masks.MaskCollection" title="swiftgalaxy.masks.MaskCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">swiftgalaxy.masks.MaskCollection</span></code></a>) – Set of masks to be applied to each particle type. Particle types
+may be omitted by setting their mask to None, or simply omitting
+them from the <a class="reference internal" href="swiftgalaxy.masks.html#swiftgalaxy.masks.MaskCollection" title="swiftgalaxy.masks.MaskCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">swiftgalaxy.masks.MaskCollection</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="swiftgalaxy.reader.SWIFTGalaxy.recentre">
+<span class="sig-name descname"><span class="pre">recentre</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_centre</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.objects.html#swiftsimio.objects.cosmo_array" title="(in SWIFTsimIO)"><span class="pre">swiftsimio.objects.cosmo_array</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/swiftgalaxy/reader.html#SWIFTGalaxy.recentre"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#swiftgalaxy.reader.SWIFTGalaxy.recentre" title="Permalink to this definition"></a></dt>
+<dd><p>Set a new centre for the particle spatial coordinates.</p>
+<p>The provided (spatial) coordinate centre is set to zero by subtracting
+it from the particle coordinates. Note that this is the new centre in
+the current coordinate system (not e.g. the simulation box
+coordinates). If the coordinate offset to be applied is known, use
+<a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy.translate" title="swiftgalaxy.reader.SWIFTGalaxy.translate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">translate()</span></code></a> instead. All datasets
+specified in the <code class="docutils literal notranslate"><span class="pre">transforms_like_coordinates</span></code> argument to
+<a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> are transformed (by default
+<code class="docutils literal notranslate"><span class="pre">coordinates</span></code> for all present particle types).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>new_centre</strong> (<a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.objects.html#swiftsimio.objects.cosmo_array" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">cosmo_array</span></code></a>) – The new centre for the (spatial) coordinate system.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy.translate" title="swiftgalaxy.reader.SWIFTGalaxy.translate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">translate()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="swiftgalaxy.reader.SWIFTGalaxy.recentre_velocity">
+<span class="sig-name descname"><span class="pre">recentre_velocity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_centre</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.objects.html#swiftsimio.objects.cosmo_array" title="(in SWIFTsimIO)"><span class="pre">swiftsimio.objects.cosmo_array</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/swiftgalaxy/reader.html#SWIFTGalaxy.recentre_velocity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#swiftgalaxy.reader.SWIFTGalaxy.recentre_velocity" title="Permalink to this definition"></a></dt>
+<dd><p>Recentre the velocity coordinates.</p>
+<p>The provided velocity coordinate is set to zero by subtracting it from
+the particle velocities. Note that this is the new velocity centre in
+the current coordinate system (not e.g. the simulation box
+coordinates). If the velocity offset to be applied is known, use
+<a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy.boost" title="swiftgalaxy.reader.SWIFTGalaxy.boost"><code class="xref py py-meth docutils literal notranslate"><span class="pre">boost()</span></code></a> instead. All
+datasets specified in the <code class="docutils literal notranslate"><span class="pre">transforms_like_velocities</span></code> argument to
+<a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> are transformed (by default
+<code class="docutils literal notranslate"><span class="pre">velocities</span></code> for all present particle types).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>new_centre</strong> (<a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.objects.html#swiftsimio.objects.cosmo_array" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">cosmo_array</span></code></a>) – The new centre for the velocity coordinate system.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy.boost" title="swiftgalaxy.reader.SWIFTGalaxy.boost"><code class="xref py py-meth docutils literal notranslate"><span class="pre">boost()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="swiftgalaxy.reader.SWIFTGalaxy.rotate">
+<span class="sig-name descname"><span class="pre">rotate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rotation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html#scipy.spatial.transform.Rotation" title="(in SciPy v1.8.0)"><span class="pre">scipy.spatial.transform._rotation.Rotation</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/swiftgalaxy/reader.html#SWIFTGalaxy.rotate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#swiftgalaxy.reader.SWIFTGalaxy.rotate" title="Permalink to this definition"></a></dt>
+<dd><p>Apply a rotation to the particle spatial coordinates.</p>
+<p>The provided rotation is applied to all particle coordinates. All
+datasets specified in the <code class="docutils literal notranslate"><span class="pre">transforms_like_coordinates</span></code> and
+<code class="docutils literal notranslate"><span class="pre">transforms_like_velocities</span></code> arguments to
+<a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> are transformed (by default
+<code class="docutils literal notranslate"><span class="pre">coordinates</span></code> and <code class="docutils literal notranslate"><span class="pre">velocities</span></code> for all present particle types).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>rotation</strong> (<a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html#scipy.spatial.transform.Rotation" title="(in SciPy v1.8.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">scipy.spatial.transform.Rotation</span></code></a>) – The rotation to be applied.
+<a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html#scipy.spatial.transform.Rotation" title="(in SciPy v1.8.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Rotation</span></code></a> supports several input
+formats, including axis-angle, rotation matrices, and others.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="swiftgalaxy.reader.SWIFTGalaxy.translate">
+<span class="sig-name descname"><span class="pre">translate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">translation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.objects.html#swiftsimio.objects.cosmo_array" title="(in SWIFTsimIO)"><span class="pre">swiftsimio.objects.cosmo_array</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/swiftgalaxy/reader.html#SWIFTGalaxy.translate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#swiftgalaxy.reader.SWIFTGalaxy.translate" title="Permalink to this definition"></a></dt>
+<dd><p>Apply a translation to the particle spatial coordinates.</p>
+<p>The provided translation vector is added to all particle coordinates.
+If the new centre position that should be set to zero is known, use
+<a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy.recentre" title="swiftgalaxy.reader.SWIFTGalaxy.recentre"><code class="xref py py-meth docutils literal notranslate"><span class="pre">recentre()</span></code></a> instead. All datasets
+specified in the <code class="docutils literal notranslate"><span class="pre">transforms_like_coordinates</span></code> argument to
+<a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> are transformed (by default
+<code class="docutils literal notranslate"><span class="pre">coordinates</span></code> for all present particle types).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>translation</strong> (<a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.objects.html#swiftsimio.objects.cosmo_array" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">cosmo_array</span></code></a>) – The vector to translate by.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy.recentre" title="swiftgalaxy.reader.SWIFTGalaxy.recentre"><code class="xref py py-meth docutils literal notranslate"><span class="pre">recentre()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="swiftgalaxy.reader.SWIFTGalaxy.wrap_box">
+<span class="sig-name descname"><span class="pre">wrap_box</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/swiftgalaxy/reader.html#SWIFTGalaxy.wrap_box"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#swiftgalaxy.reader.SWIFTGalaxy.wrap_box" title="Permalink to this definition"></a></dt>
+<dd><p>Wrap the particle coordinates in a periodic box.</p>
+<p>Recentres a particle coordinates from a periodic simulation volume such
+that the coordinate (0, 0, 0) is in the centre and the axes of the
+volume are aligned with the coordinate axes.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is invoked automatically after any coordinate translations or
+rotations, so manually calling this function should usually not be
+necessary.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="swiftgalaxy.reader._CoordinateHelper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">swiftgalaxy.reader.</span></span><span class="sig-name descname"><span class="pre">_CoordinateHelper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coordinates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.objects.html#swiftsimio.objects.cosmo_array" title="(in SWIFTsimIO)"><span class="pre">swiftsimio.objects.cosmo_array</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">masks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/swiftgalaxy/reader.html#_CoordinateHelper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#swiftgalaxy.reader._CoordinateHelper" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Container class for coordinates.</p>
+<p>Stores a dictionary of coordinate arrays and names (and aliases) for these,
+and enables accessing the arrays via <code class="xref py py-meth docutils literal notranslate"><span class="pre">__getattr__()</span></code> (dot syntax). For
+interactive use, printing a <a class="reference internal" href="#swiftgalaxy.reader._CoordinateHelper" title="swiftgalaxy.reader._CoordinateHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_CoordinateHelper</span></code></a>
+lists the available coordinate names and aliases.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coordinates</strong> (Union[<code class="xref py py-obj docutils literal notranslate"><span class="pre">dict</span></code>, <a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.objects.html#swiftsimio.objects.cosmo_array" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">cosmo_array</span></code></a>]) – The coordinate array(s) to be stored.</p></li>
+<li><p><strong>masks</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>) – Available coordinate names and their aliases with corresponding masks
+(or keys) into the coordinate array or dictionary for each.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">swiftgalaxy.reader.</span></span><span class="sig-name descname"><span class="pre">_SWIFTNamedColumnDatasetHelper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">named_column_dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">swiftsimio.reader.__SWIFTNamedColumnDataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">particle_dataset_helper</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper"><span class="pre">swiftgalaxy.reader._SWIFTParticleDatasetHelper</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/swiftgalaxy/reader.html#_SWIFTNamedColumnDatasetHelper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A wrapper class to enable <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>
+functionality for a <code class="xref py py-class docutils literal notranslate"><span class="pre">swiftsimio.reader.__SWIFTNamedColumnDataset</span></code>.</p>
+<p>Unlike the <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> class that inherits
+directly from <a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.reader.html#swiftsimio.reader.SWIFTDataset" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTDataset</span></code></a>, for technical
+reasons this class does <em>not</em> inherit
+<code class="xref py py-class docutils literal notranslate"><span class="pre">swiftsimio.reader.__SWIFTNamedColumnDataset</span></code>. It does, however,
+expose the functionality of that class by maintaining an instance
+internally and forwarding any attribute lookups that it does not handle
+itself to its internal named column dataset.</p>
+<p>Like <a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_SWIFTParticleDatasetHelper</span></code></a>, this class handles the
+transformation and masking of data from calls to <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>
+routines.</p>
+<p>Instances of this helper class should in general not be created separately
+since they require an instance of <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> to function and
+will be created automatically by that class.</p>
+<p>If any datasets contained in a named column dataset should transform like
+particle coordinates or velocities, these can be specified in the arguments
+<code class="docutils literal notranslate"><span class="pre">transforms_like_coordinates</span></code> and <code class="docutils literal notranslate"><span class="pre">transforms_like_velocities</span></code> to
+<a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> as a string containing a dot, e.g. the argument
+<code class="docutils literal notranslate"><span class="pre">transforms_like_coordinates={'coordinates',</span>
+<span class="pre">'extra_coordinates.an_extra_coordinate'}</span></code> is syntactically valid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>named_column_dataset</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">swiftsimio.reader.__SWIFTNamedColumnDataset</span></code>) – The named column dataset to be wrapped.</p></li>
+<li><p><strong>particle_dataset_helper</strong> (<a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_SWIFTParticleDatasetHelper</span></code></a>) – Used to store a reference to the parent
+<a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_SWIFTParticleDatasetHelper</span></code></a> object.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>, <a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_SWIFTParticleDatasetHelper</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="swiftgalaxy.reader._SWIFTParticleDatasetHelper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">swiftgalaxy.reader.</span></span><span class="sig-name descname"><span class="pre">_SWIFTParticleDatasetHelper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">particle_dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">swiftsimio.reader.__SWIFTParticleDataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">swiftgalaxy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><span class="pre">swiftgalaxy.reader.SWIFTGalaxy</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/swiftgalaxy/reader.html#_SWIFTParticleDatasetHelper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A wrapper class to enable <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>
+functionality for a <code class="xref py py-class docutils literal notranslate"><span class="pre">swiftsimio.reader.__SWIFTParticleDataset</span></code>.</p>
+<p>Unlike the <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> class that inherits
+directly from <a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.reader.html#swiftsimio.reader.SWIFTDataset" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTDataset</span></code></a>, for technical
+reasons this class does <em>not</em> inherit
+<code class="xref py py-class docutils literal notranslate"><span class="pre">swiftsimio.reader.__SWIFTParticleDataset</span></code>. It does, however,
+expose the functionality of that class by maintaining an instance
+internally and forwarding any attribute lookups that it does not handle
+itself to its internal particle dataset.</p>
+<p>In addition to handling the transformation and masking of data from calls
+to <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> routines, this class provides
+particle coordinates and velocities in cartesian, spherical and cylindrical
+coordinates through the properties:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper.cartesian_coordinates" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper.cartesian_coordinates"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cartesian_coordinates</span></code></a></p></li>
+<li><p><a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper.cartesian_velocities" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper.cartesian_velocities"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cartesian_velocities</span></code></a></p></li>
+<li><p><a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper.spherical_coordinates" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper.spherical_coordinates"><code class="xref py py-attr docutils literal notranslate"><span class="pre">spherical_coordinates</span></code></a></p></li>
+<li><p><a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper.spherical_velocities" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper.spherical_velocities"><code class="xref py py-attr docutils literal notranslate"><span class="pre">spherical_velocities</span></code></a></p></li>
+<li><p><a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper.cylindrical_coordinates" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper.cylindrical_coordinates"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cylindrical_coordinates</span></code></a></p></li>
+<li><p><a class="reference internal" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper.cylindrical_velocities" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper.cylindrical_velocities"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cylindrical_velocities</span></code></a></p></li>
+</ul>
+<p>These are evaluated lazily and automatically re-calculated if necessary,
+such as after a coordinate rotation.</p>
+<p>Instances of this helper class should in general not be created separately
+since they require an instance of <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> to function and
+will be created automatically by that class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>particle_dataset</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">swiftsimio.reader.__SWIFTParticleDataset</span></code>) – The particle dataset to be wrapped.</p></li>
+<li><p><strong>swiftgalaxy</strong> (<a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>) – Used to store a reference to the parent <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>, <a class="reference internal" href="#swiftgalaxy.reader._CoordinateHelper" title="swiftgalaxy.reader._CoordinateHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_CoordinateHelper</span></code></a></p>
+</div>
+<p class="rubric">Examples</p>
+<p>The cartesian, spherical and cylindrical coordinates of gas particles can
+be accessed, for example, by (<code class="docutils literal notranslate"><span class="pre">mygalaxy</span></code> is a <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">cartesian_coordinates</span><span class="o">.</span><span class="n">x</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">cartesian_coordinates</span><span class="o">.</span><span class="n">y</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">cartesian_coordinates</span><span class="o">.</span><span class="n">z</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">cartesian_velocities</span><span class="o">.</span><span class="n">x</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">cartesian_velocities</span><span class="o">.</span><span class="n">y</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">cartesian_velocities</span><span class="o">.</span><span class="n">z</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">spherical_coordinates</span><span class="o">.</span><span class="n">r</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">spherical_coordinates</span><span class="o">.</span><span class="n">theta</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">spherical_coordinates</span><span class="o">.</span><span class="n">phi</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">spherical_velocities</span><span class="o">.</span><span class="n">r</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">spherical_velocities</span><span class="o">.</span><span class="n">theta</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">spherical_velocities</span><span class="o">.</span><span class="n">phi</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">cylindrical_coordinates</span><span class="o">.</span><span class="n">rho</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">cylindrical_coordinates</span><span class="o">.</span><span class="n">phi</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">cylindrical_coordinates</span><span class="o">.</span><span class="n">z</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">cylindrical_velocities</span><span class="o">.</span><span class="n">rho</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">cylindrical_velocities</span><span class="o">.</span><span class="n">phi</span>
+<span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">cylindrical_velocities</span><span class="o">.</span><span class="n">z</span>
+</pre></div>
+</div>
+<dl class="py property">
+<dt class="sig sig-object py" id="swiftgalaxy.reader._SWIFTParticleDatasetHelper.cartesian_coordinates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cartesian_coordinates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#swiftgalaxy.reader._CoordinateHelper" title="swiftgalaxy.reader._CoordinateHelper"><span class="pre">swiftgalaxy.reader._CoordinateHelper</span></a></em><a class="headerlink" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper.cartesian_coordinates" title="Permalink to this definition"></a></dt>
+<dd><p>Utility to access the cartesian coordinates of particles.</p>
+<p>Returns a view into the coordinate array which can be accessed using
+attribute syntax. Cartesian coordinates can be accessed separately:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cartesian_coordinates.x</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cartesian_coordinates.y</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cartesian_coordinates.z</span></code></p></li>
+</ul>
+<p>or as a 2D array:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cartesian_coordinates.xyz</span></code></p></li>
+</ul>
+<p>Since a view is used, the coordinates are automatically updated if the
+coordinate arrays are modified (e.g. following a rotation or other
+transformation).</p>
+<p>By default the coorinate array is assumed to be called <code class="docutils literal notranslate"><span class="pre">coordinates</span></code>,
+but this can be overridden with the <code class="docutils literal notranslate"><span class="pre">coordinates_dataset_name</span></code>
+argument to <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>coordinate_helper</strong> – Container providing particle cartesian coordinates as attributes.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#swiftgalaxy.reader._CoordinateHelper" title="swiftgalaxy.reader._CoordinateHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_CoordinateHelper</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="swiftgalaxy.reader._SWIFTParticleDatasetHelper.cartesian_velocities">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cartesian_velocities</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#swiftgalaxy.reader._CoordinateHelper" title="swiftgalaxy.reader._CoordinateHelper"><span class="pre">swiftgalaxy.reader._CoordinateHelper</span></a></em><a class="headerlink" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper.cartesian_velocities" title="Permalink to this definition"></a></dt>
+<dd><p>Utility to access the cartesian components of particle velocities.</p>
+<p>Returns a view into the velocity array which can be accessed using
+attribute syntax. Cartesian coordinates can be accessed separately:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cartesian_velocities.x</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cartesian_velocities.y</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cartesian_velocities.z</span></code></p></li>
+</ul>
+<p>or as a 2D array:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cartesian_velocities.xyz</span></code></p></li>
+</ul>
+<p>Since a view is used, the velocities are automatically updated if the
+underlying arrays are modified (e.g. following a rotation or other
+transformation).</p>
+<p>By default the array of velocities is assumed to be called
+<code class="docutils literal notranslate"><span class="pre">velocities</span></code>, but this can be overridden with the
+<code class="docutils literal notranslate"><span class="pre">velocities_dataset_name</span></code> argument to <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>coordinate_helper</strong> – Container providing particle cartesian velocities as attributes.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#swiftgalaxy.reader._CoordinateHelper" title="swiftgalaxy.reader._CoordinateHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_CoordinateHelper</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="swiftgalaxy.reader._SWIFTParticleDatasetHelper.cylindrical_coordinates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cylindrical_coordinates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#swiftgalaxy.reader._CoordinateHelper" title="swiftgalaxy.reader._CoordinateHelper"><span class="pre">swiftgalaxy.reader._CoordinateHelper</span></a></em><a class="headerlink" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper.cylindrical_coordinates" title="Permalink to this definition"></a></dt>
+<dd><p>Utility to access the cylindrical coordinates of particles.</p>
+<p>The cylindrical coordinates of particles are calculated the first time
+this attribute is accessed. If a coordinate transformation (e.g. a
+rotation) or other operation is applied to the <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>
+that would invalidate the derived cylindrical coordinates, they are
+erased and will be recalculated at the next access of this attribute.
+The coordinates could be transformed when they change instead, but in
+general this requires transforming back through cartesian coordinates,
+so the more efficient “lazy” approach of recalculating on demand is
+used instead.</p>
+<p>The coordinate components are named <span class="math notranslate nohighlight">\((\rho, \phi, z)\)</span> by
+default, and assume a convention where <span class="math notranslate nohighlight">\(0 &lt; \phi \leq 2\pi\)</span>.</p>
+<p>Several attribute names are supported for each coordinate. They can be
+accessed with the aliases:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">cylindrical_coordinates.rho</span></code>:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_coordinates.R</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_coordinates.radius</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">cylindrical_coordinates.phi</span></code>:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_coordinates.lon</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_coordinates.longitude</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_coordinates.az</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_coordinates.azimuth</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_coordinates.z</span></code></p></li>
+</ul>
+<p>By default the coorinate array is assumed to be called <code class="docutils literal notranslate"><span class="pre">coordinates</span></code>,
+but this can be overridden with the <code class="docutils literal notranslate"><span class="pre">coordinates_dataset_name</span></code>
+argument to <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>coordinate_helper</strong> – Container providing particle cylindrical coordinates as attributes.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#swiftgalaxy.reader._CoordinateHelper" title="swiftgalaxy.reader._CoordinateHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_CoordinateHelper</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="swiftgalaxy.reader._SWIFTParticleDatasetHelper.cylindrical_velocities">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cylindrical_velocities</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#swiftgalaxy.reader._CoordinateHelper" title="swiftgalaxy.reader._CoordinateHelper"><span class="pre">swiftgalaxy.reader._CoordinateHelper</span></a></em><a class="headerlink" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper.cylindrical_velocities" title="Permalink to this definition"></a></dt>
+<dd><p>Utility to access the velocities of particles in cylindrical
+coordinates.</p>
+<p>The particle velocities in cylindrical coordinates are calculated the
+first time this attribute is accessed. If a coordinate transformation
+(e.g. a rotation) or other operation is applied to the
+<a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> that would invalidate the derived cylindrical
+velocities, they are erased and will be recalculated at the next access
+of this attribute. The velocities could be transformed when they change
+instead, but in general this requires transforming back through
+cartesian coordinates, so the more efficient “lazy” approach of
+recalculating on demand is used instead.</p>
+<p>The “physics” notation convention, where
+<span class="math notranslate nohighlight">\(-\frac{\pi}{2} \leq \theta \leq \frac{\pi}{2}\)</span> is the
+polar angle and <span class="math notranslate nohighlight">\(0 &lt; \phi \leq 2\pi\)</span> is the azimuthal angle,
+is assumed.</p>
+<p>The coordinate components are named <span class="math notranslate nohighlight">\((\rho, \phi, z)\)</span> by
+default, and assume a convention where <span class="math notranslate nohighlight">\(0 &lt; \phi \leq 2\pi\)</span>.</p>
+<p>Several attribute names are supported for each velocity component. They
+can be accessed with the aliases:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">cylindrical_velocities.rho</span></code>:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_velocities.R</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_velocities.radius</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">cylindrical_coordinates.phi</span></code>:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_velocities.lon</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_velocities.longitude</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_velocities.az</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_velocities.azimuth</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_velocities.z</span></code></p></li>
+</ul>
+<p>By default the array of velocities is assumed to be called
+<code class="docutils literal notranslate"><span class="pre">velocities</span></code>, but this can be overridden with the
+<code class="docutils literal notranslate"><span class="pre">velocities_dataset_name</span></code> argument to <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>coordinate_helper</strong> – Container providing particle velocities in cylindrical coordinates
+as attributes.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#swiftgalaxy.reader._CoordinateHelper" title="swiftgalaxy.reader._CoordinateHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_CoordinateHelper</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="swiftgalaxy.reader._SWIFTParticleDatasetHelper.spherical_coordinates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">spherical_coordinates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#swiftgalaxy.reader._CoordinateHelper" title="swiftgalaxy.reader._CoordinateHelper"><span class="pre">swiftgalaxy.reader._CoordinateHelper</span></a></em><a class="headerlink" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper.spherical_coordinates" title="Permalink to this definition"></a></dt>
+<dd><p>Utility to access the spherical coordinates of particles.</p>
+<p>The spherical coordinates of particles are calculated the first time
+this attribute is accessed. If a coordinate transformation (e.g. a
+rotation) or other operation is applied to the <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>
+that would invalidate the derived spherical coordinates, they are
+erased and will be recalculated at the next access of this attribute.
+The coordinates could be transformed when they change instead, but in
+general this requires transforming back through cartesian coordinates,
+so the more efficient “lazy” approach of recalculating on demand is
+used instead.</p>
+<p>The “physics” notation convention, where
+<span class="math notranslate nohighlight">\(-\frac{\pi}{2} \leq \theta \leq \frac{\pi}{2}\)</span> is the
+polar angle and <span class="math notranslate nohighlight">\(0 &lt; \phi \leq 2\pi\)</span> is the azimuthal angle,
+is assumed.</p>
+<p>Several attribute names are supported for each coordinate. They can be
+accessed with the aliases:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">spherical_coordinates.r</span></code>:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_coordinates.radius</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">spherical_coordinates.theta</span></code>:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_coordinates.lat</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_coordinates.latitude</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_coordinates.pol</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_coordinates.polar</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">spherical_coordinates.phi</span></code>:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_coordinates.lon</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_coordinates.longitude</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_coordinates.az</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_coordinates.azimuth</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>By default the coorinate array is assumed to be called <code class="docutils literal notranslate"><span class="pre">coordinates</span></code>,
+but this can be overridden with the <code class="docutils literal notranslate"><span class="pre">coordinates_dataset_name</span></code>
+argument to <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>coordinate_helper</strong> – Container providing particle spherical coordinates as attributes.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#swiftgalaxy.reader._CoordinateHelper" title="swiftgalaxy.reader._CoordinateHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_CoordinateHelper</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="swiftgalaxy.reader._SWIFTParticleDatasetHelper.spherical_velocities">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">spherical_velocities</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#swiftgalaxy.reader._CoordinateHelper" title="swiftgalaxy.reader._CoordinateHelper"><span class="pre">swiftgalaxy.reader._CoordinateHelper</span></a></em><a class="headerlink" href="#swiftgalaxy.reader._SWIFTParticleDatasetHelper.spherical_velocities" title="Permalink to this definition"></a></dt>
+<dd><p>Utility to access the velocities of particles in spherical coordinates.</p>
+<p>The particle velocities in spherical coordinates are calculated the
+first time this attribute is accessed. If a coordinate transformation
+(e.g. a rotation) or other operation is applied to the
+<a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> that would invalidate the derived spherical
+velocities, they are erased and will be recalculated at the next access
+of this attribute. The velocities could be transformed when they change
+instead, but in general this requires transforming back through
+cartesian coordinates, so the more efficient “lazy” approach of
+recalculating on demand is used instead.</p>
+<p>The “physics” notation convention, where
+<span class="math notranslate nohighlight">\(-\frac{\pi}{2} \leq \theta \leq \frac{\pi}{2}\)</span> is the
+polar angle and <span class="math notranslate nohighlight">\(0 &lt; \phi \leq 2\pi\)</span> is the azimuthal angle,
+is assumed.</p>
+<p>Several attribute names are supported for each velocity component. They
+can be accessed with the aliases:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">spherical_velocities.r</span></code>:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_velocities.radius</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">spherical_velocities.theta</span></code>:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_velocities.lat</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_velocities.latitude</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_velocities.pol</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_velocities.polar</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">spherical_velocities.phi</span></code>:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_velocities.lon</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_velocities.longitude</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_velocities.az</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spherical_velocities.azimuth</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>By default the array of velocities is assumed to be called
+<code class="docutils literal notranslate"><span class="pre">velocities</span></code>, but this can be overridden with the
+<code class="docutils literal notranslate"><span class="pre">velocities_dataset_name</span></code> argument to <a class="reference internal" href="#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>coordinate_helper</strong> – Container providing particle velocities in spherical coordinates as
+attributes.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#swiftgalaxy.reader._CoordinateHelper" title="swiftgalaxy.reader._CoordinateHelper"><code class="xref py py-class docutils literal notranslate"><span class="pre">_CoordinateHelper</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="swiftgalaxy.masks.html" class="btn btn-neutral float-left" title="swiftgalaxy.masks module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Kyle Oman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

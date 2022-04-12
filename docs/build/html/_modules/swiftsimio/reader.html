@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>swiftsimio.reader &mdash; SWIFTGalaxy 0.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+ <script type="text/javascript">
+    $(document).ready(function() {
+        //
+        //
+        $(".toggle > *").hide();
+        $(".toggle .admonition-title").show();
+        $(".toggle .admonition-title").click(function() {
+            $(this).parent().children().not(".admonition-title").toggle(400);
+            $(this).parent().children(".admonition-title").toggleClass("open");
+        })
+    });
+</script>
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> SWIFTGalaxy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../coordinate_transformations/index.html">Coordinate transformations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../additional_coordinates/index.html">Additional coordinates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../halo_finders/index.html">Halo finders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../masking/index.html">Particle masking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/index.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SWIFTGalaxy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>swiftsimio.reader</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for swiftsimio.reader</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file contains four major objects:</span>
+
+<span class="sd">+ SWIFTUnits, which is a unit system that can be queried for units (and converts arrays</span>
+<span class="sd">  to relevant unyt arrays when read from the HDF5 file)</span>
+<span class="sd">+ SWIFTMetadata, which contains all of the metadata from the file</span>
+<span class="sd">+ __SWIFTParticleDataset, which contains particle information but should never be</span>
+<span class="sd">  directly accessed. Use generate_dataset to create one of these. The reasoning</span>
+<span class="sd">  here is that properties can only be added to the class afterwards, and not</span>
+<span class="sd">  directly in an _instance_ of the class.</span>
+<span class="sd">+ SWIFTDataset, a container class for all of the above.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">swiftsimio</span> <span class="kn">import</span> <span class="n">metadata</span>
+<span class="kn">from</span> <span class="nn">swiftsimio.accelerated</span> <span class="kn">import</span> <span class="n">read_ranges_from_file</span>
+<span class="kn">from</span> <span class="nn">swiftsimio.objects</span> <span class="kn">import</span> <span class="n">cosmo_array</span><span class="p">,</span> <span class="n">cosmo_factor</span><span class="p">,</span> <span class="n">a</span>
+<span class="kn">from</span> <span class="nn">swiftsimio.conversions</span> <span class="kn">import</span> <span class="n">swift_cosmology_to_astropy</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">unyt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span>
+
+
+<span class="k">class</span> <span class="nc">MassTable</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extracts a mass table to local variables based on the</span>
+<span class="sd">    particle type names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_mass_table</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">mass_units</span><span class="p">:</span> <span class="n">unyt</span><span class="o">.</span><span class="n">unyt_quantity</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        base_mass_table : np.array</span>
+<span class="sd">            Mass table of the same length as the number of particle types.</span>
+
+<span class="sd">        mass_units : unyt_quantity</span>
+<span class="sd">            Base mass units for the simulation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">particle_types</span><span class="o">.</span><span class="n">particle_name_underscores</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="p">,</span>
+                    <span class="n">name</span><span class="p">,</span>
+                    <span class="n">unyt</span><span class="o">.</span><span class="n">unyt_quantity</span><span class="p">(</span><span class="n">base_mass_table</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="n">units</span><span class="o">=</span><span class="n">mass_units</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="c1"># Backwards compatible.</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Mass table for </span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">particle_types</span><span class="o">.</span><span class="n">particle_name_underscores</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">MappingTable</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A mapping table from one named column instance to the other.</span>
+<span class="sd">    Initially designed for the mapping between dust and elements.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">named_columns_x</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">named_columns_y</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">named_columns_x_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">named_columns_y_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        data: np.ndarray</span>
+<span class="sd">            The data array providing the mapping between the named</span>
+<span class="sd">            columns. Should be of size N x M, where N is the number</span>
+<span class="sd">            of elements in ``named_columns_x`` and M the number</span>
+<span class="sd">            of elements in ``named_columns_y``.</span>
+
+<span class="sd">        named_columns_x: List[str]</span>
+<span class="sd">            The names of the columns in the first axis.</span>
+
+<span class="sd">        named_columns_y: List[str]</span>
+<span class="sd">            The names of the columns in the second axis.</span>
+
+<span class="sd">        named_columns_x_name: str</span>
+<span class="sd">            The name of the first mapping.</span>
+
+<span class="sd">        named_columns_y_name: str</span>
+<span class="sd">            The name of the second mapping.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">named_columns_x</span> <span class="o">=</span> <span class="n">named_columns_x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">named_columns_y</span> <span class="o">=</span> <span class="n">named_columns_y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">named_columns_x_name</span> <span class="o">=</span> <span class="n">named_columns_x_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">named_columns_y_name</span> <span class="o">=</span> <span class="n">named_columns_y_name</span>
+
+        <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">name_x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">named_columns_x</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">y</span><span class="p">,</span> <span class="n">name_y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">named_columns_y</span><span class="p">):</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name_x</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">_to_</span><span class="si">{</span><span class="n">name_y</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="n">y</span><span class="p">])</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Mapping table from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">named_columns_x_name</span><span class="si">}</span><span class="s2"> to &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">named_columns_y_name</span><span class="si">}</span><span class="s2">, containing </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;by </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="si">}</span><span class="s2"> elements.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span><span class="si">}</span><span class="s2">. Raw data: &quot;</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="si">}</span><span class="s2">.&quot;</span>
+
+
+<span class="k">class</span> <span class="nc">SWIFTUnits</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates a unyt system that can then be used with the SWIFT data.</span>
+
+<span class="sd">    These give the unit mass, length, time, current, and temperature as</span>
+<span class="sd">    unyt unit variables in simulation units. I.e. you can take any value</span>
+<span class="sd">    that you get out of the code and multiply it by the appropriate values</span>
+<span class="sd">    to get it &#39;unyt-ified&#39; with the correct units.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mass : float</span>
+<span class="sd">        unit for mass used</span>
+<span class="sd">    length : float</span>
+<span class="sd">        unit for length used</span>
+<span class="sd">    time : float</span>
+<span class="sd">        unit for time used</span>
+<span class="sd">    current : float</span>
+<span class="sd">        unit for current used</span>
+<span class="sd">    temperature : float</span>
+<span class="sd">        unit for temperature used</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        SWIFTUnits constructor</span>
+
+<span class="sd">        Sets filename for file to read units from and gets unit dictionary</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filename : str</span>
+<span class="sd">            name of file to read units from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_unit_dictionary</span><span class="p">()</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">get_unit_dictionary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Store unit data and metadata</span>
+
+<span class="sd">        Length 1 arrays are used to store the unit data. This dictionary</span>
+<span class="sd">        also contains the metadata information that connects the unyt</span>
+<span class="sd">        objects to the names that are stored in the SWIFT snapshots.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">name</span><span class="p">:</span> <span class="n">unyt</span><span class="o">.</span><span class="n">unyt_quantity</span><span class="p">(</span>
+                    <span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">units</span><span class="o">=</span><span class="n">metadata</span><span class="o">.</span><span class="n">unit_types</span><span class="o">.</span><span class="n">unit_names_to_unyt</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">handle</span><span class="p">[</span><span class="s2">&quot;Units&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
+
+        <span class="c1"># We now unpack this into variables.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">unit_types</span><span class="o">.</span><span class="n">find_nearest_base_unit</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s2">&quot;Unit mass in cgs (U_M)&quot;</span><span class="p">],</span> <span class="s2">&quot;mass&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">unit_types</span><span class="o">.</span><span class="n">find_nearest_base_unit</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s2">&quot;Unit length in cgs (U_L)&quot;</span><span class="p">],</span> <span class="s2">&quot;length&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">unit_types</span><span class="o">.</span><span class="n">find_nearest_base_unit</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s2">&quot;Unit time in cgs (U_t)&quot;</span><span class="p">],</span> <span class="s2">&quot;time&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">unit_types</span><span class="o">.</span><span class="n">find_nearest_base_unit</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s2">&quot;Unit current in cgs (U_I)&quot;</span><span class="p">],</span> <span class="s2">&quot;current&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">unit_types</span><span class="o">.</span><span class="n">find_nearest_base_unit</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s2">&quot;Unit temperature in cgs (U_T)&quot;</span><span class="p">],</span> <span class="s2">&quot;temperature&quot;</span>
+        <span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">SWIFTMetadata</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Loads all metadata (apart from Units, those are handled by SWIFTUnits)</span>
+<span class="sd">    into dictionaries.</span>
+
+<span class="sd">    This also does some extra parsing on some well-used metadata.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Name of the file that has been read from</span>
+    <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="c1"># Unit instance associated with this file</span>
+    <span class="n">units</span><span class="p">:</span> <span class="n">SWIFTUnits</span>
+    <span class="c1"># Header dictionary, metadata about snapshot.</span>
+    <span class="n">header</span><span class="p">:</span> <span class="nb">dict</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">units</span><span class="p">:</span> <span class="n">SWIFTUnits</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for SWIFTMetadata object</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        filename : str</span>
+<span class="sd">            name of file to read from</span>
+
+<span class="sd">        units : SWIFTUnits</span>
+<span class="sd">            the units being used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">units</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_metadata</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_named_column_metadata</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_mapping_metadata</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">postprocess_header</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_particle_types</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extract_cosmology</span><span class="p">()</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads the metadata as specified in metadata.metadata_fields.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">metadata_fields</span><span class="o">.</span><span class="n">metadata_fields_to_read</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">handle</span><span class="p">[</span><span class="n">field</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">))</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">get_named_column_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads the custom named column metadata (if it exists) from</span>
+<span class="sd">        SubgridScheme/NamedColumns.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">handle</span><span class="p">[</span><span class="s2">&quot;SubgridScheme/NamedColumns&quot;</span><span class="p">]</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">named_columns</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="n">k</span><span class="p">:</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">][:]]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                <span class="p">}</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">named_columns</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">get_mapping_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the mappings based on the named columns (must have already been read),</span>
+<span class="sd">        from the form:</span>
+
+<span class="sd">        SubgridScheme/{X}To{Y}Mapping.</span>
+
+<span class="sd">        Includes a hack of `Dust` -&gt; `Grains` that will be deprecated.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+                <span class="n">possible_keys</span> <span class="o">=</span> <span class="n">handle</span><span class="p">[</span><span class="s2">&quot;SubgridScheme&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+                <span class="n">available_keys</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">possible_keys</span> <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;Mapping&quot;</span><span class="p">)</span>
+                <span class="p">]</span>
+                <span class="n">available_data</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">handle</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;SubgridScheme/</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">][:]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">available_keys</span>
+                <span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">available_keys</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">available_data</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Keys have form {X}To{Y}Mapping</span>
+
+        <span class="c1"># regular expression for camel case to snake case</span>
+        <span class="c1"># https://stackoverflow.com/a/1176023</span>
+        <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;([a-z0-9])([A-Z])&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\1_\2&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="n">regex</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;([a-zA-Z]*)To([a-zA-Z]*)Mapping&quot;</span>
+        <span class="n">compiled</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">regex</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">available_keys</span><span class="p">,</span> <span class="n">available_data</span><span class="p">):</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">compiled</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="n">snake_case</span> <span class="o">=</span> <span class="n">convert</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="s2">&quot;Grain&quot;</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                        <span class="s2">&quot;Use of the GrainToElementMapping is deprecated, please use a newer &quot;</span>
+                        <span class="s2">&quot;version of SWIFT to run this simulation.&quot;</span><span class="p">,</span>
+                        <span class="ne">DeprecationWarning</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                    <span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;Dust&quot;</span>
+
+                <span class="n">named_column_name_x</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">named_columns</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+                <span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">named_column_name_y</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">named_columns</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+                <span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+                <span class="nb">setattr</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="p">,</span>
+                    <span class="n">snake_case</span><span class="p">,</span>
+                    <span class="n">MappingTable</span><span class="p">(</span>
+                        <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                        <span class="n">named_columns_x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">named_columns</span><span class="p">[</span><span class="n">named_column_name_x</span><span class="p">],</span>
+                        <span class="n">named_columns_y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">named_columns</span><span class="p">[</span><span class="n">named_column_name_y</span><span class="p">],</span>
+                        <span class="n">named_columns_x_name</span><span class="o">=</span><span class="n">named_column_name_x</span><span class="p">,</span>
+                        <span class="n">named_columns_y_name</span><span class="o">=</span><span class="n">named_column_name_y</span><span class="p">,</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">postprocess_header</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Some minor postprocessing on the header to local variables.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># These are just read straight in to variables</span>
+        <span class="n">header_unpack_arrays_units</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">metadata</span><span class="o">.</span><span class="n">metadata_fields</span><span class="o">.</span><span class="n">generate_units_header_unpack_arrays</span><span class="p">(</span>
+                <span class="n">m</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span>
+                <span class="n">l</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">length</span><span class="p">,</span>
+                <span class="n">t</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">time</span><span class="p">,</span>
+                <span class="n">I</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">current</span><span class="p">,</span>
+                <span class="n">T</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">metadata_fields</span><span class="o">.</span><span class="n">header_unpack_arrays</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">header_unpack_arrays_units</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="nb">setattr</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="p">,</span>
+                        <span class="n">name</span><span class="p">,</span>
+                        <span class="n">unyt</span><span class="o">.</span><span class="n">unyt_array</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="n">field</span><span class="p">],</span> <span class="n">units</span><span class="o">=</span><span class="n">header_unpack_arrays_units</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                        <span class="p">),</span>
+                    <span class="p">)</span>
+                    <span class="c1"># This is required or we automatically get everything in CGS!</span>
+                    <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">convert_to_units</span><span class="p">(</span>
+                        <span class="n">header_unpack_arrays_units</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Must not have any units! Oh well.</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="n">field</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="c1"># Must not be present, just skip it</span>
+                <span class="k">continue</span>
+
+        <span class="c1"># Now unpack the &#39;mass table&#39; type items:</span>
+        <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">metadata_fields</span><span class="o">.</span><span class="n">header_unpack_mass_tables</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="p">,</span>
+                    <span class="n">name</span><span class="p">,</span>
+                    <span class="n">MassTable</span><span class="p">(</span>
+                        <span class="n">base_mass_table</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="n">field</span><span class="p">],</span> <span class="n">mass_units</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">mass</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="p">,</span>
+                    <span class="n">name</span><span class="p">,</span>
+                    <span class="n">MassTable</span><span class="p">(</span>
+                        <span class="n">base_mass_table</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                            <span class="nb">len</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">particle_types</span><span class="o">.</span><span class="n">particle_name_underscores</span><span class="p">)</span>
+                        <span class="p">),</span>
+                        <span class="n">mass_units</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+
+        <span class="c1"># These must be unpacked as &#39;real&#39; strings (i.e. converted to utf-8)</span>
+
+        <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">metadata_fields</span><span class="o">.</span><span class="n">header_unpack_string</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="n">field</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="c1"># Must not be present, just skip it</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># These must be unpacked as they are stored as length-1 arrays</span>
+
+        <span class="n">header_unpack_float_units</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">metadata</span><span class="o">.</span><span class="n">metadata_fields</span><span class="o">.</span><span class="n">generate_units_header_unpack_single_float</span><span class="p">(</span>
+                <span class="n">m</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span>
+                <span class="n">l</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">length</span><span class="p">,</span>
+                <span class="n">t</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">time</span><span class="p">,</span>
+                <span class="n">I</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">current</span><span class="p">,</span>
+                <span class="n">T</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">names</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">metadata_fields</span><span class="o">.</span><span class="n">header_unpack_single_float</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="c1"># Sometimes we store a list in case we have multiple names, for example</span>
+                    <span class="c1"># Redshift -&gt; metadata.redshift AND metadata.z. Can&#39;t just do the iteration</span>
+                    <span class="c1"># because we may loop over the letters in the string.</span>
+                    <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">variable</span> <span class="ow">in</span> <span class="n">header_unpack_float_units</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                            <span class="c1"># We have an associated unit!</span>
+                            <span class="n">unit</span> <span class="o">=</span> <span class="n">header_unpack_float_units</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+                            <span class="nb">setattr</span><span class="p">(</span>
+                                <span class="bp">self</span><span class="p">,</span>
+                                <span class="n">variable</span><span class="p">,</span>
+                                <span class="n">unyt</span><span class="o">.</span><span class="n">unyt_quantity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">units</span><span class="o">=</span><span class="n">unit</span><span class="p">),</span>
+                            <span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="c1"># No unit</span>
+                            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># We can just check for the unit and set the attribute</span>
+                    <span class="n">variable</span> <span class="o">=</span> <span class="n">names</span>
+                    <span class="k">if</span> <span class="n">variable</span> <span class="ow">in</span> <span class="n">header_unpack_float_units</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="c1"># We have an associated unit!</span>
+                        <span class="n">unit</span> <span class="o">=</span> <span class="n">header_unpack_float_units</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+                        <span class="nb">setattr</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="p">,</span>
+                            <span class="n">variable</span><span class="p">,</span>
+                            <span class="n">unyt</span><span class="o">.</span><span class="n">unyt_quantity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">units</span><span class="o">=</span><span class="n">unit</span><span class="p">),</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># No unit</span>
+                        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="c1"># Must not be present, just skip it</span>
+                <span class="k">continue</span>
+
+        <span class="c1"># These are special cases, sorry!</span>
+        <span class="c1"># Date and time of snapshot dump</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">snapshot_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                        <span class="s2">&quot;SnapshotDate&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Snapshot date&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span>
+                    <span class="s2">&quot;%H:%M:%S %Y-%m-</span><span class="si">%d</span><span class="s2"> %Z&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="c1"># Backwards compatibility; this was used previously due to simplicity</span>
+                <span class="c1"># but is not portable between regions. So if you ran a simulation on</span>
+                <span class="c1"># a British (en_GB) machine, and then tried to read on a Dutch</span>
+                <span class="c1"># machine (nl_NL), this would _not_ work because %c is different.</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">snapshot_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                            <span class="s2">&quot;SnapshotDate&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Snapshot date&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                        <span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span>
+                        <span class="s2">&quot;</span><span class="si">%c</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="c1"># Oh dear this has gone _very_wrong. Let&#39;s just keep it as a string.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">snapshot_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                        <span class="s2">&quot;SnapshotDate&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Snapshot date&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="c1"># Old file</span>
+            <span class="k">pass</span>
+
+        <span class="c1"># get photon group edges RT dataset from the SubgridScheme group</span>
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">photon_group_edges</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">handle</span><span class="p">[</span><span class="s2">&quot;SubgridScheme/PhotonGroupEdges&quot;</span><span class="p">][:]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">time</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">photon_group_edges</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># get reduced speed of light RT dataset from the SubgridScheme group</span>
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reduced_lightspeed</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">handle</span><span class="p">[</span><span class="s2">&quot;SubgridScheme/ReducedLightspeed&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">length</span>
+                    <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">time</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reduced_lightspeed</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Store these separately as self.n_gas = number of gas particles for example</span>
+        <span class="k">for</span> <span class="p">(</span>
+            <span class="n">part_number</span><span class="p">,</span>
+            <span class="n">part_name</span><span class="p">,</span>
+        <span class="p">)</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">particle_types</span><span class="o">.</span><span class="n">particle_name_underscores</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;n_</span><span class="si">{</span><span class="n">part_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_part</span><span class="p">[</span><span class="n">part_number</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="c1"># Backwards compatibility; mass/number table can change size.</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;n_</span><span class="si">{</span><span class="n">part_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Need to unpack the gas gamma for cosmology</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gas_gamma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hydro_scheme</span><span class="p">[</span><span class="s2">&quot;Adiabatic index&quot;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Could not find gas gamma, assuming 5./3.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gas_gamma</span> <span class="o">=</span> <span class="mf">5.0</span> <span class="o">/</span> <span class="mf">3.0</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="c1"># These must always be present for the initialisation of cosmology properties</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="mf">1.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">load_particle_types</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads the particle types and metadata into objects:</span>
+
+<span class="sd">            metadata.&lt;type&gt;_properties</span>
+
+<span class="sd">        This contains six arrays,</span>
+
+<span class="sd">            metadata.&lt;type&gt;_properties.field_names</span>
+<span class="sd">            metadata.&lt;type&gt;_properties.field_paths</span>
+<span class="sd">            metadata.&lt;type&gt;_properties.field_units</span>
+<span class="sd">            metadata.&lt;type&gt;_properties.field_cosmologies</span>
+<span class="sd">            metadata.&lt;type&gt;_properties.field_descriptions</span>
+<span class="sd">            metadata.&lt;type&gt;_properties.field_compressions</span>
+
+<span class="sd">        As well as some more information about the particle type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">particle_type</span><span class="p">,</span> <span class="n">particle_name</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">present_particle_types</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_particle_names</span>
+        <span class="p">):</span>
+            <span class="nb">setattr</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">particle_name</span><span class="si">}</span><span class="s2">_properties&quot;</span><span class="p">,</span>
+                <span class="n">SWIFTParticleTypeMetadata</span><span class="p">(</span>
+                    <span class="n">particle_type</span><span class="o">=</span><span class="n">particle_type</span><span class="p">,</span>
+                    <span class="n">particle_name</span><span class="o">=</span><span class="n">particle_name</span><span class="p">,</span>
+                    <span class="n">metadata</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">scale_factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">extract_cosmology</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates an astropy.cosmology object from the internal cosmology system.</span>
+
+<span class="sd">        This will be saved as ``self.cosmology``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cosmology_raw</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cosmo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cosmology_raw</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cosmo</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Cosmological run&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Cosmological run&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cosmology</span> <span class="o">=</span> <span class="n">swift_cosmology_to_astropy</span><span class="p">(</span><span class="n">cosmo</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cosmology</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">return</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">present_particle_types</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The particle types that are present in the file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_part</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">present_particle_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The particle _names_ that are present in the simulation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">metadata</span><span class="o">.</span><span class="n">particle_types</span><span class="o">.</span><span class="n">particle_name_underscores</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">present_particle_types</span>
+        <span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">code_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets a nicely printed set of code information with:</span>
+
+<span class="sd">        Name (Git Branch)</span>
+<span class="sd">        Git Revision</span>
+<span class="sd">        Git Date</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">get_string</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">code</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">get_string</span><span class="p">(</span><span class="s1">&#39;Code&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">get_string</span><span class="p">(</span><span class="s1">&#39;Git Branch&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">get_string</span><span class="p">(</span><span class="s1">&#39;Git Revision&#39;</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">get_string</span><span class="p">(</span><span class="s1">&#39;Git Date&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">output</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">compiler_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets information about the compiler and formats it as:</span>
+
+<span class="sd">        Compiler Name (Compiler Version)</span>
+<span class="sd">        MPI library</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">get_string</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">code</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">get_string</span><span class="p">(</span><span class="s1">&#39;Compiler Name&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">get_string</span><span class="p">(</span><span class="s1">&#39;Compiler Version&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">get_string</span><span class="p">(</span><span class="s1">&#39;MPI library&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">output</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">library_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets information about the libraries used and formats it as:</span>
+
+<span class="sd">        FFTW vFFTW library version</span>
+<span class="sd">        GSL vGSL library version</span>
+<span class="sd">        HDF5 vHDF5 library version</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">get_string</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">code</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2"> library version&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;FFTW v</span><span class="si">{</span><span class="n">get_string</span><span class="p">(</span><span class="s1">&#39;FFTW&#39;</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;GSL v</span><span class="si">{</span><span class="n">get_string</span><span class="p">(</span><span class="s1">&#39;GSL&#39;</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;HDF5 v</span><span class="si">{</span><span class="n">get_string</span><span class="p">(</span><span class="s1">&#39;HDF5&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">output</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">hydro_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets information about the hydro scheme and formats it as:</span>
+
+<span class="sd">        Scheme</span>
+<span class="sd">        Kernel function in DimensionD</span>
+<span class="sd">        $\eta$ = Kernel eta (Kernel target N_ngb $N_{ngb}$)</span>
+<span class="sd">        $C_{\rm CFL}$ = CFL parameter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">get_float</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{:4.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hydro_scheme</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">def</span> <span class="nf">get_int</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hydro_scheme</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">def</span> <span class="nf">get_string</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hydro_scheme</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">get_string</span><span class="p">(</span><span class="s1">&#39;Scheme&#39;</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">get_string</span><span class="p">(</span><span class="s1">&#39;Kernel function&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">get_int</span><span class="p">(</span><span class="s1">&#39;Dimension&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">D</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">rf</span><span class="s2">&quot;$\eta$ = </span><span class="si">{</span><span class="n">get_float</span><span class="p">(</span><span class="s1">&#39;Kernel eta&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">rf</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">get_float</span><span class="p">(</span><span class="s1">&#39;Kernel target N_ngb&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> $N_</span><span class="se">{{</span><span class="s2">ngb</span><span class="se">}}</span><span class="s2">$)&quot;</span>
+            <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">rf</span><span class="s2">&quot;$C_</span><span class="se">{{</span><span class="s2">\rm CFL</span><span class="se">}}</span><span class="s2">$ = </span><span class="si">{</span><span class="n">get_float</span><span class="p">(</span><span class="s1">&#39;CFL parameter&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">output</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">viscosity_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets information about the viscosity scheme and formats it as:</span>
+
+<span class="sd">        Viscosity Model</span>
+<span class="sd">        $\alpha_{V, 0}$ = Alpha viscosity, $\ell_V$ = Viscosity decay length [internal units], $\beta_V$ = Beta viscosity</span>
+<span class="sd">        Alpha viscosity (min) &lt; $\alpha_V$ &lt; Alpha viscosity (max)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">get_float</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{:4.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hydro_scheme</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">def</span> <span class="nf">get_string</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hydro_scheme</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">get_string</span><span class="p">(</span><span class="s1">&#39;Viscosity Model&#39;</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">rf</span><span class="s2">&quot;$\alpha_</span><span class="se">{{</span><span class="s2">V, 0</span><span class="se">}}</span><span class="s2">$ = </span><span class="si">{</span><span class="n">get_float</span><span class="p">(</span><span class="s1">&#39;Alpha viscosity&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">rf</span><span class="s2">&quot;$\ell_V$ = </span><span class="si">{</span><span class="n">get_float</span><span class="p">(</span><span class="s1">&#39;Viscosity decay length [internal units]&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">rf</span><span class="s2">&quot;$\beta_V$ = </span><span class="si">{</span><span class="n">get_float</span><span class="p">(</span><span class="s1">&#39;Beta viscosity&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">rf</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">get_float</span><span class="p">(</span><span class="s1">&#39;Alpha viscosity (min)&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> &lt; $\alpha_V$ &lt; </span><span class="si">{</span><span class="n">get_float</span><span class="p">(</span><span class="s1">&#39;Alpha viscosity (max)&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">output</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">diffusion_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets information about the diffusion scheme and formats it as:</span>
+
+<span class="sd">        $\alpha_{D, 0}$ = Diffusion alpha, $\beta_D$ = Diffusion beta</span>
+<span class="sd">        Diffusion alpha (min) &lt; $\alpha_D$ &lt; Diffusion alpha (max)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">get_float</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{:4.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hydro_scheme</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">rf</span><span class="s2">&quot;$\alpha_</span><span class="se">{{</span><span class="s2">D, 0</span><span class="se">}}</span><span class="s2">$ = </span><span class="si">{</span><span class="n">get_float</span><span class="p">(</span><span class="s1">&#39;Diffusion alpha&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">rf</span><span class="s2">&quot;$\beta_D$ = </span><span class="si">{</span><span class="n">get_float</span><span class="p">(</span><span class="s1">&#39;Diffusion beta&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">rf</span><span class="s2">&quot;$</span><span class="si">{</span><span class="n">get_float</span><span class="p">(</span><span class="s1">&#39;Diffusion alpha (min)&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> &lt; &quot;</span>
+            <span class="sa">rf</span><span class="s2">&quot;\alpha_D &lt; </span><span class="si">{</span><span class="n">get_float</span><span class="p">(</span><span class="s1">&#39;Diffusion alpha (max)&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">$&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">output</span>
+
+
+<span class="k">class</span> <span class="nc">SWIFTParticleTypeMetadata</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Object that contains the metadata for one particle type.</span>
+
+<span class="sd">    This, for instance, could be part type 0, or &#39;gas&#39;. This will load in</span>
+<span class="sd">    the names of all particle datasets, their units, possible named fields,</span>
+<span class="sd">    and their cosmology, and present them for use in the actual i/o routines.</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    -------</span>
+<span class="sd">    load_metadata(self):</span>
+<span class="sd">        Loads the required metadata.</span>
+<span class="sd">    load_field_names(self):</span>
+<span class="sd">        Loads in the field names.</span>
+<span class="sd">    load_field_units(self):</span>
+<span class="sd">        Loads in the units from each dataset.</span>
+<span class="sd">    load_field_descriptions(self):</span>
+<span class="sd">        Loads in descriptions of the fields for each dataset.</span>
+<span class="sd">    load_field_compressions(self):</span>
+<span class="sd">        Loads in compressions of the fields for each dataset.</span>
+<span class="sd">    load_cosmology(self):</span>
+<span class="sd">        Loads in the field cosmologies.</span>
+<span class="sd">    load_named_columns(self):</span>
+<span class="sd">        Loads the named column data for relevant fields.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">particle_type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">particle_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">SWIFTMetadata</span><span class="p">,</span>
+        <span class="n">scale_factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for SWIFTParticleTypeMetadata class</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        partycle_type : int</span>
+<span class="sd">            the integer particle type</span>
+<span class="sd">        particle_name : str</span>
+<span class="sd">            the corresponding particle name</span>
+<span class="sd">        metadata : SWIFTMetadata</span>
+<span class="sd">            the snapshot metadata</span>
+<span class="sd">        scale_factor : float</span>
+<span class="sd">            the snapshot scale factor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">particle_type</span> <span class="o">=</span> <span class="n">particle_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">particle_name</span> <span class="o">=</span> <span class="n">particle_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">metadata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">units</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span> <span class="o">=</span> <span class="n">scale_factor</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">filename</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_metadata</span><span class="p">()</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Metadata class for PartType</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">particle_type</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">particle_name</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">load_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads the required metadata.</span>
+
+<span class="sd">        This includes loading the field names, units and descriptions, as well as the</span>
+<span class="sd">        cosmology metadata and any custom named columns</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_field_names</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_field_units</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_field_descriptions</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_field_compressions</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_cosmology</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_named_columns</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">load_field_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads in only the field names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># regular expression for camel case to snake case</span>
+        <span class="c1"># https://stackoverflow.com/a/1176023</span>
+        <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;([a-z0-9])([A-Z])&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\1_\2&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">field_paths</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="sa">f</span><span class="s2">&quot;PartType</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">particle_type</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">item</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">handle</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;PartType</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">particle_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="p">]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">convert</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">handle</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;PartType</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">particle_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="p">]</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">load_field_units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads in the units from each dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">unit_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;I&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">current</span><span class="p">,</span>
+            <span class="s2">&quot;L&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">length</span><span class="p">,</span>
+            <span class="s2">&quot;M&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span>
+            <span class="s2">&quot;T&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">time</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">def</span> <span class="nf">get_units</span><span class="p">(</span><span class="n">unit_attribute</span><span class="p">):</span>
+            <span class="n">units</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+            <span class="k">for</span> <span class="n">exponent</span><span class="p">,</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="c1"># We store the &#39;unit exponent&#39; in the SWIFT metadata. This corresponds</span>
+                <span class="c1"># to the power we need to raise each unit to, to return the correct units</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c1"># Need to check if the exponent is 0 manually because of float precision</span>
+                    <span class="n">unit_exponent</span> <span class="o">=</span> <span class="n">unit_attribute</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;U_</span><span class="si">{</span><span class="n">exponent</span><span class="si">}</span><span class="s2"> exponent&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">unit_exponent</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>
+                        <span class="n">units</span> <span class="o">*=</span> <span class="n">unit</span> <span class="o">**</span> <span class="n">unit_exponent</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="c1"># Can&#39;t load that data!</span>
+                    <span class="c1"># We should probably warn the user here...</span>
+                    <span class="k">pass</span>
+
+            <span class="c1"># Deal with case where we _really_ have a dimensionless quantity. Comparing with</span>
+            <span class="c1"># 1.0 doesn&#39;t work, beacause in these cases unyt reverts to a floating point</span>
+            <span class="c1"># comparison.</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">units</span><span class="o">.</span><span class="n">units</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="n">units</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">return</span> <span class="n">units</span>
+
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">field_units</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_units</span><span class="p">(</span><span class="n">handle</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_paths</span><span class="p">]</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">load_field_descriptions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads in the text descriptions of the fields for each dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">get_desc</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">description</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;Description&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="c1"># Can&#39;t load description!</span>
+                <span class="n">description</span> <span class="o">=</span> <span class="s2">&quot;No description available&quot;</span>
+
+            <span class="k">return</span> <span class="n">description</span>
+
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">field_descriptions</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_desc</span><span class="p">(</span><span class="n">handle</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_paths</span><span class="p">]</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">load_field_compressions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads in the string describing the compression filters of the fields for each dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">get_comp</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">comp</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;Lossy compression filter&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="c1"># Can&#39;t load compression string!</span>
+                <span class="n">comp</span> <span class="o">=</span> <span class="s2">&quot;No compression info available&quot;</span>
+
+            <span class="k">return</span> <span class="n">comp</span>
+
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">field_compressions</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_comp</span><span class="p">(</span><span class="n">handle</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_paths</span><span class="p">]</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">load_cosmology</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads in the field cosmologies.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">current_scale_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span>
+
+        <span class="k">def</span> <span class="nf">get_cosmo</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">cosmo_exponent</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;a-scale exponent&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="c1"># Can&#39;t load, &#39;graceful&#39; fallback.</span>
+                <span class="n">cosmo_exponent</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+            <span class="n">a_factor_this_dataset</span> <span class="o">=</span> <span class="n">a</span> <span class="o">**</span> <span class="n">cosmo_exponent</span>
+
+            <span class="k">return</span> <span class="n">cosmo_factor</span><span class="p">(</span><span class="n">a_factor_this_dataset</span><span class="p">,</span> <span class="n">current_scale_factor</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">field_cosmologies</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_cosmo</span><span class="p">(</span><span class="n">handle</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_paths</span><span class="p">]</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">load_named_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads the named column data for relevant fields.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">named_columns</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_paths</span><span class="p">:</span>
+            <span class="n">property_name</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">property_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">named_columns</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">field_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">named_columns</span><span class="p">[</span><span class="n">property_name</span><span class="p">]</span>
+
+                <span class="c1"># Now need to make a decision on capitalisation. If we have a set of</span>
+                <span class="c1"># words with only one capital in them, then it&#39;s likely that they are</span>
+                <span class="c1"># element names or something similar, so they should be lower case.</span>
+                <span class="c1"># If on average we have many more capitals, then they are likely to be</span>
+                <span class="c1"># ionized fractions (e.g. HeII) and so we want to leave them with their</span>
+                <span class="c1"># original capitalisation.</span>
+
+                <span class="n">num_capitals</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">x</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">isupper</span><span class="p">())</span>
+                <span class="n">mean_num_capitals</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">num_capitals</span><span class="p">,</span> <span class="n">field_names</span><span class="p">))</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span>
+                    <span class="n">field_names</span>
+                <span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">mean_num_capitals</span> <span class="o">&lt;</span> <span class="mf">1.01</span><span class="p">:</span>
+                    <span class="c1"># Decapitalise them as they are likely individual element names</span>
+                    <span class="n">formatted_field_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">field_names</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">formatted_field_names</span> <span class="o">=</span> <span class="n">field_names</span>
+
+                <span class="n">named_columns</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="n">formatted_field_names</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">named_columns</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">named_columns</span> <span class="o">=</span> <span class="n">named_columns</span>
+
+        <span class="k">return</span>
+
+
+<span class="k">def</span> <span class="nf">generate_getter</span><span class="p">(</span>
+    <span class="n">filename</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">field</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">unit</span><span class="p">:</span> <span class="n">unyt</span><span class="o">.</span><span class="n">unyt_quantity</span><span class="p">,</span>
+    <span class="n">mask</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+    <span class="n">mask_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">cosmo_factor</span><span class="p">:</span> <span class="n">cosmo_factor</span><span class="p">,</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">compression</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">index_tricks</span><span class="o">.</span><span class="n">IndexExpression</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates a function that:</span>
+
+<span class="sd">    a) If self._`name` exists, return it</span>
+<span class="sd">    b) If not, open `filename`</span>
+<span class="sd">    c) Reads filename[`field`]</span>
+<span class="sd">    d) Set self._`name`</span>
+<span class="sd">    e) Return self._`name`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    filename: str</span>
+<span class="sd">        Filename of the HDF5 file that everything will be read from. Used to generate</span>
+<span class="sd">        the HDF5 dataset.</span>
+
+<span class="sd">    name: str</span>
+<span class="sd">        Output name (snake_case) of the field.</span>
+
+<span class="sd">    field: str</span>
+<span class="sd">        Full path of field, including e.g. particle type. Examples include</span>
+<span class="sd">        ``/PartType0/Velocities``.</span>
+
+<span class="sd">    unit: unyt.unyt_quantity</span>
+<span class="sd">        Output unit of the resultant ``cosmo_array``</span>
+
+<span class="sd">    mask: None or np.ndarray</span>
+<span class="sd">        Mask to be used with ``accelerated.read_ranges_from_file``, i.e. an array of</span>
+<span class="sd">        integers that describe ranges to be read from the file.</span>
+
+<span class="sd">    mask_size: int</span>
+<span class="sd">        Size of the mask if present.</span>
+
+<span class="sd">    cosmo_factor: cosmo_factor</span>
+<span class="sd">        Cosmology factor object corresponding to this array.</span>
+
+<span class="sd">    description: str</span>
+<span class="sd">        Description (read from HDF5 file) of the data.</span>
+
+<span class="sd">    compression: str</span>
+<span class="sd">        String describing the lossy compression filters that were applied to the</span>
+<span class="sd">        data (read from the HDF5 file).</span>
+
+<span class="sd">    columns: np.lib.index_tricks.IndexEpression, optional</span>
+<span class="sd">        Index expression corresponding to which columns to read from the numpy array.</span>
+<span class="sd">        If not provided, we read all columns and return an n-dimensional array.</span>
+
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    getter: callable</span>
+<span class="sd">        A callable object that gets the value of the array that has been saved to</span>
+<span class="sd">        ``_name``. This function takes only ``self`` from the</span>
+<span class="sd">        :obj:``__SWIFTParticleDataset`` class.</span>
+
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+
+<span class="sd">    The major use of this function is for its side effect of setting ``_name`` as</span>
+<span class="sd">    a member of the class on first read. When the attribute is accessed, it will</span>
+<span class="sd">    be dynamically read from the file, to keep initial memory usage as minimal</span>
+<span class="sd">    as possible.</span>
+
+<span class="sd">    If the resultant array is modified, it will not be re-read from the file.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Must do this _outside_ getter because of weird locality issues with the</span>
+    <span class="c1"># use of None as the default.</span>
+    <span class="c1"># Here, we need to ensure that in the cases where we&#39;re using columns,</span>
+    <span class="c1"># during a partial read, that we respect the single-column dataset nature.</span>
+    <span class="n">use_columns</span> <span class="o">=</span> <span class="n">columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">use_columns</span><span class="p">:</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[:]</span>
+
+    <span class="k">def</span> <span class="nf">getter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">current_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">current_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">current_value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="c1"># First, need to calculate data shape (which may be</span>
+                        <span class="c1"># non-trivial), so we read in the first value</span>
+                        <span class="n">first_value</span> <span class="o">=</span> <span class="n">handle</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+                        <span class="n">output_type</span> <span class="o">=</span> <span class="n">first_value</span><span class="o">.</span><span class="n">dtype</span>
+                        <span class="n">output_size</span> <span class="o">=</span> <span class="n">first_value</span><span class="o">.</span><span class="n">size</span>
+
+                        <span class="k">if</span> <span class="n">output_size</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">use_columns</span><span class="p">:</span>
+                            <span class="n">output_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">mask_size</span><span class="p">,</span> <span class="n">output_size</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">output_shape</span> <span class="o">=</span> <span class="n">mask_size</span>
+
+                        <span class="nb">setattr</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="p">,</span>
+                            <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">cosmo_array</span><span class="p">(</span>
+                                <span class="n">read_ranges_from_file</span><span class="p">(</span>
+                                    <span class="n">handle</span><span class="p">[</span><span class="n">field</span><span class="p">],</span>
+                                    <span class="n">mask</span><span class="p">,</span>
+                                    <span class="n">output_shape</span><span class="o">=</span><span class="n">output_shape</span><span class="p">,</span>
+                                    <span class="n">output_type</span><span class="o">=</span><span class="n">output_type</span><span class="p">,</span>
+                                    <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">,</span>
+                                <span class="p">),</span>
+                                <span class="n">unit</span><span class="p">,</span>
+                                <span class="n">cosmo_factor</span><span class="o">=</span><span class="n">cosmo_factor</span><span class="p">,</span>
+                                <span class="n">name</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+                                <span class="n">compression</span><span class="o">=</span><span class="n">compression</span><span class="p">,</span>
+                            <span class="p">),</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="nb">setattr</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="p">,</span>
+                            <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">cosmo_array</span><span class="p">(</span>
+                                <span class="c1"># Only use column data if array is multidimensional, otherwise</span>
+                                <span class="c1"># we will crash here</span>
+                                <span class="n">handle</span><span class="p">[</span><span class="n">field</span><span class="p">][:,</span> <span class="n">columns</span><span class="p">]</span>
+                                <span class="k">if</span> <span class="n">handle</span><span class="p">[</span><span class="n">field</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span>
+                                <span class="k">else</span> <span class="n">handle</span><span class="p">[</span><span class="n">field</span><span class="p">][:],</span>
+                                <span class="n">unit</span><span class="p">,</span>
+                                <span class="n">cosmo_factor</span><span class="o">=</span><span class="n">cosmo_factor</span><span class="p">,</span>
+                                <span class="n">name</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+                                <span class="n">compression</span><span class="o">=</span><span class="n">compression</span><span class="p">,</span>
+                            <span class="p">),</span>
+                        <span class="p">)</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not read </span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">getter</span>
+
+
+<span class="k">def</span> <span class="nf">generate_setter</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates a function that sets self._name to the value that is passed to it.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        the name of the attribute to set</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    setter : callable</span>
+<span class="sd">        a callable object that sets the attribute specified by ``name`` to the value</span>
+<span class="sd">        passed to it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">setter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="k">return</span> <span class="n">setter</span>
+
+
+<span class="k">def</span> <span class="nf">generate_deleter</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates a function that destroys self._name (sets it back to None).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        the name of the field to be destroyed</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    deleter : callable</span>
+<span class="sd">        callable that destroys ``name`` field</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">deleter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">current_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">current_value</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="k">return</span> <span class="n">deleter</span>
+
+
+<span class="k">class</span> <span class="nc">__SWIFTParticleDataset</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates empty property fields</span>
+
+<span class="sd">    Do not use this class alone; it is essentially completely empty. It is filled</span>
+<span class="sd">    with properties by generate_dataset.</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    -------</span>
+<span class="sd">    generate_empty_properties(self)</span>
+<span class="sd">        creates empty properties to be accessed through setter and getter functions</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_metadata</span><span class="p">:</span> <span class="n">SWIFTParticleTypeMetadata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for SWIFTParticleDataset class</span>
+
+<span class="sd">        This function primarily calls the generate_empty_properties</span>
+<span class="sd">        function to ensure that defaults are set correctly.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        particle_metadata : SWIFTParticleTypeMetadata</span>
+<span class="sd">            the metadata used to generate empty properties</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">filename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">units</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">particle_type</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">particle_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">particle_name</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">particle_name</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">particle_metadata</span> <span class="o">=</span> <span class="n">particle_metadata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">metadata</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_empty_properties</span><span class="p">()</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">generate_empty_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates the empty properties that will be accessed through the</span>
+<span class="sd">        setter and getters.</span>
+
+<span class="sd">        Initially set all of the _{name} values to None. If it doesn&#39;t</span>
+<span class="sd">        _exist_ in the file, the variable is not created.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field_path</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">particle_metadata</span><span class="o">.</span><span class="n">field_names</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">particle_metadata</span><span class="o">.</span><span class="n">field_paths</span>
+            <span class="p">):</span>
+                <span class="k">if</span> <span class="n">field_path</span> <span class="ow">in</span> <span class="n">handle</span><span class="p">:</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                        <span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Cannot find attribute </span><span class="si">{</span><span class="n">field_path</span><span class="si">}</span><span class="s2"> in file although&quot;</span>
+                            <span class="s2">&quot;it was present when searching initially.&quot;</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+
+        <span class="k">return</span>
+
+
+<span class="k">class</span> <span class="nc">__SWIFTNamedColumnDataset</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Holder class for individual named datasets. Very similar to</span>
+<span class="sd">    __SWIFTParticleDataset but much simpler.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">named_columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for __SWIFTNamedColumnDataset class</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        field_path : str</span>
+<span class="sd">            path to field within hdf5 snapshot</span>
+<span class="sd">        named_columns : list of str</span>
+<span class="sd">            list of categories for the variable `name`</span>
+<span class="sd">        name : str</span>
+<span class="sd">            the variable of interest</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        For a gas particle we might be interested in the mass fractions for a number</span>
+<span class="sd">        of elements (e.g. hydrogen, helium, carbon, etc). In a SWIFT snapshot these</span>
+<span class="sd">        would be found in `field_path` = /PartType0/ElementMassFractions. The</span>
+<span class="sd">        `named_columns` would be the list of elements ([&quot;hydrogen&quot;, ...]) and the</span>
+<span class="sd">        variable we&#39;re interested in is the mass fraction `name` = element_mass_fraction.</span>
+<span class="sd">        Thus,</span>
+<span class="sd">            data.gas = __SWIFTNamedColumnDataset(</span>
+<span class="sd">            &quot;/PartType0/ElementMassFractions&quot;,</span>
+<span class="sd">            [&quot;hydrogen&quot;, &quot;helium&quot;],</span>
+<span class="sd">            &quot;element_mass_fraction&quot;</span>
+<span class="sd">            )</span>
+<span class="sd">        would make visible:</span>
+<span class="sd">            data.gas.element_mass_fraction.hydrogen</span>
+<span class="sd">            data.gas.element_mass_fraction.helium</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field_path</span> <span class="o">=</span> <span class="n">field_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">named_columns</span> <span class="o">=</span> <span class="n">named_columns</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+        <span class="c1"># Need to initialise for the getter() call.</span>
+        <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">named_columns</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">column</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Named columns instance with </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">named_columns</span><span class="si">}</span><span class="s1"> available for &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">named_columns</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">named_columns</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">named_columns</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span>
+
+
+<span class="k">def</span> <span class="nf">generate_dataset</span><span class="p">(</span><span class="n">particle_metadata</span><span class="p">:</span> <span class="n">SWIFTParticleTypeMetadata</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates a SWIFTParticleDataset _class_ that corresponds to the</span>
+<span class="sd">    particle type given.</span>
+
+<span class="sd">    We _must_ do the following _outside_ of the class itself, as one</span>
+<span class="sd">    can assign properties to a _class_ but not _within_ a class</span>
+<span class="sd">    dynamically.</span>
+
+<span class="sd">    Here we loop through all of the possible properties in the metadata file.</span>
+<span class="sd">    We then use the builtin property() function and some generators to</span>
+<span class="sd">    create setters and getters for those properties. This will allow them</span>
+<span class="sd">    to be accessed from outside by using SWIFTParticleDataset.name, where</span>
+<span class="sd">    the name is, for example, coordinates.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    particle_metadata : SWIFTParticleTypeMetadata</span>
+<span class="sd">        the metadata for the particle type</span>
+<span class="sd">    mask : SWIFTMask</span>
+<span class="sd">        the mask object for the dataset</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">filename</span>
+    <span class="n">particle_type</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">particle_type</span>
+    <span class="n">particle_name</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">particle_name</span>
+    <span class="n">particle_nice_name</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">particle_types</span><span class="o">.</span><span class="n">particle_name_class</span><span class="p">[</span><span class="n">particle_type</span><span class="p">]</span>
+
+    <span class="c1"># Mask is an object that contains all masks for all possible datasets.</span>
+    <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">mask_array</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">particle_name</span><span class="p">)</span>
+        <span class="n">mask_size</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">particle_name</span><span class="si">}</span><span class="s2">_size&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mask_array</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">mask_size</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+    <span class="c1"># Set up an iterator for us to loop over for all fields</span>
+    <span class="n">field_paths</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">field_paths</span>
+    <span class="n">field_names</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">field_names</span>
+    <span class="n">field_cosmologies</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">field_cosmologies</span>
+    <span class="n">field_units</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">field_units</span>
+    <span class="n">field_descriptions</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">field_descriptions</span>
+    <span class="n">field_compressions</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">field_compressions</span>
+    <span class="n">field_named_columns</span> <span class="o">=</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">named_columns</span>
+
+    <span class="n">dataset_iterator</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span>
+        <span class="n">field_paths</span><span class="p">,</span>
+        <span class="n">field_names</span><span class="p">,</span>
+        <span class="n">field_cosmologies</span><span class="p">,</span>
+        <span class="n">field_units</span><span class="p">,</span>
+        <span class="n">field_descriptions</span><span class="p">,</span>
+        <span class="n">field_compressions</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># This &#39;nice&#39; piece of code ensures that our datasets have different _types_</span>
+    <span class="c1"># for different particle types. We initially fill a dict with the properties that</span>
+    <span class="c1"># we want, and then create a single instance of our class.</span>
+
+    <span class="n">this_dataset_bases</span> <span class="o">=</span> <span class="p">(</span><span class="n">__SWIFTParticleDataset</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>
+    <span class="n">this_dataset_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="p">(</span>
+        <span class="n">field_path</span><span class="p">,</span>
+        <span class="n">field_name</span><span class="p">,</span>
+        <span class="n">field_cosmology</span><span class="p">,</span>
+        <span class="n">field_unit</span><span class="p">,</span>
+        <span class="n">field_description</span><span class="p">,</span>
+        <span class="n">field_compression</span><span class="p">,</span>
+    <span class="p">)</span> <span class="ow">in</span> <span class="n">dataset_iterator</span><span class="p">:</span>
+        <span class="n">named_columns</span> <span class="o">=</span> <span class="n">field_named_columns</span><span class="p">[</span><span class="n">field_path</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">named_columns</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">field_property</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span>
+                <span class="n">generate_getter</span><span class="p">(</span>
+                    <span class="n">filename</span><span class="p">,</span>
+                    <span class="n">field_name</span><span class="p">,</span>
+                    <span class="n">field_path</span><span class="p">,</span>
+                    <span class="n">unit</span><span class="o">=</span><span class="n">field_unit</span><span class="p">,</span>
+                    <span class="n">mask</span><span class="o">=</span><span class="n">mask_array</span><span class="p">,</span>
+                    <span class="n">mask_size</span><span class="o">=</span><span class="n">mask_size</span><span class="p">,</span>
+                    <span class="n">cosmo_factor</span><span class="o">=</span><span class="n">field_cosmology</span><span class="p">,</span>
+                    <span class="n">description</span><span class="o">=</span><span class="n">field_description</span><span class="p">,</span>
+                    <span class="n">compression</span><span class="o">=</span><span class="n">field_compression</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">generate_setter</span><span class="p">(</span><span class="n">field_name</span><span class="p">),</span>
+                <span class="n">generate_deleter</span><span class="p">(</span><span class="n">field_name</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># TODO: Handle this case with recursion.</span>
+
+            <span class="c1"># Here we want to create an extra middleman object. So we can do something</span>
+            <span class="c1"># like {ptype}.{ThisNamedColumnDataset}.column_name. This follows from the</span>
+            <span class="c1"># above templating.</span>
+
+            <span class="n">this_named_column_dataset_bases</span> <span class="o">=</span> <span class="p">(</span><span class="n">__SWIFTNamedColumnDataset</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>
+            <span class="n">this_named_column_dataset_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">named_columns</span><span class="p">):</span>
+                <span class="n">this_named_column_dataset_dict</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span>
+                    <span class="n">generate_getter</span><span class="p">(</span>
+                        <span class="n">filename</span><span class="p">,</span>
+                        <span class="n">column</span><span class="p">,</span>
+                        <span class="n">field_path</span><span class="p">,</span>
+                        <span class="n">unit</span><span class="o">=</span><span class="n">field_unit</span><span class="p">,</span>
+                        <span class="n">mask</span><span class="o">=</span><span class="n">mask_array</span><span class="p">,</span>
+                        <span class="n">mask_size</span><span class="o">=</span><span class="n">mask_size</span><span class="p">,</span>
+                        <span class="n">cosmo_factor</span><span class="o">=</span><span class="n">field_cosmology</span><span class="p">,</span>
+                        <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field_description</span><span class="si">}</span><span class="s2"> [Column </span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">column</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">,</span>
+                        <span class="n">compression</span><span class="o">=</span><span class="n">field_compression</span><span class="p">,</span>
+                        <span class="n">columns</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[</span><span class="n">index</span><span class="p">],</span>
+                    <span class="p">),</span>
+                    <span class="n">generate_setter</span><span class="p">(</span><span class="n">column</span><span class="p">),</span>
+                    <span class="n">generate_deleter</span><span class="p">(</span><span class="n">column</span><span class="p">),</span>
+                <span class="p">)</span>
+
+            <span class="n">ThisNamedColumnDataset</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">particle_nice_name</span><span class="si">}{</span><span class="n">field_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">Columns&quot;</span><span class="p">,</span>
+                <span class="n">this_named_column_dataset_bases</span><span class="p">,</span>
+                <span class="n">this_named_column_dataset_dict</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">field_property</span> <span class="o">=</span> <span class="n">ThisNamedColumnDataset</span><span class="p">(</span>
+                <span class="n">field_path</span><span class="o">=</span><span class="n">field_path</span><span class="p">,</span>
+                <span class="n">named_columns</span><span class="o">=</span><span class="n">named_columns</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">field_name</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">this_dataset_dict</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">field_property</span>
+
+    <span class="n">ThisDataset</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">particle_nice_name</span><span class="si">}</span><span class="s2">Dataset&quot;</span><span class="p">,</span> <span class="n">this_dataset_bases</span><span class="p">,</span> <span class="n">this_dataset_dict</span>
+    <span class="p">)</span>
+    <span class="n">empty_dataset</span> <span class="o">=</span> <span class="n">ThisDataset</span><span class="p">(</span><span class="n">particle_metadata</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">empty_dataset</span>
+
+
+<span class="k">class</span> <span class="nc">SWIFTDataset</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A collection object for:</span>
+
+<span class="sd">    + SWIFTUnits,</span>
+<span class="sd">    + SWIFTMetadata,</span>
+<span class="sd">    + SWIFTParticleDataset</span>
+
+<span class="sd">    This object, in essence, completely represents a SWIFT snapshot. You can access</span>
+<span class="sd">    the different particles as follows:</span>
+
+<span class="sd">    + SWIFTDataset.gas.particle_ids</span>
+<span class="sd">    + SWIFTDataset.dark_matter.masses</span>
+<span class="sd">    + SWIFTDataset.gas.smoothing_lengths</span>
+
+<span class="sd">    These arrays all have units that are determined by the unit system in the file.</span>
+
+<span class="sd">    The unit system is available as SWIFTDataset.units and the metadata as</span>
+<span class="sd">    SWIFTDataset.metadata.</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    -------</span>
+<span class="sd">    def get_units(self):</span>
+<span class="sd">        Loads the units from the SWIFT snapshot.</span>
+<span class="sd">    def get_metadata(self):</span>
+<span class="sd">        Loads the metadata from the SWIFT snapshot.</span>
+<span class="sd">    def create_particle_datasets(self):</span>
+<span class="sd">        Creates particle datasets for whatever particle types and names</span>
+<span class="sd">        are specified in metadata.particle_types.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for SWIFTDataset class</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filename : str</span>
+<span class="sd">            name of file containing snapshot</span>
+<span class="sd">        mask : np.ndarray, optional</span>
+<span class="sd">            mask object containing dataset to selected particles</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span>
+
+        <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">convert_masks_to_ranges</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_metadata</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">create_particle_datasets</span><span class="p">()</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Prints out some more useful information, rather than just</span>
+<span class="sd">        the memory location.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;SWIFT dataset at </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">.&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads the units from the SWIFT snapshot.</span>
+
+<span class="sd">        Ordinarily this happens automatically, but you can call</span>
+<span class="sd">        this function again if you mess things up.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">SWIFTUnits</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads the metadata from the SWIFT snapshot.</span>
+
+<span class="sd">        Ordinarily this happens automatically, but you can call</span>
+<span class="sd">        this function again if you mess things up.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">SWIFTMetadata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">create_particle_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates particle datasets for whatever particle types and names</span>
+<span class="sd">        are specified in metadata.particle_types.</span>
+
+<span class="sd">        These can then be accessed using their underscore names, e.g. gas.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;metadata&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_metadata</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">particle_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">present_particle_names</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="n">particle_name</span><span class="p">,</span>
+                <span class="n">generate_dataset</span><span class="p">(</span>
+                    <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">particle_name</span><span class="si">}</span><span class="s2">_properties&quot;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Kyle Oman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

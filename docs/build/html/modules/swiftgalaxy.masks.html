@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>swiftgalaxy.masks module &mdash; SWIFTGalaxy 0.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="swiftgalaxy.reader module" href="swiftgalaxy.reader.html" />
+    <link rel="prev" title="swiftgalaxy.halo_finders module" href="swiftgalaxy.halo_finders.html" />
+ <script type="text/javascript">
+    $(document).ready(function() {
+        //
+        //
+        $(".toggle > *").hide();
+        $(".toggle .admonition-title").show();
+        $(".toggle .admonition-title").click(function() {
+            $(this).parent().children().not(".admonition-title").toggle(400);
+            $(this).parent().children(".admonition-title").toggleClass("open");
+        })
+    });
+</script>
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> SWIFTGalaxy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../coordinate_transformations/index.html">Coordinate transformations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../additional_coordinates/index.html">Additional coordinates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../halo_finders/index.html">Halo finders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../masking/index.html">Particle masking</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="swiftgalaxy.html">swiftgalaxy package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="swiftgalaxy.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="swiftgalaxy.halo_finders.html">swiftgalaxy.halo_finders module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">swiftgalaxy.masks module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="swiftgalaxy.reader.html">swiftgalaxy.reader module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SWIFTGalaxy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">API Documentation</a> &raquo;</li>
+          <li><a href="swiftgalaxy.html">swiftgalaxy package</a> &raquo;</li>
+      <li>swiftgalaxy.masks module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/modules/swiftgalaxy.masks.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-swiftgalaxy.masks">
+<span id="swiftgalaxy-masks-module"></span><h1>swiftgalaxy.masks module<a class="headerlink" href="#module-swiftgalaxy.masks" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="swiftgalaxy.masks.MaskCollection">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">swiftgalaxy.masks.</span></span><span class="sig-name descname"><span class="pre">MaskCollection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/swiftgalaxy/masks.html#MaskCollection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#swiftgalaxy.masks.MaskCollection" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Barebones container for mask objects.</p>
+<p>Takes a set of kwargs at initialisation and assigns their values to
+attributes of the object. Attempts to access a non-existent attribute
+returns <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code> instead of raising an <code class="xref py py-exc docutils literal notranslate"><span class="pre">AttributeError</span></code>.</p>
+<p>This is intended to hold masks that can be applied to
+<a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.objects.html#swiftsimio.objects.cosmo_array" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">cosmo_array</span></code></a> objects under the names of
+particle types (e.g. <code class="docutils literal notranslate"><span class="pre">gas</span></code>, <code class="docutils literal notranslate"><span class="pre">dark_matter</span></code>, etc.), but this is not
+checked or enforced.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**kwargs</strong> – Any items passed as kwargs will have their values passed to
+correspondingly named attributes of this object.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <a class="reference external" href="https://velociraptor-python.readthedocs.io/en/latest/modules/velociraptor.swift.swift.html#module-velociraptor.swift.swift" title="(in VELOCIraptor Python Tools)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">velociraptor.swift.swift</span></code></a> module makes some use of a
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">namedtuple</span></code> called <code class="docutils literal notranslate"><span class="pre">MaskCollection</span></code>. These objects are not
+valid where <a class="reference internal" href="swiftgalaxy.html#module-swiftgalaxy" title="swiftgalaxy"><code class="xref py py-mod docutils literal notranslate"><span class="pre">swiftgalaxy</span></code></a> functions expect a <a class="reference internal" href="#swiftgalaxy.masks.MaskCollection" title="swiftgalaxy.masks.MaskCollection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MaskCollection</span></code></a>
+because <code class="xref py py-obj docutils literal notranslate"><span class="pre">namedtuple</span></code> objects are immutable.</p>
+</div>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">n_dm</span> <span class="o">=</span> <span class="mi">123</span>  <span class="c1"># suppose this is number of dark matter particles</span>
+<span class="c1"># all these masks select all particles:</span>
+<span class="n">MaskCollection</span><span class="p">(</span>
+    <span class="n">gas</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
+    <span class="n">dark_matter</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_dm</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">),</span>
+    <span class="n">stars</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="swiftgalaxy.halo_finders.html" class="btn btn-neutral float-left" title="swiftgalaxy.halo_finders module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="swiftgalaxy.reader.html" class="btn btn-neutral float-right" title="swiftgalaxy.reader module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Kyle Oman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

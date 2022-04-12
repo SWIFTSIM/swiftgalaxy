@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coordinate transformations &mdash; SWIFTGalaxy 0.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Additional coordinates" href="../additional_coordinates/index.html" />
+    <link rel="prev" title="Getting Started" href="../getting_started/index.html" />
+ <script type="text/javascript">
+    $(document).ready(function() {
+        //
+        //
+        $(".toggle > *").hide();
+        $(".toggle .admonition-title").show();
+        $(".toggle .admonition-title").click(function() {
+            $(this).parent().children().not(".admonition-title").toggle(400);
+            $(this).parent().children(".admonition-title").toggleClass("open");
+        })
+    });
+</script>
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> SWIFTGalaxy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/index.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Coordinate transformations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#recentering">Recentering</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#automatic-recentering">Automatic recentering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#manual-recentering">Manual recentering</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#translations">Translations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#box-wrapping">Box wrapping</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../additional_coordinates/index.html">Additional coordinates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../halo_finders/index.html">Halo finders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../masking/index.html">Dataset masking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/index.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/index.html#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SWIFTGalaxy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Coordinate transformations</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/coordinate_transformations/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="coordinate-transformations">
+<h1>Coordinate transformations<a class="headerlink" href="#coordinate-transformations" title="Permalink to this headline"></a></h1>
+<p>A <a class="reference internal" href="../modules/swiftgalaxy.reader.html#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> enforces a consistent coordinate system for all particle types and coordinate and velocity arrays (accelerations are not supported, yet). Any relevant particle arrays already in memory are modified when a new transformation is applied, and any relevant particle arrays loaded later will be automatically transformed to the current frame.</p>
+<p>It may be that in addition to the basic coordinates and velocities arrays, you have additional arrays that you wish to live in the same coordinate system. We could imagine, for instance, a property called <code class="docutils literal notranslate"><span class="pre">wind_velocity</span></code> attached to star particles and containing a vector giving the velocity of a (directional) stellar wind in simulation box coordinates. We can use the <code class="docutils literal notranslate"><span class="pre">transforms_like_velocities</span></code> to specify that this property should have any coordinate transformations that would be relevant to the <code class="docutils literal notranslate"><span class="pre">velocities</span></code> of particles applied to these as well:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">SWIFTGalaxy</span><span class="p">(</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">transforms_like_coordinates</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;coordinates&#39;</span><span class="p">},</span>
+    <span class="n">transforms_like_velocities</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;velocities&#39;</span><span class="p">,</span> <span class="s1">&#39;wind_velocity&#39;</span><span class="p">},</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The equivalent for coordinate-like arrays is the <code class="docutils literal notranslate"><span class="pre">transforms_like_coordinates</span></code> argument. Note that it is not necessary that a name provided in one of these arguments be present for all particle types. If the dataset in question is part of a <cite>NamedColumns</cite> dataset, the name can simply be provided with a dot. For instance, if the <code class="docutils literal notranslate"><span class="pre">wind_velocity</span></code> in the example above was part of a <cite>NamedColumns</cite> dataset called <code class="docutils literal notranslate"><span class="pre">wind_model</span></code>, you would simply write: <code class="docutils literal notranslate"><span class="pre">transforms_like_velocities={'velocities',</span> <span class="pre">'wind_model.wind_velocity'}</span></code>.</p>
+<p>By default, <a class="reference internal" href="../modules/swiftgalaxy.reader.html#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> assumes that particle coordinates are stored in a dataset (one for each particle type) called <code class="docutils literal notranslate"><span class="pre">coordinates</span></code>, and velocities in datasets called <code class="docutils literal notranslate"><span class="pre">velocities</span></code>. If your data use non-standard naming of the coordinate and velocity arrays, you can provide alternative names (replace the defaults in the example snippet below with your custom names). Note that you must also override the <code class="docutils literal notranslate"><span class="pre">transforms_like_coordinates</span></code> and <code class="docutils literal notranslate"><span class="pre">transforms_like_velocities</span></code> arguments, providing a set containing (at minimum) your custom array name for each.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">SWIFTGalaxy</span><span class="p">(</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">coordinates_dataset_name</span><span class="o">=</span><span class="s1">&#39;coordinates&#39;</span><span class="p">,</span>
+    <span class="n">velocities_dataset_name</span><span class="o">=</span><span class="s1">&#39;velocities&#39;</span><span class="p">,</span>
+    <span class="n">transforms_like_coordinates</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;coordinates&#39;</span><span class="p">},</span>
+    <span class="n">transforms_like_velocities</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;velocities&#39;</span><span class="p">},</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<section id="recentering">
+<h2>Recentering<a class="headerlink" href="#recentering" title="Permalink to this headline"></a></h2>
+<section id="automatic-recentering">
+<h3>Automatic recentering<a class="headerlink" href="#automatic-recentering" title="Permalink to this headline"></a></h3>
+<p>By default, a <a class="reference internal" href="../modules/swiftgalaxy.reader.html#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> is recentered on the centre of the galaxy (as defined by the halo finder), and its velocity is shifted to follow the bulk velocity of the galaxy (again as defined by the halo finder). This behaviour can be disabled by setting <code class="docutils literal notranslate"><span class="pre">SWIFTGalaxy(...,</span> <span class="pre">auto_recentre=False)</span></code>. Note that this recentering only applies to particles – no coordinate transformations of any kind are every applied to entries in the halo finder catalogues, so for instance querying the position of the galaxy in the halo finder catalogue will always give this in the simulation box frame.</p>
+<p>Some halo finders define more than one centre and/or bulk velocity. The one used is the one returned by <code class="xref py py-meth docutils literal notranslate"><span class="pre">swiftgalaxy.halo_finders._HaloFinder._centre()</span></code> (for the centre) and <code class="xref py py-meth docutils literal notranslate"><span class="pre">swiftgalaxy.halo_finders._HaloFinder._vcentre()</span></code> (for the bulk velocity). In the case of the <a class="reference internal" href="../modules/swiftgalaxy.halo_finders.html#swiftgalaxy.halo_finders.Velociraptor" title="swiftgalaxy.halo_finders.Velociraptor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Velociraptor</span></code></a> halo finder, the centre used can be manipulated by the <code class="docutils literal notranslate"><span class="pre">centre_type</span></code> argument. By default it uses the potential minimum (<code class="docutils literal notranslate"><span class="pre">minpot</span></code>), but this could be exchanged for the most bound particle, for instance:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">SWIFTGalaxy</span><span class="p">(</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">Velociraptor</span><span class="p">(</span>
+        <span class="o">...</span><span class="p">,</span>
+        <span class="n">centre_type</span><span class="o">=</span><span class="s1">&#39;mpb&#39;</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="manual-recentering">
+<h3>Manual recentering<a class="headerlink" href="#manual-recentering" title="Permalink to this headline"></a></h3>
+<p>You may always choose a new coordinate centre or bulk velocity by providing the new centre (or bulk velocity) <em>in the current coordinate frame</em> to the appropriate function:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../modules/swiftgalaxy.reader.html#swiftgalaxy.reader.SWIFTGalaxy.recentre" title="swiftgalaxy.reader.SWIFTGalaxy.recentre"><code class="xref py py-meth docutils literal notranslate"><span class="pre">recentre()</span></code></a></p></li>
+<li><p><a class="reference internal" href="../modules/swiftgalaxy.reader.html#swiftgalaxy.reader.SWIFTGalaxy.recentre_velocity" title="swiftgalaxy.reader.SWIFTGalaxy.recentre_velocity"><code class="xref py py-meth docutils literal notranslate"><span class="pre">recentre_velocity()</span></code></a></p></li>
+</ul>
+<p>Recall that <a class="reference internal" href="../modules/swiftgalaxy.html#module-swiftgalaxy" title="swiftgalaxy"><code class="xref py py-mod docutils literal notranslate"><span class="pre">swiftgalaxy</span></code></a> is unit-aware, so the centres must come with units – these can be any compatible unit; conversions are handled internally. For example, for a Milky Way-like galaxy already centred on the galactic centre and rotated to lie in the <span class="math notranslate nohighlight">\(x-y\)</span> plane, switching to a heliocentric frame could be achieved with something like:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">unyt</span> <span class="k">as</span> <span class="nn">u</span>
+<span class="n">sg</span> <span class="o">=</span> <span class="n">SWIFTGalaxy</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="o">...</span>  <span class="c1"># presumably need to perform a rotation to align the plane</span>
+<span class="n">sg</span><span class="o">.</span><span class="n">recentre</span><span class="p">((</span><span class="mi">8</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">kpc</span><span class="p">)</span>
+<span class="n">sg</span><span class="o">.</span><span class="n">recentre_velocity</span><span class="p">((</span><span class="mi">220</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">km</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">s</span><span class="o">**-</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="translations">
+<h2>Translations<a class="headerlink" href="#translations" title="Permalink to this headline"></a></h2>
+<p>Very similarly to manually recentering the coordinate or velocity frame, functions are provided to apply a translation to the particle coordinate or velocity arrays. Note that velocity translations are referred to as <em>boosts</em>:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../modules/swiftgalaxy.reader.html#swiftgalaxy.reader.SWIFTGalaxy.translate" title="swiftgalaxy.reader.SWIFTGalaxy.translate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">translate()</span></code></a></p></li>
+<li><p><a class="reference internal" href="../modules/swiftgalaxy.reader.html#swiftgalaxy.reader.SWIFTGalaxy.boost" title="swiftgalaxy.reader.SWIFTGalaxy.boost"><code class="xref py py-meth docutils literal notranslate"><span class="pre">boost()</span></code></a></p></li>
+</ul>
+<p>The only difference is that these are more convenient when you know the vector to translate by, instead of the vector pointing to the new centre. Keep in mind that the translation vector is interpreted <em>in the current frame of reference</em>.</p>
+</section>
+<section id="rotations">
+<h2>Rotations<a class="headerlink" href="#rotations" title="Permalink to this headline"></a></h2>
+<p>Rotations of the coordinate frame apply to both particle coordinates and velocities and are therefore applied to datasets specified by both <code class="docutils literal notranslate"><span class="pre">transforms_like_coordinates</span></code> and <code class="docutils literal notranslate"><span class="pre">transforms_like_velocities</span></code> (see above). As with all coordinate transformations, a rotation is always interpreted <em>in the current frame of reference</em>.</p>
+<p>Flexible encoding of rotations (e.g. from a rotation matrix, or Euler angles, or quaternions, etc.) are enabled via the <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html#scipy.spatial.transform.Rotation" title="(in SciPy v1.8.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Rotation</span></code></a> class. For example, if the rotation matrix is known it can be provided as (here with an identity rotation):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scipy.spatial.transform</span> <span class="kn">import</span> <span class="n">Rotation</span>
+<span class="n">sg</span> <span class="o">=</span> <span class="n">SWIFTGalaxy</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">sg</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span>
+    <span class="n">Rotation</span><span class="o">.</span><span class="n">from_matrix</span><span class="p">(</span>
+        <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+         <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+         <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>For the full list of encodings supported by <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html#scipy.spatial.transform.Rotation" title="(in SciPy v1.8.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Rotation</span></code></a>, see its documentation.</p>
+</section>
+<section id="box-wrapping">
+<h2>Box wrapping<a class="headerlink" href="#box-wrapping" title="Permalink to this headline"></a></h2>
+<p>For a periodic simulation box, the spatial coordinates will automatically be wrapped as necessary to ensure that their absolute values remain less than half a box length. If for any reason you wish to force a box wrapping operation simply call <a class="reference internal" href="../modules/swiftgalaxy.reader.html#swiftgalaxy.reader.SWIFTGalaxy.wrap_box" title="swiftgalaxy.reader.SWIFTGalaxy.wrap_box"><code class="xref py py-meth docutils literal notranslate"><span class="pre">wrap_box()</span></code></a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../getting_started/index.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../additional_coordinates/index.html" class="btn btn-neutral float-right" title="Additional coordinates" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Kyle Oman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
