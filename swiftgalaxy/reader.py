@@ -1050,6 +1050,7 @@ class SWIFTGalaxy(SWIFTDataset):
                  _extra_mask: Optional[MaskCollection] = None,
                  _coordinate_like_transform: Optional[np.ndarray] = None,
                  _velocity_like_transform: Optional[np.ndarray] = None):
+        self._particle_dataset_helpers = dict()
         self.snapshot_filename: str = snapshot_filename
         self.halo_finder: _HaloFinder = halo_finder
         self.auto_recentre: bool = auto_recentre
@@ -1073,7 +1074,6 @@ class SWIFTGalaxy(SWIFTDataset):
         else:
             self._velocity_like_transform = np.eye(4)
         super().__init__(snapshot_filename, mask=self._spatial_mask)
-        self._particle_dataset_helpers = dict()
         for particle_name in self.metadata.present_particle_names:
             # We'll make a custom type to present a nice name to the user.
             nice_name = \
@@ -1115,6 +1115,8 @@ class SWIFTGalaxy(SWIFTDataset):
         if auto_recentre:
             self.recentre(self.halo_finder._centre())
             self.recentre_velocity(self.halo_finder._vcentre())
+
+        self._initialised: bool = True
 
         return
 
@@ -1220,6 +1222,15 @@ class SWIFTGalaxy(SWIFTDataset):
                     self, '_particle_dataset_helpers')[attr]
             else:
                 return super().__getattribute__(attr)
+
+    def __setattr__(self, attr: str, value: Any) -> None:
+        if (not hasattr(self, '_initialised')) or \
+           (attr not in self.metadata.present_particle_names):
+            object.__setattr__(self, attr, value)
+        else:
+            # attr in self.metadata.present_particle_names
+            self._particle_dataset_helpers[attr] = value
+        return
 
     def rotate(self, rotation: Rotation) -> None:
         """
