@@ -397,8 +397,11 @@ class _SWIFTParticleDatasetHelper(object):
         field_names = getattr(
             self._particle_dataset.metadata,
             f'{self._particle_dataset.particle_name}_properties').field_names
-        if (attr in field_names) or \
-           ((attr.startswith('_')) and (attr[1:] in field_names)):
+        if (attr in field_names) and self._is_namedcolumns(attr):
+            self._named_column_dataset_helpers[attr] = value
+            return
+        elif (attr in field_names) or \
+             ((attr.startswith('_')) and (attr[1:] in field_names)):
             setattr(self._particle_dataset, attr, value)
             return
         else:
@@ -446,6 +449,8 @@ class _SWIFTParticleDatasetHelper(object):
         return data
 
     def _mask_dataset(self, mask: MaskType) -> None:
+        # Users are cautioned against calling this function directly!
+        # Use SWIFTGalaxy.mask_particles instead.
         particle_name = self._particle_dataset.particle_name
         particle_metadata = getattr(self._particle_dataset.metadata,
                                     f'{particle_name}_properties')

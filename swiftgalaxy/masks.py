@@ -22,7 +22,7 @@ class MaskCollection(object):
     Notes
     -----
 
-    .. warning::
+    .. note::
         The :mod:`velociraptor.swift.swift` module makes some use of a
         :obj:`namedtuple` called ``MaskCollection``. These objects are not
         valid where :mod:`swiftgalaxy` functions expect a :obj:`MaskCollection`
