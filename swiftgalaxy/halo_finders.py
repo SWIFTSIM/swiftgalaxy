@@ -121,7 +121,8 @@ class Velociraptor(_HaloFinder):
     ::
 
         >>> cat = Velociraptor(
-        >>>     '/output/path/out',  # out.properties file is at /output/path/
+        >>>     '/output/path/halos',  # halos.properties file is at
+        >>>                            # /output/path/
         >>>     halo_index=3,  # 4th entry in catalogue (indexed from 0)
         >>> )
         >>> cat
