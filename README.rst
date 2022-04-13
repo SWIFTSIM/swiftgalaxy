@@ -7,8 +7,8 @@ SWIFTGalaxy is a module that extends SWIFTSimIO_ tailored to analyses of particl
 .. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/abstract
 .. _HBT+: https://ui.adsabs.harvard.edu/abs/2018MNRAS.474..604H/abstract
 
-  + `Quick start guide <quickstart>`_
-  + `Full documentation <fulldocs>`_
++ `Quick start guide <quickstart>`_
++ `Full documentation <fulldocs>`_
 
 .. _quickstart: https://kyleaoman.github.io/swiftgalaxy/build/html/getting_started
 .. _fulldocs: https://kyleaoman.github.io/swiftgalaxy
