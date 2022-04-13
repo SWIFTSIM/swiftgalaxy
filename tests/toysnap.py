@@ -1,13 +1,48 @@
-import numpy as np
+import os
 import h5py
+import numpy as np
 import unyt as u
-from swiftsimio import Writer
 from swiftsimio.objects import cosmo_array
-from swiftgalaxy import SWIFTGalaxy, MaskCollection
+from swiftsimio import Writer
+from swiftgalaxy import MaskCollection
 from swiftgalaxy.halo_finders import _HaloFinder
 
+toysnap_filename = 'toysnap.hdf5'
 
-def create_testsnap():
+
+class ToyHF(_HaloFinder):
+
+    def __init__(self):
+        super().__init__()
+        return
+
+    def _load(self):
+        return
+
+    def _get_spatial_mask(self, SG):
+        import swiftsimio
+        spatial_mask = [None, None, None]
+        swift_mask = swiftsimio.mask(toysnap_filename, spatial_only=True)
+        swift_mask.constrain_spatial(spatial_mask)
+        return swift_mask
+
+    def _get_extra_mask(self, SG):
+        extra_mask = MaskCollection(
+            gas=np.s_[-10000:],
+            dark_matter=np.s_[-10000:],
+            stars=...,
+            black_holes=...
+        )
+        return extra_mask
+
+    def _centre(self):
+        return cosmo_array([5, 5, 5], u.Mpc)
+
+    def _vcentre(self):
+        return cosmo_array([0, 0, 0], u.km / u.s)
+
+
+def create_toysnap():
     """
     Creates a sample dataset of a toy galaxy.
     """
@@ -104,9 +139,9 @@ def create_testsnap():
     sd.black_holes.generate_smoothing_lengths(
         boxsize=boxsize * u.Mpc, dimension=3)
 
-    sd.write('test.hdf5')  # IDs auto-generated
+    sd.write(toysnap_filename)  # IDs auto-generated
 
-    with h5py.File('test.hdf5', 'r+') as f:
+    with h5py.File(toysnap_filename, 'r+') as f:
         g = f.create_group('Cells')
         g.create_dataset('Centres', data=np.array([[5, 5, 5]], dtype=float))
         cg = g.create_group('Counts')
@@ -132,42 +167,6 @@ def create_testsnap():
     return
 
 
-def load_testsnap():
-
-    class TestHF(_HaloFinder):
-
-        def __init__(self):
-            super().__init__()
-            return
-
-        def _load(self):
-            return
-
-        def _get_spatial_mask(self, SG):
-            import swiftsimio
-            spatial_mask = [None, None, None]
-            swift_mask = swiftsimio.mask('test.hdf5', spatial_only=True)
-            swift_mask.constrain_spatial(spatial_mask)
-            return swift_mask
-
-        def _get_extra_mask(self, SG):
-            extra_mask = MaskCollection(
-                gas=np.s_[-10000:],
-                dark_matter=np.s_[-10000:],
-                stars=...,
-                black_holes=...
-            )
-            return extra_mask
-
-        def _centre(self):
-            return cosmo_array([5, 5, 5], u.Mpc)
-
-        def _vcentre(self):
-            return cosmo_array([0, 0, 0], u.km / u.s)
-
-    sg = SWIFTGalaxy(
-        'test.hdf5',
-        TestHF()
-    )
-
-    return sg
+def remove_toysnap():
+    os.remove(toysnap_filename)
+    return
