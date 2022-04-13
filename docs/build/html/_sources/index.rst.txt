@@ -1,7 +1,4 @@
-SWIFTGalaxy documentation
-=========================
-
-.. include:: overview.rst
+.. include:: ../../README.rst
 
 .. toctree::
    :maxdepth: 2
@@ -12,11 +9,6 @@ SWIFTGalaxy documentation
    halo_finders/index
    masking/index
    modules/index
-
-Citing SWIFTGalaxy
-==================
-
-.. include:: citing.rst
 
 Indices and tables
 ==================

@@ -34,6 +34,10 @@ Installing
 
 ``pip install swiftgalaxy``
 
+.. note::
+
+   :mod:`swiftgalaxy` is not hosted on PyPI yet, so ``pip install swiftgalaxy`` will fail. Use the instructions below instead.
+
 Note that this will also install required dependencies.
 
 To set up the code for development, first clone the latest master from `github`_:
@@ -55,7 +59,7 @@ Assuming we have a snapshot file :file:`{snap}.hdf5`, and a halo catalogue provi
 .. code-block:: python
 
     from swiftgalaxy import SWIFTGalaxy, Velociraptor
-    mygalaxy = SWIFTGalaxy(
+    sg = SWIFTGalaxy(
         'snap.hdf5',
         Velociraptor(
             'halos',
@@ -67,8 +71,8 @@ Like a :class:`~swiftsimio.reader.SWIFTDataset`, the particle datasets are acces
 
 .. code-block:: python
 
-    mygalaxy.gas.particle_ids
-    mygalaxy.dark_matter.coordinates
+    sg.gas.particle_ids
+    sg.dark_matter.coordinates
 
 However, information from the halo finder is used to select only the particles identified as bound to this galaxy. The coordinate system is centred in both position and velocity on the centre and peculiar velocity of the galaxy, as determined by the halo finder. The coordinate system can be further manipulated, and all particle arrays will stay in a consistent reference frame at all times.
 
@@ -76,19 +80,19 @@ Again like for a :class:`~swiftsimio.reader.SWIFTDataset`, the units and metadat
 
 .. code-block:: python
 
-    mygalaxy.units
-    mygalaxy.metadata
+    sg.units
+    sg.metadata
 
 The halo finder interface is accessible as shown below. What this interface looks like depends on the halo finder being used, but will provide values for the individual galaxy of interest.
 
 .. code-block:: python
 
-    mygalaxy.halo_finder
+    sg.halo_finder
 
 In this case with :class:`~swiftgalaxy.halo_finders.Velociraptor`, we can get the virial mass like this:
 
 .. code-block:: python
 
-    mygalaxy.halo_finder.masses.mvir
+    sg.halo_finder.masses.mvir
 
 The further features of a :class:`~swiftgalaxy.reader.SWIFTGalaxy` are detailed in the next sections.

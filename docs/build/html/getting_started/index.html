@@ -21,7 +21,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Coordinate transformations" href="../coordinate_transformations/index.html" />
-    <link rel="prev" title="SWIFTGalaxy documentation" href="../index.html" />
+    <link rel="prev" title="SWIFTGalaxy" href="../index.html" />
  <script type="text/javascript">
     $(document).ready(function() {
         //
@@ -65,7 +65,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../coordinate_transformations/index.html">Coordinate transformations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../additional_coordinates/index.html">Additional coordinates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../halo_finders/index.html">Halo finders</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../masking/index.html">Dataset masking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../masking/index.html">Particle masking</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../modules/index.html">API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../modules/index.html#indices-and-tables">Indices and tables</a></li>
 </ul>
@@ -119,6 +119,10 @@
 <h2>Installing<a class="headerlink" href="#installing" title="Permalink to this headline"></a></h2>
 <p><a class="reference internal" href="../modules/swiftgalaxy.html#module-swiftgalaxy" title="swiftgalaxy"><code class="xref py py-mod docutils literal notranslate"><span class="pre">swiftgalaxy</span></code></a> can be installed using the python packaging manager, <code class="docutils literal notranslate"><span class="pre">pip</span></code>, or any other packaging manager that you wish to use:</p>
 <p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">swiftgalaxy</span></code></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="../modules/swiftgalaxy.html#module-swiftgalaxy" title="swiftgalaxy"><code class="xref py py-mod docutils literal notranslate"><span class="pre">swiftgalaxy</span></code></a> is not hosted on PyPI yet, so <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">swiftgalaxy</span></code> will fail. Use the instructions below instead.</p>
+</div>
 <p>Note that this will also install required dependencies.</p>
 <p>To set up the code for development, first clone the latest master from <a class="reference external" href="https://github.com/SWIFTSIM/swiftgalaxy">github</a>:</p>
 <p><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">https://github.com/SWIFTSIM/swiftgalaxy.git</span></code></p>
@@ -129,7 +133,7 @@
 <h2>Quick start<a class="headerlink" href="#quick-start" title="Permalink to this headline"></a></h2>
 <p>Assuming we have a snapshot file <code class="file docutils literal notranslate"><em><span class="pre">snap</span></em><span class="pre">.hdf5</span></code>, and a halo catalogue provided by Velociraptor <code class="file docutils literal notranslate"><em><span class="pre">halos</span></em><span class="pre">.properties</span></code>, <code class="file docutils literal notranslate"><em><span class="pre">halos</span></em><span class="pre">.catalog_groups</span></code>, etc., with the default names for the arrays of coordinates, velocities and particle_ids, we can initialise a <code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code> for the first row (indexed from 0) in the halo catalogue very easily:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">swiftgalaxy</span> <span class="kn">import</span> <span class="n">SWIFTGalaxy</span><span class="p">,</span> <span class="n">Velociraptor</span>
-<span class="n">mygalaxy</span> <span class="o">=</span> <span class="n">SWIFTGalaxy</span><span class="p">(</span>
+<span class="n">sg</span> <span class="o">=</span> <span class="n">SWIFTGalaxy</span><span class="p">(</span>
     <span class="s1">&#39;snap.hdf5&#39;</span><span class="p">,</span>
     <span class="n">Velociraptor</span><span class="p">(</span>
         <span class="s1">&#39;halos&#39;</span><span class="p">,</span>
@@ -139,22 +143,22 @@
 </pre></div>
 </div>
 <p>Like a <a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.reader.html#swiftsimio.reader.SWIFTDataset" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTDataset</span></code></a>, the particle datasets are accessed as below, and all data are loaded ‘lazily’, on demand.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mygalaxy</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">particle_ids</span>
-<span class="n">mygalaxy</span><span class="o">.</span><span class="n">dark_matter</span><span class="o">.</span><span class="n">coordinates</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sg</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">particle_ids</span>
+<span class="n">sg</span><span class="o">.</span><span class="n">dark_matter</span><span class="o">.</span><span class="n">coordinates</span>
 </pre></div>
 </div>
 <p>However, information from the halo finder is used to select only the particles identified as bound to this galaxy. The coordinate system is centred in both position and velocity on the centre and peculiar velocity of the galaxy, as determined by the halo finder. The coordinate system can be further manipulated, and all particle arrays will stay in a consistent reference frame at all times.</p>
 <p>Again like for a <a class="reference external" href="https://swiftsimio.readthedocs.io/en/latest/modules/swiftsimio.reader.html#swiftsimio.reader.SWIFTDataset" title="(in SWIFTsimIO)"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTDataset</span></code></a>, the units and metadata are available:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mygalaxy</span><span class="o">.</span><span class="n">units</span>
-<span class="n">mygalaxy</span><span class="o">.</span><span class="n">metadata</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sg</span><span class="o">.</span><span class="n">units</span>
+<span class="n">sg</span><span class="o">.</span><span class="n">metadata</span>
 </pre></div>
 </div>
 <p>The halo finder interface is accessible as shown below. What this interface looks like depends on the halo finder being used, but will provide values for the individual galaxy of interest.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mygalaxy</span><span class="o">.</span><span class="n">halo_finder</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sg</span><span class="o">.</span><span class="n">halo_finder</span>
 </pre></div>
 </div>
 <p>In this case with <a class="reference internal" href="../modules/swiftgalaxy.halo_finders.html#swiftgalaxy.halo_finders.Velociraptor" title="swiftgalaxy.halo_finders.Velociraptor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Velociraptor</span></code></a>, we can get the virial mass like this:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mygalaxy</span><span class="o">.</span><span class="n">halo_finder</span><span class="o">.</span><span class="n">masses</span><span class="o">.</span><span class="n">mvir</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sg</span><span class="o">.</span><span class="n">halo_finder</span><span class="o">.</span><span class="n">masses</span><span class="o">.</span><span class="n">mvir</span>
 </pre></div>
 </div>
 <p>The further features of a <a class="reference internal" href="../modules/swiftgalaxy.reader.html#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> are detailed in the next sections.</p>
@@ -165,7 +169,7 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../index.html" class="btn btn-neutral float-left" title="SWIFTGalaxy documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../index.html" class="btn btn-neutral float-left" title="SWIFTGalaxy" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="../coordinate_transformations/index.html" class="btn btn-neutral float-right" title="Coordinate transformations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
