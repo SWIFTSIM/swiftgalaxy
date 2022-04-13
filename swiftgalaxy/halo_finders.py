@@ -189,7 +189,7 @@ class Velociraptor(_HaloFinder):
             f'{self.velociraptor_filebase}.properties', mask=self.halo_index)
         return
 
-    def _get_spatial_mask(self, SG: 'SWIFTGalaxy') -> None:
+    def _get_spatial_mask(self, SG: 'SWIFTGalaxy') -> SWIFTMask:
         from velociraptor import load as load_catalogue
         from velociraptor.particles import load_groups
         from velociraptor.swift.swift import generate_spatial_mask

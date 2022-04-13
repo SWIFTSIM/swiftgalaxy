@@ -1100,18 +1100,42 @@ class SWIFTGalaxy(SWIFTDataset):
         else:
             self._extra_mask = self.halo_finder._get_extra_mask(self)
             if self._extra_mask is not None:
-                # only particle ids should be loaded so far, need to mask these
+                # need to mask any already loaded data
                 for particle_name in self.metadata.present_particle_names:
-                    particle_ids = getattr(
-                        getattr(self, particle_name),
-                        f'_{self.id_particle_dataset_name}')
-                    if getattr(self._extra_mask, particle_name) is not None:
-                        setattr(
-                            # bypass helper:
-                            super().__getattribute__(particle_name),
-                            f'_{self.id_particle_dataset_name}',
-                            particle_ids[getattr(self._extra_mask,
-                                                 particle_name)])
+                    if getattr(self._extra_mask, particle_name) is None:
+                        continue
+                    particle_metadata = getattr(self.metadata,
+                                                f'{particle_name}_properties')
+                    for field_name in particle_metadata.field_names:
+                        if getattr(self, particle_name)._is_namedcolumns(
+                                field_name):
+                            named_columns_dataset = getattr(
+                                getattr(self, particle_name),
+                                f'{field_name}'
+                            )._named_column_dataset
+                            for column in named_columns_dataset.named_columns:
+                                data = getattr(named_columns_dataset,
+                                               f'_{column}')
+                                if data is None:
+                                    continue
+                                setattr(
+                                    named_columns_dataset,
+                                    f'_{column}',
+                                    data[getattr(
+                                        self._extra_mask, particle_name
+                                    )]
+                                )
+                        else:
+                            data = getattr(
+                                getattr(self, particle_name),
+                                f'_{field_name}')
+                            if data is None:
+                                continue
+                            setattr(
+                                # bypass helper:
+                                super().__getattribute__(particle_name),
+                                f'_{field_name}',
+                                data[getattr(self._extra_mask, particle_name)])
             else:
                 self._extra_mask = MaskCollection(
                     **{k: None
