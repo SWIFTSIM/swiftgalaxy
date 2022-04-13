@@ -7,3 +7,4 @@
 /docs/build/doctrees
 swiftgalaxy/SwiftGalaxy\ Demo.ipynb
 swiftgalaxy/.ipynb_checkpoints
+tests/test.hdf5
