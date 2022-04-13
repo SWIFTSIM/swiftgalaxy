@@ -124,7 +124,7 @@ class _CoordinateHelper(object):
     def __getattr__(self, attr: str) -> cosmo_array:
         return self._coordinates[self._masks[attr]]
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         keys = ', '.join(self._masks.keys())
         return f'Available coordinates: {keys}.'
 
@@ -1148,6 +1148,9 @@ class SWIFTGalaxy(SWIFTDataset):
         self._initialised: bool = True
 
         return
+
+    def __str__(self) -> str:
+        return f'SWIFTGalaxy at {self.snapshot_filename}.'
 
     def __getitem__(self, mask_collection: MaskCollection) -> 'SWIFTGalaxy':
         return self._data_copy(mask_collection=mask_collection)
