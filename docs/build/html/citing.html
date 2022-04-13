@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SWIFTGalaxy documentation &mdash; SWIFTGalaxy 0.0 documentation</title>
+  <title>&lt;no title&gt; &mdash; SWIFTGalaxy 0.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -20,7 +20,6 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Getting Started" href="getting_started/index.html" />
  <script type="text/javascript">
     $(document).ready(function() {
         //
@@ -41,7 +40,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="#" class="icon icon-home"> SWIFTGalaxy
+            <a href="index.html" class="icon icon-home"> SWIFTGalaxy
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -67,17 +66,17 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">SWIFTGalaxy</a>
+          <a href="index.html">SWIFTGalaxy</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
-      <li>SWIFTGalaxy documentation</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>&lt;no title&gt;</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/citing.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -85,53 +84,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="swiftgalaxy-documentation">
-<h1>SWIFTGalaxy documentation<a class="headerlink" href="#swiftgalaxy-documentation" title="Permalink to this headline"></a></h1>
-<p>SWIFTGalaxy is a module that extends <a class="reference external" href="http://swiftsimio.readthedocs.org">SWIFTSimIO</a> tailored to analyses of particles belonging to individual simulated galaxies. It inherits from and extends the functionality of the <code class="docutils literal notranslate"><span class="pre">SWIFTDataset</span></code>. It understands the output of a halo finder (supported: <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/abstract">Velociraptor</a>; planned support: <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2018MNRAS.474..604H/abstract">HBT+</a>) and therefore which particles belong to a galaxy, and its integrated properties. The particles occupy a coordinate frame that is enforced to be consistent, such that particles loaded on-the-fly will match e.g. rotations and translations of particles already in memory. Intuitive masking of particle datasets is also enabled. Finally, some utilities to make working in cylindrical and spherical coordinate systems more convenient are also provided.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="getting_started/index.html">Getting Started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="getting_started/index.html#requirements">Requirements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="getting_started/index.html#installing">Installing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="getting_started/index.html#quick-start">Quick start</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="coordinate_transformations/index.html">Coordinate transformations</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="coordinate_transformations/index.html#recentering">Recentering</a></li>
-<li class="toctree-l2"><a class="reference internal" href="coordinate_transformations/index.html#translations">Translations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="coordinate_transformations/index.html#rotations">Rotations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="coordinate_transformations/index.html#box-wrapping">Box wrapping</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="additional_coordinates/index.html">Additional coordinates</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="additional_coordinates/index.html#spherical-coordinates">Spherical coordinates</a></li>
-<li class="toctree-l2"><a class="reference internal" href="additional_coordinates/index.html#cylindrical-coordinates">Cylindrical coordinates</a></li>
-<li class="toctree-l2"><a class="reference internal" href="additional_coordinates/index.html#cartesian-coordinates">Cartesian coordinates</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="halo_finders/index.html">Halo finders</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="halo_finders/index.html#velociraptor">Velociraptor</a></li>
-<li class="toctree-l2"><a class="reference internal" href="halo_finders/index.html#hbt">HBT+</a></li>
-<li class="toctree-l2"><a class="reference internal" href="halo_finders/index.html#other-halo-finders">Other halo finders</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="masking/index.html">Particle masking</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="masking/index.html#masking-a-swiftgalaxy">Masking a SWIFTGalaxy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="masking/index.html#masking-individual-swiftparticledatasets">Masking individual SWIFTParticleDatasets</a></li>
-<li class="toctree-l2"><a class="reference internal" href="masking/index.html#masking-particle-arrays">Masking particle arrays</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="modules/index.html">API Documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="modules/swiftgalaxy.html">swiftgalaxy package</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="modules/index.html#indices-and-tables">Indices and tables</a></li>
-</ul>
-</div>
-</section>
-<section id="citing-swiftgalaxy">
-<h1>Citing SWIFTGalaxy<a class="headerlink" href="#citing-swiftgalaxy" title="Permalink to this headline"></a></h1>
-<div class="admonition note">
+  <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>These entries have not gone live yet.</p>
 </div>
@@ -153,22 +106,11 @@
 </pre></div>
 </div>
 <p>Please also consider the <a class="reference external" href="citeSWIFTSimIO">citations requested for SWIFTSimIO</a>.</p>
-</section>
-<section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline"></a></h1>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
-</ul>
-</section>
 
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="getting_started/index.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 
