@@ -945,18 +945,22 @@ class SWIFTGalaxy(SWIFTDataset):
         the position *and* velocity centres defined by the ``halo_finder``.
 
     transforms_like_coordinates: :obj:`set` [:obj:`str`], \
-    default: ``{'coordinates'}``
+    default: ``set()``
         Names of fields that behave as spatial coordinates. It is assumed that
         these exist for all present particle types. When the coordinate system
         is rotated or translated, the associated arrays will be transformed
-        accordingly.
+        accordingly. The ``coordinates`` dataset (or its alternative name given
+        in the ``coordinates_dataset_name`` parameter) is implicitly assumed to
+        behave as spatial coordinates.
 
     transforms_like_velocities: :obj:`set` [:obj:`str`], \
-    default: ``{'velocities'}``
+    default: ``set()``
         Names of fields that behave as velocities. It is assumed that these
         exist for all present particle types. When the coordinate system is
         rotated or boosted, the associated arrays will be transformed
-        accordingly.
+        accordingly. The ``velocities`` dataset (or its alternative name given
+        in the ``velocities_dataset_name`` parameter) is implicitly assumed to
+        behave as velocities.
 
     id_particle_dataset_name: :obj:`str`, default: ``'particle_ids'``
         Name of the dataset containing the particle IDs, assumed to be the same
@@ -1042,12 +1046,8 @@ class SWIFTGalaxy(SWIFTDataset):
                  snapshot_filename: str,
                  halo_finder: _HaloFinder,
                  auto_recentre: bool = True,
-                 transforms_like_coordinates: Set[str] = {
-                     'coordinates',
-                 },
-                 transforms_like_velocities: Set[str] = {
-                     'velocities',
-                 },
+                 transforms_like_coordinates: Set[str] = set(),
+                 transforms_like_velocities: Set[str] = set(),
                  id_particle_dataset_name: str = 'particle_ids',
                  coordinates_dataset_name: str = 'coordinates',
                  velocities_dataset_name: str = 'velocities',
@@ -1064,9 +1064,10 @@ class SWIFTGalaxy(SWIFTDataset):
             self._spatial_mask = _spatial_mask
         else:
             self._spatial_mask = self.halo_finder._get_spatial_mask(self)
-        self.transforms_like_coordinates: Set[
-            str] = transforms_like_coordinates
-        self.transforms_like_velocities: Set[str] = transforms_like_velocities
+        self.transforms_like_coordinates: Set[str] = \
+            {coordinates_dataset_name}.union(transforms_like_coordinates)
+        self.transforms_like_velocities: Set[str] = \
+            {velocities_dataset_name}.union(transforms_like_velocities)
         self.id_particle_dataset_name = id_particle_dataset_name
         self.coordinates_dataset_name = coordinates_dataset_name
         self.velocities_dataset_name = velocities_dataset_name
