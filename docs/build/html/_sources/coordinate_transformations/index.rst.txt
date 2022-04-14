@@ -3,19 +3,19 @@ Coordinate transformations
 
 A :class:`~swiftgalaxy.reader.SWIFTGalaxy` enforces a consistent coordinate system for all particle types and coordinate and velocity arrays (accelerations are not supported, yet). Any relevant particle arrays already in memory are modified when a new transformation is applied, and any relevant particle arrays loaded later will be automatically transformed to the current frame.
 
-It may be that in addition to the basic coordinates and velocities arrays, you have additional arrays that you wish to live in the same coordinate system. We could imagine, for instance, a property called ``wind_velocity`` attached to star particles and containing a vector giving the velocity of a (directional) stellar wind in simulation box coordinates. We can use the ``transforms_like_velocities`` to specify that this property should have any coordinate transformations that would be relevant to the ``velocities`` of particles applied to these as well:
+It may be that along with the basic coordinates and velocities arrays, you have additional arrays that you wish to live in the same coordinate system. We could imagine, for instance, a property called ``wind_velocity`` attached to star particles and containing a vector giving the velocity of a (directional) stellar wind in simulation box coordinates. We can use the ``transforms_like_velocities`` to specify that this property should have any coordinate transformations that would be relevant to the ``velocities`` of particles applied to these as well:
 
 .. code-block:: python
 
     SWIFTGalaxy(
         ...,
-	transforms_like_coordinates={'coordinates'},
-	transforms_like_velocities={'velocities', 'wind_velocity'},
+	transforms_like_coordinates=set(),
+	transforms_like_velocities={'wind_velocity'},
     )
 
-The equivalent for coordinate-like arrays is the ``transforms_like_coordinates`` argument. Note that it is not necessary that a name provided in one of these arguments be present for all particle types. If the dataset in question is part of a `NamedColumns` dataset, the name can simply be provided with a dot. For instance, if the ``wind_velocity`` in the example above was part of a `NamedColumns` dataset called ``wind_model``, you would simply write: ``transforms_like_velocities={'velocities', 'wind_model.wind_velocity'}``.
+The equivalent for coordinate-like arrays is the ``transforms_like_coordinates`` argument. The ``coordinates`` and ``velocities`` arrays are always assumed to transform as coordinates and velocities, respectively. Note that it is not necessary that a name provided in one of these arguments be present for all particle types. If the dataset in question is part of a `NamedColumns` dataset, the name can simply be provided with a dot. For instance, if the ``wind_velocity`` in the example above was part of a `NamedColumns` dataset called ``wind_model``, you would simply write: ``transforms_like_velocities={'velocities', 'wind_model.wind_velocity'}``.
 
-By default, :class:`~swiftgalaxy.reader.SWIFTGalaxy` assumes that particle coordinates are stored in a dataset (one for each particle type) called ``coordinates``, and velocities in datasets called ``velocities``. If your data use non-standard naming of the coordinate and velocity arrays, you can provide alternative names (replace the defaults in the example snippet below with your custom names). Note that you must also override the ``transforms_like_coordinates`` and ``transforms_like_velocities`` arguments, providing a set containing (at minimum) your custom array name for each.
+By default, :class:`~swiftgalaxy.reader.SWIFTGalaxy` assumes that particle coordinates are stored in a dataset (one for each particle type) called ``coordinates``, and velocities in datasets called ``velocities``. If your data use non-standard naming of the coordinate and velocity arrays, you can provide alternative names (replace the defaults in the example snippet below with your custom names). Note that the datasets named in these arguments are implicitly added to the sets ``transforms_like_coordinates`` and ``transforms_like_velocities``, respectively.
 
 .. code-block:: python
 
@@ -23,8 +23,6 @@ By default, :class:`~swiftgalaxy.reader.SWIFTGalaxy` assumes that particle coord
         ...,
 	coordinates_dataset_name='coordinates',
 	velocities_dataset_name='velocities',
-	transforms_like_coordinates={'coordinates'},
-	transforms_like_velocities={'velocities'},
     )
 
 

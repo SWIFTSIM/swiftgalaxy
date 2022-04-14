@@ -115,7 +115,7 @@
 <span class="kn">from</span> <span class="nn">swiftgalaxy.masks</span> <span class="kn">import</span> <span class="n">MaskCollection</span>
 
 <span class="c1"># __getattribute__ and setattr overloads use Any, should this be avoided?</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span>
 <span class="kn">from</span> <span class="nn">swiftgalaxy._types</span> <span class="kn">import</span> <span class="n">MaskType</span>
 
 
@@ -210,7 +210,7 @@
     <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cosmo_array</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coordinates</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_masks</span><span class="p">[</span><span class="n">attr</span><span class="p">]]</span>
 
-    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="n">keys</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_masks</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Available coordinates: </span><span class="si">{</span><span class="n">keys</span><span class="si">}</span><span class="s1">.&#39;</span></div>
 
@@ -1031,18 +1031,22 @@
 <span class="sd">        the position *and* velocity centres defined by the ``halo_finder``.</span>
 
 <span class="sd">    transforms_like_coordinates: :obj:`set` [:obj:`str`], \</span>
-<span class="sd">    default: ``{&#39;coordinates&#39;}``</span>
+<span class="sd">    default: ``set()``</span>
 <span class="sd">        Names of fields that behave as spatial coordinates. It is assumed that</span>
 <span class="sd">        these exist for all present particle types. When the coordinate system</span>
 <span class="sd">        is rotated or translated, the associated arrays will be transformed</span>
-<span class="sd">        accordingly.</span>
+<span class="sd">        accordingly. The ``coordinates`` dataset (or its alternative name given</span>
+<span class="sd">        in the ``coordinates_dataset_name`` parameter) is implicitly assumed to</span>
+<span class="sd">        behave as spatial coordinates.</span>
 
 <span class="sd">    transforms_like_velocities: :obj:`set` [:obj:`str`], \</span>
-<span class="sd">    default: ``{&#39;velocities&#39;}``</span>
+<span class="sd">    default: ``set()``</span>
 <span class="sd">        Names of fields that behave as velocities. It is assumed that these</span>
 <span class="sd">        exist for all present particle types. When the coordinate system is</span>
 <span class="sd">        rotated or boosted, the associated arrays will be transformed</span>
-<span class="sd">        accordingly.</span>
+<span class="sd">        accordingly. The ``velocities`` dataset (or its alternative name given</span>
+<span class="sd">        in the ``velocities_dataset_name`` parameter) is implicitly assumed to</span>
+<span class="sd">        behave as velocities.</span>
 
 <span class="sd">    id_particle_dataset_name: :obj:`str`, default: ``&#39;particle_ids&#39;``</span>
 <span class="sd">        Name of the dataset containing the particle IDs, assumed to be the same</span>
@@ -1128,12 +1132,8 @@
                  <span class="n">snapshot_filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="n">halo_finder</span><span class="p">:</span> <span class="n">_HaloFinder</span><span class="p">,</span>
                  <span class="n">auto_recentre</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                 <span class="n">transforms_like_coordinates</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-                     <span class="s1">&#39;coordinates&#39;</span><span class="p">,</span>
-                 <span class="p">},</span>
-                 <span class="n">transforms_like_velocities</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-                     <span class="s1">&#39;velocities&#39;</span><span class="p">,</span>
-                 <span class="p">},</span>
+                 <span class="n">transforms_like_coordinates</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(),</span>
+                 <span class="n">transforms_like_velocities</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(),</span>
                  <span class="n">id_particle_dataset_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;particle_ids&#39;</span><span class="p">,</span>
                  <span class="n">coordinates_dataset_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;coordinates&#39;</span><span class="p">,</span>
                  <span class="n">velocities_dataset_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;velocities&#39;</span><span class="p">,</span>
@@ -1150,9 +1150,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_mask</span> <span class="o">=</span> <span class="n">_spatial_mask</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">halo_finder</span><span class="o">.</span><span class="n">_get_spatial_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">transforms_like_coordinates</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span>
-            <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">transforms_like_coordinates</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">transforms_like_velocities</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">transforms_like_velocities</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transforms_like_coordinates</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="p">{</span><span class="n">coordinates_dataset_name</span><span class="p">}</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">transforms_like_coordinates</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transforms_like_velocities</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="p">{</span><span class="n">velocities_dataset_name</span><span class="p">}</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">transforms_like_velocities</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">id_particle_dataset_name</span> <span class="o">=</span> <span class="n">id_particle_dataset_name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">coordinates_dataset_name</span> <span class="o">=</span> <span class="n">coordinates_dataset_name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">velocities_dataset_name</span> <span class="o">=</span> <span class="n">velocities_dataset_name</span>
@@ -1186,18 +1187,42 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_extra_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">halo_finder</span><span class="o">.</span><span class="n">_get_extra_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extra_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="c1"># only particle ids should be loaded so far, need to mask these</span>
+                <span class="c1"># need to mask any already loaded data</span>
                 <span class="k">for</span> <span class="n">particle_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">present_particle_names</span><span class="p">:</span>
-                    <span class="n">particle_ids</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
-                        <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_name</span><span class="p">),</span>
-                        <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id_particle_dataset_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_extra_mask</span><span class="p">,</span> <span class="n">particle_name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="nb">setattr</span><span class="p">(</span>
-                            <span class="c1"># bypass helper:</span>
-                            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">particle_name</span><span class="p">),</span>
-                            <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id_particle_dataset_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
-                            <span class="n">particle_ids</span><span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_extra_mask</span><span class="p">,</span>
-                                                 <span class="n">particle_name</span><span class="p">)])</span>
+                    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_extra_mask</span><span class="p">,</span> <span class="n">particle_name</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">particle_metadata</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
+                                                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">particle_name</span><span class="si">}</span><span class="s1">_properties&#39;</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">particle_metadata</span><span class="o">.</span><span class="n">field_names</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_name</span><span class="p">)</span><span class="o">.</span><span class="n">_is_namedcolumns</span><span class="p">(</span>
+                                <span class="n">field_name</span><span class="p">):</span>
+                            <span class="n">named_columns_dataset</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+                                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_name</span><span class="p">),</span>
+                                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s1">&#39;</span>
+                            <span class="p">)</span><span class="o">.</span><span class="n">_named_column_dataset</span>
+                            <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">named_columns_dataset</span><span class="o">.</span><span class="n">named_columns</span><span class="p">:</span>
+                                <span class="n">data</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">named_columns_dataset</span><span class="p">,</span>
+                                               <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="n">column</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                                <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                                    <span class="k">continue</span>
+                                <span class="nb">setattr</span><span class="p">(</span>
+                                    <span class="n">named_columns_dataset</span><span class="p">,</span>
+                                    <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="n">column</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+                                    <span class="n">data</span><span class="p">[</span><span class="nb">getattr</span><span class="p">(</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">_extra_mask</span><span class="p">,</span> <span class="n">particle_name</span>
+                                    <span class="p">)]</span>
+                                <span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">data</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+                                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_name</span><span class="p">),</span>
+                                <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="k">continue</span>
+                            <span class="nb">setattr</span><span class="p">(</span>
+                                <span class="c1"># bypass helper:</span>
+                                <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">particle_name</span><span class="p">),</span>
+                                <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+                                <span class="n">data</span><span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_extra_mask</span><span class="p">,</span> <span class="n">particle_name</span><span class="p">)])</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_extra_mask</span> <span class="o">=</span> <span class="n">MaskCollection</span><span class="p">(</span>
                     <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="kc">None</span>
@@ -1210,6 +1235,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_initialised</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="k">return</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;SWIFTGalaxy at </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">snapshot_filename</span><span class="si">}</span><span class="s1">.&#39;</span>
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask_collection</span><span class="p">:</span> <span class="n">MaskCollection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;SWIFTGalaxy&#39;</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_copy</span><span class="p">(</span><span class="n">mask_collection</span><span class="o">=</span><span class="n">mask_collection</span><span class="p">)</span>
