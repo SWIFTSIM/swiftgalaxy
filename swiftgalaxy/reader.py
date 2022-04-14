@@ -29,7 +29,7 @@ from swiftgalaxy.halo_finders import _HaloFinder
 from swiftgalaxy.masks import MaskCollection
 
 # __getattribute__ and setattr overloads use Any, should this be avoided?
-from typing import Union, Any, Optional
+from typing import Union, Any, Optional, Set
 from swiftgalaxy._types import MaskType
 
 
@@ -1042,10 +1042,10 @@ class SWIFTGalaxy(SWIFTDataset):
                  snapshot_filename: str,
                  halo_finder: _HaloFinder,
                  auto_recentre: bool = True,
-                 transforms_like_coordinates: set[str] = {
+                 transforms_like_coordinates: Set[str] = {
                      'coordinates',
                  },
-                 transforms_like_velocities: set[str] = {
+                 transforms_like_velocities: Set[str] = {
                      'velocities',
                  },
                  id_particle_dataset_name: str = 'particle_ids',
@@ -1064,9 +1064,9 @@ class SWIFTGalaxy(SWIFTDataset):
             self._spatial_mask = _spatial_mask
         else:
             self._spatial_mask = self.halo_finder._get_spatial_mask(self)
-        self.transforms_like_coordinates: set[
+        self.transforms_like_coordinates: Set[
             str] = transforms_like_coordinates
-        self.transforms_like_velocities: set[str] = transforms_like_velocities
+        self.transforms_like_velocities: Set[str] = transforms_like_velocities
         self.id_particle_dataset_name = id_particle_dataset_name
         self.coordinates_dataset_name = coordinates_dataset_name
         self.velocities_dataset_name = velocities_dataset_name
