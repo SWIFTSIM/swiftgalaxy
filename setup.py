@@ -10,7 +10,7 @@ setup(
     author_email='kyle.a.oman@durham.ac.uk',
     license='GNU GPL v3',
     packages=['swiftgalaxy'],
-    install_requires=['numpy', 'h5py', 'unyt', 'swiftsimio'],
+    install_requires=['numpy', 'scipy', 'h5py', 'unyt', 'swiftsimio'],
     extras_require=dict(
         velociraptor='velociraptor'
     ),
