@@ -3,7 +3,7 @@ from swiftgalaxy import SWIFTGalaxy
 from toysnap import create_toysnap, remove_toysnap, ToyHF, toysnap_filename
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def sg():
 
     create_toysnap()
@@ -18,7 +18,7 @@ def sg():
     remove_toysnap()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def sg_custom_names():
 
     toysnap_custom_names_filename = 'toysnap_custom_names.hdf5'
@@ -45,7 +45,7 @@ def sg_custom_names():
     remove_toysnap(snapfile=toysnap_custom_names_filename)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def sg_autorecentre_off():
 
     toysnap_autorecentre_off_filename = 'toysnap_autorecentre_off.hdf5'

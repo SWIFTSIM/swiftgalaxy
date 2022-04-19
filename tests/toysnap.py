@@ -9,6 +9,12 @@ from swiftgalaxy.halo_finders import _HaloFinder
 from swiftsimio.units import cosmo_units
 
 toysnap_filename = 'toysnap.hdf5'
+present_particle_types = {
+    0: 'gas',
+    1: 'dark_matter',
+    4: 'stars',
+    5: 'black_holes'
+}
 
 
 class ToyHF(_HaloFinder):
@@ -63,7 +69,7 @@ def create_toysnap(
     n_g_b = n_g_all - n_g
     phi = np.random.rand(n_g, 1) * 2 * np.pi
     R = np.random.rand(n_g, 1)
-    sd.gas.coordinates = np.vstack((
+    getattr(sd, present_particle_types[0]).coordinates = np.vstack((
         np.random.rand(n_g_b, 3) * 10,
         np.hstack((
             # 10 kpc disc radius, offcentred in box
@@ -72,7 +78,7 @@ def create_toysnap(
             2 + (np.random.rand(n_g, 1) * 2 - 1) * .001  # 1 kpc height
         ))
     )) * u.Mpc
-    sd.gas.velocities = np.vstack((
+    getattr(sd, present_particle_types[0]).velocities = np.vstack((
         np.random.rand(n_g_b, 3) * 2 - 1,  # 1 km/s for background
         np.hstack((
             # solid body, 100 km/s at edge
@@ -81,15 +87,15 @@ def create_toysnap(
             200 + np.random.rand(n_g, 1) * 20 - 10  # 10 km/s vertical
         ))
     )) * u.km / u.s
-    sd.gas.masses = np.concatenate((
+    getattr(sd, present_particle_types[0]).masses = np.concatenate((
         np.ones(n_g_b, dtype=float),
         np.ones(n_g, dtype=float)
     )) * 1e3 * u.msun
-    sd.gas.internal_energy = np.concatenate((
+    getattr(sd, present_particle_types[0]).internal_energy = np.concatenate((
         np.ones(n_g_b, dtype=float),  # 1e4 K
         np.ones(n_g, dtype=float) / 10  # 1e3 K
     )) * 1e4 * u.kb * u.K / (1e3 * u.msun)
-    sd.gas.generate_smoothing_lengths(
+    getattr(sd, present_particle_types[0]).generate_smoothing_lengths(
         boxsize=boxsize * u.Mpc, dimension=3)
 
     # Insert a uniform DM background plus a galaxy halo
@@ -99,7 +105,7 @@ def create_toysnap(
     phi = np.random.rand(n_dm, 1) * 2 * np.pi
     theta = np.arccos(np.random.rand(n_dm, 1) * 2 - 1)
     r = np.random.rand(n_dm, 1)
-    sd.dark_matter.coordinates = np.vstack((
+    getattr(sd, present_particle_types[1]).coordinates = np.vstack((
         np.random.rand(n_dm_b, 3) * 10,
         np.hstack((
             # 100 kpc halo radius, offcentred in box
@@ -108,44 +114,47 @@ def create_toysnap(
             2 + r * np.cos(theta) * .1
         ))
     )) * u.Mpc
-    sd.dark_matter.velocities = np.vstack((
+    getattr(sd, present_particle_types[1]).velocities = np.vstack((
         # 1 km/s background, 100 km/s halo
         np.random.rand(n_dm_b, 3) * 2 - 1,
         200 + (np.random.rand(n_dm, 3) * 2 - 1) * 100
     )) * u.km / u.s
-    sd.dark_matter.masses = np.concatenate((
+    getattr(sd, present_particle_types[1]).masses = np.concatenate((
         np.ones(n_dm_b, dtype=float),
         np.ones(n_dm, dtype=float)
     )) * 1e4 * u.msun
-    sd.dark_matter.generate_smoothing_lengths(
+    getattr(sd, present_particle_types[1]).generate_smoothing_lengths(
         boxsize=boxsize * u.Mpc, dimension=3)
 
     # Insert a galaxy stellar disc
     n_s = 10000
     phi = np.random.rand(n_s, 1) * 2 * np.pi
     R = np.random.rand(n_s, 1)
-    sd.stars.coordinates = np.hstack((
+    getattr(sd, present_particle_types[4]).coordinates = np.hstack((
         # 5 kpc disc radius, offcentred in box
         2 + R * np.cos(phi) * .005,
         2 + R * np.sin(phi) * .005,
         2 + (np.random.rand(n_s, 1) * 2 - 1) * .0005  # 500 pc height
     )) * u.Mpc
-    sd.stars.velocities = np.hstack((
+    getattr(sd, present_particle_types[4]).velocities = np.hstack((
         # solid body, 50 km/s at edge
         200 + R * np.sin(phi) * 50,
         200 + R * np.cos(phi) * 50,
         200 + np.random.rand(n_g, 1) * 20 - 10  # 10 km/s vertical motions
     )) * u.km / u.s
-    sd.stars.masses = np.ones(n_g, dtype=float) * 1e3 * u.msun
-    sd.stars.generate_smoothing_lengths(
+    getattr(sd, present_particle_types[4]).masses = \
+        np.ones(n_g, dtype=float) * 1e3 * u.msun
+    getattr(sd, present_particle_types[4]).generate_smoothing_lengths(
         boxsize=boxsize * u.Mpc, dimension=3)
 
     n_bh = 1
-    sd.black_holes.coordinates = (2 + np.zeros((n_bh, 3), dtype=float)) * u.Mpc
-    sd.black_holes.velocities = \
+    getattr(sd, present_particle_types[5]).coordinates = \
+        (2 + np.zeros((n_bh, 3), dtype=float)) * u.Mpc
+    getattr(sd, present_particle_types[5]).velocities = \
         (200 + np.zeros((n_bh, 3), dtype=float)) * u.km / u.s
-    sd.black_holes.masses = np.ones(n_bh, dtype=float) * 1e6 * u.msun
-    sd.black_holes.generate_smoothing_lengths(
+    getattr(sd, present_particle_types[5]).masses = \
+        np.ones(n_bh, dtype=float) * 1e6 * u.msun
+    getattr(sd, present_particle_types[5]).generate_smoothing_lengths(
         boxsize=boxsize * u.Mpc, dimension=3)
 
     sd.write(snapfile)  # IDs auto-generated
