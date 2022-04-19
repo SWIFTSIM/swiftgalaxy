@@ -3,10 +3,12 @@ import unyt as u
 from swiftsimio.objects import cosmo_array
 from scipy.spatial.transform import Rotation
 
-tol = 1.01  # allow some wiggle room for floating point roundoff
+reltol = 1.01  # allow some wiggle room for floating point roundoff
+abstol_c = 1 * u.pc  # less than this is ~0
+abstol_v = 10 * u.m / u.s  # less than this is ~0
 
 
-class TestCoordinateTransformations:
+class TestAutoCoordinateTransformations:
 
     def test_auto_recentering(self, sg):
         # the galaxy particles should be around (0, 0, 0)
@@ -15,15 +17,15 @@ class TestCoordinateTransformations:
             getattr(sg, particle_name).coordinates
             xyz = getattr(sg, particle_name)._particle_dataset._coordinates
             if particle_name == 'gas':
-                assert (np.abs(xyz[:, :2]) <= tol * 10 * u.kpc).all()
-                assert (np.abs(xyz[:, 2]) <= tol * 1 * u.kpc).all()
+                assert (np.abs(xyz[:, :2]) <= reltol * 10 * u.kpc).all()
+                assert (np.abs(xyz[:, 2]) <= reltol * 1 * u.kpc).all()
             elif particle_name == 'dark_matter':
                 assert (np.abs(xyz) < 100 * u.kpc).all()
             elif particle_name == 'stars':
-                assert (np.abs(xyz[:, :2]) <= tol * 5 * u.kpc).all()
-                assert (np.abs(xyz[:, 2]) <= tol * 500 * u.pc).all()
+                assert (np.abs(xyz[:, :2]) <= reltol * 5 * u.kpc).all()
+                assert (np.abs(xyz[:, 2]) <= reltol * 500 * u.pc).all()
             elif particle_name == 'black_holes':
-                assert (np.abs(xyz) <= 10 * u.pc).all()  # ~0 pc
+                assert (np.abs(xyz) <= abstol_c).all()
 
     def test_auto_recentering_velocity(self, sg):
         # the galaxy velocities should be around (0, 0, 0)
@@ -32,15 +34,15 @@ class TestCoordinateTransformations:
             getattr(sg, particle_name).velocities
             vxyz = getattr(sg, particle_name)._particle_dataset._velocities
             if particle_name == 'gas':
-                assert (np.abs(vxyz[:, :2]) <= tol * 100 * u.km / u.s).all()
-                assert (np.abs(vxyz[:, 2]) <= tol * 10 * u.km / u.s).all()
+                assert (np.abs(vxyz[:, :2]) <= reltol * 100 * u.km / u.s).all()
+                assert (np.abs(vxyz[:, 2]) <= reltol * 10 * u.km / u.s).all()
             elif particle_name == 'dark_matter':
                 assert (np.abs(vxyz) < 100 * u.km / u.s).all()
             elif particle_name == 'stars':
-                assert (np.abs(vxyz[:, :2]) <= tol * 50 * u.km / u.s).all()
-                assert (np.abs(vxyz[:, 2]) <= tol * 10 * u.km / u.s).all()
+                assert (np.abs(vxyz[:, :2]) <= reltol * 50 * u.km / u.s).all()
+                assert (np.abs(vxyz[:, 2]) <= reltol * 10 * u.km / u.s).all()
             elif particle_name == 'black_holes':
-                assert (np.abs(vxyz) <= 50 * u.m / u.s).all()  # ~0 km/s
+                assert (np.abs(vxyz) <= abstol_v).all()
 
     def test_auto_recentering_extra(self, sg):
         # check that another array flagged to transform like coordinates
@@ -50,15 +52,15 @@ class TestCoordinateTransformations:
             xyz = \
                 getattr(sg, particle_name)._particle_dataset._extra_coordinates
             if particle_name == 'gas':
-                assert (np.abs(xyz[:, :2]) <= tol * 10 * u.kpc).all()
-                assert (np.abs(xyz[:, 2]) <= tol * 1 * u.kpc).all()
+                assert (np.abs(xyz[:, :2]) <= reltol * 10 * u.kpc).all()
+                assert (np.abs(xyz[:, 2]) <= reltol * 1 * u.kpc).all()
             elif particle_name == 'dark_matter':
                 assert (np.abs(xyz) < 100 * u.kpc).all()
             elif particle_name == 'stars':
-                assert (np.abs(xyz[:, :2]) <= tol * 5 * u.kpc).all()
-                assert (np.abs(xyz[:, 2]) <= tol * 500 * u.pc).all()
+                assert (np.abs(xyz[:, :2]) <= reltol * 5 * u.kpc).all()
+                assert (np.abs(xyz[:, 2]) <= reltol * 500 * u.pc).all()
             elif particle_name == 'black_holes':
-                assert (np.abs(xyz) <= 10 * u.pc).all()  # ~0 pc
+                assert (np.abs(xyz) <= abstol_c).all()
 
     def test_auto_recentering_velocity_extra(self, sg):
         # check that another array flagged to transform like velocities
@@ -68,15 +70,15 @@ class TestCoordinateTransformations:
             vxyz = \
                 getattr(sg, particle_name)._particle_dataset._extra_velocities
             if particle_name == 'gas':
-                assert (np.abs(vxyz[:, :2]) <= tol * 100 * u.km / u.s).all()
-                assert (np.abs(vxyz[:, 2]) <= tol * 10 * u.km / u.s).all()
+                assert (np.abs(vxyz[:, :2]) <= reltol * 100 * u.km / u.s).all()
+                assert (np.abs(vxyz[:, 2]) <= reltol * 10 * u.km / u.s).all()
             elif particle_name == 'dark_matter':
                 assert (np.abs(vxyz) < 100 * u.km / u.s).all()
             elif particle_name == 'stars':
-                assert (np.abs(vxyz[:, :2]) <= tol * 50 * u.km / u.s).all()
-                assert (np.abs(vxyz[:, 2]) <= tol * 10 * u.km / u.s).all()
+                assert (np.abs(vxyz[:, :2]) <= reltol * 50 * u.km / u.s).all()
+                assert (np.abs(vxyz[:, 2]) <= reltol * 10 * u.km / u.s).all()
             elif particle_name == 'black_holes':
-                assert (np.abs(vxyz) <= 50 * u.m / u.s).all()  # ~0 km/s
+                assert (np.abs(vxyz) <= abstol_v).all()
 
     def test_auto_recentering_custom_name(self, sg_custom_names):
         # recentering should still work if we set up a custom coordinates name
@@ -94,15 +96,15 @@ class TestCoordinateTransformations:
                 f'_{custom_name}'
             )
             if particle_name == 'gas':
-                assert (np.abs(xyz[:, :2]) <= tol * 10 * u.kpc).all()
-                assert (np.abs(xyz[:, 2]) <= tol * 1 * u.kpc).all()
+                assert (np.abs(xyz[:, :2]) <= reltol * 10 * u.kpc).all()
+                assert (np.abs(xyz[:, 2]) <= reltol * 1 * u.kpc).all()
             elif particle_name == 'dark_matter':
                 assert (np.abs(xyz) < 100 * u.kpc).all()
             elif particle_name == 'stars':
-                assert (np.abs(xyz[:, :2]) <= tol * 5 * u.kpc).all()
-                assert (np.abs(xyz[:, 2]) <= tol * 500 * u.pc).all()
+                assert (np.abs(xyz[:, :2]) <= reltol * 5 * u.kpc).all()
+                assert (np.abs(xyz[:, 2]) <= reltol * 500 * u.pc).all()
             elif particle_name == 'black_holes':
-                assert (np.abs(xyz) <= 10 * u.pc).all()  # ~0 pc
+                assert (np.abs(xyz) <= abstol_c).all()
 
     def test_auto_recentering_velocity_custom_name(self, sg_custom_names):
         # recentering should still work if we set up a custom velocities name
@@ -123,15 +125,15 @@ class TestCoordinateTransformations:
                 f'_{custom_name}'
             )
             if particle_name == 'gas':
-                assert (np.abs(vxyz[:, :2]) <= tol * 100 * u.km / u.s).all()
-                assert (np.abs(vxyz[:, 2]) <= tol * 10 * u.km / u.s).all()
+                assert (np.abs(vxyz[:, :2]) <= reltol * 100 * u.km / u.s).all()
+                assert (np.abs(vxyz[:, 2]) <= reltol * 10 * u.km / u.s).all()
             elif particle_name == 'dark_matter':
                 assert (np.abs(vxyz) < 100 * u.km / u.s).all()
             elif particle_name == 'stars':
-                assert (np.abs(vxyz[:, :2]) <= tol * 50 * u.km / u.s).all()
-                assert (np.abs(vxyz[:, 2]) <= tol * 10 * u.km / u.s).all()
+                assert (np.abs(vxyz[:, :2]) <= reltol * 50 * u.km / u.s).all()
+                assert (np.abs(vxyz[:, 2]) <= reltol * 10 * u.km / u.s).all()
             elif particle_name == 'black_holes':
-                assert (np.abs(vxyz) <= 50 * u.m / u.s).all()  # ~0 km/s
+                assert (np.abs(vxyz) <= abstol_v).all()
 
     def test_auto_recentering_off(self, sg_autorecentre_off):
         # both positions and velocities should still be offcentre
@@ -145,18 +147,18 @@ class TestCoordinateTransformations:
             )._particle_dataset._coordinates
             if particle_name == 'gas':
                 assert (np.abs(xyz[:, :2] - 2 * u.Mpc)
-                        <= tol * 10 * u.kpc).all()
-                assert (np.abs(xyz[:, 2] - 2 * u.Mpc) <= tol * 1 * u.kpc).all()
+                        <= reltol * 10 * u.kpc).all()
+                assert (np.abs(xyz[:, 2] - 2 * u.Mpc)
+                        <= reltol * 1 * u.kpc).all()
             elif particle_name == 'dark_matter':
                 assert (np.abs(xyz - 2 * u.Mpc) < 100 * u.kpc).all()
             elif particle_name == 'stars':
                 assert (np.abs(xyz[:, :2] - 2 * u.Mpc)
-                        <= tol * 5 * u.kpc).all()
+                        <= reltol * 5 * u.kpc).all()
                 assert (np.abs(xyz[:, 2] - 2 * u.Mpc)
-                        <= tol * 500 * u.pc).all()
+                        <= reltol * 500 * u.pc).all()
             elif particle_name == 'black_holes':
-                assert (np.abs(xyz - 2 * u.Mpc)
-                        <= 10 * u.pc).all()  # ~0 pc
+                assert (np.abs(xyz - 2 * u.Mpc) <= abstol_c).all()
             # velocities:a
             getattr(sg_autorecentre_off, particle_name).velocities
             vxyz = getattr(
@@ -165,20 +167,23 @@ class TestCoordinateTransformations:
             )._particle_dataset._velocities
             if particle_name == 'gas':
                 assert (np.abs(vxyz[:, :2] - 200 * u.km / u.s)
-                        <= tol * 100 * u.km / u.s).all()
+                        <= reltol * 100 * u.km / u.s).all()
                 assert (np.abs(vxyz[:, 2] - 200 * u.km / u.s)
-                        <= tol * 10 * u.km / u.s).all()
+                        <= reltol * 10 * u.km / u.s).all()
             elif particle_name == 'dark_matter':
                 assert (np.abs(vxyz - 200 * u.km / u.s)
-                        <= tol * 100 * u.km / u.s).all()
+                        <= reltol * 100 * u.km / u.s).all()
             elif particle_name == 'stars':
                 assert (np.abs(vxyz[:, :2] - 200 * u.km / u.s)
-                        <= tol * 50 * u.km / u.s).all()
+                        <= reltol * 50 * u.km / u.s).all()
                 assert (np.abs(vxyz[:, 2] - 200 * u.km / u.s)
-                        <= tol * 10 * u.km / u.s).all()
+                        <= reltol * 10 * u.km / u.s).all()
             elif particle_name == 'black_holes':
                 assert (np.abs(vxyz - 200 * u.km / u.s)
-                        <= 50 * u.m / u.s).all()  # ~0 km/s
+                        <= abstol_v).all()
+
+
+class TestManualCoordinateTransformations:
 
     def test_manual_recentring(self, sg):
         # check that recentring places new centre where expected
@@ -194,9 +199,9 @@ class TestCoordinateTransformations:
             x_xyz = \
                 getattr(sg, particle_name)._particle_dataset._extra_coordinates
             assert ((xyz_before - cosmo_array([1, 1, 1], u.Mpc)) - xyz
-                    <= 10 * u.pc).all()  # ~0 pc
+                    <= abstol_c).all()
             assert ((x_xyz_before - cosmo_array([1, 1, 1], u.Mpc)) - x_xyz
-                    <= 10 * u.pc).all()  # ~0 pc
+                    <= abstol_c).all()
             # reset for next particle_name
             sg.recentre(cosmo_array([-1, -1, -1], u.Mpc))
 
@@ -215,13 +220,13 @@ class TestCoordinateTransformations:
                 getattr(sg, particle_name)._particle_dataset._extra_velocities
             assert (
                 (vxyz_before - cosmo_array([100, 100, 100], u.km / u.s)) - vxyz
-                <= 50 * u.m / u.s
-            ).all()  # ~0 km/s
+                <= abstol_v
+            ).all()
             assert (
                 (x_vxyz_before - cosmo_array([100, 100, 100], u.km / u.s))
                 - x_vxyz
-                <= 50 * u.m / u.s
-            ).all()  # ~0 km/s
+                <= abstol_v
+            ).all()
             # reset for next particle_name
             sg.recentre_velocity(cosmo_array([-100, -100, -100], u.km / u.s))
 
@@ -239,9 +244,9 @@ class TestCoordinateTransformations:
             x_xyz = \
                 getattr(sg, particle_name)._particle_dataset._extra_coordinates
             assert ((xyz_before + cosmo_array([1, 1, 1], u.Mpc)) - xyz
-                    <= 10 * u.pc).all()  # ~0 pc
+                    <= abstol_c).all()
             assert ((x_xyz_before + cosmo_array([1, 1, 1], u.Mpc)) - x_xyz
-                    <= 10 * u.pc).all()  # ~0 pc
+                    <= abstol_c).all()
             # reset for next particle_name
             sg.translate(cosmo_array([-1, -1, -1], u.Mpc))
 
@@ -260,13 +265,13 @@ class TestCoordinateTransformations:
                 getattr(sg, particle_name)._particle_dataset._extra_velocities
             assert (
                 (vxyz_before + cosmo_array([100, 100, 100], u.km / u.s)) - vxyz
-                <= 50 * u.m / u.s
-            ).all()  # ~0 km/s
+                <= abstol_v
+            ).all()
             assert (
                 (x_vxyz_before + cosmo_array([100, 100, 100], u.km / u.s))
                 - x_vxyz
-                <= 50 * u.m / u.s
-            ).all()  # ~0 km/s
+                <= abstol_v
+            ).all()
             # reset for next particle_name
             sg.boost(cosmo_array([-100, -100, -100], u.km / u.s))
 
@@ -316,10 +321,10 @@ class TestCoordinateTransformations:
                 getattr(sg, particle_name)._particle_dataset._extra_coordinates
             x_vxyz = \
                 getattr(sg, particle_name)._particle_dataset._extra_velocities
-            assert (xyz_before.dot(rot) - xyz <= 10 * u.pc).all()
-            assert (vxyz_before.dot(rot) - vxyz <= 50 * u.m / u.s).all()
-            assert (x_xyz_before.dot(rot) - x_xyz <= 10 * u.pc).all()
-            assert (x_vxyz_before.dot(rot) - x_vxyz <= 50 * u.m / u.s).all()
+            assert (xyz_before.dot(rot) - xyz <= abstol_c).all()
+            assert (vxyz_before.dot(rot) - vxyz <= abstol_v).all()
+            assert (x_xyz_before.dot(rot) - x_xyz <= abstol_c).all()
+            assert (x_vxyz_before.dot(rot) - x_vxyz <= abstol_v).all()
             # reset for next particle_name
             sg.rotate(Rotation.from_matrix(rot.T))
 
@@ -337,7 +342,7 @@ class TestCoordinateTransformations:
             xyz = getattr(sg, particle_name)._particle_dataset._coordinates
             x_xyz = \
                 getattr(sg, particle_name)._particle_dataset._extra_coordinates
-            assert (xyz_before - xyz <= 10 * u.pc).all()  # ~0 pc
-            assert (x_xyz_before - x_xyz <= 10 * u.pc).all()  # ~0 pc
+            assert (xyz_before - xyz <= abstol_c).all()
+            assert (x_xyz_before - x_xyz <= abstol_c).all()
             # reset for next particle_name
             sg.translate(-boxsize)
