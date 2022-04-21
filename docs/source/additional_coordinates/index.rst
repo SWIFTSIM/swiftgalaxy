@@ -10,7 +10,7 @@ Spherical coordinates
 
 .. note::
    
-   A "physics" notation convention is assumed, with coordinate components named :math:`(r, \theta, \phi)`, where :math:`-\frac{\pi}{2} \leq \theta \leq \frac{\pi}{2}` is the polar angle and :math:`0 < \phi \leq 2\pi` is the azimuthal angle.
+   A "physics" notation convention is assumed, with coordinate components named :math:`(r, \theta, \phi)`, where :math:`-\frac{\pi}{2} \leq \theta \leq \frac{\pi}{2}` is the polar angle and :math:`0 < \phi \leq 2\pi` is the azimuthal angle. The convention that if :math:`r=0`, then :math:`\theta=0` and :math:`\phi=0` is also adopted.
 
 The spherical coordinates can be accessed through the :attr:`~swiftgalaxy.reader._SWIFTParticleDatasetHelper.spherical_coordinates` property of a particle dataset. Supposing that we are interested in the ``gas`` particles:
 
@@ -52,6 +52,8 @@ The velocity components in the directions of the spherical unit vectors -- :math
     sg.gas.spherical_velocities.theta
     sg.gas.spherical_velocities.phi
 
+Note that if :math:`r=0`, then :math:`\theta=0` and :math:`\phi=0` are assumed to define the directions of the unit vectors.
+    
 .. admonition:: Aliases
     :class: toggle
 
@@ -75,7 +77,7 @@ Cylindrical coordinates
 
 .. note::
    
-   The coordinate components are named :math:`(\rho, \phi, z)` by default, and assume a convention where :math:`0 < \phi \leq 2\pi`.
+   The coordinate components are named :math:`(\rho, \phi, z)` by default, and assume a convention where :math:`0 < \phi \leq 2\pi`. The convention that if :math:`\rho=0`, then :math:`\phi=0` is also adopted.
 
 Similarly to the spherical coordinates, the cylindrical coordinates can be accessed through the :attr:`~swiftgalaxy.reader._SWIFTParticleDatasetHelper.cylindrical_coordinates` property of a particle dataset. Supposing again that we are interested in the ``gas`` particles:
 
@@ -110,6 +112,8 @@ The velocity components in the directions of the cylindrical unit vectors -- :ma
     sg.gas.cylindrical_velocities.rho
     sg.gas.cylindrical_velocities.phi
     sg.gas.cylindrical_velocities.z
+
+Note that if :math:`\rho=0`, then :math:`\phi=0` is assumed to define the directions of the unit vectors.
 
 .. admonition:: Aliases
     :class: toggle
