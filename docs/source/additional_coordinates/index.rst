@@ -1,7 +1,7 @@
 Additional coordinates
 ======================
 
-When analysing a galaxy it is often convenient to work in spherical or cylindrical coordinates. A :class:`~swiftgalaxy.reader.SWIFTGalaxy` will compute these (and the velocities) on the fly if requested. The poles of the spherical/cylindrical coordinate frame are assumed to lie along the cartesian :math:`z` axis of the :doc:`current coordinate frame <../coordinate_transformations/index>`, and the coordinate system is assumed to be right-handed.
+When analysing a galaxy it is often convenient to work in spherical or cylindrical coordinates. A :class:`~swiftgalaxy.reader.SWIFTGalaxy` will compute these (and the velocities) on the fly if requested. The poles of the spherical/cylindrical coordinate frame are assumed to lie along the cartesian :math:`z` axis of the :doc:`current coordinate frame <../coordinate_transformations/index>`, the reference azimuth (:math:`\phi=0`) lies along the :math:`x` axis, and the coordinate system is assumed to be right-handed.
 
 Any computed coordinates (or velocities) are cached to speed up subsequent requests, but note that :doc:`coordinate transformations <../coordinate_transformations/index>` in general would require a conversion back to cartesian coordinates, application of the transformation, and then re-calculation of the spherical/cylindrical coordinates. Therefore, in the interest of efficiency, if a coordinate transformation occurs the spherical/cylindrical coordinates are simply discarded, and re-computed if they are subsequently requested.
 
