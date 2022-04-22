@@ -101,6 +101,7 @@ Similarly to the spherical coordinates, the cylindrical coordinates can be acces
         + ``cylindrical_coordinates.az``
         + ``cylindrical_coordinates.azimuth``
     + ``cylindrical_coordinates.z``
+        + ``cylindrical_coordinates.height``
 
 Cylindrical velocities
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -129,6 +130,7 @@ Note that if :math:`\rho=0`, then :math:`\phi=0` is assumed to define the direct
         + ``cylindrical_velocities.az``
         + ``cylindrical_velocities.azimuth``
     + ``cylindrical_velocities.z``
+        + ``cylindrical_coordinates.height``
 
 Cartesian coordinates
 ---------------------

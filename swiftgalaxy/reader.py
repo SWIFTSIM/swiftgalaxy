@@ -802,7 +802,9 @@ class _SWIFTParticleDatasetHelper(object):
                  az='_phi',
                  azimuth='_phi',
                  phi='_phi',
-                 z='_z'))
+                 z='_z'
+                 height='_z')
+        )
 
     @property
     def cylindrical_velocities(self) -> _CoordinateHelper:
@@ -881,7 +883,9 @@ class _SWIFTParticleDatasetHelper(object):
                  az='_v_phi',
                  azimuth='_v_phi',
                  phi='_v_phi',
-                 z='_v_z'))
+                 z='_v_z',
+                 height='_v_z')
+        )
 
     def _mask_derived_coordinates(self, mask: MaskType) -> None:
         if self._cartesian_coordinates is not None:
