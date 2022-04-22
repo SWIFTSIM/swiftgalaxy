@@ -371,3 +371,8 @@ class TestAutoNamedColumnCoordinateTransformations:
 class TestManualNamedColumnCoordinateTransformations:
 
     pass
+
+
+class TestSequentialTransformations:
+
+    pass
