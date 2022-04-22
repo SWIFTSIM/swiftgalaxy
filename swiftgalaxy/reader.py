@@ -802,7 +802,7 @@ class _SWIFTParticleDatasetHelper(object):
                  az='_phi',
                  azimuth='_phi',
                  phi='_phi',
-                 z='_z'
+                 z='_z',
                  height='_z')
         )
 
