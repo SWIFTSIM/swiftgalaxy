@@ -196,8 +196,12 @@ class TestManualCoordinateTransformations:
             getattr(sg, particle_name)._particle_dataset,
             f'_{coordinate_name}'
         )
-        assert ((xyz_before - cosmo_array([1, 1, 1], u.Mpc)) - xyz
-                <= abstol_c).all()
+        assert u.array.allclose_units(
+            xyz_before - cosmo_array([1, 1, 1], u.Mpc),
+            xyz,
+            rtol=1.e-4,
+            atol=abstol_c
+        )
 
     @pytest.mark.parametrize(
         "velocity_name",
@@ -217,10 +221,12 @@ class TestManualCoordinateTransformations:
             getattr(sg, particle_name)._particle_dataset,
             f'_{velocity_name}'
         )
-        assert (
-            (vxyz_before - cosmo_array([100, 100, 100], u.km / u.s)) - vxyz
-            <= abstol_v
-        ).all()
+        assert u.array.allclose_units(
+            vxyz_before - cosmo_array([100, 100, 100], u.km / u.s),
+            vxyz,
+            rtol=1.e-4,
+            atol=abstol_v
+        )
 
     @pytest.mark.parametrize(
         "coordinate_name",
@@ -239,8 +245,12 @@ class TestManualCoordinateTransformations:
             getattr(sg, particle_name)._particle_dataset,
             f'_{coordinate_name}'
         )
-        assert ((xyz_before + cosmo_array([1, 1, 1], u.Mpc)) - xyz
-                <= abstol_c).all()
+        assert u.array.allclose_units(
+            xyz_before + cosmo_array([1, 1, 1], u.Mpc),
+            xyz,
+            rtol=1.e-4,
+            atol=abstol_c
+        )
 
     @pytest.mark.parametrize(
         "velocity_name",
@@ -259,10 +269,12 @@ class TestManualCoordinateTransformations:
             getattr(sg, particle_name)._particle_dataset,
             f'_{velocity_name}'
         )
-        assert (
-            (vxyz_before + cosmo_array([100, 100, 100], u.km / u.s)) - vxyz
-            <= abstol_v
-        ).all()
+        assert u.array.allclose_units(
+            vxyz_before + cosmo_array([100, 100, 100], u.km / u.s),
+            vxyz,
+            rtol=1.e-4,
+            atol=abstol_v
+        )
 
     @pytest.mark.parametrize(
         "coordinate_name, velocity_name",
@@ -317,8 +329,18 @@ class TestManualCoordinateTransformations:
             getattr(sg, particle_name)._particle_dataset,
             f'_{velocity_name}'
         )
-        assert (xyz_before.dot(rot) - xyz <= abstol_c).all()
-        assert (vxyz_before.dot(rot) - vxyz <= abstol_v).all()
+        assert u.array.allclose_units(
+            xyz_before.dot(rot),
+            xyz,
+            rtol=1.e-4,
+            atol=abstol_c
+        )
+        assert u.array.allclose_units(
+            vxyz_before.dot(rot),
+            vxyz,
+            rtol=1.e-4,
+            atol=abstol_v
+        )
 
     @pytest.mark.parametrize(
         "coordinate_name",
@@ -341,4 +363,9 @@ class TestManualCoordinateTransformations:
             getattr(sg, particle_name)._particle_dataset,
             f'_{coordinate_name}'
         )
-        assert (xyz_before - xyz <= abstol_c).all()
+        assert u.array.allclose_units(
+            xyz_before,
+            xyz,
+            rtol=1.e-4,
+            atol=abstol_c
+        )

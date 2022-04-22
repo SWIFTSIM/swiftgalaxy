@@ -442,8 +442,10 @@ class _SWIFTParticleDatasetHelper(object):
 
     def _apply_data_mask(self, data: cosmo_array) -> cosmo_array:
         if self._swiftgalaxy._extra_mask is not None:
-            mask = self._swiftgalaxy._extra_mask.__getattribute__(
-                self._particle_dataset.particle_name)
+            mask = getattr(
+                self._swiftgalaxy._extra_mask,
+                self._particle_dataset.particle_name
+            )
             if mask is not None:
                 return data[mask]
         return data
@@ -470,13 +472,28 @@ class _SWIFTParticleDatasetHelper(object):
         if getattr(self._swiftgalaxy._extra_mask, particle_name) is None:
             setattr(self._swiftgalaxy._extra_mask, particle_name, mask)
         else:
-            realised_mask = np.zeros(getattr(self._swiftgalaxy._extra_mask,
-                                             particle_name).sum(),
-                                     dtype=bool)
-            realised_mask[mask] = True
-            getattr(self._swiftgalaxy._extra_mask,
-                    particle_name)[getattr(self._swiftgalaxy._extra_mask,
-                                           particle_name)] = realised_mask
+            num_part = self._particle_dataset.metadata.num_part[
+                particle_metadata.particle_type
+            ]
+            old_mask = getattr(self._swiftgalaxy._extra_mask, particle_name)
+            if not hasattr(old_mask, 'size') or old_mask.size != num_part:
+                # need to convert to a boolean mask to combine
+                boolean_old_mask = np.zeros(num_part, dtype=bool)
+                boolean_old_mask[old_mask] = True
+                # overwrite the old mask with the boolean version
+                setattr(
+                    self._swiftgalaxy._extra_mask,
+                    particle_name,
+                    boolean_old_mask
+                )
+            boolean_mask = np.zeros(
+                getattr(self._swiftgalaxy._extra_mask, particle_name).sum(),
+                dtype=bool
+            )
+            boolean_mask[mask] = True
+            getattr(self._swiftgalaxy._extra_mask, particle_name)[
+                getattr(self._swiftgalaxy._extra_mask, particle_name)
+            ] = boolean_mask
         return
 
     def _apply_transforms(self, data: cosmo_array,
