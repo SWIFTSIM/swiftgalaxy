@@ -44,10 +44,11 @@ class TestAutoCoordinateTransformations:
     )
     def test_auto_recentering(self, sg, particle_name, expected_xy,
                               expected_z):
-        # the galaxy particles should be around (0, 0, 0)
-        # (not around (2, 2, 2) Mpc like they are in box coords)
-        getattr(sg, particle_name).coordinates
-        xyz = getattr(sg, particle_name)._particle_dataset._coordinates
+        """
+        The galaxy particles should be around (0, 0, 0),
+        not around (2, 2, 2) Mpc like they are in box coords.
+        """
+        xyz = getattr(sg, particle_name).coordinates
         assert (np.abs(xyz[:, :2]) <= expected_xy).all()
         assert (np.abs(xyz[:, 2]) <= expected_z).all()
 
@@ -58,10 +59,11 @@ class TestAutoCoordinateTransformations:
     )
     def test_auto_recentering_velocity(self, sg, particle_name, expected_xy,
                                        expected_z):
-        # the galaxy velocities should be around (0, 0, 0)
-        # (the velocity centre is (200, 200, 200))
-        getattr(sg, particle_name).velocities
-        vxyz = getattr(sg, particle_name)._particle_dataset._velocities
+        """
+        The galaxy velocities should be around (0, 0, 0),
+        the velocity centre is (200, 200, 200).
+        """
+        vxyz = getattr(sg, particle_name).velocities
         assert (np.abs(vxyz[:, :2]) <= expected_xy).all()
         assert (np.abs(vxyz[:, 2]) <= expected_z).all()
 
@@ -72,10 +74,11 @@ class TestAutoCoordinateTransformations:
     )
     def test_auto_recentering_extra(self, sg, particle_name, expected_xy,
                                     expected_z):
-        # check that another array flagged to transform like coordinates
-        # actually auto-recentres
-        getattr(sg, particle_name).extra_coordinates
-        xyz = getattr(sg, particle_name)._particle_dataset._extra_coordinates
+        """
+        Check that another array flagged to transform like coordinates
+        actually auto-recentres.
+        """
+        xyz = getattr(sg, particle_name).extra_coordinates
         assert (np.abs(xyz[:, :2]) <= expected_xy).all()
         assert (np.abs(xyz[:, 2]) <= expected_z).all()
 
@@ -86,10 +89,11 @@ class TestAutoCoordinateTransformations:
     )
     def test_auto_recentering_velocity_extra(self, sg, particle_name,
                                              expected_vxy, expected_vz):
-        # check that another array flagged to transform like velocities
-        # actually auto-recentres
-        getattr(sg, particle_name).extra_velocities
-        vxyz = getattr(sg, particle_name)._particle_dataset._extra_velocities
+        """
+        Check that another array flagged to transform like velocities
+        actually auto-recentres.
+        """
+        vxyz = getattr(sg, particle_name).extra_velocities
         assert (np.abs(vxyz[:, :2]) <= expected_vxy).all()
         assert (np.abs(vxyz[:, 2]) <= expected_vz).all()
 
@@ -100,18 +104,13 @@ class TestAutoCoordinateTransformations:
     )
     def test_auto_recentering_custom_name(self, sg_custom_names, particle_name,
                                           expected_xy, expected_z):
-        # recentering should still work if we set up a custom coordinates name
+        """
+        Recentering should still work if we set up a custom coordinates name.
+        """
         custom_name = sg_custom_names.coordinates_dataset_name
-        getattr(
-            getattr(sg_custom_names, particle_name),
-            custom_name
-        )
         xyz = getattr(
-            getattr(
-                sg_custom_names,
-                particle_name
-            )._particle_dataset,
-            f'_{custom_name}'
+            getattr(sg_custom_names, particle_name),
+            f'{custom_name}'
         )
         assert (np.abs(xyz[:, :2]) <= expected_xy).all()
         assert (np.abs(xyz[:, 2]) <= expected_z).all()
@@ -124,21 +123,13 @@ class TestAutoCoordinateTransformations:
     def test_auto_recentering_velocity_custom_name(self, sg_custom_names,
                                                    particle_name, expected_vxy,
                                                    expected_vz):
-        # recentering should still work if we set up a custom velocities name
+        """
+        Recentering should still work if we set up a custom velocities name.
+        """
         custom_name = sg_custom_names.velocities_dataset_name
-        getattr(
-            getattr(
-                sg_custom_names,
-                particle_name
-            ),
-            custom_name
-        )
         vxyz = getattr(
-            getattr(
-                sg_custom_names,
-                particle_name
-            )._particle_dataset,
-            f'_{custom_name}'
+            getattr(sg_custom_names, particle_name),
+            f'{custom_name}'
         )
         assert (np.abs(vxyz[:, :2]) <= expected_vxy).all()
         assert (np.abs(vxyz[:, 2]) <= expected_vz).all()
@@ -150,12 +141,10 @@ class TestAutoCoordinateTransformations:
     )
     def test_auto_recentering_off(self, sg_autorecentre_off, particle_name,
                                   expected_xy, expected_z):
-        # positions should still be offcentre
-        getattr(sg_autorecentre_off, particle_name).coordinates
-        xyz = getattr(
-            sg_autorecentre_off,
-            particle_name
-        )._particle_dataset._coordinates
+        """
+        Positions should still be offcentre.
+        """
+        xyz = getattr(sg_autorecentre_off, particle_name).coordinates
         assert (np.abs(xyz[:, :2] - 2 * u.Mpc) <= expected_xy).all()
         assert (np.abs(xyz[:, 2] - 2 * u.Mpc) <= expected_z).all()
 
@@ -167,12 +156,10 @@ class TestAutoCoordinateTransformations:
     def test_auto_recentering_off_velocity(self, sg_autorecentre_off,
                                            particle_name, expected_vxy,
                                            expected_vz):
-        # velocities should still be offcentre
-        getattr(sg_autorecentre_off, particle_name).velocities
-        vxyz = getattr(
-            sg_autorecentre_off,
-            particle_name
-        )._particle_dataset._velocities
+        """
+        Velocities should still be offcentre.
+        """
+        vxyz = getattr(sg_autorecentre_off, particle_name).velocities
         assert (np.abs(vxyz[:, :2] - 200 * u.km / u.s) <= expected_vxy).all()
         assert (np.abs(vxyz[:, 2] - 200 * u.km / u.s) <= expected_vz).all()
 
@@ -184,18 +171,21 @@ class TestManualCoordinateTransformations:
         ('coordinates', 'extra_coordinates')
     )
     @pytest.mark.parametrize("particle_name", present_particle_types.values())
-    def test_manual_recentring(self, sg, particle_name, coordinate_name):
-        # check that recentring places new centre where expected
-        getattr(getattr(sg, particle_name), coordinate_name)
-        xyz_before = getattr(
-            getattr(sg, particle_name)._particle_dataset,
-            f'_{coordinate_name}'
-        )
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_manual_recentring(self, sg, particle_name, coordinate_name,
+                               before_load):
+        """
+        Check that recentring places new centre where expected.
+        """
+        xyz_before = getattr(getattr(sg, particle_name), f'{coordinate_name}')
+        if before_load:
+            setattr(
+                getattr(sg, particle_name)._particle_dataset,
+                f'_{coordinate_name}',
+                None
+            )
         sg.recentre(cosmo_array([1, 1, 1], u.Mpc))
-        xyz = getattr(
-            getattr(sg, particle_name)._particle_dataset,
-            f'_{coordinate_name}'
-        )
+        xyz = getattr(getattr(sg, particle_name), f'{coordinate_name}')
         assert u.array.allclose_units(
             xyz_before - cosmo_array([1, 1, 1], u.Mpc),
             xyz,
@@ -208,19 +198,21 @@ class TestManualCoordinateTransformations:
         ('velocities', 'extra_velocities')
     )
     @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("before_load", (True, False))
     def test_manual_recentring_velocity(self, sg, particle_name,
-                                        velocity_name):
-        # check that velocity recentring places new velocity centre correctly
-        getattr(getattr(sg, particle_name), velocity_name)
-        vxyz_before = getattr(
-            getattr(sg, particle_name)._particle_dataset,
-            f'_{velocity_name}'
-        )
+                                        velocity_name, before_load):
+        """
+        Check that velocity recentring places new velocity centre correctly.
+        """
+        vxyz_before = getattr(getattr(sg, particle_name), f'{velocity_name}')
+        if before_load:
+            setattr(
+                getattr(sg, particle_name)._particle_dataset,
+                f'_{velocity_name}',
+                None
+            )
         sg.recentre_velocity(cosmo_array([100, 100, 100], u.km / u.s))
-        vxyz = getattr(
-            getattr(sg, particle_name)._particle_dataset,
-            f'_{velocity_name}'
-        )
+        vxyz = getattr(getattr(sg, particle_name), f'{velocity_name}')
         assert u.array.allclose_units(
             vxyz_before - cosmo_array([100, 100, 100], u.km / u.s),
             vxyz,
@@ -233,18 +225,20 @@ class TestManualCoordinateTransformations:
         ('coordinates', 'extra_coordinates')
     )
     @pytest.mark.parametrize("particle_name", present_particle_types.values())
-    def test_translate(self, sg, particle_name, coordinate_name):
-        # check that translation translates to expected location
-        getattr(getattr(sg, particle_name), coordinate_name)
-        xyz_before = getattr(
-            getattr(sg, particle_name)._particle_dataset,
-            f'_{coordinate_name}'
-        )
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_translate(self, sg, particle_name, coordinate_name, before_load):
+        """
+        Check that translation translates to expected location.
+        """
+        xyz_before = getattr(getattr(sg, particle_name), f'{coordinate_name}')
+        if before_load:
+            setattr(
+                getattr(sg, particle_name)._particle_dataset,
+                f'_{coordinate_name}',
+                None
+            )
         sg.translate(cosmo_array([1, 1, 1], u.Mpc))
-        xyz = getattr(
-            getattr(sg, particle_name)._particle_dataset,
-            f'_{coordinate_name}'
-        )
+        xyz = getattr(getattr(sg, particle_name), f'{coordinate_name}')
         assert u.array.allclose_units(
             xyz_before + cosmo_array([1, 1, 1], u.Mpc),
             xyz,
@@ -257,18 +251,20 @@ class TestManualCoordinateTransformations:
         ('velocities', 'extra_velocities')
     )
     @pytest.mark.parametrize("particle_name", present_particle_types.values())
-    def test_boost(self, sg, particle_name, velocity_name):
-        # check that boost boosts to expected reference velocity
-        getattr(getattr(sg, particle_name), velocity_name)
-        vxyz_before = getattr(
-            getattr(sg, particle_name)._particle_dataset,
-            f'_{velocity_name}'
-        )
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_boost(self, sg, particle_name, velocity_name, before_load):
+        """
+        Check that boost boosts to expected reference velocity.
+        """
+        vxyz_before = getattr(getattr(sg, particle_name), f'{velocity_name}')
+        if before_load:
+            setattr(
+                getattr(sg, particle_name)._particle_dataset,
+                f'{velocity_name}',
+                None
+            )
         sg.boost(cosmo_array([100, 100, 100], u.km / u.s))
-        vxyz = getattr(
-            getattr(sg, particle_name)._particle_dataset,
-            f'_{velocity_name}'
-        )
+        vxyz = getattr(getattr(sg, particle_name), f'{velocity_name}')
         assert u.array.allclose_units(
             vxyz_before + cosmo_array([100, 100, 100], u.km / u.s),
             vxyz,
@@ -284,8 +280,12 @@ class TestManualCoordinateTransformations:
         )
     )
     @pytest.mark.parametrize("particle_name", present_particle_types.values())
-    def test_rotation(self, sg, particle_name, coordinate_name, velocity_name):
-        # check that an arbitrary rotation rotates positions and velocities
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_rotation(self, sg, particle_name, coordinate_name, velocity_name,
+                      before_load):
+        """
+        Check that an arbitrary rotation rotates positions and velocities.
+        """
         alpha = np.pi / 7
         beta = 5 * np.pi / 3
         gamma = 13 * np.pi / 8
@@ -310,25 +310,22 @@ class TestManualCoordinateTransformations:
                 np.cos(alpha) * np.cos(beta)
             ]
         ])
-        getattr(getattr(sg, particle_name), coordinate_name)
-        getattr(getattr(sg, particle_name), velocity_name)
-        xyz_before = getattr(
-            getattr(sg, particle_name)._particle_dataset,
-            f'_{coordinate_name}'
-        )
-        vxyz_before = getattr(
-            getattr(sg, particle_name)._particle_dataset,
-            f'_{velocity_name}'
-        )
+        xyz_before = getattr(getattr(sg, particle_name), f'{coordinate_name}')
+        vxyz_before = getattr(getattr(sg, particle_name), f'{velocity_name}')
+        if before_load:
+            setattr(
+                getattr(sg, particle_name)._particle_dataset,
+                f'_{coordinate_name}',
+                None
+            )
+            setattr(
+                getattr(sg, particle_name)._particle_dataset,
+                f'_{velocity_name}',
+                None
+            )
         sg.rotate(Rotation.from_matrix(rot))
-        xyz = getattr(
-            getattr(sg, particle_name)._particle_dataset,
-            f'_{coordinate_name}'
-        )
-        vxyz = getattr(
-            getattr(sg, particle_name)._particle_dataset,
-            f'_{velocity_name}'
-        )
+        xyz = getattr(getattr(sg, particle_name), f'{coordinate_name}')
+        vxyz = getattr(getattr(sg, particle_name), f'{velocity_name}')
         assert u.array.allclose_units(
             xyz_before.dot(rot),
             xyz,
@@ -351,18 +348,13 @@ class TestManualCoordinateTransformations:
         present_particle_types.values()
     )
     def test_box_wrap(self, sg, particle_name, coordinate_name):
-        # check that translating by a box length wraps back to previous state
+        """
+        Check that translating by a box length wraps back to previous state.
+        """
         boxsize = sg.metadata.boxsize
-        getattr(getattr(sg, particle_name), coordinate_name)
-        xyz_before = getattr(
-            getattr(sg, particle_name)._particle_dataset,
-            f'_{coordinate_name}'
-        )
+        xyz_before = getattr(getattr(sg, particle_name), f'{coordinate_name}')
         sg.translate(boxsize)
-        xyz = getattr(
-            getattr(sg, particle_name)._particle_dataset,
-            f'_{coordinate_name}'
-        )
+        xyz = getattr(getattr(sg, particle_name), f'{coordinate_name}')
         assert u.array.allclose_units(
             xyz_before,
             xyz,

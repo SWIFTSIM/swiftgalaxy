@@ -4,7 +4,6 @@ import unyt as u
 from toysnap import present_particle_types
 from scipy.spatial.transform import Rotation
 
-reltol = 1.01  # allow some wiggle room for floating point roundoff
 abstol_c = 1 * u.pc  # less than this is ~0
 abstol_v = 10 * u.m / u.s  # less than this is ~0
 abstol_a = 1.e-4 * u.rad
@@ -428,9 +427,9 @@ class TestInteractionWithCoordinateTransformations:
                                       coordinate_system, coordinate_type,
                                       transform_function, transform_arg):
         """
-        Check that extra coordinates are deleted after transformations.
+        Check that derived coordinates are deleted after transformations.
         """
-        # load extra coordinates
+        # load derived coordinates
         getattr(
             getattr(sg, particle_name),
             f'{coordinate_system}_{coordinate_type}'
@@ -440,7 +439,7 @@ class TestInteractionWithCoordinateTransformations:
             getattr(sg, particle_name),
             f'_{coordinate_system}_{coordinate_type}'
         ) is not None
-        # do an extra coordinate-voiding transformation
+        # do a derived coordinate-voiding transformation
         getattr(sg, transform_function)(transform_arg)
         # bypass auto-computation of coordinates
         internal_coords = getattr(
@@ -464,14 +463,16 @@ class TestInteractionWithMasking:
         ('cartesian', 'spherical', 'cylindrical')
     )
     @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("before_load", (True, False))
     @pytest.mark.filterwarnings(
         "ignore:invalid value encountered in true_divide"
     )  # comes from r=0 particle, handled in definition of theta
-    def test_mask_swiftgalaxy_masks_extra_coordinates(
-            self, sg, coordinate_type, coordinate_system, particle_name):
+    def test_mask_swiftgalaxy_masks_derived_coordinates(
+            self, sg, coordinate_type, coordinate_system, particle_name,
+            before_load):
         """
-        Check that when we mask the SWIFTGalaxy, the derived coordinates are
-        also masked.
+        Check that when we mask the SWIFTGalaxy, derived coordinates loaded in
+        the future are also masked.
         """
         from swiftgalaxy.masks import MaskCollection
         coordinate_names = dict(
@@ -485,7 +486,7 @@ class TestInteractionWithMasking:
             cylindrical=(abstol_c, abstol_a, abstol_c)
         )[coordinate_system] if coordinate_type == 'coordinates' else (
             abstol_v, abstol_v, abstol_v)
-        # load extra coordinates
+        # load derived coordinates to record their values
         getattr(
             getattr(sg, particle_name),
             f'{coordinate_system}_{coordinate_type}'
@@ -499,9 +500,17 @@ class TestInteractionWithMasking:
                 coordinate_name
             ) for coordinate_name in coordinate_names
         }
+        if before_load:
+            # unload derived coordinates
+            sg._void_derived_coordinates()
         # mask every second particle
         mask = np.s_[::2]
         sg.mask_particles(MaskCollection(**{particle_name: mask}))
+        # load derived coordinates
+        getattr(
+            getattr(sg, particle_name),
+            f'{coordinate_system}_{coordinate_type}'
+        )
         for coordinate_name, tol in zip(coordinate_names, tols):
             assert u.array.allclose_units(
                 getattr(
