@@ -72,7 +72,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../halo_finders/index.html">Halo finders</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../masking/index.html">Dataset masking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../masking/index.html">Particle masking</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../modules/index.html">API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../modules/index.html#indices-and-tables">Indices and tables</a></li>
 </ul>
@@ -103,13 +103,13 @@
              
   <section id="additional-coordinates">
 <h1>Additional coordinates<a class="headerlink" href="#additional-coordinates" title="Permalink to this headline"></a></h1>
-<p>When analysing a galaxy it is often convenient to work in spherical or cylindrical coordinates. A <a class="reference internal" href="../modules/swiftgalaxy.reader.html#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> will compute these (and the velocities) on the fly if requested. The poles of the spherical/cylindrical coordinate frame are assumed to lie along the cartesian <span class="math notranslate nohighlight">\(z\)</span> axis of the <a class="reference internal" href="../coordinate_transformations/index.html"><span class="doc">current coordinate frame</span></a>, and the coordinate system is assumed to be right-handed.</p>
+<p>When analysing a galaxy it is often convenient to work in spherical or cylindrical coordinates. A <a class="reference internal" href="../modules/swiftgalaxy.reader.html#swiftgalaxy.reader.SWIFTGalaxy" title="swiftgalaxy.reader.SWIFTGalaxy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWIFTGalaxy</span></code></a> will compute these (and the velocities) on the fly if requested. The poles of the spherical/cylindrical coordinate frame are assumed to lie along the cartesian <span class="math notranslate nohighlight">\(z\)</span> axis of the <a class="reference internal" href="../coordinate_transformations/index.html"><span class="doc">current coordinate frame</span></a>, the reference azimuth (<span class="math notranslate nohighlight">\(\phi=0\)</span>) lies along the <span class="math notranslate nohighlight">\(x\)</span> axis, and the coordinate system is assumed to be right-handed.</p>
 <p>Any computed coordinates (or velocities) are cached to speed up subsequent requests, but note that <a class="reference internal" href="../coordinate_transformations/index.html"><span class="doc">coordinate transformations</span></a> in general would require a conversion back to cartesian coordinates, application of the transformation, and then re-calculation of the spherical/cylindrical coordinates. Therefore, in the interest of efficiency, if a coordinate transformation occurs the spherical/cylindrical coordinates are simply discarded, and re-computed if they are subsequently requested.</p>
 <section id="spherical-coordinates">
 <h2>Spherical coordinates<a class="headerlink" href="#spherical-coordinates" title="Permalink to this headline"></a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>A “physics” notation convention is assumed, with coordinate components named <span class="math notranslate nohighlight">\((r, \theta, \phi)\)</span>, where <span class="math notranslate nohighlight">\(-\frac{\pi}{2} \leq \theta \leq \frac{\pi}{2}\)</span> is the polar angle and <span class="math notranslate nohighlight">\(0 &lt; \phi \leq 2\pi\)</span> is the azimuthal angle.</p>
+<p>A “physics” notation convention is assumed, with coordinate components named <span class="math notranslate nohighlight">\((r, \theta, \phi)\)</span>, where <span class="math notranslate nohighlight">\(-\frac{\pi}{2} \leq \theta \leq \frac{\pi}{2}\)</span> is the polar angle and <span class="math notranslate nohighlight">\(0 &lt; \phi \leq 2\pi\)</span> is the azimuthal angle. The convention that if <span class="math notranslate nohighlight">\(r=0\)</span>, then <span class="math notranslate nohighlight">\(\theta=0\)</span> and <span class="math notranslate nohighlight">\(\phi=0\)</span> is also adopted.</p>
 </div>
 <p>The spherical coordinates can be accessed through the <a class="reference internal" href="../modules/swiftgalaxy.reader.html#swiftgalaxy.reader._SWIFTParticleDatasetHelper.spherical_coordinates" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper.spherical_coordinates"><code class="xref py py-attr docutils literal notranslate"><span class="pre">spherical_coordinates</span></code></a> property of a particle dataset. Supposing that we are interested in the <code class="docutils literal notranslate"><span class="pre">gas</span></code> particles:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sg</span> <span class="o">=</span> <span class="n">SWIFTGalaxy</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
@@ -160,6 +160,7 @@
 <span class="n">sg</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">spherical_velocities</span><span class="o">.</span><span class="n">phi</span>
 </pre></div>
 </div>
+<p>Note that if <span class="math notranslate nohighlight">\(r=0\)</span>, then <span class="math notranslate nohighlight">\(\theta=0\)</span> and <span class="math notranslate nohighlight">\(\phi=0\)</span> are assumed to define the directions of the unit vectors.</p>
 <div class="toggle admonition">
 <p class="admonition-title">Aliases</p>
 <p>Again, some aliases are provided:</p>
@@ -199,7 +200,7 @@
 <h2>Cylindrical coordinates<a class="headerlink" href="#cylindrical-coordinates" title="Permalink to this headline"></a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The coordinate components are named <span class="math notranslate nohighlight">\((\rho, \phi, z)\)</span> by default, and assume a convention where <span class="math notranslate nohighlight">\(0 &lt; \phi \leq 2\pi\)</span>.</p>
+<p>The coordinate components are named <span class="math notranslate nohighlight">\((\rho, \phi, z)\)</span> by default, and assume a convention where <span class="math notranslate nohighlight">\(0 &lt; \phi \leq 2\pi\)</span>. The convention that if <span class="math notranslate nohighlight">\(\rho=0\)</span>, then <span class="math notranslate nohighlight">\(\phi=0\)</span> is also adopted.</p>
 </div>
 <p>Similarly to the spherical coordinates, the cylindrical coordinates can be accessed through the <a class="reference internal" href="../modules/swiftgalaxy.reader.html#swiftgalaxy.reader._SWIFTParticleDatasetHelper.cylindrical_coordinates" title="swiftgalaxy.reader._SWIFTParticleDatasetHelper.cylindrical_coordinates"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cylindrical_coordinates</span></code></a> property of a particle dataset. Supposing again that we are interested in the <code class="docutils literal notranslate"><span class="pre">gas</span></code> particles:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sg</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">cylindrical_coordinates</span><span class="o">.</span><span class="n">rho</span>
@@ -229,7 +230,13 @@
 </dd>
 </dl>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_coordinates.z</span></code></p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">cylindrical_coordinates.z</span></code></dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_coordinates.height</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
 </ul>
 </div>
 <section id="cylindrical-velocities">
@@ -240,6 +247,7 @@
 <span class="n">sg</span><span class="o">.</span><span class="n">gas</span><span class="o">.</span><span class="n">cylindrical_velocities</span><span class="o">.</span><span class="n">z</span>
 </pre></div>
 </div>
+<p>Note that if <span class="math notranslate nohighlight">\(\rho=0\)</span>, then <span class="math notranslate nohighlight">\(\phi=0\)</span> is assumed to define the directions of the unit vectors.</p>
 <div class="toggle admonition">
 <p class="admonition-title">Aliases</p>
 <p>Again, some aliases are provided:</p>
@@ -262,7 +270,13 @@
 </dd>
 </dl>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_velocities.z</span></code></p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">cylindrical_velocities.z</span></code></dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">cylindrical_coordinates.height</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
 </ul>
 </div>
 </section>

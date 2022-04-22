@@ -528,8 +528,10 @@
 
     <span class="k">def</span> <span class="nf">_apply_data_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">cosmo_array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cosmo_array</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_swiftgalaxy</span><span class="o">.</span><span class="n">_extra_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_swiftgalaxy</span><span class="o">.</span><span class="n">_extra_mask</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_particle_dataset</span><span class="o">.</span><span class="n">particle_name</span><span class="p">)</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_swiftgalaxy</span><span class="o">.</span><span class="n">_extra_mask</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_particle_dataset</span><span class="o">.</span><span class="n">particle_name</span>
+            <span class="p">)</span>
             <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">data</span>
@@ -556,13 +558,17 @@
         <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_swiftgalaxy</span><span class="o">.</span><span class="n">_extra_mask</span><span class="p">,</span> <span class="n">particle_name</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_swiftgalaxy</span><span class="o">.</span><span class="n">_extra_mask</span><span class="p">,</span> <span class="n">particle_name</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">realised_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_swiftgalaxy</span><span class="o">.</span><span class="n">_extra_mask</span><span class="p">,</span>
-                                             <span class="n">particle_name</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span>
-                                     <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-            <span class="n">realised_mask</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_swiftgalaxy</span><span class="o">.</span><span class="n">_extra_mask</span><span class="p">,</span>
-                    <span class="n">particle_name</span><span class="p">)[</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_swiftgalaxy</span><span class="o">.</span><span class="n">_extra_mask</span><span class="p">,</span>
-                                           <span class="n">particle_name</span><span class="p">)]</span> <span class="o">=</span> <span class="n">realised_mask</span>
+            <span class="n">num_part</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_dataset</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">num_part</span><span class="p">[</span>
+                <span class="n">particle_metadata</span><span class="o">.</span><span class="n">particle_type</span>
+            <span class="p">]</span>
+            <span class="n">old_mask</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_swiftgalaxy</span><span class="o">.</span><span class="n">_extra_mask</span><span class="p">,</span> <span class="n">particle_name</span><span class="p">)</span>
+            <span class="c1"># need to convert to an integer mask to combine</span>
+            <span class="c1"># (boolean is insufficient in case of re-ordering masks)</span>
+            <span class="nb">setattr</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_swiftgalaxy</span><span class="o">.</span><span class="n">_extra_mask</span><span class="p">,</span>
+                <span class="n">particle_name</span><span class="p">,</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">num_part</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)[</span><span class="n">old_mask</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span>
+            <span class="p">)</span>
         <span class="k">return</span>
 
     <span class="k">def</span> <span class="nf">_apply_transforms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">cosmo_array</span><span class="p">,</span>
@@ -713,7 +719,11 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spherical_coordinates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
                 <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cartesian_coordinates</span><span class="o">.</span><span class="n">xyz</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
-            <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cartesian_coordinates</span><span class="o">.</span><span class="n">z</span> <span class="o">/</span> <span class="n">r</span><span class="p">)</span>
+            <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                <span class="n">r</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="mi">0</span><span class="p">,</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cartesian_coordinates</span><span class="o">.</span><span class="n">z</span> <span class="o">/</span> <span class="n">r</span><span class="p">)</span>
+            <span class="p">)</span>
             <span class="n">theta</span> <span class="o">=</span> <span class="n">cosmo_array</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">unyt</span><span class="o">.</span><span class="n">rad</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cylindrical_coordinates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">phi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cylindrical_coordinates</span><span class="o">.</span><span class="n">phi</span>
@@ -884,7 +894,9 @@
                  <span class="n">az</span><span class="o">=</span><span class="s1">&#39;_phi&#39;</span><span class="p">,</span>
                  <span class="n">azimuth</span><span class="o">=</span><span class="s1">&#39;_phi&#39;</span><span class="p">,</span>
                  <span class="n">phi</span><span class="o">=</span><span class="s1">&#39;_phi&#39;</span><span class="p">,</span>
-                 <span class="n">z</span><span class="o">=</span><span class="s1">&#39;_z&#39;</span><span class="p">))</span>
+                 <span class="n">z</span><span class="o">=</span><span class="s1">&#39;_z&#39;</span><span class="p">,</span>
+                 <span class="n">height</span><span class="o">=</span><span class="s1">&#39;_z&#39;</span><span class="p">)</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">cylindrical_velocities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_CoordinateHelper</span><span class="p">:</span>
@@ -963,7 +975,9 @@
                  <span class="n">az</span><span class="o">=</span><span class="s1">&#39;_v_phi&#39;</span><span class="p">,</span>
                  <span class="n">azimuth</span><span class="o">=</span><span class="s1">&#39;_v_phi&#39;</span><span class="p">,</span>
                  <span class="n">phi</span><span class="o">=</span><span class="s1">&#39;_v_phi&#39;</span><span class="p">,</span>
-                 <span class="n">z</span><span class="o">=</span><span class="s1">&#39;_v_z&#39;</span><span class="p">))</span>
+                 <span class="n">z</span><span class="o">=</span><span class="s1">&#39;_v_z&#39;</span><span class="p">,</span>
+                 <span class="n">height</span><span class="o">=</span><span class="s1">&#39;_v_z&#39;</span><span class="p">)</span>
+        <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_mask_derived_coordinates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="n">MaskType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cartesian_coordinates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
