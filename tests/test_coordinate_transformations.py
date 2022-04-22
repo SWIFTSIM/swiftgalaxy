@@ -361,3 +361,13 @@ class TestManualCoordinateTransformations:
             rtol=1.e-4,
             atol=abstol_c
         )
+
+
+class TestAutoNamedColumnCoordinateTransformations:
+
+    pass
+
+
+class TestManualNamedColumnCoordinateTransformations:
+
+    pass

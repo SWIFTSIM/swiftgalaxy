@@ -476,24 +476,13 @@ class _SWIFTParticleDatasetHelper(object):
                 particle_metadata.particle_type
             ]
             old_mask = getattr(self._swiftgalaxy._extra_mask, particle_name)
-            if not hasattr(old_mask, 'size') or old_mask.size != num_part:
-                # need to convert to a boolean mask to combine
-                boolean_old_mask = np.zeros(num_part, dtype=bool)
-                boolean_old_mask[old_mask] = True
-                # overwrite the old mask with the boolean version
-                setattr(
-                    self._swiftgalaxy._extra_mask,
-                    particle_name,
-                    boolean_old_mask
-                )
-            boolean_mask = np.zeros(
-                getattr(self._swiftgalaxy._extra_mask, particle_name).sum(),
-                dtype=bool
+            # need to convert to an integer mask to combine
+            # (boolean is insufficient in case of re-ordering masks)
+            setattr(
+                self._swiftgalaxy._extra_mask,
+                particle_name,
+                np.arange(num_part, dtype=int)[old_mask][mask]
             )
-            boolean_mask[mask] = True
-            getattr(self._swiftgalaxy._extra_mask, particle_name)[
-                getattr(self._swiftgalaxy._extra_mask, particle_name)
-            ] = boolean_mask
         return
 
     def _apply_transforms(self, data: cosmo_array,
