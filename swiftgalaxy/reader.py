@@ -631,8 +631,13 @@ class _SWIFTParticleDatasetHelper(object):
         if self._cartesian_coordinates is None:
             self.cartesian_coordinates
         if self._spherical_coordinates is None:
-            r = np.sqrt(
-                np.sum(np.power(self.cartesian_coordinates.xyz, 2), axis=1))
+            r = cosmo_array(
+                np.sqrt(
+                    np.sum(np.power(self.cartesian_coordinates.xyz, 2), axis=1)
+                ),
+                cosmo_factor=self.cartesian_coordinates.xyz.cosmo_factor,
+                comoving=self.cartesian_coordinates.xyz.comoving
+            )
             theta = np.where(
                 r == 0,
                 0,
@@ -786,9 +791,14 @@ class _SWIFTParticleDatasetHelper(object):
         if self._cartesian_coordinates is None:
             self.cartesian_coordinates
         if self._cylindrical_coordinates is None:
-            rho = np.sqrt(
-                np.sum(np.power(self.cartesian_coordinates.xyz[:, :2], 2),
-                       axis=1))
+            rho = cosmo_array(
+                np.sqrt(
+                    np.sum(np.power(self.cartesian_coordinates.xyz[:, :2], 2),
+                           axis=1)
+                ),
+                cosmo_factor=self.cartesian_coordinates.xyz.cosmo_factor,
+                comoving=self.cartesian_coordinates.xyz.comoving
+            )
             if self._spherical_coordinates is not None:
                 phi = self.spherical_coordinates.phi
             else:

@@ -178,7 +178,7 @@ class Velociraptor(_HaloFinder):
         self.centre_type: str = centre_type
         self._catalogue: Optional[VelociraptorCatalogue] = None
         self._particles: Optional[None] = None
-        super().__init__()
+        super().__init__(extra_mask=extra_mask)
         # currently velociraptor_python works with a halo index, not halo_id!
         # self.catalogue_mask = (catalogue.ids.id == halo_id).nonzero()
         return

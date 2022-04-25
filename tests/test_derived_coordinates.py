@@ -524,3 +524,31 @@ class TestInteractionWithMasking:
                 rtol=1.e-4,
                 atol=tol
             )
+
+    @pytest.mark.parametrize("coordinate_name", ('r', 'theta', 'phi'))
+    @pytest.mark.parametrize("coordinate_type", ('coordinates', 'velocities'))
+    def test_single_particle_produces_array_spherical(
+            self, sg, coordinate_name, coordinate_type):
+        """
+        Make sure an array is returned even for a single quantity (some
+        calculations tend to produce unyt_quantities, which have shape ()).
+        The black hole arrays in the test data have a single particle.
+        """
+        assert getattr(
+            getattr(sg.black_holes, f'spherical_{coordinate_type}'),
+            coordinate_name
+        ).shape is not tuple()
+
+    @pytest.mark.parametrize("coordinate_name", ('rho', 'phi', 'z'))
+    @pytest.mark.parametrize("coordinate_type", ('coordinates', 'velocities'))
+    def test_single_particle_produces_array_cylindrical(
+            self, sg, coordinate_name, coordinate_type):
+        """
+        Make sure an array is returned even for a single quantity (some
+        calculations tend to produce unyt_quantities, which have shape ()).
+        The black hole arrays in the test data have a single particle.
+        """
+        assert getattr(
+            getattr(sg.black_holes, f'cylindrical_{coordinate_type}'),
+            coordinate_name
+        ).shape is not tuple()
