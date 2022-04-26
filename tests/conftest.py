@@ -48,15 +48,14 @@ def sg_custom_names():
 @pytest.fixture(scope='function')
 def sg_autorecentre_off():
 
-    toysnap_autorecentre_off_filename = 'toysnap_autorecentre_off.hdf5'
-    create_toysnap(snapfile=toysnap_autorecentre_off_filename)
+    create_toysnap()
 
     yield SWIFTGalaxy(
-        toysnap_autorecentre_off_filename,
-        ToyHF(snapfile=toysnap_autorecentre_off_filename),
+        toysnap_filename,
+        ToyHF(snapfile=toysnap_filename),
         transforms_like_coordinates={'coordinates', 'extra_coordinates'},
         transforms_like_velocities={'velocities', 'extra_velocities'},
         auto_recentre=False
     )
 
-    remove_toysnap(snapfile=toysnap_autorecentre_off_filename)
+    remove_toysnap(snapfile=toysnap_filename)
