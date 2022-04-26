@@ -181,6 +181,8 @@ def create_toysnap(
         og.create_dataset('PartType1', data=np.array([0], dtype=int))
         og.create_dataset('PartType4', data=np.array([0], dtype=int))
         og.create_dataset('PartType5', data=np.array([0], dtype=int))
+        hsg = f.create_group('HydroScheme')
+        hsg.attrs['Adiabatic index'] = 5.0 / 3.0
 
         for pt in (0, 1, 4, 5):
             g = f[f'PartType{pt}']
@@ -195,6 +197,35 @@ def create_toysnap(
             if alt_vel_name is not None:
                 g[alt_vel_name] = g['Velocities']
                 del g['Velocities']
+
+        ssg = f.create_group('SubgridScheme')
+        ncg = ssg.create_group('NamedColumns')
+        ncg.create_dataset(
+            'HydrogenIonizationFractions',
+            data=np.array([b'Neutral', b'Ionized'], dtype='|S32')
+        )
+        g = f['PartType0']
+        f_neutral = np.random.rand(n_g_all)
+        f_ion = 1 - f_neutral
+        hifd = g.create_dataset(
+            'HydrogenIonizationFractions',
+            data=np.array([f_neutral, f_ion], dtype=float).T
+        )
+        hifd.attrs[
+            'Conversion factor to CGS'
+            ' (not including cosmological corrections)'
+        ] = np.array([1.], dtype=float)
+        hifd.attrs[
+            'Conversion factor to physical CGS'
+            ' (including cosmological corrections)'
+        ] = np.array([1.], dtype=float)
+        hifd.attrs['U_I exponent'] = np.array([0.], dtype=float)
+        hifd.attrs['U_L exponent'] = np.array([0.], dtype=float)
+        hifd.attrs['U_M exponent'] = np.array([0.], dtype=float)
+        hifd.attrs['U_T exponent'] = np.array([0.], dtype=float)
+        hifd.attrs['U_t exponent'] = np.array([0.], dtype=float)
+        hifd.attrs['a-scale exponent'] = np.array([0.], dtype=float)
+        hifd.attrs['h-scale exponent'] = np.array([0.], dtype=float)
 
     return
 
