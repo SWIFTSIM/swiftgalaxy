@@ -7,6 +7,8 @@ from swiftgalaxy import MaskCollection
 abstol_c = 1 * u.pc  # less than this is ~0
 abstol_v = 10 * u.m / u.s  # less than this is ~0
 abstol_a = 1.e-4 * u.rad
+abstol_nd = 1.e-4
+reltol_nd = 1.e-4
 
 
 class TestMaskingSWIFTGalaxy:
@@ -143,4 +145,62 @@ class TestMaskingParticleDatasets:
 
 class TestMaskingNamedColumnDatasets:
 
-    pass
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_reordering_slice_mask(self, sg, before_load):
+        """
+        Test whether a slice mask that re-orders elements works.
+        """
+        mask = np.s_[::-1]
+        fractions_before = sg.gas.hydrogen_ionization_fractions.neutral
+        if before_load:
+            sg.gas.hydrogen_ionization_fractions._neutral = None
+        masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
+        fractions = masked_namedcolumnsdataset.neutral
+        assert u.array.allclose_units(
+            fractions_before[mask],
+            fractions,
+            rtol=reltol_nd,
+            atol=abstol_nd
+        )
+
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_reordering_int_mask(self, sg, before_load):
+        """
+        Test whether an integer array mask that re-orders elements and changes
+        the array length works.
+        """
+        fractions_before = sg.gas.hydrogen_ionization_fractions.neutral
+        mask = np.arange(fractions_before.size)
+        # randomize order (in-place operation)
+        np.random.shuffle(mask)
+        # keep half the particles
+        mask = mask[:mask.size // 2]
+        if before_load:
+            sg.gas.hydrogen_ionization_fractions._neutral = None
+        masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
+        fractions = masked_namedcolumnsdataset.neutral
+        assert u.array.allclose_units(
+            fractions_before[mask],
+            fractions,
+            rtol=reltol_nd,
+            atol=abstol_nd
+        )
+
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_bool_mask(self, sg, before_load):
+        """
+        Test whether a boolean array mask works.
+        """
+        fractions_before = sg.gas.hydrogen_ionization_fractions.neutral
+        # randomly keep about half of particles
+        mask = np.random.rand(fractions_before.size) > .5
+        if before_load:
+            sg.gas.hydrogen_ionization_fractions._neutral = None
+        masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
+        fractions = masked_namedcolumnsdataset.neutral
+        assert u.array.allclose_units(
+            fractions_before[mask],
+            fractions,
+            rtol=reltol_nd,
+            atol=abstol_nd
+        )
