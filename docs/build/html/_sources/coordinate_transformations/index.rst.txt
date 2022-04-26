@@ -13,7 +13,7 @@ It may be that along with the basic coordinates and velocities arrays, you have 
 	transforms_like_velocities={'wind_velocity'},
     )
 
-The equivalent for coordinate-like arrays is the ``transforms_like_coordinates`` argument. The ``coordinates`` and ``velocities`` arrays are always assumed to transform as coordinates and velocities, respectively. Note that it is not necessary that a name provided in one of these arguments be present for all particle types. If the dataset in question is part of a `NamedColumns` dataset, the name can simply be provided with a dot. For instance, if the ``wind_velocity`` in the example above was part of a `NamedColumns` dataset called ``wind_model``, you would simply write: ``transforms_like_velocities={'velocities', 'wind_model.wind_velocity'}``.
+The equivalent for coordinate-like arrays is the ``transforms_like_coordinates`` argument. The ``coordinates`` and ``velocities`` arrays are always assumed to transform as coordinates and velocities, respectively. Note that it is not necessary that a name provided in one of these arguments be present for all particle types.
 
 By default, :class:`~swiftgalaxy.reader.SWIFTGalaxy` assumes that particle coordinates are stored in a dataset (one for each particle type) called ``coordinates``, and velocities in datasets called ``velocities``. If your data use non-standard naming of the coordinate and velocity arrays, you can provide alternative names (replace the defaults in the example snippet below with your custom names). Note that the datasets named in these arguments are implicitly added to the sets ``transforms_like_coordinates`` and ``transforms_like_velocities``, respectively.
 

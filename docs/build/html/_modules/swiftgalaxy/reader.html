@@ -119,28 +119,6 @@
 <span class="kn">from</span> <span class="nn">swiftgalaxy._types</span> <span class="kn">import</span> <span class="n">MaskType</span>
 
 
-<span class="k">def</span> <span class="nf">_getattr_with_dots</span><span class="p">(</span><span class="n">dataset</span><span class="p">:</span> <span class="n">SWIFTDataset</span><span class="p">,</span>
-                       <span class="n">attr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">cosmo_array</span><span class="p">]:</span>
-    <span class="n">attrs</span> <span class="o">=</span> <span class="n">attr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
-    <span class="n">retval</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">attrs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-        <span class="n">retval</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">retval</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">retval</span>
-
-
-<span class="k">def</span> <span class="nf">_setattr_with_dots</span><span class="p">(</span><span class="n">dataset</span><span class="p">:</span> <span class="n">SWIFTDataset</span><span class="p">,</span> <span class="n">attr</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                       <span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">cosmo_array</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">attrs</span> <span class="o">=</span> <span class="n">attr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">attrs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="nb">setattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">target</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">attrs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
-            <span class="n">target</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
-        <span class="nb">setattr</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">attrs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">value</span><span class="p">)</span>
-    <span class="k">return</span>
-
-
 <span class="k">def</span> <span class="nf">_apply_box_wrap</span><span class="p">(</span><span class="n">coords</span><span class="p">:</span> <span class="n">cosmo_array</span><span class="p">,</span>
                     <span class="n">boxsize</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">cosmo_array</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">cosmo_array</span><span class="p">:</span>
     <span class="n">retval</span> <span class="o">=</span> <span class="n">coords</span>
@@ -212,7 +190,10 @@
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="n">keys</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_masks</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Available coordinates: </span><span class="si">{</span><span class="n">keys</span><span class="si">}</span><span class="s1">.&#39;</span></div>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Available coordinates: </span><span class="si">{</span><span class="n">keys</span><span class="si">}</span><span class="s1">.&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="_SWIFTNamedColumnDatasetHelper"><a class="viewcode-back" href="../../modules/swiftgalaxy.reader.html#swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper">[docs]</a><span class="k">class</span> <span class="nc">_SWIFTNamedColumnDatasetHelper</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -268,6 +249,12 @@
             <span class="o">=</span> <span class="n">particle_dataset_helper</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_initialised</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_named_column_dataset</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="n">named_column_dataset</span> <span class="o">=</span> \
@@ -444,6 +431,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_cylindrical_velocities</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_initialised</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_dataset</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="n">particle_name</span> <span class="o">=</span> \
@@ -717,8 +710,13 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cartesian_coordinates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cartesian_coordinates</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spherical_coordinates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cartesian_coordinates</span><span class="o">.</span><span class="n">xyz</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">cosmo_array</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cartesian_coordinates</span><span class="o">.</span><span class="n">xyz</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="p">),</span>
+                <span class="n">cosmo_factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cartesian_coordinates</span><span class="o">.</span><span class="n">xyz</span><span class="o">.</span><span class="n">cosmo_factor</span><span class="p">,</span>
+                <span class="n">comoving</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cartesian_coordinates</span><span class="o">.</span><span class="n">xyz</span><span class="o">.</span><span class="n">comoving</span>
+            <span class="p">)</span>
             <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
                 <span class="n">r</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
                 <span class="mi">0</span><span class="p">,</span>
@@ -872,9 +870,14 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cartesian_coordinates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cartesian_coordinates</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cylindrical_coordinates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">rho</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cartesian_coordinates</span><span class="o">.</span><span class="n">xyz</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="mi">2</span><span class="p">),</span>
-                       <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">rho</span> <span class="o">=</span> <span class="n">cosmo_array</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cartesian_coordinates</span><span class="o">.</span><span class="n">xyz</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="mi">2</span><span class="p">),</span>
+                           <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="p">),</span>
+                <span class="n">cosmo_factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cartesian_coordinates</span><span class="o">.</span><span class="n">xyz</span><span class="o">.</span><span class="n">cosmo_factor</span><span class="p">,</span>
+                <span class="n">comoving</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cartesian_coordinates</span><span class="o">.</span><span class="n">xyz</span><span class="o">.</span><span class="n">comoving</span>
+            <span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spherical_coordinates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">phi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spherical_coordinates</span><span class="o">.</span><span class="n">phi</span>
             <span class="k">else</span><span class="p">:</span>
@@ -1253,6 +1256,9 @@
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;SWIFTGalaxy at </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">snapshot_filename</span><span class="si">}</span><span class="s1">.&#39;</span>
 
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask_collection</span><span class="p">:</span> <span class="n">MaskCollection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;SWIFTGalaxy&#39;</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_copy</span><span class="p">(</span><span class="n">mask_collection</span><span class="o">=</span><span class="n">mask_collection</span><span class="p">)</span>
 
@@ -1389,12 +1395,10 @@
         <span class="k">for</span> <span class="n">particle_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">present_particle_names</span><span class="p">:</span>
             <span class="n">dataset</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_name</span><span class="p">)</span><span class="o">.</span><span class="n">_particle_dataset</span>
             <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">rotatable</span><span class="p">:</span>
-                <span class="n">field_location</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;._&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">field_name</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span> \
-                    <span class="k">if</span> <span class="s1">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">field_name</span> <span class="k">else</span> <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s1">&#39;</span>
-                <span class="n">field_data</span> <span class="o">=</span> <span class="n">_getattr_with_dots</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">field_location</span><span class="p">)</span>
+                <span class="n">field_data</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">field_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">field_data</span> <span class="o">=</span> <span class="n">_apply_rotmat</span><span class="p">(</span><span class="n">field_data</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">)</span>
-                    <span class="nb">setattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">field_location</span><span class="p">,</span> <span class="n">field_data</span><span class="p">)</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">field_data</span><span class="p">)</span>
         <span class="n">rotmat4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
         <span class="n">rotmat4</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">rotation_matrix</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_append_to_coordinate_like_transform</span><span class="p">(</span><span class="n">rotmat4</span><span class="p">)</span>
@@ -1410,12 +1414,10 @@
         <span class="k">for</span> <span class="n">particle_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">present_particle_names</span><span class="p">:</span>
             <span class="n">dataset</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_name</span><span class="p">)</span><span class="o">.</span><span class="n">_particle_dataset</span>
             <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">translatable</span><span class="p">:</span>
-                <span class="n">field_location</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;._&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">field_name</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span> \
-                    <span class="k">if</span> <span class="s1">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">field_name</span> <span class="k">else</span> <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s1">&#39;</span>
-                <span class="n">field_data</span> <span class="o">=</span> <span class="n">_getattr_with_dots</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">field_location</span><span class="p">)</span>
+                <span class="n">field_data</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">field_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">field_data</span> <span class="o">=</span> <span class="n">_apply_translation</span><span class="p">(</span><span class="n">field_data</span><span class="p">,</span> <span class="n">translation</span><span class="p">)</span>
-                    <span class="n">_setattr_with_dots</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">field_location</span><span class="p">,</span> <span class="n">field_data</span><span class="p">)</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">field_data</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">boost</span><span class="p">:</span>
             <span class="n">transform_units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">length</span> \
                 <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">time</span>
@@ -1542,13 +1544,11 @@
         <span class="k">for</span> <span class="n">particle_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">present_particle_names</span><span class="p">:</span>
             <span class="n">dataset</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_name</span><span class="p">)</span><span class="o">.</span><span class="n">_particle_dataset</span>
             <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transforms_like_coordinates</span><span class="p">:</span>
-                <span class="n">field_location</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;._&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">field_name</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span> \
-                    <span class="k">if</span> <span class="s1">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">field_name</span> <span class="k">else</span> <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s1">&#39;</span>
-                <span class="n">field_data</span> <span class="o">=</span> <span class="n">_getattr_with_dots</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">field_location</span><span class="p">)</span>
+                <span class="n">field_data</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">field_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">field_data</span> <span class="o">=</span> <span class="n">_apply_box_wrap</span><span class="p">(</span><span class="n">field_data</span><span class="p">,</span>
                                                  <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">boxsize</span><span class="p">)</span>
-                    <span class="nb">setattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">field_location</span><span class="p">,</span> <span class="n">field_data</span><span class="p">)</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">field_data</span><span class="p">)</span>
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="SWIFTGalaxy.mask_particles"><a class="viewcode-back" href="../../modules/swiftgalaxy.reader.html#swiftgalaxy.reader.SWIFTGalaxy.mask_particles">[docs]</a>    <span class="k">def</span> <span class="nf">mask_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask_collection</span><span class="p">:</span> <span class="n">MaskCollection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
