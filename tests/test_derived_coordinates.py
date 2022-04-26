@@ -527,6 +527,9 @@ class TestInteractionWithMasking:
 
     @pytest.mark.parametrize("coordinate_name", ('r', 'theta', 'phi'))
     @pytest.mark.parametrize("coordinate_type", ('coordinates', 'velocities'))
+    @pytest.mark.filterwarnings(
+        "ignore:invalid value encountered in true_divide"
+    )  # comes from r=0 particle, handled in definition of theta
     def test_single_particle_produces_array_spherical(
             self, sg, coordinate_name, coordinate_type):
         """
@@ -541,6 +544,9 @@ class TestInteractionWithMasking:
 
     @pytest.mark.parametrize("coordinate_name", ('rho', 'phi', 'z'))
     @pytest.mark.parametrize("coordinate_type", ('coordinates', 'velocities'))
+    @pytest.mark.filterwarnings(
+        "ignore:invalid value encountered in true_divide"
+    )  # comes from r=0 particle, handled in definition of theta
     def test_single_particle_produces_array_cylindrical(
             self, sg, coordinate_name, coordinate_type):
         """
