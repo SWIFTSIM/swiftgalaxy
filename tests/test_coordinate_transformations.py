@@ -34,6 +34,32 @@ expected_vz = {
     'black_holes': abstol_v
 }
 
+# make an arbitrary rotation matrix for testing
+alpha = np.pi / 7
+beta = 5 * np.pi / 3
+gamma = 13 * np.pi / 8
+rot = np.array([
+    [
+        np.cos(beta) * np.cos(gamma),
+        np.sin(alpha) * np.sin(beta) * np.cos(gamma)
+        - np.cos(alpha) * np.sin(gamma),
+        np.cos(alpha) * np.sin(beta) * np.cos(gamma)
+        + np.sin(alpha) * np.sin(gamma)
+    ],
+    [
+        np.cos(beta) * np.sin(gamma),
+        np.sin(alpha) * np.sin(beta) * np.sin(gamma)
+        + np.cos(alpha) * np.cos(gamma),
+        np.cos(alpha) * np.sin(beta) * np.sin(gamma)
+        - np.sin(alpha) * np.cos(gamma)
+    ],
+    [
+        -np.sin(beta),
+        np.sin(alpha) * np.cos(beta),
+        np.cos(alpha) * np.cos(beta)
+    ]
+])
+
 
 class TestAutoCoordinateTransformations:
 
@@ -286,30 +312,6 @@ class TestManualCoordinateTransformations:
         """
         Check that an arbitrary rotation rotates positions and velocities.
         """
-        alpha = np.pi / 7
-        beta = 5 * np.pi / 3
-        gamma = 13 * np.pi / 8
-        rot = np.array([
-            [
-                np.cos(beta) * np.cos(gamma),
-                np.sin(alpha) * np.sin(beta) * np.cos(gamma)
-                - np.cos(alpha) * np.sin(gamma),
-                np.cos(alpha) * np.sin(beta) * np.cos(gamma)
-                + np.sin(alpha) * np.sin(gamma)
-            ],
-            [
-                np.cos(beta) * np.sin(gamma),
-                np.sin(alpha) * np.sin(beta) * np.sin(gamma)
-                + np.cos(alpha) * np.cos(gamma),
-                np.cos(alpha) * np.sin(beta) * np.sin(gamma)
-                - np.sin(alpha) * np.cos(gamma)
-            ],
-            [
-                -np.sin(beta),
-                np.sin(alpha) * np.cos(beta),
-                np.cos(alpha) * np.cos(beta)
-            ]
-        ])
         xyz_before = getattr(getattr(sg, particle_name), f'{coordinate_name}')
         vxyz_before = getattr(getattr(sg, particle_name), f'{velocity_name}')
         if before_load:
@@ -365,4 +367,82 @@ class TestManualCoordinateTransformations:
 
 class TestSequentialTransformations:
 
-    pass
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_translate_then_rotate(self, sg, before_load):
+        """
+        Check that sequential transformations work correctly. Combining
+        rotation and translation checks the implementation of the 4x4
+        transformation matrix.
+        """
+        xyz_before = sg.gas.coordinates
+        if before_load:
+            sg.gas._coordinates = None
+        sg.translate(cosmo_array([1, 1, 1], u.Mpc))
+        sg.rotate(Rotation.from_matrix(rot))
+        xyz = sg.gas.coordinates
+        assert u.array.allclose_units(
+            (xyz_before + cosmo_array([1, 1, 1], u.Mpc)).dot(rot),
+            xyz,
+            rtol=1.e-4,
+            atol=abstol_c
+        )
+
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_rotate_then_translate(self, sg, before_load):
+        """
+        Check that sequential transformations work correctly. Combining
+        rotation and translation checks the implementation of the 4x4
+        transformation matrix.
+        """
+        xyz_before = sg.gas.coordinates
+        if before_load:
+            sg.gas._coordinates = None
+        sg.rotate(Rotation.from_matrix(rot))
+        sg.translate(cosmo_array([1, 1, 1], u.Mpc))
+        xyz = sg.gas.coordinates
+        assert u.array.allclose_units(
+            xyz_before.dot(rot) + cosmo_array([1, 1, 1], u.Mpc),
+            xyz,
+            rtol=1.e-4,
+            atol=abstol_c
+        )
+
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_boost_then_rotate(self, sg, before_load):
+        """
+        Check that sequential transformations work correctly. Combining
+        rotation and translation checks the implementation of the 4x4
+        transformation matrix.
+        """
+        vxyz_before = sg.gas.velocities
+        if before_load:
+            sg.gas._velocities = None
+        sg.boost(cosmo_array([100, 100, 100], u.km / u.s))
+        sg.rotate(Rotation.from_matrix(rot))
+        vxyz = sg.gas.velocities
+        assert u.array.allclose_units(
+            (vxyz_before + cosmo_array([100, 100, 100], u.km / u.s)).dot(rot),
+            vxyz,
+            rtol=1.e-4,
+            atol=abstol_v
+        )
+
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_rotate_then_boost(self, sg, before_load):
+        """
+        Check that sequential transformations work correctly. Combining
+        rotation and translation checks the implementation of the 4x4
+        transformation matrix.
+        """
+        vxyz_before = sg.gas.velocities
+        if before_load:
+            sg.gas._velocities = None
+        sg.rotate(Rotation.from_matrix(rot))
+        sg.boost(cosmo_array([100, 100, 100], u.km / u.s))
+        vxyz = sg.gas.velocities
+        assert u.array.allclose_units(
+            vxyz_before.dot(rot) + cosmo_array([100, 100, 100], u.km / u.s),
+            vxyz,
+            rtol=1.e-4,
+            atol=abstol_v
+        )
