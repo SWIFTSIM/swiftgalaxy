@@ -33,7 +33,7 @@ from typing import Union, Any, Optional, Set
 from swiftgalaxy._types import MaskType
 
 
-def _getattr_with_dots(dataset: SWIFTDataset,
+def _getattr_with_dots(dataset: __SWIFTParticleDataset,
                        attr: str) -> Optional[cosmo_array]:
     attrs = attr.split('.')
     retval = getattr(dataset, attrs[0], None)
@@ -42,7 +42,7 @@ def _getattr_with_dots(dataset: SWIFTDataset,
     return retval
 
 
-def _setattr_with_dots(dataset: SWIFTDataset, attr: str,
+def _setattr_with_dots(dataset: __SWIFTParticleDataset, attr: str,
                        value: Optional[cosmo_array]) -> None:
     attrs = attr.split('.')
     if len(attrs) == 1:
@@ -128,6 +128,9 @@ class _CoordinateHelper(object):
         keys = ', '.join(self._masks.keys())
         return f'Available coordinates: {keys}.'
 
+    def __repr__(self) -> str:
+        return self.__str__()
+
 
 class _SWIFTNamedColumnDatasetHelper(object):
 
@@ -182,6 +185,12 @@ class _SWIFTNamedColumnDatasetHelper(object):
             = particle_dataset_helper
         self._initialised: bool = True
         return
+
+    def __str__(self) -> str:
+        return str(self._named_column_dataset)
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
     def __getattribute__(self, attr: str) -> Any:
         named_column_dataset = \
@@ -358,6 +367,12 @@ class _SWIFTParticleDatasetHelper(object):
         self._cylindrical_velocities: Optional[dict] = None
         self._initialised: bool = True
         return
+
+    def __str__(self) -> str:
+        return str(self._particle_dataset)
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
     def __getattribute__(self, attr: str) -> Any:
         particle_name = \
@@ -1176,6 +1191,9 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def __str__(self) -> str:
         return f'SWIFTGalaxy at {self.snapshot_filename}.'
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
     def __getitem__(self, mask_collection: MaskCollection) -> 'SWIFTGalaxy':
         return self._data_copy(mask_collection=mask_collection)
