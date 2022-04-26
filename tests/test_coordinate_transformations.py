@@ -363,16 +363,6 @@ class TestManualCoordinateTransformations:
         )
 
 
-class TestAutoNamedColumnCoordinateTransformations:
-
-    pass
-
-
-class TestManualNamedColumnCoordinateTransformations:
-
-    pass
-
-
 class TestSequentialTransformations:
 
     pass

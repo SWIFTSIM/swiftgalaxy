@@ -33,28 +33,6 @@ from typing import Union, Any, Optional, Set
 from swiftgalaxy._types import MaskType
 
 
-def _getattr_with_dots(dataset: __SWIFTParticleDataset,
-                       attr: str) -> Optional[cosmo_array]:
-    attrs = attr.split('.')
-    retval = getattr(dataset, attrs[0], None)
-    for attr in attrs[1:]:
-        retval = getattr(retval, attr, None)
-    return retval
-
-
-def _setattr_with_dots(dataset: __SWIFTParticleDataset, attr: str,
-                       value: Optional[cosmo_array]) -> None:
-    attrs = attr.split('.')
-    if len(attrs) == 1:
-        setattr(dataset, attr, value)
-    else:
-        target = getattr(dataset, attrs[0])
-        for attr in attrs[1:-1]:
-            target = getattr(target, attr)
-        setattr(target, attrs[-1], value)
-    return
-
-
 def _apply_box_wrap(coords: cosmo_array,
                     boxsize: Optional[cosmo_array]) -> cosmo_array:
     retval = coords
@@ -1331,12 +1309,10 @@ class SWIFTGalaxy(SWIFTDataset):
         for particle_name in self.metadata.present_particle_names:
             dataset = getattr(self, particle_name)._particle_dataset
             for field_name in rotatable:
-                field_location = f"{'._'.join(field_name.rsplit('.', 1))}" \
-                    if '.' in field_name else f'_{field_name}'
-                field_data = _getattr_with_dots(dataset, field_location)
+                field_data = getattr(dataset, f'_{field_name}')
                 if field_data is not None:
                     field_data = _apply_rotmat(field_data, rotation_matrix)
-                    setattr(dataset, field_location, field_data)
+                    setattr(dataset, f'_{field_name}', field_data)
         rotmat4 = np.eye(4)
         rotmat4[:3, :3] = rotation_matrix
         self._append_to_coordinate_like_transform(rotmat4)
@@ -1352,12 +1328,10 @@ class SWIFTGalaxy(SWIFTDataset):
         for particle_name in self.metadata.present_particle_names:
             dataset = getattr(self, particle_name)._particle_dataset
             for field_name in translatable:
-                field_location = f"{'._'.join(field_name.rsplit('.', 1))}" \
-                    if '.' in field_name else f'_{field_name}'
-                field_data = _getattr_with_dots(dataset, field_location)
+                field_data = getattr(dataset, f'_{field_name}')
                 if field_data is not None:
                     field_data = _apply_translation(field_data, translation)
-                    _setattr_with_dots(dataset, field_location, field_data)
+                    setattr(dataset, f'_{field_name}', field_data)
         if boost:
             transform_units = self.metadata.units.length \
                 / self.metadata.units.time
@@ -1484,13 +1458,11 @@ class SWIFTGalaxy(SWIFTDataset):
         for particle_name in self.metadata.present_particle_names:
             dataset = getattr(self, particle_name)._particle_dataset
             for field_name in self.transforms_like_coordinates:
-                field_location = f"{'._'.join(field_name.rsplit('.', 1))}" \
-                    if '.' in field_name else f'_{field_name}'
-                field_data = _getattr_with_dots(dataset, field_location)
+                field_data = getattr(dataset, f'_{field_name}')
                 if field_data is not None:
                     field_data = _apply_box_wrap(field_data,
                                                  self.metadata.boxsize)
-                    setattr(dataset, field_location, field_data)
+                    setattr(dataset, f'_{field_name}', field_data)
         return
 
     def mask_particles(self, mask_collection: MaskCollection) -> None:
