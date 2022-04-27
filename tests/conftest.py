@@ -1,6 +1,7 @@
 import pytest
-from swiftgalaxy import SWIFTGalaxy
-from toysnap import create_toysnap, remove_toysnap, ToyHF, toysnap_filename
+from swiftgalaxy import SWIFTGalaxy, Velociraptor
+from toysnap import create_toysnap, remove_toysnap, create_toyvr, \
+    remove_toyvr, ToyHF, toysnap_filename
 
 
 @pytest.fixture(scope='function')
@@ -59,3 +60,36 @@ def sg_autorecentre_off():
     )
 
     remove_toysnap(snapfile=toysnap_filename)
+
+
+@pytest.fixture(scope='function')
+def sg_vr():
+
+    create_toysnap()
+    create_toyvr()
+
+    yield SWIFTGalaxy(
+        toysnap_filename,
+        Velociraptor(
+            velociraptor_filebase='toyvr',
+            halo_index=0
+        ),
+        transforms_like_coordinates={'coordinates', 'extra_coordinates'},
+        transforms_like_velocities={'velocities', 'extra_velocities'}
+    )
+
+    remove_toysnap()
+    remove_toyvr()
+
+
+@pytest.fixture(scope='function')
+def vr():
+
+    create_toyvr()
+
+    yield Velociraptor(
+        velociraptor_filebase='toyvr',
+        halo_index=0
+    )
+
+    remove_toyvr()

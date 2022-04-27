@@ -179,7 +179,7 @@ class Velociraptor(_HaloFinder):
         self._catalogue: Optional[VelociraptorCatalogue] = None
         self._particles: Optional[None] = None
         super().__init__(extra_mask=extra_mask)
-        # currently velociraptor_python works with a halo index, not halo_id!
+        # currently velociraptor_python works with a halo index, not halo_id
         # self.catalogue_mask = (catalogue.ids.id == halo_id).nonzero()
         return
 
@@ -196,9 +196,8 @@ class Velociraptor(_HaloFinder):
         groups = load_groups(f'{self.velociraptor_filebase}.catalog_groups',
                              catalogue=load_catalogue(
                                  f'{self.velociraptor_filebase}.properties'))
-        # extract_halo requests a "halo_id", but actually wants an index!
         self._particles, unbound_particles = \
-            groups.extract_halo(halo_id=self.halo_index)
+            groups.extract_halo(halo_index=self.halo_index)
         return generate_spatial_mask(self._particles, SG.snapshot_filename)
 
     def _get_extra_mask(self, SG: 'SWIFTGalaxy') -> MaskCollection:
