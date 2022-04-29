@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 import unyt as u
+from unyt.testing import assert_allclose_units
 from toysnap import present_particle_types
 from scipy.spatial.transform import Rotation
 
@@ -44,7 +45,7 @@ class TestCartesianCoordinates:
             ),
             coordinate_name
         )
-        assert u.array.allclose_units(
+        assert_allclose_units(
             cartesian_coordinate,
             coordinate,
             rtol=1.e-4,
@@ -69,7 +70,7 @@ class TestSphericalCoordinates:
         )
         xyz = getattr(sg, particle_name).coordinates
         r_from_cartesian = np.sqrt(np.sum(np.power(xyz, 2), axis=1))
-        assert u.array.allclose_units(
+        assert_allclose_units(
             spherical_r,
             r_from_cartesian,
             rtol=1.e-4,
@@ -110,7 +111,7 @@ class TestSphericalCoordinates:
             * vxyz[:, 1] \
             + np.sin(theta_from_cartesian) \
             * vxyz[:, 2]
-        assert u.array.allclose_units(
+        assert_allclose_units(
             spherical_v_r,
             v_r_from_cartesian,
             rtol=1.e-4,
@@ -139,7 +140,7 @@ class TestSphericalCoordinates:
             0,
             np.arcsin(xyz[:, 2] / np.sqrt(np.sum(np.power(xyz, 2), axis=1)))
         ) * u.rad
-        assert u.array.allclose_units(
+        assert_allclose_units(
             spherical_theta,
             theta_from_cartesian,
             rtol=1.e-4,
@@ -183,7 +184,7 @@ class TestSphericalCoordinates:
             * vxyz[:, 1] \
             - np.cos(theta_from_cartesian) \
             * vxyz[:, 2]
-        assert u.array.allclose_units(
+        assert_allclose_units(
             spherical_v_theta,
             v_theta_from_cartesian,
             rtol=1.e-4,
@@ -213,7 +214,7 @@ class TestSphericalCoordinates:
             phi_from_cartesian + 2 * np.pi,
             phi_from_cartesian
         ) * u.rad
-        assert u.array.allclose_units(
+        assert_allclose_units(
             spherical_phi,
             phi_from_cartesian,
             rtol=1.e-4,
@@ -249,7 +250,7 @@ class TestSphericalCoordinates:
             * vxyz[:, 0] \
             + np.cos(phi_from_cartesian) \
             * vxyz[:, 1]
-        assert u.array.allclose_units(
+        assert_allclose_units(
             spherical_v_phi,
             v_phi_from_cartesian,
             rtol=1.e-4,
@@ -271,7 +272,7 @@ class TestCylindricalCoordinates:
         )
         xyz = getattr(sg, particle_name).coordinates
         rho_from_cartesian = np.sqrt(np.sum(np.power(xyz[:, :2], 2), axis=1))
-        assert u.array.allclose_units(
+        assert_allclose_units(
             spherical_rho,
             rho_from_cartesian,
             rtol=1.e-4,
@@ -299,7 +300,7 @@ class TestCylindricalCoordinates:
         v_rho_from_cartesian = \
             np.cos(phi_from_cartesian) * vxyz[:, 0] \
             + np.sin(phi_from_cartesian) * vxyz[:, 1]
-        assert u.array.allclose_units(
+        assert_allclose_units(
             cylindrical_v_rho,
             v_rho_from_cartesian,
             rtol=1.e-4,
@@ -326,7 +327,7 @@ class TestCylindricalCoordinates:
             phi_from_cartesian + 2 * np.pi,
             phi_from_cartesian
         ) * u.rad
-        assert u.array.allclose_units(
+        assert_allclose_units(
             cylindrical_phi,
             phi_from_cartesian,
             rtol=1.e-4,
@@ -359,7 +360,7 @@ class TestCylindricalCoordinates:
             * vxyz[:, 0] \
             + np.cos(phi_from_cartesian) \
             * vxyz[:, 1]
-        assert u.array.allclose_units(
+        assert_allclose_units(
             cylindrical_v_phi,
             v_phi_from_cartesian,
             rtol=1.e-4,
@@ -378,7 +379,7 @@ class TestCylindricalCoordinates:
         )
         xyz = getattr(sg, particle_name).coordinates
         z_from_cartesian = xyz[:, 2]
-        assert u.array.allclose_units(
+        assert_allclose_units(
             cylindrical_z,
             z_from_cartesian,
             rtol=1.e-4,
@@ -394,7 +395,7 @@ class TestCylindricalCoordinates:
         )
         vxyz = getattr(sg, particle_name).velocities
         v_z_from_cartesian = vxyz[:, 2]
-        assert u.array.allclose_units(
+        assert_allclose_units(
             cylindrical_v_z,
             v_z_from_cartesian,
             rtol=1.e-4,
@@ -512,7 +513,7 @@ class TestInteractionWithMasking:
             f'{coordinate_system}_{coordinate_type}'
         )
         for coordinate_name, tol in zip(coordinate_names, tols):
-            assert u.array.allclose_units(
+            assert_allclose_units(
                 getattr(
                     getattr(
                         getattr(sg, particle_name),

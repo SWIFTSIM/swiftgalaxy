@@ -1068,6 +1068,8 @@ class SWIFTGalaxy(SWIFTDataset):
                  id_particle_dataset_name: str = 'particle_ids',
                  coordinates_dataset_name: str = 'coordinates',
                  velocities_dataset_name: str = 'velocities',
+                 # arguments beginning _ are not intended for users, but
+                 # for the __copy__ and __deepcopy__ functions.
                  _spatial_mask: Optional[SWIFTMask] = None,
                  _extra_mask: Optional[MaskCollection] = None,
                  _coordinate_like_transform: Optional[np.ndarray] = None,
@@ -1080,7 +1082,8 @@ class SWIFTGalaxy(SWIFTDataset):
         if _spatial_mask is not None:
             self._spatial_mask = _spatial_mask
         else:
-            self._spatial_mask = self.halo_finder._get_spatial_mask(self)
+            self._spatial_mask = self.halo_finder._get_spatial_mask(
+                self.snapshot_filename)
         self.transforms_like_coordinates: Set[str] = \
             {coordinates_dataset_name}.union(transforms_like_coordinates)
         self.transforms_like_velocities: Set[str] = \

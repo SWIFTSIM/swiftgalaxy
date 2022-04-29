@@ -248,11 +248,11 @@ def create_toyvr(filebase=toyvr_filebase):
         for coord in 'XYZ':
             f.create_dataset(
                 f'{coord}c',
-                data=np.array([2.001], dtype=float),
+                data=np.array([2.], dtype=float),
             )
             f.create_dataset(
                 f'{coord}cminpot',
-                data=np.array([2.], dtype=float)
+                data=np.array([2.001], dtype=float)
             )
             f.create_dataset(
                 f'{coord}cmbp',
@@ -260,19 +260,19 @@ def create_toyvr(filebase=toyvr_filebase):
             )
             f.create_dataset(
                 f'{coord}c_gas',
-                data=np.array([0.002], dtype=float)
-            )
-            f.create_dataset(
-                f'{coord}c_stars',
                 data=np.array([0.003], dtype=float)
             )
             f.create_dataset(
+                f'{coord}c_stars',
+                data=np.array([0.004], dtype=float)
+            )
+            f.create_dataset(
                 f'V{coord}c',
-                data=np.array([201.], dtype=float)
+                data=np.array([200.], dtype=float)
             )
             f.create_dataset(
                 f'V{coord}cminpot',
-                data=np.array([200.], dtype=float)
+                data=np.array([201.], dtype=float)
             )
             f.create_dataset(
                 f'V{coord}cmbp',
@@ -280,11 +280,11 @@ def create_toyvr(filebase=toyvr_filebase):
             )
             f.create_dataset(
                 f'V{coord}c_gas',
-                data=np.array([203.], dtype=float)
+                data=np.array([3.], dtype=float)
             )
             f.create_dataset(
                 f'V{coord}c_stars',
-                data=np.array([204.], dtype=float)
+                data=np.array([4.], dtype=float)
             )
             for ct in ('c', 'cminpot', 'cmbp', 'c_gas', 'c_stars'):
                 f[f'{coord}{ct}'].attrs['Dimension_Length'] = 1.0

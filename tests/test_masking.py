@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 import unyt as u
+from unyt.testing import assert_allclose_units
 from toysnap import present_particle_types
 from swiftgalaxy import MaskCollection
 
@@ -25,7 +26,7 @@ class TestMaskingSWIFTGalaxy:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
         sg.mask_particles(MaskCollection(**{particle_name: mask}))
         ids = getattr(sg, particle_name).particle_ids
-        assert u.array.allclose_units(
+        assert_allclose_units(
             ids_before[mask],
             ids,
             rtol=0,
@@ -49,7 +50,7 @@ class TestMaskingSWIFTGalaxy:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
         sg.mask_particles(MaskCollection(**{particle_name: mask}))
         ids = getattr(sg, particle_name).particle_ids
-        assert u.array.allclose_units(
+        assert_allclose_units(
             ids_before[mask],
             ids,
             rtol=0,
@@ -69,7 +70,7 @@ class TestMaskingSWIFTGalaxy:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
         sg.mask_particles(MaskCollection(**{particle_name: mask}))
         ids = getattr(sg, particle_name).particle_ids
-        assert u.array.allclose_units(
+        assert_allclose_units(
             ids_before[mask],
             ids,
             rtol=0,
@@ -91,7 +92,7 @@ class TestMaskingParticleDatasets:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
         masked_dataset = getattr(sg, particle_name)[mask]
         ids = masked_dataset.particle_ids
-        assert u.array.allclose_units(
+        assert_allclose_units(
             ids_before[mask],
             ids,
             rtol=0,
@@ -115,7 +116,7 @@ class TestMaskingParticleDatasets:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
         masked_dataset = getattr(sg, particle_name)[mask]
         ids = masked_dataset.particle_ids
-        assert u.array.allclose_units(
+        assert_allclose_units(
             ids_before[mask],
             ids,
             rtol=0,
@@ -135,7 +136,7 @@ class TestMaskingParticleDatasets:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
         masked_dataset = getattr(sg, particle_name)[mask]
         ids = masked_dataset.particle_ids
-        assert u.array.allclose_units(
+        assert_allclose_units(
             ids_before[mask],
             ids,
             rtol=0,
@@ -156,7 +157,7 @@ class TestMaskingNamedColumnDatasets:
             sg.gas.hydrogen_ionization_fractions._neutral = None
         masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
         fractions = masked_namedcolumnsdataset.neutral
-        assert u.array.allclose_units(
+        assert_allclose_units(
             fractions_before[mask],
             fractions,
             rtol=reltol_nd,
@@ -179,7 +180,7 @@ class TestMaskingNamedColumnDatasets:
             sg.gas.hydrogen_ionization_fractions._neutral = None
         masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
         fractions = masked_namedcolumnsdataset.neutral
-        assert u.array.allclose_units(
+        assert_allclose_units(
             fractions_before[mask],
             fractions,
             rtol=reltol_nd,
@@ -198,7 +199,7 @@ class TestMaskingNamedColumnDatasets:
             sg.gas.hydrogen_ionization_fractions._neutral = None
         masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
         fractions = masked_namedcolumnsdataset.neutral
-        assert u.array.allclose_units(
+        assert_allclose_units(
             fractions_before[mask],
             fractions,
             rtol=reltol_nd,

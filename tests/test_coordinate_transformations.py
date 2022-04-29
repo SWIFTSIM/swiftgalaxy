@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 import unyt as u
+from unyt.testing import assert_allclose_units
 from swiftsimio.objects import cosmo_array
 from scipy.spatial.transform import Rotation
 from toysnap import present_particle_types
@@ -212,7 +213,7 @@ class TestManualCoordinateTransformations:
             )
         sg.recentre(cosmo_array([1, 1, 1], u.Mpc))
         xyz = getattr(getattr(sg, particle_name), f'{coordinate_name}')
-        assert u.array.allclose_units(
+        assert_allclose_units(
             xyz_before - cosmo_array([1, 1, 1], u.Mpc),
             xyz,
             rtol=1.e-4,
@@ -239,7 +240,7 @@ class TestManualCoordinateTransformations:
             )
         sg.recentre_velocity(cosmo_array([100, 100, 100], u.km / u.s))
         vxyz = getattr(getattr(sg, particle_name), f'{velocity_name}')
-        assert u.array.allclose_units(
+        assert_allclose_units(
             vxyz_before - cosmo_array([100, 100, 100], u.km / u.s),
             vxyz,
             rtol=1.e-4,
@@ -265,7 +266,7 @@ class TestManualCoordinateTransformations:
             )
         sg.translate(cosmo_array([1, 1, 1], u.Mpc))
         xyz = getattr(getattr(sg, particle_name), f'{coordinate_name}')
-        assert u.array.allclose_units(
+        assert_allclose_units(
             xyz_before + cosmo_array([1, 1, 1], u.Mpc),
             xyz,
             rtol=1.e-4,
@@ -291,7 +292,7 @@ class TestManualCoordinateTransformations:
             )
         sg.boost(cosmo_array([100, 100, 100], u.km / u.s))
         vxyz = getattr(getattr(sg, particle_name), f'{velocity_name}')
-        assert u.array.allclose_units(
+        assert_allclose_units(
             vxyz_before + cosmo_array([100, 100, 100], u.km / u.s),
             vxyz,
             rtol=1.e-4,
@@ -328,13 +329,13 @@ class TestManualCoordinateTransformations:
         sg.rotate(Rotation.from_matrix(rot))
         xyz = getattr(getattr(sg, particle_name), f'{coordinate_name}')
         vxyz = getattr(getattr(sg, particle_name), f'{velocity_name}')
-        assert u.array.allclose_units(
+        assert_allclose_units(
             xyz_before.dot(rot),
             xyz,
             rtol=1.e-4,
             atol=abstol_c
         )
-        assert u.array.allclose_units(
+        assert_allclose_units(
             vxyz_before.dot(rot),
             vxyz,
             rtol=1.e-4,
@@ -357,7 +358,7 @@ class TestManualCoordinateTransformations:
         xyz_before = getattr(getattr(sg, particle_name), f'{coordinate_name}')
         sg.translate(boxsize)
         xyz = getattr(getattr(sg, particle_name), f'{coordinate_name}')
-        assert u.array.allclose_units(
+        assert_allclose_units(
             xyz_before,
             xyz,
             rtol=1.e-4,
@@ -380,7 +381,7 @@ class TestSequentialTransformations:
         sg.translate(cosmo_array([1, 1, 1], u.Mpc))
         sg.rotate(Rotation.from_matrix(rot))
         xyz = sg.gas.coordinates
-        assert u.array.allclose_units(
+        assert_allclose_units(
             (xyz_before + cosmo_array([1, 1, 1], u.Mpc)).dot(rot),
             xyz,
             rtol=1.e-4,
@@ -400,7 +401,7 @@ class TestSequentialTransformations:
         sg.rotate(Rotation.from_matrix(rot))
         sg.translate(cosmo_array([1, 1, 1], u.Mpc))
         xyz = sg.gas.coordinates
-        assert u.array.allclose_units(
+        assert_allclose_units(
             xyz_before.dot(rot) + cosmo_array([1, 1, 1], u.Mpc),
             xyz,
             rtol=1.e-4,
@@ -420,7 +421,7 @@ class TestSequentialTransformations:
         sg.boost(cosmo_array([100, 100, 100], u.km / u.s))
         sg.rotate(Rotation.from_matrix(rot))
         vxyz = sg.gas.velocities
-        assert u.array.allclose_units(
+        assert_allclose_units(
             (vxyz_before + cosmo_array([100, 100, 100], u.km / u.s)).dot(rot),
             vxyz,
             rtol=1.e-4,
@@ -440,7 +441,7 @@ class TestSequentialTransformations:
         sg.rotate(Rotation.from_matrix(rot))
         sg.boost(cosmo_array([100, 100, 100], u.km / u.s))
         vxyz = sg.gas.velocities
-        assert u.array.allclose_units(
+        assert_allclose_units(
             vxyz_before.dot(rot) + cosmo_array([100, 100, 100], u.km / u.s),
             vxyz,
             rtol=1.e-4,

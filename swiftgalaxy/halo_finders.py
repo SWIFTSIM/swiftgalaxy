@@ -185,20 +185,19 @@ class Velociraptor(_HaloFinder):
 
     def _load(self) -> None:
         from velociraptor import load as load_catalogue
+        from velociraptor.particles import load_groups
         self._catalogue = load_catalogue(
             f'{self.velociraptor_filebase}.properties', mask=self.halo_index)
-        return
-
-    def _get_spatial_mask(self, SG: 'SWIFTGalaxy') -> SWIFTMask:
-        from velociraptor import load as load_catalogue
-        from velociraptor.particles import load_groups
-        from velociraptor.swift.swift import generate_spatial_mask
         groups = load_groups(f'{self.velociraptor_filebase}.catalog_groups',
                              catalogue=load_catalogue(
                                  f'{self.velociraptor_filebase}.properties'))
         self._particles, unbound_particles = \
             groups.extract_halo(halo_index=self.halo_index)
-        return generate_spatial_mask(self._particles, SG.snapshot_filename)
+        return
+
+    def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
+        from velociraptor.swift.swift import generate_spatial_mask
+        return generate_spatial_mask(self._particles, snapshot_filename)
 
     def _get_extra_mask(self, SG: 'SWIFTGalaxy') -> MaskCollection:
         from velociraptor.swift.swift import generate_bound_mask
@@ -222,23 +221,37 @@ class Velociraptor(_HaloFinder):
                 })
 
     def _centre(self) -> cosmo_array:
-        if self._catalogue is not None:
-            return u.uhstack([
+        # According to Velociraptor documentation:
+        if self.centre_type in ('_gas', '_stars'):
+            # {XYZ}c_gas and {XYZ}c_stars are relative to {XYZ}c
+            relative_to = u.uhstack([
                 getattr(self._catalogue.positions,
-                        '{:s}c{:s}'.format(c, self.centre_type)) for c in 'xyz'
+                        '{:s}c'.format(c)) for c in 'xyz'
             ])
         else:
-            raise RuntimeError('Initialise _catalogue before use.')
+            # {XYZ}cmbp, {XYZ}cminpot and {XYZ}c are absolute
+            relative_to = cosmo_array([0., 0., 0.], u.Mpc)
+        return relative_to + u.uhstack([
+            getattr(self._catalogue.positions,
+                    '{:s}c{:s}'.format(c, self.centre_type)) for c in 'xyz'
+        ])
 
     def _vcentre(self) -> cosmo_array:
-        if self._catalogue is not None:
-            return u.uhstack([
+        # According to Velociraptor documentation:
+        if self.centre_type in ('_gas', '_stars'):
+            # V{XYZ}c_gas and V{XYZ}c_stars are relative to {XYZ}c
+            relative_to = u.uhstack([
                 getattr(self._catalogue.velocities,
-                        'v{:s}c{:s}'.format(c, self.centre_type))
-                for c in 'xyz'
+                        'v{:s}c'.format(c)) for c in 'xyz'
             ])
         else:
-            raise RuntimeError('Initialise _catalogue before use.')
+            # V{XYZ}cmbp, V{XYZ}cminpot and V{XYZ}c are absolute
+            relative_to = cosmo_array([0., 0., 0.], u.km / u.s)
+        return relative_to + u.uhstack([
+            getattr(self._catalogue.velocities,
+                    'v{:s}c{:s}'.format(c, self.centre_type))
+            for c in 'xyz'
+        ])
 
     def __getattr__(self, attr: str) -> Any:
         # Invoked if attribute not found.
