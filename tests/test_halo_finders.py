@@ -104,10 +104,10 @@ class TestVelociraptor:
         """
         Check that the _centre function returns the expected centre.
         """
-        # default is minpot
+        # default is minpot == 2.001 Mpc
         assert_allclose_units(
             vr._centre(),
-            cosmo_array([2., 2., 2.], u.Mpc),
+            cosmo_array([2.001, 2.001, 2.001], u.Mpc),
             rtol=reltol_nd,
             atol=abstol_c
         )
@@ -116,10 +116,10 @@ class TestVelociraptor:
         """
         Check that the _vcentre function returns the expected velocity centre.
         """
-        # default is minpot
+        # default is minpot == 201. km/s
         assert_allclose_units(
             vr._vcentre(),
-            cosmo_array([200., 200., 200.], u.km / u.s),
+            cosmo_array([201., 201., 201.], u.km / u.s),
             rtol=reltol_nd,
             atol=abstol_v
         )
