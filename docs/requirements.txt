@@ -4,6 +4,7 @@ recommonmark
 numpy
 numba
 scipy
+h5py
 unyt
 swiftsimio
-velociraptor-python
+velociraptor
