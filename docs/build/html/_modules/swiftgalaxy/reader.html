@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>swiftgalaxy.reader &mdash; SWIFTGalaxy 0.0 documentation</title>
+  <title>swiftgalaxy.reader &mdash; SWIFTGalaxy 1.0 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -114,9 +114,7 @@
 <span class="kn">from</span> <span class="nn">swiftgalaxy.halo_finders</span> <span class="kn">import</span> <span class="n">_HaloFinder</span>
 <span class="kn">from</span> <span class="nn">swiftgalaxy.masks</span> <span class="kn">import</span> <span class="n">MaskCollection</span>
 
-<span class="c1"># __getattribute__ and setattr overloads use Any, should this be avoided?</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span>
-<span class="kn">from</span> <span class="nn">swiftgalaxy._types</span> <span class="kn">import</span> <span class="n">MaskType</span>
 
 
 <span class="k">def</span> <span class="nf">_apply_box_wrap</span><span class="p">(</span><span class="n">coords</span><span class="p">:</span> <span class="n">cosmo_array</span><span class="p">,</span>
@@ -295,7 +293,7 @@
             <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
             <span class="k">return</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="n">MaskType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;_SWIFTNamedColumnDatasetHelper&#39;</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="nb">slice</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;_SWIFTNamedColumnDatasetHelper&#39;</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_copy</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;_SWIFTNamedColumnDatasetHelper&#39;</span><span class="p">:</span>
@@ -308,7 +306,7 @@
 
     <span class="k">def</span> <span class="nf">_data_copy</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MaskType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">slice</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;_SWIFTNamedColumnDatasetHelper&#39;</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_dataset_helper</span><span class="o">.</span><span class="n">_data_copy</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">),</span>
                        <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
@@ -487,7 +485,7 @@
             <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
             <span class="k">return</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="n">MaskType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;_SWIFTParticleDatasetHelper&#39;</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="nb">slice</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;_SWIFTParticleDatasetHelper&#39;</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_copy</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;_SWIFTParticleDatasetHelper&#39;</span><span class="p">:</span>
@@ -500,7 +498,7 @@
 
     <span class="k">def</span> <span class="nf">_data_copy</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MaskType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;_SWIFTParticleDatasetHelper&#39;</span><span class="p">:</span>
+            <span class="n">mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">slice</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;_SWIFTParticleDatasetHelper&#39;</span><span class="p">:</span>
         <span class="n">mask_collection</span> <span class="o">=</span> <span class="n">MaskCollection</span><span class="p">(</span>
             <span class="o">**</span><span class="p">{</span>
                 <span class="n">k</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">particle_name</span> <span class="k">else</span> <span class="n">mask</span>
@@ -529,7 +527,7 @@
                 <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">data</span>
 
-    <span class="k">def</span> <span class="nf">_mask_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="n">MaskType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_mask_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="nb">slice</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># Users are cautioned against calling this function directly!</span>
         <span class="c1"># Use SWIFTGalaxy.mask_particles instead.</span>
         <span class="n">particle_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_dataset</span><span class="o">.</span><span class="n">particle_name</span>
@@ -982,7 +980,7 @@
                  <span class="n">height</span><span class="o">=</span><span class="s1">&#39;_v_z&#39;</span><span class="p">)</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_mask_derived_coordinates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="n">MaskType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_mask_derived_coordinates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="nb">slice</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cartesian_coordinates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_cartesian_coordinates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cartesian_coordinates</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cartesian_velocities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1154,6 +1152,8 @@
                  <span class="n">id_particle_dataset_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;particle_ids&#39;</span><span class="p">,</span>
                  <span class="n">coordinates_dataset_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;coordinates&#39;</span><span class="p">,</span>
                  <span class="n">velocities_dataset_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;velocities&#39;</span><span class="p">,</span>
+                 <span class="c1"># arguments beginning _ are not intended for users, but</span>
+                 <span class="c1"># for the __copy__ and __deepcopy__ functions.</span>
                  <span class="n">_spatial_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SWIFTMask</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">_extra_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MaskCollection</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">_coordinate_like_transform</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1166,7 +1166,8 @@
         <span class="k">if</span> <span class="n">_spatial_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_mask</span> <span class="o">=</span> <span class="n">_spatial_mask</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">halo_finder</span><span class="o">.</span><span class="n">_get_spatial_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">halo_finder</span><span class="o">.</span><span class="n">_get_spatial_mask</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">snapshot_filename</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">transforms_like_coordinates</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> \
             <span class="p">{</span><span class="n">coordinates_dataset_name</span><span class="p">}</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">transforms_like_coordinates</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">transforms_like_velocities</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> \

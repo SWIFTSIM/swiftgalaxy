@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>swiftgalaxy.halo_finders &mdash; SWIFTGalaxy 0.0 documentation</title>
+  <title>swiftgalaxy.halo_finders &mdash; SWIFTGalaxy 1.0 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -102,15 +102,16 @@
 <span class="kn">from</span> <span class="nn">swiftsimio.masks</span> <span class="kn">import</span> <span class="n">SWIFTMask</span>
 
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
-<span class="kn">from</span> <span class="nn">swiftgalaxy._types</span> <span class="kn">import</span> <span class="n">MaskType</span>
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">swiftgalaxy.reader</span> <span class="kn">import</span> <span class="n">SWIFTGalaxy</span>
 
 
 <span class="k">class</span> <span class="nc">_HaloFinder</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">extra_mask</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MaskType</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;bound_only&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">extra_mask</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MaskCollection</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;bound_only&#39;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">extra_mask</span> <span class="o">=</span> <span class="n">extra_mask</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_load</span><span class="p">()</span>
         <span class="k">return</span>
@@ -173,14 +174,14 @@
 <span class="sd">    halo_index: ``int``</span>
 <span class="sd">        Position of the object of interest in the catalogue arrays.</span>
 
-<span class="sd">    extra_mask: ``Union[str, MaskType]``, default: ``&#39;bound_only&#39;``</span>
+<span class="sd">    extra_mask: ``Union[str, MaskCollection]``, default: ``&#39;bound_only&#39;``</span>
 <span class="sd">        Mask to apply to particles after spatial masking. If ``&#39;bound_only&#39;``,</span>
 <span class="sd">        then the galaxy is masked to include only the gravitationally bound</span>
 <span class="sd">        particles as determined by :mod:`velociraptor`. A user-defined mask</span>
 <span class="sd">        can also be provided as an an object (such as a</span>
-<span class="sd">        :class:`swiftgalaxy.masks.MaskCollection`) that has attributes</span>
-<span class="sd">        corresponding to each present particle name (e.g. gas, dark_matter,</span>
-<span class="sd">        etc.) each containing a mask.</span>
+<span class="sd">        :class:`swiftgalaxy.masks.MaskCollection`) that has attributes with</span>
+<span class="sd">        names corresponding to present particle names (e.g. gas, dark_matter,</span>
+<span class="sd">        etc.), each containing a mask.</span>
 
 <span class="sd">    centre_type: ``str``, default: ``&#39;minpot&#39;``</span>
 <span class="sd">        Type of centre, chosen from those provided by :mod:`velociraptor`.</span>
@@ -251,7 +252,7 @@
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">velociraptor_filebase</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="n">halo_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">extra_mask</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MaskType</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;bound_only&#39;</span><span class="p">,</span>
+            <span class="n">extra_mask</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MaskCollection</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;bound_only&#39;</span><span class="p">,</span>
             <span class="n">centre_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;minpot&#39;</span>  <span class="c1"># _gas _star mbp minpot</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="kn">from</span> <span class="nn">velociraptor.catalogue.catalogue</span> <span class="kn">import</span> <span class="n">VelociraptorCatalogue</span>
@@ -265,27 +266,25 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_catalogue</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">VelociraptorCatalogue</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_particles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">extra_mask</span><span class="o">=</span><span class="n">extra_mask</span><span class="p">)</span>
-        <span class="c1"># currently velociraptor_python works with a halo index, not halo_id!</span>
+        <span class="c1"># currently velociraptor_python works with a halo index, not halo_id</span>
         <span class="c1"># self.catalogue_mask = (catalogue.ids.id == halo_id).nonzero()</span>
         <span class="k">return</span>
 
     <span class="k">def</span> <span class="nf">_load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="kn">from</span> <span class="nn">velociraptor</span> <span class="kn">import</span> <span class="n">load</span> <span class="k">as</span> <span class="n">load_catalogue</span>
+        <span class="kn">from</span> <span class="nn">velociraptor.particles</span> <span class="kn">import</span> <span class="n">load_groups</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_catalogue</span> <span class="o">=</span> <span class="n">load_catalogue</span><span class="p">(</span>
             <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">velociraptor_filebase</span><span class="si">}</span><span class="s1">.properties&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">halo_index</span><span class="p">)</span>
-        <span class="k">return</span>
-
-    <span class="k">def</span> <span class="nf">_get_spatial_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">SG</span><span class="p">:</span> <span class="s1">&#39;SWIFTGalaxy&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SWIFTMask</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">velociraptor</span> <span class="kn">import</span> <span class="n">load</span> <span class="k">as</span> <span class="n">load_catalogue</span>
-        <span class="kn">from</span> <span class="nn">velociraptor.particles</span> <span class="kn">import</span> <span class="n">load_groups</span>
-        <span class="kn">from</span> <span class="nn">velociraptor.swift.swift</span> <span class="kn">import</span> <span class="n">generate_spatial_mask</span>
         <span class="n">groups</span> <span class="o">=</span> <span class="n">load_groups</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">velociraptor_filebase</span><span class="si">}</span><span class="s1">.catalog_groups&#39;</span><span class="p">,</span>
                              <span class="n">catalogue</span><span class="o">=</span><span class="n">load_catalogue</span><span class="p">(</span>
                                  <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">velociraptor_filebase</span><span class="si">}</span><span class="s1">.properties&#39;</span><span class="p">))</span>
-        <span class="c1"># extract_halo requests a &quot;halo_id&quot;, but actually wants an index!</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_particles</span><span class="p">,</span> <span class="n">unbound_particles</span> <span class="o">=</span> \
-            <span class="n">groups</span><span class="o">.</span><span class="n">extract_halo</span><span class="p">(</span><span class="n">halo_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">halo_index</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">generate_spatial_mask</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particles</span><span class="p">,</span> <span class="n">SG</span><span class="o">.</span><span class="n">snapshot_filename</span><span class="p">)</span>
+            <span class="n">groups</span><span class="o">.</span><span class="n">extract_halo</span><span class="p">(</span><span class="n">halo_index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">halo_index</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">_get_spatial_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snapshot_filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SWIFTMask</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">velociraptor.swift.swift</span> <span class="kn">import</span> <span class="n">generate_spatial_mask</span>
+        <span class="k">return</span> <span class="n">generate_spatial_mask</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particles</span><span class="p">,</span> <span class="n">snapshot_filename</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_extra_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">SG</span><span class="p">:</span> <span class="s1">&#39;SWIFTGalaxy&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MaskCollection</span><span class="p">:</span>
         <span class="kn">from</span> <span class="nn">velociraptor.swift.swift</span> <span class="kn">import</span> <span class="n">generate_bound_mask</span>
@@ -297,35 +296,46 @@
                 <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="kc">None</span>
                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">SG</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">present_particle_names</span><span class="p">})</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Keep user provided mask.</span>
-            <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span>
-                <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extra_mask</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">SG</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">present_particle_names</span>
-            <span class="p">])</span>
+            <span class="c1"># Keep user provided mask. If no mask provided for a particle type</span>
+            <span class="c1"># use None (no mask).</span>
             <span class="k">return</span> <span class="n">MaskCollection</span><span class="p">(</span>
                 <span class="o">**</span><span class="p">{</span>
-                    <span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extra_mask</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                    <span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extra_mask</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
                     <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">SG</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">present_particle_names</span>
                 <span class="p">})</span>
 
     <span class="k">def</span> <span class="nf">_centre</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cosmo_array</span><span class="p">:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_catalogue</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">uhstack</span><span class="p">([</span>
+        <span class="c1"># According to Velociraptor documentation:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">centre_type</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;_gas&#39;</span><span class="p">,</span> <span class="s1">&#39;_stars&#39;</span><span class="p">):</span>
+            <span class="c1"># {XYZ}c_gas and {XYZ}c_stars are relative to {XYZ}c</span>
+            <span class="n">relative_to</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">uhstack</span><span class="p">([</span>
                 <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_catalogue</span><span class="o">.</span><span class="n">positions</span><span class="p">,</span>
-                        <span class="s1">&#39;</span><span class="si">{:s}</span><span class="s1">c</span><span class="si">{:s}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">centre_type</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="s1">&#39;xyz&#39;</span>
+                        <span class="s1">&#39;</span><span class="si">{:s}</span><span class="s1">c&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">c</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="s1">&#39;xyz&#39;</span>
             <span class="p">])</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Initialise _catalogue before use.&#39;</span><span class="p">)</span>
+            <span class="c1"># {XYZ}cmbp, {XYZ}cminpot and {XYZ}c are absolute</span>
+            <span class="n">relative_to</span> <span class="o">=</span> <span class="n">cosmo_array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span> <span class="n">u</span><span class="o">.</span><span class="n">Mpc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">relative_to</span> <span class="o">+</span> <span class="n">u</span><span class="o">.</span><span class="n">uhstack</span><span class="p">([</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_catalogue</span><span class="o">.</span><span class="n">positions</span><span class="p">,</span>
+                    <span class="s1">&#39;</span><span class="si">{:s}</span><span class="s1">c</span><span class="si">{:s}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">centre_type</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="s1">&#39;xyz&#39;</span>
+        <span class="p">])</span>
 
     <span class="k">def</span> <span class="nf">_vcentre</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cosmo_array</span><span class="p">:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_catalogue</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">uhstack</span><span class="p">([</span>
+        <span class="c1"># According to Velociraptor documentation:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">centre_type</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;_gas&#39;</span><span class="p">,</span> <span class="s1">&#39;_stars&#39;</span><span class="p">):</span>
+            <span class="c1"># V{XYZ}c_gas and V{XYZ}c_stars are relative to {XYZ}c</span>
+            <span class="n">relative_to</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">uhstack</span><span class="p">([</span>
                 <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_catalogue</span><span class="o">.</span><span class="n">velocities</span><span class="p">,</span>
-                        <span class="s1">&#39;v</span><span class="si">{:s}</span><span class="s1">c</span><span class="si">{:s}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">centre_type</span><span class="p">))</span>
-                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="s1">&#39;xyz&#39;</span>
+                        <span class="s1">&#39;v</span><span class="si">{:s}</span><span class="s1">c&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">c</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="s1">&#39;xyz&#39;</span>
             <span class="p">])</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Initialise _catalogue before use.&#39;</span><span class="p">)</span>
+            <span class="c1"># V{XYZ}cmbp, V{XYZ}cminpot and V{XYZ}c are absolute</span>
+            <span class="n">relative_to</span> <span class="o">=</span> <span class="n">cosmo_array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span> <span class="n">u</span><span class="o">.</span><span class="n">km</span> <span class="o">/</span> <span class="n">u</span><span class="o">.</span><span class="n">s</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">relative_to</span> <span class="o">+</span> <span class="n">u</span><span class="o">.</span><span class="n">uhstack</span><span class="p">([</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_catalogue</span><span class="o">.</span><span class="n">velocities</span><span class="p">,</span>
+                    <span class="s1">&#39;v</span><span class="si">{:s}</span><span class="s1">c</span><span class="si">{:s}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">centre_type</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="s1">&#39;xyz&#39;</span>
+        <span class="p">])</span>
 
     <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="c1"># Invoked if attribute not found.</span>
