@@ -1,5 +1,8 @@
+SWIFTGalaxy
+===========
+
 .. include:: ../../README.rst
-   :end-before: .. rtd_stop_here
+   :start-after: rtd_start_here
 
 Documentation contents
 ----------------------
