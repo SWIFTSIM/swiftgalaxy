@@ -1,7 +1,7 @@
 SWIFTGalaxy
 ===========
 
-|Build status| |Docs status|
+|Build status|
 
 .. |Build status| image:: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/pytest.yml/badge.svg
     :target: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/pytest.yml
