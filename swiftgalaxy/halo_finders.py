@@ -210,14 +210,11 @@ class Velociraptor(_HaloFinder):
                 **{k: None
                    for k in SG.metadata.present_particle_names})
         else:
-            # Keep user provided mask.
-            assert all([
-                hasattr(self.extra_mask, name)
-                for name in SG.metadata.present_particle_names
-            ])
+            # Keep user provided mask. If no mask provided for a particle type
+            # use None (no mask).
             return MaskCollection(
                 **{
-                    name: getattr(self.extra_mask, name)
+                    name: getattr(self.extra_mask, name, None)
                     for name in SG.metadata.present_particle_names
                 })
 
