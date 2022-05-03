@@ -1,3 +1,9 @@
 sphinx
 sphinx-rtd-theme
 recommonmark
+numpy
+numba
+scipy
+unyt
+swiftsimio
+velociraptor-python
