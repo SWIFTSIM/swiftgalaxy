@@ -28,9 +28,7 @@ from swiftsimio.masks import SWIFTMask
 from swiftgalaxy.halo_finders import _HaloFinder
 from swiftgalaxy.masks import MaskCollection
 
-# __getattribute__ and setattr overloads use Any, should this be avoided?
 from typing import Union, Any, Optional, Set
-from swiftgalaxy._types import MaskType
 
 
 def _apply_box_wrap(coords: cosmo_array,
@@ -209,7 +207,7 @@ class _SWIFTNamedColumnDatasetHelper(object):
             object.__setattr__(self, attr, value)
             return
 
-    def __getitem__(self, mask: MaskType) -> '_SWIFTNamedColumnDatasetHelper':
+    def __getitem__(self, mask: slice) -> '_SWIFTNamedColumnDatasetHelper':
         return self._data_copy(mask=mask)
 
     def __copy__(self) -> '_SWIFTNamedColumnDatasetHelper':
@@ -222,7 +220,7 @@ class _SWIFTNamedColumnDatasetHelper(object):
 
     def _data_copy(
             self,
-            mask: Optional[MaskType] = None
+            mask: Optional[slice] = None
     ) -> '_SWIFTNamedColumnDatasetHelper':
         return getattr(self._particle_dataset_helper._data_copy(mask=mask),
                        self.name)
@@ -401,7 +399,7 @@ class _SWIFTParticleDatasetHelper(object):
             object.__setattr__(self, attr, value)
             return
 
-    def __getitem__(self, mask: MaskType) -> '_SWIFTParticleDatasetHelper':
+    def __getitem__(self, mask: slice) -> '_SWIFTParticleDatasetHelper':
         return self._data_copy(mask=mask)
 
     def __copy__(self) -> '_SWIFTParticleDatasetHelper':
@@ -414,7 +412,7 @@ class _SWIFTParticleDatasetHelper(object):
 
     def _data_copy(
             self,
-            mask: Optional[MaskType] = None) -> '_SWIFTParticleDatasetHelper':
+            mask: Optional[slice] = None) -> '_SWIFTParticleDatasetHelper':
         mask_collection = MaskCollection(
             **{
                 k: None if k != self.particle_name else mask
@@ -443,7 +441,7 @@ class _SWIFTParticleDatasetHelper(object):
                 return data[mask]
         return data
 
-    def _mask_dataset(self, mask: MaskType) -> None:
+    def _mask_dataset(self, mask: slice) -> None:
         # Users are cautioned against calling this function directly!
         # Use SWIFTGalaxy.mask_particles instead.
         particle_name = self._particle_dataset.particle_name
@@ -896,7 +894,7 @@ class _SWIFTParticleDatasetHelper(object):
                  height='_v_z')
         )
 
-    def _mask_derived_coordinates(self, mask: MaskType) -> None:
+    def _mask_derived_coordinates(self, mask: slice) -> None:
         if self._cartesian_coordinates is not None:
             self._cartesian_coordinates = self._cartesian_coordinates[mask]
         if self._cartesian_velocities is not None:

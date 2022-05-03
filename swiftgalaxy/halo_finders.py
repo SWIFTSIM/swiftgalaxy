@@ -16,15 +16,16 @@ from swiftsimio.objects import cosmo_array
 from swiftsimio.masks import SWIFTMask
 
 from typing import Any, Union, Optional, TYPE_CHECKING
-from swiftgalaxy._types import MaskType
 if TYPE_CHECKING:
     from swiftgalaxy.reader import SWIFTGalaxy
 
 
 class _HaloFinder(ABC):
 
-    def __init__(self,
-                 extra_mask: Union[str, MaskType] = 'bound_only') -> None:
+    def __init__(
+            self,
+            extra_mask: Union[str, MaskCollection] = 'bound_only'
+    ) -> None:
         self.extra_mask = extra_mask
         self._load()
         return
@@ -87,14 +88,14 @@ class Velociraptor(_HaloFinder):
     halo_index: ``int``
         Position of the object of interest in the catalogue arrays.
 
-    extra_mask: ``Union[str, MaskType]``, default: ``'bound_only'``
+    extra_mask: ``Union[str, MaskCollection]``, default: ``'bound_only'``
         Mask to apply to particles after spatial masking. If ``'bound_only'``,
         then the galaxy is masked to include only the gravitationally bound
         particles as determined by :mod:`velociraptor`. A user-defined mask
         can also be provided as an an object (such as a
-        :class:`swiftgalaxy.masks.MaskCollection`) that has attributes
-        corresponding to each present particle name (e.g. gas, dark_matter,
-        etc.) each containing a mask.
+        :class:`swiftgalaxy.masks.MaskCollection`) that has attributes with
+        names corresponding to present particle names (e.g. gas, dark_matter,
+        etc.), each containing a mask.
 
     centre_type: ``str``, default: ``'minpot'``
         Type of centre, chosen from those provided by :mod:`velociraptor`.
@@ -165,7 +166,7 @@ class Velociraptor(_HaloFinder):
             self,
             velociraptor_filebase: str,
             halo_index: int = None,
-            extra_mask: Union[str, MaskType] = 'bound_only',
+            extra_mask: Union[str, MaskCollection] = 'bound_only',
             centre_type: str = 'minpot'  # _gas _star mbp minpot
     ) -> None:
         from velociraptor.catalogue.catalogue import VelociraptorCatalogue
