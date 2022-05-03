@@ -16,6 +16,8 @@ SWIFTGalaxy is a module that extends SWIFTSimIO_ tailored to analyses of particl
 .. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/abstract
 .. _HBT+: https://ui.adsabs.harvard.edu/abs/2018MNRAS.474..604H/abstract
 
+.. rtd_stop_here
+
 + `Quick start guide`_
 + `Full documentation`_
 
