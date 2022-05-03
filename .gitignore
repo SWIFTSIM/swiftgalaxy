@@ -4,5 +4,5 @@
 /*.egg-info
 *~
 \#*
-/docs/build/doctrees
+/docs/build
 tests/test.hdf5
