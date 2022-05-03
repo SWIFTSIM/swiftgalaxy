@@ -1,4 +1,5 @@
 .. include:: ../../README.rst
+   :end-before: .. rtd_stop_here
 
 Documentation contents
 ----------------------
