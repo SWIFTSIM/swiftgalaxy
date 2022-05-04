@@ -10,13 +10,7 @@ SWIFTGalaxy
     :target: https://swiftgalaxy.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-+ `Quick start guide`_
-+ `Full documentation`_
-
-.. _Quick start guide: https://kyleaoman.github.io/swiftgalaxy/build/html/getting_started
-.. _Full documentation: https://kyleaoman.github.io/swiftgalaxy 
-
-.. rtd_start_here
+.. INTRO_START_LABEL
 
 SWIFTGalaxy is a module that extends SWIFTSimIO_ tailored to analyses of particles belonging to individual simulated galaxies. It inherits from and extends the functionality of the ``SWIFTDataset``. It understands the output of a halo finder (supported: `Velociraptor`_; planned support: `HBT+`_) and therefore which particles belong to a galaxy, and its integrated properties. The particles occupy a coordinate frame that is enforced to be consistent, such that particles loaded on-the-fly will match e.g. rotations and translations of particles already in memory. Intuitive masking of particle datasets is also enabled. Finally, some utilities to make working in cylindrical and spherical coordinate systems more convenient are also provided.
 
@@ -24,8 +18,18 @@ SWIFTGalaxy is a module that extends SWIFTSimIO_ tailored to analyses of particl
 .. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/abstract
 .. _HBT+: https://ui.adsabs.harvard.edu/abs/2018MNRAS.474..604H/abstract
 
+.. INTRO_END_LABEL
+
++ `Quick start guide`_
++ `Full documentation`_
+
+.. _Quick start guide: https://swiftgalaxy.readthedocs.io/en/latest/getting_started
+.. _Full documentation: https://swiftgalaxy.readthedocs.io/en/latest
+   
 Citing SWIFTGalaxy
 ------------------
+
+.. CITING_START_LABEL
 
 .. note::
 
@@ -56,3 +60,5 @@ Please also consider the `citations requested for SWIFTSimIO <citeSWIFTSimIO>`_.
 .. _ASCL: https://ascl.net
 .. _indexed on ADS: https://ui.adsabs.harvard.edu/abs/20??ascl.soft?????O
 .. _citeSWIFTSimIO: https://swiftsimio.readthedocs.io/en/latest/index.html#citing-swiftsimio
+
+.. CITING_END_LABEL

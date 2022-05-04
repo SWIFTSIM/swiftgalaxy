@@ -1,8 +1,11 @@
 SWIFTGalaxy
 ===========
 
+In a hurry? :doc:`Quick-start <getting_started/index>`.
+
 .. include:: ../../README.rst
-   :start-after: rtd_start_here
+   :start-after: INTRO_START_LABEL
+   :end-before: INTRO_END_LABEL
 
 Documentation contents
 ----------------------
@@ -16,6 +19,13 @@ Documentation contents
    halo_finders/index
    masking/index
    modules/index
+
+Citing SWIFTGalaxy
+------------------
+
+.. include:: ../../README.rst
+   :start-after: CITING_START_LABEL
+   :end-before: CITING_END_LABEL
 
 Indices and tables
 ------------------
