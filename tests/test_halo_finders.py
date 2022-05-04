@@ -2,19 +2,28 @@ import pytest
 import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
-from toysnap import toysnap_filename, n_g, n_g_all, n_dm, n_dm_all, n_s, \
-    n_bh, present_particle_types, create_toysnap, remove_toysnap
+from toysnap import (
+    toysnap_filename,
+    n_g,
+    n_g_all,
+    n_dm,
+    n_dm_all,
+    n_s,
+    n_bh,
+    present_particle_types,
+    create_toysnap,
+    remove_toysnap,
+)
 from swiftgalaxy import MaskCollection
 from swiftsimio.objects import cosmo_array
 
 abstol_c = 1 * u.pc  # less than this is ~0
 abstol_v = 10 * u.m / u.s  # less than this is ~0
 abstol_m = 1e4 * u.Msun  # less than this is ~0
-reltol_nd = 1.e-4
+reltol_nd = 1.0e-4
 
 
 class TestVelociraptor:
-
     def test_load(self, vr):
         """
         Check that the loading function is doing it's job.
@@ -31,61 +40,33 @@ class TestVelociraptor:
         create_toysnap()
         spatial_mask = vr._get_spatial_mask(toysnap_filename)
         remove_toysnap()
-        assert np.array_equal(
-            spatial_mask.gas,
-            np.array([[0, n_g_all]])
-        )
-        assert np.array_equal(
-            spatial_mask.dark_matter,
-            np.array([[0, n_dm_all]])
-        )
-        assert np.array_equal(
-            spatial_mask.stars,
-            np.array([[0, n_s]])
-        )
-        assert np.array_equal(
-            spatial_mask.black_holes,
-            np.array([[0, n_bh]])
-        )
+        assert np.array_equal(spatial_mask.gas, np.array([[0, n_g_all]]))
+        assert np.array_equal(spatial_mask.dark_matter, np.array([[0, n_dm_all]]))
+        assert np.array_equal(spatial_mask.stars, np.array([[0, n_s]]))
+        assert np.array_equal(spatial_mask.black_holes, np.array([[0, n_bh]]))
 
     @pytest.mark.parametrize(
         "extra_mask, expected",
         (
             (
-                'bound_only',
-                dict(
-                    gas=n_g,
-                    dark_matter=n_dm,
-                    stars=n_s,
-                    black_holes=n_bh
-                )
+                "bound_only",
+                dict(gas=n_g, dark_matter=n_dm, stars=n_s, black_holes=n_bh),
             ),
-            (
-                None,
-                dict(
-                    gas=None,
-                    dark_matter=None,
-                    stars=None,
-                    black_holes=None
-                )
-            ),
+            (None, dict(gas=None, dark_matter=None, stars=None, black_holes=None)),
             (
                 MaskCollection(
-                    gas=np.r_[np.ones(100, dtype=bool),
-                              np.zeros(n_g_all - 100, dtype=bool)],
+                    gas=np.r_[
+                        np.ones(100, dtype=bool), np.zeros(n_g_all - 100, dtype=bool)
+                    ],
                     dark_matter=None,
-                    stars=np.r_[np.ones(100, dtype=bool),
-                                np.zeros(n_s - 100, dtype=bool)],
-                    black_holes=np.ones(n_bh, dtype=bool)
+                    stars=np.r_[
+                        np.ones(100, dtype=bool), np.zeros(n_s - 100, dtype=bool)
+                    ],
+                    black_holes=np.ones(n_bh, dtype=bool),
                 ),
-                dict(
-                    gas=100,
-                    dark_matter=None,
-                    stars=100,
-                    black_holes=n_bh
-                )
+                dict(gas=100, dark_matter=None, stars=100, black_holes=n_bh),
             ),
-        )
+        ),
     )
     def test_get_extra_mask(self, sg, vr, extra_mask, expected):
         """
@@ -95,8 +76,10 @@ class TestVelociraptor:
         generated_extra_mask = vr._get_extra_mask(sg)
         for particle_type in present_particle_types.values():
             if getattr(generated_extra_mask, particle_type) is not None:
-                assert getattr(generated_extra_mask, particle_type).sum() \
+                assert (
+                    getattr(generated_extra_mask, particle_type).sum()
                     == expected[particle_type]
+                )
             else:
                 assert expected[particle_type] is None
 
@@ -109,7 +92,7 @@ class TestVelociraptor:
             vr._centre(),
             cosmo_array([2.001, 2.001, 2.001], u.Mpc),
             rtol=reltol_nd,
-            atol=abstol_c
+            atol=abstol_c,
         )
 
     def test_vcentre(self, vr):
@@ -119,20 +102,20 @@ class TestVelociraptor:
         # default is minpot == 201. km/s
         assert_allclose_units(
             vr._vcentre(),
-            cosmo_array([201., 201., 201.], u.km / u.s),
+            cosmo_array([201.0, 201.0, 201.0], u.km / u.s),
             rtol=reltol_nd,
-            atol=abstol_v
+            atol=abstol_v,
         )
 
     @pytest.mark.parametrize(
         "centre_type, expected",
         (
-            ('', 2.),
-            ('minpot', 2.001),
-            ('mbp', 2.002),
-            ('_gas', 2.003),
-            ('_stars', 2.004)
-        )
+            ("", 2.0),
+            ("minpot", 2.001),
+            ("mbp", 2.002),
+            ("_gas", 2.003),
+            ("_stars", 2.004),
+        ),
     )
     def test_centre_types(self, vr, centre_type, expected):
         """
@@ -143,18 +126,18 @@ class TestVelociraptor:
             vr._centre(),
             cosmo_array([expected, expected, expected], u.Mpc),
             rtol=reltol_nd,
-            atol=abstol_c
+            atol=abstol_c,
         )
 
     @pytest.mark.parametrize(
         "centre_type, expected",
         (
-            ('', 200.),
-            ('minpot', 201.),
-            ('mbp', 202.),
-            ('_gas', 203.),
-            ('_stars', 204.)
-        )
+            ("", 200.0),
+            ("minpot", 201.0),
+            ("mbp", 202.0),
+            ("_gas", 203.0),
+            ("_stars", 204.0),
+        ),
     )
     def test_vcentre_types(self, vr, centre_type, expected):
         """
@@ -166,7 +149,7 @@ class TestVelociraptor:
             vr._vcentre(),
             cosmo_array([expected, expected, expected], u.km / u.s),
             rtol=reltol_nd,
-            atol=abstol_v
+            atol=abstol_v,
         )
 
     def test_catalogue_exposed(self, vr):
@@ -175,10 +158,7 @@ class TestVelociraptor:
         """
         # pick one of the default attributes to check
         assert_allclose_units(
-            vr.masses.mvir,
-            1.e12 * u.Msun,
-            rtol=reltol_nd,
-            atol=abstol_m
+            vr.masses.mvir, 1.0e12 * u.Msun, rtol=reltol_nd, atol=abstol_m
         )
 
 
@@ -197,9 +177,9 @@ class TestVelociraptorWithSWIFTGalaxy:
         """
         assert_allclose_units(
             sg_vr.halo_finder.masses.mvir,
-            1.e12 * u.Msun,
+            1.0e12 * u.Msun,
             rtol=reltol_nd,
-            atol=abstol_m
+            atol=abstol_m,
         )
 
     @pytest.mark.parametrize("particle_type", present_particle_types.values())
@@ -208,9 +188,9 @@ class TestVelociraptorWithSWIFTGalaxy:
         Check that the bound_only default mask works with the spatial mask,
         giving the expected shapes for arrays.
         """
-        assert getattr(sg_vr, particle_type).masses.size == dict(
-            gas=10000,
-            dark_matter=10000,
-            stars=10000,
-            black_holes=1
-        )[particle_type]
+        assert (
+            getattr(sg_vr, particle_type).masses.size
+            == dict(gas=10000, dark_matter=10000, stars=10000, black_holes=1)[
+                particle_type
+            ]
+        )

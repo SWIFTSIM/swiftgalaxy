@@ -64,33 +64,18 @@ html_theme = "sphinx_rtd_theme"
 
 
 def setup(app):
-    app.add_css_file('custom.css')
+    app.add_css_file("custom.css")
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 intersphinx_mapping = dict(
-    swiftsimio=(
-        'https://swiftsimio.readthedocs.io/en/latest/',
-        None
-    ),
-    velociraptor=(
-        'https://velociraptor-python.readthedocs.io/en/latest/',
-        None
-    ),
-    scipy=(
-        'https://docs.scipy.org/doc/scipy/',
-        None
-    ),
-    unyt=(
-        'https://unyt.readthedocs.io/en/stable/',
-        None
-    ),
-    numpy=(
-        'https://numpy.org/doc/stable/',
-        None
-    ),
+    swiftsimio=("https://swiftsimio.readthedocs.io/en/latest/", None),
+    velociraptor=("https://velociraptor-python.readthedocs.io/en/latest/", None),
+    scipy=("https://docs.scipy.org/doc/scipy/", None),
+    unyt=("https://unyt.readthedocs.io/en/stable/", None),
+    numpy=("https://numpy.org/doc/stable/", None),
 )

@@ -1,5 +1,4 @@
 class TestCreation:
-
     def test_sg_creation(self, sg):
         pass  # fixture created SWIFTGalaxy
 
