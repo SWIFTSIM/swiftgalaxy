@@ -8,7 +8,7 @@ Getting Started
 Requirements
 ------------
 
-``python3.6`` or higher is required (``>=3.9`` is preferred).
+``python3.6`` or higher is required (``>=3.9`` is preferred). There is an issue affecting ``python3.6`` with ``h5py>=3.0.0`` that can cause segmentation faults in some situations, so ``python3.6`` is not currently tested. If running ``python3.6``, using ``h5py<=2.10.0`` is recommended.
 
 Python packages
 ^^^^^^^^^^^^^^^
