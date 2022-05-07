@@ -2,7 +2,7 @@ import os
 
 
 class Lines(list):
-    ind = '    '
+    ind = "    "
 
     def __init__(self, *args, **kwargs):
         self.nind = 0
@@ -18,15 +18,15 @@ class Lines(list):
         return
 
     def append(self, line):
-        super().append(self.nind * self.ind + line + '\n')
+        super().append(self.nind * self.ind + line + "\n")
         return
 
 
 def gencodemeta():
     with open(
-            os.path.join(os.path.dirname(__file__), 'swiftgalaxy', '__version__.py')
+        os.path.join(os.path.dirname(__file__), "swiftgalaxy", "__version__.py")
     ) as version_file:
-        version = version_file.read().split('=')[-1].strip()[1:-1]
+        version = version_file.read().split("=")[-1].strip()[1:-1]
 
     fields = {
         "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
@@ -49,23 +49,19 @@ def gencodemeta():
                 "@type": "Person",
                 "givenName": "Kyle A.",
                 "familyName": "Oman",
-                "@id": "0000-0001-9857-7788"
+                "@id": "0000-0001-9857-7788",
             }
         ],
         "citation": "",
-        "relatedLink": [
-            "https://pypi.org/project/swiftgalaxy"
-        ],
-        "codeRepository": [
-            "https://github.com/SWIFTSIM/swiftgalaxy"
-        ],
+        "relatedLink": ["https://pypi.org/project/swiftgalaxy"],
+        "codeRepository": ["https://github.com/SWIFTSIM/swiftgalaxy"],
         "version": version,
-        "license": "https://spdx.org/licenses/GPL-3.0-only.html"
+        "license": "https://spdx.org/licenses/GPL-3.0-only.html",
     }
 
     L = Lines()
 
-    L.append('{')
+    L.append("{")
     L.indent()
     for k, v in fields.items():
         if isinstance(v, str):
@@ -77,20 +73,20 @@ def gencodemeta():
                 if isinstance(line, str):
                     L.append('"{:s}",'.format(line))
                 elif isinstance(line, dict):
-                    L.append('{')
+                    L.append("{")
                     L.indent()
                     for kk, vv in line.items():
                         L.append('"{:s}": "{:s}",'.format(kk, vv))
                     L.unindent()
-                    L.append('},')
+                    L.append("},")
                 else:
-                    raise RuntimeError('Unhandled!')
+                    raise RuntimeError("Unhandled!")
             L.unindent()
-            L.append('],')
+            L.append("],")
         else:
-            raise RuntimeError('Unhandled!')
+            raise RuntimeError("Unhandled!")
     L.unindent()
-    L.append('}')
+    L.append("}")
 
-    with open('codemeta.json', 'w') as f:
+    with open("codemeta.json", "w") as f:
         f.writelines(L)
