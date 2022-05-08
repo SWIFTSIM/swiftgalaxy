@@ -3,7 +3,7 @@ SWIFTGalaxy
 
 |Build status| |Documentation status|
 
-.. |Build status| image:: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/pytest.yml/badge.svg
+.. |Build status| image:: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/black_pytest.yml/badge.svg
     :target: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/pytest.yml
     :alt: Build Status
 .. |Documentation status| image:: https://readthedocs.org/projects/swiftgalaxy/badge/?version=latest
