@@ -9,9 +9,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: psf/black@stable
+      - name: Run Black
+        uses: psf/black@stable
+      - name: Set up Python environment
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.6"
+      - name: Run flake8
+        uses: py-actions/flake8@v2
+      
 
   build:
+    needs: lint
     runs-on: ubuntu-latest
     strategy:
       matrix:
