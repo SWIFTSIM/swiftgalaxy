@@ -438,7 +438,7 @@ class TestInteractionWithCoordinateTransformations:
                 expected = before.dot(transform_arg.as_matrix())
         # do coordinate transformation
         getattr(sg, transform_function)(transform_arg)
-        after = getattr(getattr(sg, particle_name), f"cartesian_{coordinate_type}")
+        after = getattr(getattr(sg, particle_name), f"cartesian_{coordinate_type}").xyz
         assert_allclose_units(
             after,
             expected,

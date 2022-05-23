@@ -143,7 +143,7 @@ For completeness, the cartesian coordinates :math:`(x, y, z)` are made available
     sg.gas.cartesian_coordinates.y
     sg.gas.cartesian_coordinates.z
 
-These are implemented with an array `view` and therefore occupy no additional memory. In addition to the individual coordinate components, for cartesian coordinates the :math:`(N, 3)` coordinate array is available as:
+These are implemented such that a reference to the coordinates array is used and therefore occupy no additional memory. In addition to the individual coordinate components, for cartesian coordinates the :math:`(N, 3)` coordinate array is available as:
 
 .. code-block:: python
 

@@ -509,7 +509,7 @@ class _SWIFTParticleDatasetHelper(object):
         """
         Utility to access the cartesian coordinates of particles.
 
-        Returns a view into the coordinate array which can be accessed using
+        Returns a wrapper around the coordinate array which can be accessed using
         attribute syntax. Cartesian coordinates can be accessed separately:
 
         + ``cartesian_coordinates.x``
@@ -520,9 +520,9 @@ class _SWIFTParticleDatasetHelper(object):
 
         + ``cartesian_coordinates.xyz``
 
-        Since a view is used, the coordinates are automatically updated if the
-        coordinate arrays are modified (e.g. following a rotation or other
-        transformation).
+        A reference to the coordinates array is obtained each time, so cartesian
+        coordinates are automatically updated if the coordinates array is modified (e.g.
+        following a rotation or other transformation).
 
         By default the coorinate array is assumed to be called ``coordinates``,
         but this can be overridden with the ``coordinates_dataset_name``
@@ -533,12 +533,8 @@ class _SWIFTParticleDatasetHelper(object):
         coordinate_helper: :class:`_CoordinateHelper`
             Container providing particle cartesian coordinates as attributes.
         """
-        if self._cartesian_coordinates is None:
-            self._cartesian_coordinates = getattr(
-                self, self._swiftgalaxy.coordinates_dataset_name
-            ).view()
         return _CoordinateHelper(
-            self._cartesian_coordinates,
+            getattr(self, self._swiftgalaxy.coordinates_dataset_name),
             dict(x=np.s_[:, 0], y=np.s_[:, 1], z=np.s_[:, 2], xyz=np.s_[...]),
         )
 
@@ -547,7 +543,7 @@ class _SWIFTParticleDatasetHelper(object):
         """
         Utility to access the cartesian components of particle velocities.
 
-        Returns a view into the velocity array which can be accessed using
+        Returns a wrapper around the velocities array which can be accessed using
         attribute syntax. Cartesian coordinates can be accessed separately:
 
         + ``cartesian_velocities.x``
@@ -558,9 +554,9 @@ class _SWIFTParticleDatasetHelper(object):
 
         + ``cartesian_velocities.xyz``
 
-        Since a view is used, the velocities are automatically updated if the
-        underlying arrays are modified (e.g. following a rotation or other
-        transformation).
+        A reference to the velocities array is obtained each time, so cartesian
+        velocities are automatically updated if the velocities array is modified (e.g.
+        following a rotation or other transformation).
 
         By default the array of velocities is assumed to be called
         ``velocities``, but this can be overridden with the
@@ -571,14 +567,8 @@ class _SWIFTParticleDatasetHelper(object):
         coordinate_helper: :class:`_CoordinateHelper`
             Container providing particle cartesian velocities as attributes.
         """
-        if self._cartesian_coordinates is None:
-            self.cartesian_coordinates
-        if self._cartesian_velocities is None:
-            self._cartesian_velocities = getattr(
-                self, self._swiftgalaxy.velocities_dataset_name
-            ).view()
         return _CoordinateHelper(
-            self._cartesian_velocities,
+            getattr(self, self._swiftgalaxy.velocities_dataset_name),
             dict(x=np.s_[:, 0], y=np.s_[:, 1], z=np.s_[:, 2], xyz=np.s_[...]),
         )
 
@@ -1254,11 +1244,8 @@ class SWIFTGalaxy(SWIFTDataset):
                         setattr(
                             new_particle_dataset_helper, f"_{field_name}", data[mask]
                         )
-            # Don't link across objects with a view!
-            if particle_dataset_helper._cartesian_coordinates is not None:
-                new_particle_dataset_helper.cartesian_coordinates  # initialise
-            if particle_dataset_helper._cartesian_velocities is not None:
-                new_particle_dataset_helper.cartesian_velocities  # initialise
+            # cartesian_coordinates return a reference to coordinates on-the-fly:
+            # no need to initialise here.
             if particle_dataset_helper._spherical_coordinates is not None:
                 new_particle_dataset_helper._spherical_coordinates = dict()
                 for c in ("_r", "_theta", "_phi"):
