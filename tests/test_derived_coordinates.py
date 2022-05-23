@@ -387,6 +387,65 @@ class TestInteractionWithCoordinateTransformations:
         else:
             raise NotImplementedError
 
+    @pytest.mark.parametrize("coordinate_type", ("coordinates", "velocities"))
+    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize(
+        "transform_function, transform_arg",
+        (
+            ("translate", np.ones(3) * u.Mpc),
+            ("boost", 100 * np.ones(3) * u.km / u.s),
+            ("recentre", np.ones(3) * u.Mpc),
+            ("recentre_velocity", 100 * np.ones(3) * u.km / u.s),
+            ("rotate", Rotation.from_rotvec(np.pi / 2 * np.array([1, 1, 1]))),
+        ),
+    )
+    def test_cartesian_coordinates_transform(
+        self,
+        sg,
+        particle_name,
+        coordinate_type,
+        transform_function,
+        transform_arg,
+    ):
+        """
+        Check that cartesian coordinate views update with transformations.
+        """
+        # load cartesian coordinates
+        before = getattr(getattr(sg, particle_name), f"cartesian_{coordinate_type}").xyz
+        if coordinate_type == "coordinates":
+            tol = abstol_c
+            if transform_function == "translate":
+                expected = before + transform_arg
+            elif transform_function == "boost":
+                expected = before
+            elif transform_function == "recentre":
+                expected = before - transform_arg
+            elif transform_function == "recentre_velocity":
+                expected = before
+            elif transform_function == "rotate":
+                expected = before.dot(transform_arg.as_matrix())
+        elif coordinate_type == "velocities":
+            tol = abstol_v
+            if transform_function == "translate":
+                expected = before
+            elif transform_function == "boost":
+                expected = before + transform_arg
+            elif transform_function == "recentre":
+                expected = before
+            elif transform_function == "recentre_velocity":
+                expected = before - transform_arg
+            elif transform_function == "rotate":
+                expected = before.dot(transform_arg.as_matrix())
+        # do coordinate transformation
+        getattr(sg, transform_function)(transform_arg)
+        after = getattr(getattr(sg, particle_name), f"cartesian_{coordinate_type}")
+        assert_allclose_units(
+            after,
+            expected,
+            rtol=1.0e-4,
+            atol=tol
+        )
+
 
 class TestInteractionWithMasking:
     @pytest.mark.parametrize("coordinate_type", ("coordinates", "velocities"))
