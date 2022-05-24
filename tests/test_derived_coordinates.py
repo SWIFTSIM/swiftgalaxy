@@ -4,6 +4,7 @@ import unyt as u
 from unyt.testing import assert_allclose_units
 from toysnap import present_particle_types
 from scipy.spatial.transform import Rotation
+from swiftsimio.objects import cosmo_array
 
 abstol_c = 1 * u.pc  # less than this is ~0
 abstol_v = 10 * u.m / u.s  # less than this is ~0
@@ -340,10 +341,10 @@ class TestInteractionWithCoordinateTransformations:
     @pytest.mark.parametrize(
         "transform_function, transform_arg",
         (
-            ("translate", np.zeros(3) * u.Mpc),
-            ("boost", np.zeros(3) * u.km / u.s),
-            ("recentre", np.zeros(3) * u.Mpc),
-            ("recentre_velocity", np.zeros(3) * u.km / u.s),
+            ("translate", cosmo_array(np.zeros(3), u.Mpc)),
+            ("boost", cosmo_array(np.zeros(3), u.km / u.s)),
+            ("recentre", cosmo_array(np.zeros(3), u.Mpc)),
+            ("recentre_velocity", cosmo_array(np.zeros(3), u.km / u.s)),
             ("rotate", Rotation.from_matrix(np.eye(3))),
         ),
     )
@@ -384,10 +385,10 @@ class TestInteractionWithCoordinateTransformations:
     @pytest.mark.parametrize(
         "transform_function, transform_arg",
         (
-            ("translate", np.ones(3) * u.Mpc),
-            ("boost", 100 * np.ones(3) * u.km / u.s),
-            ("recentre", np.ones(3) * u.Mpc),
-            ("recentre_velocity", 100 * np.ones(3) * u.km / u.s),
+            ("translate", cosmo_array(np.ones(3), u.Mpc)),
+            ("boost", cosmo_array(100 * np.ones(3), u.km / u.s)),
+            ("recentre", cosmo_array(np.ones(3), u.Mpc)),
+            ("recentre_velocity", cosmo_array(100 * np.ones(3), u.km / u.s)),
             ("rotate", Rotation.from_rotvec(np.pi / 2 * np.array([1, 1, 1]))),
         ),
     )

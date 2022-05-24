@@ -1361,7 +1361,14 @@ class SWIFTGalaxy(SWIFTDataset):
         else:
             transform_units = self.metadata.units.length
         translation4 = np.eye(4)
-        translation4[3, :3] = translation.to_comoving().to_value(transform_units)
+        if hasattr(translation, "comoving"):
+            translation4[3, :3] = translation.to_comoving().to_value(transform_units)
+        else:
+            translation4[3, :3] = translation.to_value(transform_units)
+            warn(
+                "Translation assumed to be in comoving (not physical) coordinates.",
+                category=UserWarning,
+            )
         if boost:
             self._append_to_velocity_like_transform(translation4)
         else:
