@@ -335,9 +335,7 @@ class TestCylindricalCoordinates:
 
 class TestInteractionWithCoordinateTransformations:
     @pytest.mark.parametrize("coordinate_type", ("coordinates", "velocities"))
-    @pytest.mark.parametrize(
-        "coordinate_system", ("cartesian", "spherical", "cylindrical")
-    )
+    @pytest.mark.parametrize("coordinate_system", ("spherical", "cylindrical"))
     @pytest.mark.parametrize("particle_name", present_particle_types.values())
     @pytest.mark.parametrize(
         "transform_function, transform_arg",
@@ -362,7 +360,7 @@ class TestInteractionWithCoordinateTransformations:
         transform_arg,
     ):
         """
-        Check that derived coordinates are deleted after transformations.
+        Check that non-cartesian coordinates are deleted after transformations.
         """
         # load derived coordinates
         getattr(getattr(sg, particle_name), f"{coordinate_system}_{coordinate_type}")
@@ -379,13 +377,7 @@ class TestInteractionWithCoordinateTransformations:
         internal_coords = getattr(
             getattr(sg, particle_name), f"_{coordinate_system}_{coordinate_type}"
         )
-        if coordinate_system == "cartesian":
-            # coordinates are a view, should not be voided
-            assert internal_coords is not None
-        elif coordinate_system in ("spherical", "cylindrical"):
-            assert internal_coords is None
-        else:
-            raise NotImplementedError
+        assert internal_coords is None
 
     @pytest.mark.parametrize("coordinate_type", ("coordinates", "velocities"))
     @pytest.mark.parametrize("particle_name", present_particle_types.values())
@@ -439,12 +431,7 @@ class TestInteractionWithCoordinateTransformations:
         # do coordinate transformation
         getattr(sg, transform_function)(transform_arg)
         after = getattr(getattr(sg, particle_name), f"cartesian_{coordinate_type}").xyz
-        assert_allclose_units(
-            after,
-            expected,
-            rtol=1.0e-4,
-            atol=tol
-        )
+        assert_allclose_units(after, expected, rtol=1.0e-4, atol=tol)
 
 
 class TestInteractionWithMasking:

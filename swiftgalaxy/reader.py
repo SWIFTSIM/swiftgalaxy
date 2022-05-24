@@ -338,10 +338,8 @@ class _SWIFTParticleDatasetHelper(object):
             self._named_column_dataset_helpers[
                 named_columns_name
             ] = TypeNamedColumnDatasetHelper(named_columns, self)
-        self._cartesian_coordinates: Optional[np.ndarray] = None
         self._spherical_coordinates: Optional[dict] = None
         self._cylindrical_coordinates: Optional[dict] = None
-        self._cartesian_velocities: Optional[np.ndarray] = None
         self._spherical_velocities: Optional[dict] = None
         self._cylindrical_velocities: Optional[dict] = None
         self._initialised: bool = True
@@ -617,8 +615,6 @@ class _SWIFTParticleDatasetHelper(object):
         coordinate_helper: :class:`_CoordinateHelper`
             Container providing particle spherical coordinates as attributes.
         """
-        if self._cartesian_coordinates is None:
-            self.cartesian_coordinates
         if self._spherical_coordinates is None:
             r = cosmo_array(
                 np.sqrt(np.sum(np.power(self.cartesian_coordinates.xyz, 2), axis=1)),
@@ -702,10 +698,6 @@ class _SWIFTParticleDatasetHelper(object):
         """
         if self._spherical_coordinates is None:
             self.spherical_coordinates
-        # existence of self.cartesian_coordinates guaranteed by
-        # initialisation of self.spherical_coordinates immediately above
-        if self._cartesian_velocities is None:
-            self.cartesian_velocities
         if self._spherical_velocities is None:
             _sin_t = np.sin(self.spherical_coordinates.theta)
             _cos_t = np.cos(self.spherical_coordinates.theta)
@@ -784,8 +776,6 @@ class _SWIFTParticleDatasetHelper(object):
         coordinate_helper: :class:`_CoordinateHelper`
             Container providing particle cylindrical coordinates as attributes.
         """
-        if self._cartesian_coordinates is None:
-            self.cartesian_coordinates
         if self._cylindrical_coordinates is None:
             rho = cosmo_array(
                 np.sqrt(
@@ -869,10 +859,6 @@ class _SWIFTParticleDatasetHelper(object):
         """
         if self._cylindrical_coordinates is None:
             self.cylindrical_coordinates
-        # existence of self.cartesian_coordinates guaranteed by
-        # initialisation of self.cylindrical_coordinates immediately above
-        if self._cartesian_velocities is None:
-            self.cartesian_velocities
         if self._cylindrical_velocities is None:
             _sin_p = np.sin(self.cylindrical_coordinates.phi)
             _cos_p = np.cos(self.cylindrical_coordinates.phi)
@@ -906,10 +892,6 @@ class _SWIFTParticleDatasetHelper(object):
         )
 
     def _mask_derived_coordinates(self, mask: slice) -> None:
-        if self._cartesian_coordinates is not None:
-            self._cartesian_coordinates = self._cartesian_coordinates[mask]
-        if self._cartesian_velocities is not None:
-            self._cartesian_velocities = self._cartesian_velocities[mask]
         if self._spherical_coordinates is not None:
             for coord in ("r", "theta", "phi"):
                 self._spherical_coordinates[f"_{coord}"] = self._spherical_coordinates[
