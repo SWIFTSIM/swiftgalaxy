@@ -296,7 +296,7 @@ class TestManualCoordinateTransformations:
         """
         Check that translating by a box length wraps back to previous state.
         """
-        boxsize = sg.metadata.boxsize
+        boxsize = cosmo_array(sg.metadata.boxsize, comoving=True)
         xyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         sg.translate(boxsize)
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")

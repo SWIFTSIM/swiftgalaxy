@@ -17,6 +17,7 @@ these types should not be created directly by users, but rather by an object of
 the :class:`SWIFTGalaxy` class.
 """
 
+from warnings import warn
 import numpy as np
 from scipy.spatial.transform import Rotation
 import unyt
@@ -35,6 +36,9 @@ from typing import Union, Any, Optional, Set
 
 
 def _apply_box_wrap(coords: cosmo_array, boxsize: Optional[cosmo_array]) -> cosmo_array:
+    # Would like to ensure comoving coordinates here, but metadata gives boxsize as a
+    # unyt_array instead of a cosmo_array. Pending swiftsimio issue #128. When
+    # implementing, remove cast(s) to cosmo_array in test_coordinate_transformations.
     retval = coords
     if boxsize is None:
         return retval
@@ -51,27 +55,50 @@ def _apply_box_wrap(coords: cosmo_array, boxsize: Optional[cosmo_array]) -> cosm
 
 
 def _apply_translation(coords: cosmo_array, offset: cosmo_array) -> cosmo_array:
+    if hasattr(offset, "comoving") and coords.comoving:
+        offset = offset.to_comoving()
+    elif hasattr(offset, "comoving") and not coords.comoving:
+        offset = offset.to_physical()
+    elif not hasattr(offset, "comoving"):
+        msg = (
+            "Translation assumed to be in comoving (not physical) coordinates."
+            if coords.comoving
+            else "Translation assumed to be in physical (not comoving) coordinates."
+        )
+        warn(msg, category=UserWarning)
     return coords + offset
 
 
 def _apply_rotmat(coords: cosmo_array, rotation_matrix: np.ndarray) -> cosmo_array:
-    return coords.dot(rotation_matrix)
+    return cosmo_array(
+        coords.dot(rotation_matrix),
+        units=coords.units,
+        cosmo_factor=coords.cosmo_factor,
+        comoving=coords.comoving,
+    )
 
 
 def _apply_4transform(
     coords: cosmo_array, transform: cosmo_array, transform_units: unyt.unyt_quantity
 ) -> cosmo_array:
-    # A 4x4 transformation matrix has mixed units, so need to
-    # assume a consistent unit for all transformations and
-    # work with bare arrays.
-    return cosmo_array(
+    # A 4x4 transformation matrix has mixed units, so need to assume a consistent unit
+    # for all transformations and work with bare arrays. Also always assume comoving
+    # coordinates.
+    retval = cosmo_array(
         np.hstack(
-            (coords.to_value(transform_units), np.ones(coords.shape[0])[:, np.newaxis])
+            (
+                coords.to_comoving().to_value(transform_units),
+                np.ones(coords.shape[0])[:, np.newaxis],
+            )
         ).dot(transform)[:, :3],
         units=transform_units,
         cosmo_factor=coords.cosmo_factor,
-        comoving=coords.comoving,
+        comoving=False,
     )
+    if coords.comoving:
+        return retval.to_comoving()
+    else:
+        return retval.to_physical()
 
 
 class _CoordinateHelper(object):
@@ -1334,7 +1361,7 @@ class SWIFTGalaxy(SWIFTDataset):
         else:
             transform_units = self.metadata.units.length
         translation4 = np.eye(4)
-        translation4[3, :3] = translation.to_value(transform_units)
+        translation4[3, :3] = translation.to_comoving().to_value(transform_units)
         if boost:
             self._append_to_velocity_like_transform(translation4)
         else:
