@@ -12,7 +12,7 @@ abstract
 from abc import ABC, abstractmethod
 import unyt as u
 from swiftgalaxy.masks import MaskCollection
-from swiftsimio.objects import cosmo_array
+from swiftsimio.objects import cosmo_array, cosmo_factor
 from swiftsimio.masks import SWIFTMask
 
 from typing import Any, Union, Optional, TYPE_CHECKING
@@ -80,7 +80,15 @@ class Velociraptor(_HaloFinder):
     velociraptor_filebase: ``str``
         The initial part of the velociraptor filenames (possibly including
         path), e.g. if there is a :file:`{halos}.properties` file, pass
-        ``halos`` as this argument.
+        ``halos`` as this argument. Provide this or `velociraptor_files`,
+        not both.
+
+    velociraptor_files: ``dict[str]``
+        A dictionary containing the names of the velociraptor files (possibly
+        including paths). There should be two entries, with keys `properties`
+        and `catalog_groups` containing locations of the `{halos}.properties`
+        and `{halos}.catalog_groups` files, respectively. Provide this or
+        `velociraptor_filebase`, not both.
 
     halo_index: ``int``
         Position of the object of interest in the catalogue arrays.
@@ -161,14 +169,30 @@ class Velociraptor(_HaloFinder):
 
     def __init__(
         self,
-        velociraptor_filebase: str,
+        velociraptor_filebase: str = None,
+        velociraptor_files: dict = None,
         halo_index: int = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "minpot",  # _gas _star mbp minpot
+        velociraptor_suffix: str = "",
     ) -> None:
         from velociraptor.catalogue.catalogue import VelociraptorCatalogue
 
-        self.velociraptor_filebase: str = velociraptor_filebase
+        if velociraptor_filebase is not None and velociraptor_files is not None:
+            raise ValueError(
+                "Provide either velociraptor_filebase or velociraptor_files, not both."
+            )
+        elif velociraptor_files is not None:
+            self.velociraptor_files = velociraptor_files
+        elif velociraptor_filebase is not None:
+            self.velociraptor_files = dict(
+                properties=f"{velociraptor_filebase}.properties",
+                catalog_groups=f"{velociraptor_filebase}.catalog_groups",
+            )
+        else:
+            raise ValueError(
+                "Provide one of velociraptor_filebase or velociraptor_files."
+            )
         if halo_index is None:
             raise ValueError("Provide a halo_index.")
         else:
@@ -182,15 +206,24 @@ class Velociraptor(_HaloFinder):
         return
 
     def _load(self) -> None:
+        import h5py
         from velociraptor import load as load_catalogue
         from velociraptor.particles import load_groups
 
+        with h5py.File(self.velociraptor_files["properties"]) as propfile:
+            self.scale_factor = (
+                float(propfile["SimulationInfo"].attrs["ScaleFactor"])
+                if propfile["SimulationInfo"].attrs["Cosmological_Sim"]
+                else 1.0
+            )
+
         self._catalogue = load_catalogue(
-            f"{self.velociraptor_filebase}.properties", mask=self.halo_index
+            self.velociraptor_files["properties"],
+            mask=self.halo_index,
         )
         groups = load_groups(
-            f"{self.velociraptor_filebase}.catalog_groups",
-            catalogue=load_catalogue(f"{self.velociraptor_filebase}.properties"),
+            self.velociraptor_files["catalog_groups"],
+            catalogue=load_catalogue(self.velociraptor_files["properties"]),
         )
         self._particles, unbound_particles = groups.extract_halo(
             halo_index=self.halo_index
@@ -231,13 +264,19 @@ class Velociraptor(_HaloFinder):
         else:
             # {XYZ}cmbp, {XYZ}cminpot and {XYZ}c are absolute
             relative_to = cosmo_array([0.0, 0.0, 0.0], u.Mpc)
-        return relative_to + u.uhstack(
-            [
-                getattr(
-                    self._catalogue.positions, "{:s}c{:s}".format(c, self.centre_type)
-                )
-                for c in "xyz"
-            ]
+        return cosmo_array(
+            relative_to
+            + u.uhstack(
+                [
+                    getattr(
+                        self._catalogue.positions,
+                        "{:s}c{:s}".format(c, self.centre_type),
+                    )
+                    for c in "xyz"
+                ]
+            ),
+            comoving=False,  # velociraptor gives physical centres!
+            cosmo_factor=cosmo_factor("a^1", self.scale_factor),
         )
 
     def _vcentre(self) -> cosmo_array:
@@ -250,13 +289,19 @@ class Velociraptor(_HaloFinder):
         else:
             # V{XYZ}cmbp, V{XYZ}cminpot and V{XYZ}c are absolute
             relative_to = cosmo_array([0.0, 0.0, 0.0], u.km / u.s)
-        return relative_to + u.uhstack(
-            [
-                getattr(
-                    self._catalogue.velocities, "v{:s}c{:s}".format(c, self.centre_type)
-                )
-                for c in "xyz"
-            ]
+        return cosmo_array(
+            relative_to
+            + u.uhstack(
+                [
+                    getattr(
+                        self._catalogue.velocities,
+                        "v{:s}c{:s}".format(c, self.centre_type),
+                    )
+                    for c in "xyz"
+                ]
+            ),
+            comoving=False,
+            cosmo_factor=cosmo_factor("a^0", self.scale_factor),
         )
 
     def __getattr__(self, attr: str) -> Any:
