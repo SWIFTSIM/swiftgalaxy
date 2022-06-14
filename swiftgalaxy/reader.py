@@ -96,8 +96,8 @@ def _apply_4transform(
             )
         ).dot(transform)[:, :3],
         units=transform_units,
+        comoving=True,
         cosmo_factor=coords.cosmo_factor,
-        comoving=False,
     )
     if coords.comoving:
         return retval.to_comoving()
@@ -653,7 +653,7 @@ class _SWIFTParticleDatasetHelper(object):
                 units=unyt.rad,
                 comoving=r.comoving,
                 cosmo_factor=cosmo_factor(
-                    a ** 0, scale_factor=r.cosmo_factor.scale_factor
+                    a**0, scale_factor=r.cosmo_factor.scale_factor
                 ),
             )
             if self.cylindrical_coordinates is not None:
@@ -664,10 +664,9 @@ class _SWIFTParticleDatasetHelper(object):
                         self.cartesian_coordinates.y, self.cartesian_coordinates.x
                     ),
                     units=unyt.rad,
-                    comoving=self.cartesian_coordinates.xyz.comoving,
+                    comoving=r.comoving,
                     cosmo_factor=cosmo_factor(
-                        a ** 0,
-                        scale_factor=self.cartesian_coordinates.xyz.cosmo_factor.scale_factor,
+                        a**0, scale_factor=r.cosmo_factor.scale_factor
                     ),
                 )
                 phi[phi < 0] = phi[phi < 0] + 2 * np.pi * unyt.rad
@@ -831,10 +830,9 @@ class _SWIFTParticleDatasetHelper(object):
                 phi = cosmo_array(
                     phi,
                     units=unyt.rad,
-                    comoving=self.cartesian_coordinates.xyz.comoving,
+                    comoving=rho.comoving,
                     cosmo_factor=cosmo_factor(
-                        a ** 0,
-                        scale_factor=self.cartesian_coordinates.xyz.cosmo_factor.scale_factor,
+                        a**0, scale_factor=rho.cosmo_factor.scale_factor
                     ),
                 )
             z = self.cartesian_coordinates.z
@@ -1109,6 +1107,7 @@ class SWIFTGalaxy(SWIFTDataset):
         id_particle_dataset_name: str = "particle_ids",
         coordinates_dataset_name: str = "coordinates",
         velocities_dataset_name: str = "velocities",
+        coordinate_frame_from: "SWIFTGalaxy" = None,
         # arguments beginning _ are not intended for users, but
         # for the __copy__ and __deepcopy__ functions.
         _spatial_mask: Optional[SWIFTMask] = None,
@@ -1145,6 +1144,27 @@ class SWIFTGalaxy(SWIFTDataset):
         else:
             self._velocity_like_transform = np.eye(4)
         super().__init__(snapshot_filename, mask=self._spatial_mask)
+        if auto_recentre is True and coordinate_frame_from is not None:
+            raise ValueError(
+                "Cannot use coordinate_frame_from with auto_recentre=True."
+            )
+        elif coordinate_frame_from is not None:
+            if (
+                coordinate_frame_from.metadata.units.length
+                != self.metadata.units.length
+            ) or (
+                coordinate_frame_from.metadata.units.time != self.metadata.units.time
+            ):
+                raise ValueError(
+                    "Internal units (length and time) of coordinate_frame_from don't"
+                    " match."
+                )
+            self._coordinate_like_transform = (
+                coordinate_frame_from._coordinate_like_transform
+            )
+            self._velocity_like_transform = (
+                coordinate_frame_from._velocity_like_transform
+            )
         for particle_name in self.metadata.present_particle_names:
             # We'll make a custom type to present a nice name to the user.
             nice_name = swiftsimio_metadata.particle_types.particle_name_class[
@@ -1394,6 +1414,44 @@ class SWIFTGalaxy(SWIFTDataset):
         if not boost:
             self.wrap_box()
         return
+
+    @property
+    def centre(self) -> cosmo_array:
+        transform_units = self.metadata.units.length
+        transform = np.linalg.inv(self._coordinate_like_transform)
+        return _apply_4transform(
+            cosmo_array(
+                np.zeros((1, 3)),
+                units=transform_units,
+                comoving=True,
+                cosmo_factor=cosmo_factor(
+                    a**1, scale_factor=self.metadata.scale_factor
+                ),
+            ),
+            transform,
+            transform_units,
+        ).squeeze()
+
+    @property
+    def velocity_centre(self) -> cosmo_array:
+        transform_units = self.metadata.units.length / self.metadata.units.time
+        transform = np.linalg.inv(self._velocity_like_transform)
+        return _apply_4transform(
+            cosmo_array(
+                np.zeros((1, 3)),
+                units=transform_units,
+                comoving=True,
+                cosmo_factor=cosmo_factor(
+                    a**0, scale_factor=self.metadata.scale_factor
+                ),
+            ),
+            transform,
+            transform_units,
+        ).squeeze()
+
+    @property
+    def rotation(self) -> Rotation:
+        return Rotation.from_matrix(self._coordinate_like_transform[:3, :3])
 
     def translate(self, translation: cosmo_array) -> None:
         """

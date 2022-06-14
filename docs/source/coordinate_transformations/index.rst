@@ -3,6 +3,15 @@ Coordinate transformations
 
 A :class:`~swiftgalaxy.reader.SWIFTGalaxy` enforces a consistent coordinate system for all particle types and coordinate and velocity arrays (accelerations are not supported, yet). Any relevant particle arrays already in memory are modified when a new transformation is applied, and any relevant particle arrays loaded later will be automatically transformed to the current frame.
 
+The current centre and velocity centre of the coordinate system (in simulation coordinates) are available as properties of a :class:`~swiftgalaxy.reader.SWIFTGalaxy`. The current rotation (about the origin of the simulation coordinates) is also available:
+
+.. code-block:: python
+
+    sg = SWIFTGalaxy(...)
+    sg.centre
+    sg.velocity_centre
+    sg.rotation
+
 It may be that along with the basic coordinates and velocities arrays, you have additional arrays that you wish to live in the same coordinate system. We could imagine, for instance, a property called ``wind_velocity`` attached to star particles and containing a vector giving the velocity of a (directional) stellar wind in simulation box coordinates. We can use the ``transforms_like_velocities`` to specify that this property should have any coordinate transformations that would be relevant to the ``velocities`` of particles applied to these as well:
 
 .. code-block:: python
@@ -99,3 +108,17 @@ Box wrapping
 ------------
 
 For a periodic simulation box, the spatial coordinates will automatically be wrapped as necessary to ensure that their absolute values remain less than half a box length. If for any reason you wish to force a box wrapping operation simply call :meth:`~swiftgalaxy.reader.SWIFTGalaxy.wrap_box`.
+
+Copying a coordinate system
+---------------------------
+
+A second :class:`~swiftgalaxy.reader.SWIFTGalaxy` can be created using the (current) coordinate system of an existing instance:
+
+.. code-block:: python
+
+    sg1 = SWIFTGalaxy(...)
+    sg1.rotate(...)
+    sg1.translate(...)
+    sg2 = SWIFTGalaxy(..., auto_recentre=False, coordinate_frame_from=sg1)
+
+This is only possible at creation time, and ``auto_recentre`` must be set to ``False``. Also note that this does not lock the coordinate systems together. For instance, if one galaxy is subsequently rotated, the second will not rotate with it.

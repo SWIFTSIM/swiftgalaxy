@@ -5,7 +5,8 @@ from warnings import warn
 from unyt.testing import assert_allclose_units
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from scipy.spatial.transform import Rotation
-from toysnap import present_particle_types
+from toysnap import present_particle_types, toysnap_filename, ToyHF
+from swiftgalaxy import SWIFTGalaxy
 
 reltol = 1.01  # allow some wiggle room for floating point roundoff
 abstol_c = 10 * u.pc  # less than this is ~0
@@ -16,22 +17,22 @@ expected_xy = {
         reltol * 10,
         units=u.kpc,
         comoving=True,
-        cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+        cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
     ),
     "dark_matter": cosmo_array(
         reltol * 100,
         units=u.kpc,
         comoving=True,
-        cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+        cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
     ),
     "stars": cosmo_array(
         reltol * 5,
         units=u.kpc,
         comoving=True,
-        cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+        cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
     ),
     "black_holes": cosmo_array(
-        abstol_c, comoving=True, cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0)
+        abstol_c, comoving=True, cosmo_factor=cosmo_factor(a**1, scale_factor=1.0)
     ),
 }
 expected_z = {
@@ -39,22 +40,22 @@ expected_z = {
         reltol,
         units=u.kpc,
         comoving=True,
-        cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+        cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
     ),
     "dark_matter": cosmo_array(
         reltol * 100,
         units=u.kpc,
         comoving=True,
-        cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+        cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
     ),
     "stars": cosmo_array(
         reltol * 500,
         units=u.pc,
         comoving=True,
-        cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+        cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
     ),
     "black_holes": cosmo_array(
-        abstol_c, comoving=True, cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0)
+        abstol_c, comoving=True, cosmo_factor=cosmo_factor(a**1, scale_factor=1.0)
     ),
 }
 expected_vxy = {
@@ -62,22 +63,22 @@ expected_vxy = {
         reltol * 100,
         units=u.km / u.s,
         comoving=True,
-        cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+        cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
     ),
     "dark_matter": cosmo_array(
         reltol * 100,
         units=u.km / u.s,
         comoving=True,
-        cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+        cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
     ),
     "stars": cosmo_array(
         reltol * 50,
         units=u.km / u.s,
         comoving=True,
-        cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+        cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
     ),
     "black_holes": cosmo_array(
-        abstol_v, comoving=True, cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0)
+        abstol_v, comoving=True, cosmo_factor=cosmo_factor(a**0, scale_factor=1.0)
     ),
 }
 expected_vz = {
@@ -85,22 +86,22 @@ expected_vz = {
         reltol * 10,
         units=u.km / u.s,
         comoving=True,
-        cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+        cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
     ),
     "dark_matter": cosmo_array(
         reltol * 100,
         units=u.km / u.s,
         comoving=True,
-        cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+        cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
     ),
     "stars": cosmo_array(
         reltol * 10,
         units=u.km / u.s,
         comoving=True,
-        cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+        cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
     ),
     "black_holes": cosmo_array(
-        abstol_v, comoving=True, cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0)
+        abstol_v, comoving=True, cosmo_factor=cosmo_factor(a**0, scale_factor=1.0)
     ),
 }
 
@@ -264,7 +265,7 @@ class TestManualCoordinateTransformations:
             [1, 1, 1],
             units=u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
         )
         sg.recentre(new_centre)
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
@@ -288,7 +289,7 @@ class TestManualCoordinateTransformations:
             [100, 100, 100],
             units=u.km / u.s,
             comoving=True,
-            cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+            cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
         )
         sg.recentre_velocity(new_centre)
         vxyz = getattr(getattr(sg, particle_name), f"{velocity_name}")
@@ -314,7 +315,7 @@ class TestManualCoordinateTransformations:
             [1, 1, 1],
             units=u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
         )
         sg.translate(translation)
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
@@ -336,7 +337,7 @@ class TestManualCoordinateTransformations:
             [100, 100, 100],
             u.km / u.s,
             comoving=True,
-            cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+            cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
         )
         sg.boost(boost)
         vxyz = getattr(getattr(sg, particle_name), f"{velocity_name}")
@@ -388,7 +389,7 @@ class TestManualCoordinateTransformations:
             boxsize = cosmo_array(
                 sg.metadata.boxsize,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+                cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
             )
         xyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         sg.translate(boxsize)
@@ -411,7 +412,7 @@ class TestSequentialTransformations:
             [1, 1, 1],
             units=u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
         )
         sg.translate(translation)
         sg.rotate(Rotation.from_matrix(rot))
@@ -435,7 +436,7 @@ class TestSequentialTransformations:
             [1, 1, 1],
             units=u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
         )
         sg.translate(translation)
         xyz = sg.gas.coordinates
@@ -457,7 +458,7 @@ class TestSequentialTransformations:
             [100, 100, 100],
             units=u.km / u.s,
             comoving=True,
-            cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+            cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
         )
         sg.boost(boost)
         sg.rotate(Rotation.from_matrix(rot))
@@ -481,12 +482,67 @@ class TestSequentialTransformations:
             [100, 100, 100],
             units=u.km / u.s,
             comoving=True,
-            cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+            cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
         )
         sg.boost(boost)
         vxyz = sg.gas.velocities
         assert_allclose_units(
             vxyz_before.dot(rot) + boost, vxyz, rtol=1.0e-4, atol=abstol_v
+        )
+
+
+class TestCopyingTransformations:
+    def test_auto_recentering_with_copied_coordinate_frame(self, sg):
+        """
+        Check that a SWIFTGalaxy initialised to copy the coordinate frame
+        of an existing SWIFTGalaxy needs auto_recentre=False.
+        """
+        with pytest.raises(
+            ValueError,
+            match="Cannot use coordinate_frame_from with auto_recentre=True.",
+        ):
+            SWIFTGalaxy(
+                toysnap_filename, ToyHF(), auto_recentre=True, coordinate_frame_from=sg
+            )
+
+    def test_copied_coordinate_transform(self, sg):
+        """
+        Check that a SWIFTGalaxy initialised to copy the coordinate frame
+        of an existing SWIFTGalaxy adopts the correct coordinate frame.
+        """
+        sg.rotate(Rotation.from_matrix(rot))
+        translation = cosmo_array(
+            [1, 1, 1],
+            units=u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        )
+        sg.translate(translation)
+        sg2 = SWIFTGalaxy(
+            toysnap_filename, ToyHF(), auto_recentre=False, coordinate_frame_from=sg
+        )
+        assert_allclose_units(
+            sg.gas.coordinates, sg2.gas.coordinates, rtol=1.0e-4, atol=abstol_c
+        )
+
+    def test_copied_velocity_transform(self, sg):
+        """
+        Check that a SWIFTGalaxy initialised to copy the coordinate frame
+        of an existing SWIFTGalaxy adopts the correct velocity frame.
+        """
+        sg.rotate(Rotation.from_matrix(rot))
+        translation = cosmo_array(
+            [1, 1, 1],
+            units=u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        )
+        sg.translate(translation)
+        sg2 = SWIFTGalaxy(
+            toysnap_filename, ToyHF(), auto_recentre=False, coordinate_frame_from=sg
+        )
+        assert_allclose_units(
+            sg.gas.velocities, sg2.gas.velocities, rtol=1.0e-4, atol=abstol_v
         )
 
 
