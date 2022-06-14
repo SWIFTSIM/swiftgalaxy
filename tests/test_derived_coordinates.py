@@ -337,10 +337,42 @@ class TestInteractionWithCoordinateTransformations:
     @pytest.mark.parametrize(
         "transform_function, transform_arg",
         (
-            ("translate", cosmo_array(np.zeros(3), units=u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.))),
-            ("boost", cosmo_array(np.zeros(3), units=u.km / u.s, comoving=True, cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.))),
-            ("recentre", cosmo_array(np.zeros(3), units=u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.))),
-            ("recentre_velocity", cosmo_array(np.zeros(3), units=u.km / u.s, comoving=True, cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.))),
+            (
+                "translate",
+                cosmo_array(
+                    np.zeros(3),
+                    units=u.Mpc,
+                    comoving=True,
+                    cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+                ),
+            ),
+            (
+                "boost",
+                cosmo_array(
+                    np.zeros(3),
+                    units=u.km / u.s,
+                    comoving=True,
+                    cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+                ),
+            ),
+            (
+                "recentre",
+                cosmo_array(
+                    np.zeros(3),
+                    units=u.Mpc,
+                    comoving=True,
+                    cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+                ),
+            ),
+            (
+                "recentre_velocity",
+                cosmo_array(
+                    np.zeros(3),
+                    units=u.km / u.s,
+                    comoving=True,
+                    cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+                ),
+            ),
             ("rotate", Rotation.from_matrix(np.eye(3))),
         ),
     )
@@ -381,10 +413,42 @@ class TestInteractionWithCoordinateTransformations:
     @pytest.mark.parametrize(
         "transform_function, transform_arg",
         (
-            ("translate", cosmo_array(np.ones(3), units=u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.))),
-            ("boost", cosmo_array(100 * np.ones(3), units=u.km / u.s, comoving=True, cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.))),
-            ("recentre", cosmo_array(np.ones(3), units=u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.))),
-            ("recentre_velocity", cosmo_array(100 * np.ones(3), units=u.km / u.s, comoving=True, cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.))),
+            (
+                "translate",
+                cosmo_array(
+                    np.ones(3),
+                    units=u.Mpc,
+                    comoving=True,
+                    cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+                ),
+            ),
+            (
+                "boost",
+                cosmo_array(
+                    100 * np.ones(3),
+                    units=u.km / u.s,
+                    comoving=True,
+                    cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+                ),
+            ),
+            (
+                "recentre",
+                cosmo_array(
+                    np.ones(3),
+                    units=u.Mpc,
+                    comoving=True,
+                    cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+                ),
+            ),
+            (
+                "recentre_velocity",
+                cosmo_array(
+                    100 * np.ones(3),
+                    units=u.km / u.s,
+                    comoving=True,
+                    cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+                ),
+            ),
             ("rotate", Rotation.from_rotvec(np.pi / 2 * np.array([1, 1, 1]))),
         ),
     )

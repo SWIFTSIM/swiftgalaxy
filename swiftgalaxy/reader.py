@@ -652,7 +652,9 @@ class _SWIFTParticleDatasetHelper(object):
                 np.where(r == 0, 0, np.arcsin(self.cartesian_coordinates.z / r)),
                 units=unyt.rad,
                 comoving=r.comoving,
-                cosmo_factor=cosmo_factor(a ** 0, scale_factor=r.cosmo_factor.scale_factor),
+                cosmo_factor=cosmo_factor(
+                    a ** 0, scale_factor=r.cosmo_factor.scale_factor
+                ),
             )
             if self.cylindrical_coordinates is not None:
                 phi = self.cylindrical_coordinates.phi
@@ -832,7 +834,7 @@ class _SWIFTParticleDatasetHelper(object):
                     comoving=self.cartesian_coordinates.xyz.comoving,
                     cosmo_factor=cosmo_factor(
                         a ** 0,
-                        scale_factor=self.cartesian_coordinates.xyz.cosmo_factor.scale_factor
+                        scale_factor=self.cartesian_coordinates.xyz.cosmo_factor.scale_factor,
                     ),
                 )
             z = self.cartesian_coordinates.z
