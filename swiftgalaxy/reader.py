@@ -17,7 +17,7 @@ these types should not be created directly by users, but rather by an object of
 the :class:`SWIFTGalaxy` class.
 """
 
-from warnings import warn
+from warnings import warn, catch_warnings, filterwarnings
 import numpy as np
 from scipy.spatial.transform import Rotation
 import unyt
@@ -27,7 +27,7 @@ from swiftsimio.reader import (
     __SWIFTNamedColumnDataset,
     __SWIFTParticleDataset,
 )
-from swiftsimio.objects import cosmo_array
+from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from swiftsimio.masks import SWIFTMask
 from swiftgalaxy.halo_finders import _HaloFinder
 from swiftgalaxy.masks import MaskCollection
@@ -36,21 +36,25 @@ from typing import Union, Any, Optional, Set
 
 
 def _apply_box_wrap(coords: cosmo_array, boxsize: Optional[cosmo_array]) -> cosmo_array:
-    # Would like to ensure comoving coordinates here, but metadata gives boxsize as a
-    # unyt_array instead of a cosmo_array. Pending swiftsimio issue #128. When
-    # implementing, remove cast(s) to cosmo_array in test_coordinate_transformations.
     retval = coords
     if boxsize is None:
         return retval
-    for axis in range(3):
-        too_high = retval[:, axis] > boxsize[axis] / 2.0
-        while too_high.any():
-            retval[too_high, axis] -= boxsize[axis]
+    # Would like to ensure comoving coordinates here, but metadata gives boxsize as a
+    # unyt_array instead of a cosmo_array. Pending swiftsimio issue #128. When
+    # implementing, remove cast(s) to cosmo_array in test_coordinate_transformations.
+    with catch_warnings():
+        filterwarnings(
+            "ignore", category=RuntimeWarning, message="Mixing ufunc arguments"
+        )
+        for axis in range(3):
             too_high = retval[:, axis] > boxsize[axis] / 2.0
-        too_low = retval[:, axis] <= -boxsize[axis] / 2.0
-        while too_low.any():
-            retval[too_low, axis] += boxsize[axis]
+            while too_high.any():
+                retval[too_high, axis] -= boxsize[axis]
+                too_high = retval[:, axis] > boxsize[axis] / 2.0
             too_low = retval[:, axis] <= -boxsize[axis] / 2.0
+            while too_low.any():
+                retval[too_low, axis] += boxsize[axis]
+                too_low = retval[:, axis] <= -boxsize[axis] / 2.0
     return retval
 
 
@@ -71,7 +75,7 @@ def _apply_translation(coords: cosmo_array, offset: cosmo_array) -> cosmo_array:
 
 def _apply_rotmat(coords: cosmo_array, rotation_matrix: np.ndarray) -> cosmo_array:
     return cosmo_array(
-        coords.dot(rotation_matrix),
+        coords.view(np.ndarray).dot(rotation_matrix),
         units=coords.units,
         cosmo_factor=coords.cosmo_factor,
         comoving=coords.comoving,
@@ -643,21 +647,30 @@ class _SWIFTParticleDatasetHelper(object):
             Container providing particle spherical coordinates as attributes.
         """
         if self._spherical_coordinates is None:
-            r = cosmo_array(
-                np.sqrt(np.sum(np.power(self.cartesian_coordinates.xyz, 2), axis=1)),
-                cosmo_factor=self.cartesian_coordinates.xyz.cosmo_factor,
-                comoving=self.cartesian_coordinates.xyz.comoving,
+            r = np.sqrt(np.sum(np.power(self.cartesian_coordinates.xyz, 2), axis=1))
+            theta = cosmo_array(
+                np.where(r == 0, 0, np.arcsin(self.cartesian_coordinates.z / r)),
+                units=unyt.rad,
+                comoving=r.comoving,
+                cosmo_factor=cosmo_factor(
+                    a ** 0, scale_factor=r.cosmo_factor.scale_factor
+                ),
             )
-            theta = np.where(r == 0, 0, np.arcsin(self.cartesian_coordinates.z / r))
-            theta = cosmo_array(theta, units=unyt.rad)
             if self.cylindrical_coordinates is not None:
                 phi = self.cylindrical_coordinates.phi
             else:
-                phi = np.arctan2(
-                    self.cartesian_coordinates.y, self.cartesian_coordinates.x
+                phi = cosmo_array(
+                    np.arctan2(
+                        self.cartesian_coordinates.y, self.cartesian_coordinates.x
+                    ),
+                    units=unyt.rad,
+                    comoving=self.cartesian_coordinates.xyz.comoving,
+                    cosmo_factor=cosmo_factor(
+                        a ** 0,
+                        scale_factor=self.cartesian_coordinates.xyz.cosmo_factor.scale_factor,
+                    ),
                 )
-                phi = np.where(phi < 0, phi + 2 * np.pi, phi)
-                phi = cosmo_array(phi, units=unyt.rad)
+                phi[phi < 0] = phi[phi < 0] + 2 * np.pi * unyt.rad
             self._spherical_coordinates = dict(_r=r, _theta=theta, _phi=phi)
         return _CoordinateHelper(
             self._spherical_coordinates,
@@ -804,21 +817,26 @@ class _SWIFTParticleDatasetHelper(object):
             Container providing particle cylindrical coordinates as attributes.
         """
         if self._cylindrical_coordinates is None:
-            rho = cosmo_array(
-                np.sqrt(
-                    np.sum(np.power(self.cartesian_coordinates.xyz[:, :2], 2), axis=1)
-                ),
-                cosmo_factor=self.cartesian_coordinates.xyz.cosmo_factor,
-                comoving=self.cartesian_coordinates.xyz.comoving,
+            rho = np.sqrt(
+                np.sum(np.power(self.cartesian_coordinates.xyz[:, :2], 2), axis=1)
             )
             if self._spherical_coordinates is not None:
                 phi = self.spherical_coordinates.phi
             else:
+                # np.where returns ndarray
                 phi = np.arctan2(
                     self.cartesian_coordinates.y, self.cartesian_coordinates.x
-                )
+                ).view(np.ndarray)
                 phi = np.where(phi < 0, phi + 2 * np.pi, phi)
-                phi = cosmo_array(phi, units=unyt.rad)
+                phi = cosmo_array(
+                    phi,
+                    units=unyt.rad,
+                    comoving=self.cartesian_coordinates.xyz.comoving,
+                    cosmo_factor=cosmo_factor(
+                        a ** 0,
+                        scale_factor=self.cartesian_coordinates.xyz.cosmo_factor.scale_factor,
+                    ),
+                )
             z = self.cartesian_coordinates.z
             self._cylindrical_coordinates = dict(_rho=rho, _phi=phi, _z=z)
         return _CoordinateHelper(
