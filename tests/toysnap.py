@@ -291,6 +291,9 @@ def remove_toysnap(snapfile=toysnap_filename):
 
 def create_toyvr(filebase=toyvr_filebase):
     with h5py.File(f"{toyvr_filebase}.properties", "w") as f:
+        f.create_group("SimulationInfo")
+        f["SimulationInfo"].attrs["ScaleFactor"] = 1.0
+        f["SimulationInfo"].attrs["Cosmological_Sim"] = 1
         for coord in "XYZ":
             f.create_dataset(f"{coord}c", data=np.array([2.0], dtype=float))
             f.create_dataset(f"{coord}cminpot", data=np.array([2.001], dtype=float))
