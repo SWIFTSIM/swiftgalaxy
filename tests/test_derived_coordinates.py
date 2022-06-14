@@ -4,7 +4,7 @@ import unyt as u
 from unyt.testing import assert_allclose_units
 from toysnap import present_particle_types
 from scipy.spatial.transform import Rotation
-from swiftsimio.objects import cosmo_array
+from swiftsimio.objects import cosmo_array, cosmo_factor, a
 
 abstol_c = 1 * u.pc  # less than this is ~0
 abstol_v = 10 * u.m / u.s  # less than this is ~0
@@ -23,11 +23,7 @@ class TestCartesianCoordinates:
         ),
     )
     @pytest.mark.parametrize(
-        "coordinate_type, tol",
-        (
-            ("coordinates", abstol_c),
-            ("velocities", abstol_v),
-        ),
+        "coordinate_type, tol", (("coordinates", abstol_c), ("velocities", abstol_v))
     )
     def test_cartesian_coordinates(
         self, sg, particle_name, coordinate_name, mask, coordinate_type, tol
@@ -75,7 +71,7 @@ class TestSphericalCoordinates:
             np.where(r_from_cartesian == 0, 0, np.arcsin(xyz[:, 2] / r_from_cartesian))
             * u.rad
         )
-        phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0])
+        phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0]).view(np.ndarray)
         phi_from_cartesian = (
             np.where(
                 phi_from_cartesian < 0,
@@ -137,7 +133,7 @@ class TestSphericalCoordinates:
             np.where(r_from_cartesian == 0, 0, np.arcsin(xyz[:, 2] / r_from_cartesian))
             * u.rad
         )
-        phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0])
+        phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0]).view(np.ndarray)
         phi_from_cartesian = (
             np.where(
                 phi_from_cartesian < 0,
@@ -166,7 +162,7 @@ class TestSphericalCoordinates:
         """
         spherical_phi = getattr(getattr(sg, particle_name).spherical_coordinates, alias)
         xyz = getattr(sg, particle_name).coordinates
-        phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0])
+        phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0]).view(np.ndarray)
         phi_from_cartesian = (
             np.where(
                 phi_from_cartesian < 0,
@@ -193,7 +189,7 @@ class TestSphericalCoordinates:
         )
         xyz = getattr(sg, particle_name).coordinates
         vxyz = getattr(sg, particle_name).velocities
-        phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0])
+        phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0]).view(np.ndarray)
         phi_from_cartesian = (
             np.where(
                 phi_from_cartesian < 0,
@@ -238,7 +234,7 @@ class TestCylindricalCoordinates:
         )
         xyz = getattr(sg, particle_name).coordinates
         vxyz = getattr(sg, particle_name).velocities
-        phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0])
+        phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0]).view(np.ndarray)
         phi_from_cartesian = (
             np.where(
                 phi_from_cartesian < 0,
@@ -265,7 +261,7 @@ class TestCylindricalCoordinates:
             getattr(sg, particle_name).cylindrical_coordinates, alias
         )
         xyz = getattr(sg, particle_name).coordinates
-        phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0])
+        phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0]).view(np.ndarray)
         phi_from_cartesian = (
             np.where(
                 phi_from_cartesian < 0,
@@ -289,7 +285,7 @@ class TestCylindricalCoordinates:
         )
         xyz = getattr(sg, particle_name).coordinates
         vxyz = getattr(sg, particle_name).velocities
-        phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0])
+        phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0]).view(np.ndarray)
         phi_from_cartesian = (
             np.where(
                 phi_from_cartesian < 0,
@@ -341,10 +337,10 @@ class TestInteractionWithCoordinateTransformations:
     @pytest.mark.parametrize(
         "transform_function, transform_arg",
         (
-            ("translate", cosmo_array(np.zeros(3), u.Mpc)),
-            ("boost", cosmo_array(np.zeros(3), u.km / u.s)),
-            ("recentre", cosmo_array(np.zeros(3), u.Mpc)),
-            ("recentre_velocity", cosmo_array(np.zeros(3), u.km / u.s)),
+            ("translate", cosmo_array(np.zeros(3), units=u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.))),
+            ("boost", cosmo_array(np.zeros(3), units=u.km / u.s, comoving=True, cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.))),
+            ("recentre", cosmo_array(np.zeros(3), units=u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.))),
+            ("recentre_velocity", cosmo_array(np.zeros(3), units=u.km / u.s, comoving=True, cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.))),
             ("rotate", Rotation.from_matrix(np.eye(3))),
         ),
     )
@@ -385,20 +381,15 @@ class TestInteractionWithCoordinateTransformations:
     @pytest.mark.parametrize(
         "transform_function, transform_arg",
         (
-            ("translate", cosmo_array(np.ones(3), u.Mpc)),
-            ("boost", cosmo_array(100 * np.ones(3), u.km / u.s)),
-            ("recentre", cosmo_array(np.ones(3), u.Mpc)),
-            ("recentre_velocity", cosmo_array(100 * np.ones(3), u.km / u.s)),
+            ("translate", cosmo_array(np.ones(3), units=u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.))),
+            ("boost", cosmo_array(100 * np.ones(3), units=u.km / u.s, comoving=True, cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.))),
+            ("recentre", cosmo_array(np.ones(3), units=u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.))),
+            ("recentre_velocity", cosmo_array(100 * np.ones(3), units=u.km / u.s, comoving=True, cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.))),
             ("rotate", Rotation.from_rotvec(np.pi / 2 * np.array([1, 1, 1]))),
         ),
     )
     def test_cartesian_coordinates_transform(
-        self,
-        sg,
-        particle_name,
-        coordinate_type,
-        transform_function,
-        transform_arg,
+        self, sg, particle_name, coordinate_type, transform_function, transform_arg
     ):
         """
         Check that cartesian coordinate views update with transformations.

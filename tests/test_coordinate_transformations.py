@@ -1,8 +1,9 @@
 import pytest
 import numpy as np
 import unyt as u
+from warnings import warn
 from unyt.testing import assert_allclose_units
-from swiftsimio.objects import cosmo_array
+from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from scipy.spatial.transform import Rotation
 from toysnap import present_particle_types
 
@@ -11,28 +12,96 @@ abstol_c = 10 * u.pc  # less than this is ~0
 abstol_v = 10 * u.m / u.s  # less than this is ~0
 
 expected_xy = {
-    "gas": reltol * 10 * u.kpc,
-    "dark_matter": reltol * 100 * u.kpc,
-    "stars": reltol * 5 * u.kpc,
-    "black_holes": abstol_c,
+    "gas": cosmo_array(
+        reltol * 10,
+        units=u.kpc,
+        comoving=True,
+        cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+    ),
+    "dark_matter": cosmo_array(
+        reltol * 100,
+        units=u.kpc,
+        comoving=True,
+        cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+    ),
+    "stars": cosmo_array(
+        reltol * 5,
+        units=u.kpc,
+        comoving=True,
+        cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+    ),
+    "black_holes": cosmo_array(
+        abstol_c, comoving=True, cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0)
+    ),
 }
 expected_z = {
-    "gas": reltol * 1 * u.kpc,
-    "dark_matter": reltol * 100 * u.kpc,
-    "stars": reltol * 500 * u.pc,
-    "black_holes": abstol_c,
+    "gas": cosmo_array(
+        reltol,
+        units=u.kpc,
+        comoving=True,
+        cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+    ),
+    "dark_matter": cosmo_array(
+        reltol * 100,
+        units=u.kpc,
+        comoving=True,
+        cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+    ),
+    "stars": cosmo_array(
+        reltol * 500,
+        units=u.pc,
+        comoving=True,
+        cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+    ),
+    "black_holes": cosmo_array(
+        abstol_c, comoving=True, cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0)
+    ),
 }
 expected_vxy = {
-    "gas": reltol * 100 * u.km / u.s,
-    "dark_matter": reltol * 100 * u.km / u.s,
-    "stars": reltol * 50 * u.km / u.s,
-    "black_holes": abstol_v,
+    "gas": cosmo_array(
+        reltol * 100,
+        units=u.km / u.s,
+        comoving=True,
+        cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+    ),
+    "dark_matter": cosmo_array(
+        reltol * 100,
+        units=u.km / u.s,
+        comoving=True,
+        cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+    ),
+    "stars": cosmo_array(
+        reltol * 50,
+        units=u.km / u.s,
+        comoving=True,
+        cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+    ),
+    "black_holes": cosmo_array(
+        abstol_v, comoving=True, cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0)
+    ),
 }
 expected_vz = {
-    "gas": reltol * 10 * u.km / u.s,
-    "dark_matter": reltol * 100 * u.km / u.s,
-    "stars": reltol * 10 * u.km / u.s,
-    "black_holes": abstol_v,
+    "gas": cosmo_array(
+        reltol * 10,
+        units=u.km / u.s,
+        comoving=True,
+        cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+    ),
+    "dark_matter": cosmo_array(
+        reltol * 100,
+        units=u.km / u.s,
+        comoving=True,
+        cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+    ),
+    "stars": cosmo_array(
+        reltol * 10,
+        units=u.km / u.s,
+        comoving=True,
+        cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+    ),
+    "black_holes": cosmo_array(
+        abstol_v, comoving=True, cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0)
+    ),
 }
 
 # make an arbitrary rotation matrix for testing
@@ -75,19 +144,19 @@ class TestAutoCoordinateTransformations:
         assert (np.abs(xyz[:, 2]) <= expected_z).all()
 
     @pytest.mark.parametrize(
-        "particle_name, expected_xy, expected_z",
+        "particle_name, expected_vxy, expected_vz",
         [(k, expected_vxy[k], expected_vz[k]) for k in present_particle_types.values()],
     )
     def test_auto_recentering_velocity(
-        self, sg, particle_name, expected_xy, expected_z
+        self, sg, particle_name, expected_vxy, expected_vz
     ):
         """
         The galaxy velocities should be around (0, 0, 0),
         the velocity centre is (200, 200, 200).
         """
         vxyz = getattr(sg, particle_name).velocities
-        assert (np.abs(vxyz[:, :2]) <= expected_xy).all()
-        assert (np.abs(vxyz[:, 2]) <= expected_z).all()
+        assert (np.abs(vxyz[:, :2]) <= expected_vxy).all()
+        assert (np.abs(vxyz[:, 2]) <= expected_vz).all()
 
     @pytest.mark.parametrize(
         "particle_name, expected_xy, expected_z",
@@ -191,11 +260,15 @@ class TestManualCoordinateTransformations:
                 f"_{coordinate_name}",
                 None,
             )
-        sg.recentre(cosmo_array([1, 1, 1], u.Mpc))
-        xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
-        assert_allclose_units(
-            xyz_before - cosmo_array([1, 1, 1], u.Mpc), xyz, rtol=1.0e-4, atol=abstol_c
+        new_centre = cosmo_array(
+            [1, 1, 1],
+            units=u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
         )
+        sg.recentre(new_centre)
+        xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
+        assert_allclose_units(xyz_before - new_centre, xyz, rtol=1.0e-4, atol=abstol_c)
 
     @pytest.mark.parametrize("velocity_name", ("velocities", "extra_velocities"))
     @pytest.mark.parametrize("particle_name", present_particle_types.values())
@@ -211,13 +284,16 @@ class TestManualCoordinateTransformations:
             setattr(
                 getattr(sg, particle_name)._particle_dataset, f"_{velocity_name}", None
             )
-        sg.recentre_velocity(cosmo_array([100, 100, 100], u.km / u.s))
+        new_centre = cosmo_array(
+            [100, 100, 100],
+            units=u.km / u.s,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+        )
+        sg.recentre_velocity(new_centre)
         vxyz = getattr(getattr(sg, particle_name), f"{velocity_name}")
         assert_allclose_units(
-            vxyz_before - cosmo_array([100, 100, 100], u.km / u.s),
-            vxyz,
-            rtol=1.0e-4,
-            atol=abstol_v,
+            vxyz_before - new_centre, vxyz, rtol=1.0e-4, atol=abstol_v
         )
 
     @pytest.mark.parametrize("coordinate_name", ("coordinates", "extra_coordinates"))
@@ -234,11 +310,15 @@ class TestManualCoordinateTransformations:
                 f"_{coordinate_name}",
                 None,
             )
-        sg.translate(cosmo_array([1, 1, 1], u.Mpc))
-        xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
-        assert_allclose_units(
-            xyz_before + cosmo_array([1, 1, 1], u.Mpc), xyz, rtol=1.0e-4, atol=abstol_c
+        translation = cosmo_array(
+            [1, 1, 1],
+            units=u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
         )
+        sg.translate(translation)
+        xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
+        assert_allclose_units(xyz_before + translation, xyz, rtol=1.0e-4, atol=abstol_c)
 
     @pytest.mark.parametrize("velocity_name", ("velocities", "extra_velocities"))
     @pytest.mark.parametrize("particle_name", present_particle_types.values())
@@ -252,14 +332,15 @@ class TestManualCoordinateTransformations:
             setattr(
                 getattr(sg, particle_name)._particle_dataset, f"{velocity_name}", None
             )
-        sg.boost(cosmo_array([100, 100, 100], u.km / u.s))
-        vxyz = getattr(getattr(sg, particle_name), f"{velocity_name}")
-        assert_allclose_units(
-            vxyz_before + cosmo_array([100, 100, 100], u.km / u.s),
-            vxyz,
-            rtol=1.0e-4,
-            atol=abstol_v,
+        boost = cosmo_array(
+            [100, 100, 100],
+            u.km / u.s,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
         )
+        sg.boost(boost)
+        vxyz = getattr(getattr(sg, particle_name), f"{velocity_name}")
+        assert_allclose_units(vxyz_before + boost, vxyz, rtol=1.0e-4, atol=abstol_v)
 
     @pytest.mark.parametrize(
         "coordinate_name, velocity_name",
@@ -296,7 +377,19 @@ class TestManualCoordinateTransformations:
         """
         Check that translating by a box length wraps back to previous state.
         """
-        boxsize = cosmo_array(sg.metadata.boxsize, comoving=True)
+        if hasattr(sg.metadata.boxsize, "comoving"):
+            # if this warning produced, remove cast to cosmo_array below
+            # and this warning block
+            warn(
+                "SWIFTSimIO is now giving boxsize as comso_array, update this test.",
+                category=RuntimeWarning,
+            )
+        else:
+            boxsize = cosmo_array(
+                sg.metadata.boxsize,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+            )
         xyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         sg.translate(boxsize)
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
@@ -314,14 +407,17 @@ class TestSequentialTransformations:
         xyz_before = sg.gas.coordinates
         if before_load:
             sg.gas._coordinates = None
-        sg.translate(cosmo_array([1, 1, 1], u.Mpc))
+        translation = cosmo_array(
+            [1, 1, 1],
+            units=u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+        )
+        sg.translate(translation)
         sg.rotate(Rotation.from_matrix(rot))
         xyz = sg.gas.coordinates
         assert_allclose_units(
-            (xyz_before + cosmo_array([1, 1, 1], u.Mpc)).dot(rot),
-            xyz,
-            rtol=1.0e-4,
-            atol=abstol_c,
+            (xyz_before + translation).dot(rot), xyz, rtol=1.0e-4, atol=abstol_c
         )
 
     @pytest.mark.parametrize("before_load", (True, False))
@@ -335,13 +431,16 @@ class TestSequentialTransformations:
         if before_load:
             sg.gas._coordinates = None
         sg.rotate(Rotation.from_matrix(rot))
-        sg.translate(cosmo_array([1, 1, 1], u.Mpc))
+        translation = cosmo_array(
+            [1, 1, 1],
+            units=u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a ** 1, scale_factor=1.0),
+        )
+        sg.translate(translation)
         xyz = sg.gas.coordinates
         assert_allclose_units(
-            xyz_before.dot(rot) + cosmo_array([1, 1, 1], u.Mpc),
-            xyz,
-            rtol=1.0e-4,
-            atol=abstol_c,
+            xyz_before.dot(rot) + translation, xyz, rtol=1.0e-4, atol=abstol_c
         )
 
     @pytest.mark.parametrize("before_load", (True, False))
@@ -354,14 +453,17 @@ class TestSequentialTransformations:
         vxyz_before = sg.gas.velocities
         if before_load:
             sg.gas._velocities = None
-        sg.boost(cosmo_array([100, 100, 100], u.km / u.s))
+        boost = cosmo_array(
+            [100, 100, 100],
+            units=u.km / u.s,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+        )
+        sg.boost(boost)
         sg.rotate(Rotation.from_matrix(rot))
         vxyz = sg.gas.velocities
         assert_allclose_units(
-            (vxyz_before + cosmo_array([100, 100, 100], u.km / u.s)).dot(rot),
-            vxyz,
-            rtol=1.0e-4,
-            atol=abstol_v,
+            (vxyz_before + boost).dot(rot), vxyz, rtol=1.0e-4, atol=abstol_v
         )
 
     @pytest.mark.parametrize("before_load", (True, False))
@@ -375,11 +477,24 @@ class TestSequentialTransformations:
         if before_load:
             sg.gas._velocities = None
         sg.rotate(Rotation.from_matrix(rot))
-        sg.boost(cosmo_array([100, 100, 100], u.km / u.s))
+        boost = cosmo_array(
+            [100, 100, 100],
+            units=u.km / u.s,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a ** 0, scale_factor=1.0),
+        )
+        sg.boost(boost)
         vxyz = sg.gas.velocities
         assert_allclose_units(
-            vxyz_before.dot(rot) + cosmo_array([100, 100, 100], u.km / u.s),
-            vxyz,
-            rtol=1.0e-4,
-            atol=abstol_v,
+            vxyz_before.dot(rot) + boost, vxyz, rtol=1.0e-4, atol=abstol_v
         )
+
+
+@pytest.mark.xfail
+class TestBoxsizeIsCosmoArray:
+    def test_boxsize_is_cosmo_array(self, sg):
+        # When swiftsimio issue #128 is resolved:
+        #   - This test will unexpectedly pass.
+        #   - Remove this test.
+        #   - Remove catch_warnings and filterwarnings from _apply_box_wrap in reader.py
+        assert hasattr(sg.metadata.boxsize, "comoving")
