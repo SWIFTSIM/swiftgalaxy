@@ -646,7 +646,7 @@ class _SWIFTParticleDatasetHelper(object):
                 units=unyt.rad,
                 comoving=r.comoving,
                 cosmo_factor=cosmo_factor(
-                    a**0, scale_factor=r.cosmo_factor.scale_factor
+                    a ** 0, scale_factor=r.cosmo_factor.scale_factor
                 ),
             )
             if self.cylindrical_coordinates is not None:
@@ -659,7 +659,7 @@ class _SWIFTParticleDatasetHelper(object):
                     units=unyt.rad,
                     comoving=r.comoving,
                     cosmo_factor=cosmo_factor(
-                        a**0, scale_factor=r.cosmo_factor.scale_factor
+                        a ** 0, scale_factor=r.cosmo_factor.scale_factor
                     ),
                 )
                 phi[phi < 0] = phi[phi < 0] + 2 * np.pi * unyt.rad
@@ -825,7 +825,7 @@ class _SWIFTParticleDatasetHelper(object):
                     units=unyt.rad,
                     comoving=rho.comoving,
                     cosmo_factor=cosmo_factor(
-                        a**0, scale_factor=rho.cosmo_factor.scale_factor
+                        a ** 0, scale_factor=rho.cosmo_factor.scale_factor
                     ),
                 )
             z = self.cartesian_coordinates.z
@@ -1418,7 +1418,7 @@ class SWIFTGalaxy(SWIFTDataset):
                 units=transform_units,
                 comoving=True,
                 cosmo_factor=cosmo_factor(
-                    a**1, scale_factor=self.metadata.scale_factor
+                    a ** 1, scale_factor=self.metadata.scale_factor
                 ),
             ),
             transform,
@@ -1435,7 +1435,7 @@ class SWIFTGalaxy(SWIFTDataset):
                 units=transform_units,
                 comoving=True,
                 cosmo_factor=cosmo_factor(
-                    a**0, scale_factor=self.metadata.scale_factor
+                    a ** 0, scale_factor=self.metadata.scale_factor
                 ),
             ),
             transform,

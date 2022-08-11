@@ -218,8 +218,7 @@ class Velociraptor(_HaloFinder):
             )
 
         self._catalogue = load_catalogue(
-            self.velociraptor_files["properties"],
-            mask=self.halo_index,
+            self.velociraptor_files["properties"], mask=self.halo_index
         )
         groups = load_groups(
             self.velociraptor_files["catalog_groups"],
@@ -276,7 +275,7 @@ class Velociraptor(_HaloFinder):
                 ]
             ),
             comoving=False,  # velociraptor gives physical centres!
-            cosmo_factor=cosmo_factor(a**1, self.scale_factor),
+            cosmo_factor=cosmo_factor(a ** 1, self.scale_factor),
         ).to_comoving()
 
     def _vcentre(self) -> cosmo_array:
@@ -301,7 +300,7 @@ class Velociraptor(_HaloFinder):
                 ]
             ),
             comoving=False,
-            cosmo_factor=cosmo_factor(a**0, self.scale_factor),
+            cosmo_factor=cosmo_factor(a ** 0, self.scale_factor),
         ).to_comoving()
 
     def __getattr__(self, attr: str) -> Any:
