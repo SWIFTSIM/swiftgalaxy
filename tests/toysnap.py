@@ -12,10 +12,10 @@ toysnap_filename = "toysnap.hdf5"
 toyvr_filebase = "toyvr"
 present_particle_types = {0: "gas", 1: "dark_matter", 4: "stars", 5: "black_holes"}
 boxsize = 10.0
-n_g_all = 32 ** 3
+n_g_all = 32**3
 n_g = 10000
 n_g_b = n_g_all - n_g
-n_dm_all = 32 ** 3
+n_dm_all = 32**3
 n_dm = 10000
 n_dm_b = n_dm_all - n_dm
 n_s = 10000
@@ -328,13 +328,13 @@ def create_toyvr(filebase=toyvr_filebase):
         f["ID"].attrs["Dimension_Time"] = 0.0
         f["ID"].attrs["Dimension_Velocity"] = 0.0
         # pick arbitrary particle in the galaxy to be most bound
-        f.create_dataset("ID_mbp", data=np.array([32 ** 3 - 9999], dtype=int))
+        f.create_dataset("ID_mbp", data=np.array([32**3 - 9999], dtype=int))
         f["ID_mbp"].attrs["Dimension_Length"] = 0.0
         f["ID_mbp"].attrs["Dimension_Mass"] = 0.0
         f["ID_mbp"].attrs["Dimension_Time"] = 0.0
         f["ID_mbp"].attrs["Dimension_Velocity"] = 0.0
         # pick arbitrary particle in the galaxy to be potential minimum
-        f.create_dataset("ID_minpot", data=np.array([32 ** 3 - 9998], dtype=int))
+        f.create_dataset("ID_minpot", data=np.array([32**3 - 9998], dtype=int))
         f["ID_minpot"].attrs["Dimension_Length"] = 0.0
         f["ID_minpot"].attrs["Dimension_Mass"] = 0.0
         f["ID_minpot"].attrs["Dimension_Time"] = 0.0
