@@ -376,7 +376,7 @@ class TestManualCoordinateTransformations:
     @pytest.mark.parametrize("particle_name", present_particle_types.values())
     def test_box_wrap(self, sg, particle_name, coordinate_name):
         """
-        Check that translating by a box length wraps back to previous state.
+        Check that translating by two box lengths wraps back to previous state.
         """
         if hasattr(sg.metadata.boxsize, "comoving"):
             # if this warning produced, remove cast to cosmo_array below
@@ -392,7 +392,7 @@ class TestManualCoordinateTransformations:
                 cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
             )
         xyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
-        sg.translate(boxsize)
+        sg.translate(-2 * boxsize)  # -2x box size
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         assert_allclose_units(xyz_before, xyz, rtol=1.0e-4, atol=abstol_c)
 
@@ -553,4 +553,5 @@ class TestBoxsizeIsCosmoArray:
         #   - This test will unexpectedly pass.
         #   - Remove this test.
         #   - Remove catch_warnings and filterwarnings from _apply_box_wrap in reader.py
+        #   - Remove explicit attribute copying in _apply_box_wrap in reader.py
         assert hasattr(sg.metadata.boxsize, "comoving")

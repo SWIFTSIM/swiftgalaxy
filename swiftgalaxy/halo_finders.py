@@ -218,8 +218,7 @@ class Velociraptor(_HaloFinder):
             )
 
         self._catalogue = load_catalogue(
-            self.velociraptor_files["properties"],
-            mask=self.halo_index,
+            self.velociraptor_files["properties"], mask=self.halo_index
         )
         groups = load_groups(
             self.velociraptor_files["catalog_groups"],

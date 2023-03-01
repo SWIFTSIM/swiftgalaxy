@@ -36,9 +36,8 @@ from typing import Union, Any, Optional, Set
 
 
 def _apply_box_wrap(coords: cosmo_array, boxsize: Optional[cosmo_array]) -> cosmo_array:
-    retval = coords
     if boxsize is None:
-        return retval
+        return coords
     # Would like to ensure comoving coordinates here, but metadata gives boxsize as a
     # unyt_array instead of a cosmo_array. Pending swiftsimio issue #128. When
     # implementing, remove cast(s) to cosmo_array in test_coordinate_transformations.
@@ -46,15 +45,9 @@ def _apply_box_wrap(coords: cosmo_array, boxsize: Optional[cosmo_array]) -> cosm
         filterwarnings(
             "ignore", category=RuntimeWarning, message="Mixing ufunc arguments"
         )
-        for axis in range(3):
-            too_high = retval[:, axis] > boxsize[axis] / 2.0
-            while too_high.any():
-                retval[too_high, axis] -= boxsize[axis]
-                too_high = retval[:, axis] > boxsize[axis] / 2.0
-            too_low = retval[:, axis] <= -boxsize[axis] / 2.0
-            while too_low.any():
-                retval[too_low, axis] += boxsize[axis]
-                too_low = retval[:, axis] <= -boxsize[axis] / 2.0
+        retval = (coords + boxsize / 2.0) % boxsize - boxsize / 2.0
+    retval.comoving = coords.comoving
+    retval.cosmo_factor = coords.cosmo_factor
     return retval
 
 
