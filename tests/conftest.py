@@ -12,7 +12,6 @@ from toysnap import (
 
 @pytest.fixture(scope="function")
 def sg():
-
     create_toysnap()
 
     yield SWIFTGalaxy(
@@ -27,7 +26,6 @@ def sg():
 
 @pytest.fixture(scope="function")
 def sg_custom_names():
-
     toysnap_custom_names_filename = "toysnap_custom_names.hdf5"
     alt_coord_name, alt_vel_name, alt_id_name = "my_coords", "my_vels", "my_ids"
 
@@ -53,7 +51,6 @@ def sg_custom_names():
 
 @pytest.fixture(scope="function")
 def sg_autorecentre_off():
-
     create_toysnap()
 
     yield SWIFTGalaxy(
@@ -69,7 +66,6 @@ def sg_autorecentre_off():
 
 @pytest.fixture(scope="function")
 def sg_vr():
-
     create_toysnap()
     create_toyvr()
 
@@ -86,7 +82,6 @@ def sg_vr():
 
 @pytest.fixture(scope="function")
 def vr():
-
     create_toyvr()
 
     yield Velociraptor(velociraptor_filebase="toyvr", halo_index=0)
