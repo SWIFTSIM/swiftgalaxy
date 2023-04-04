@@ -176,7 +176,7 @@ class Velociraptor(_HaloFinder):
         centre_type: str = "minpot",  # _gas _star mbp minpot
         velociraptor_suffix: str = "",
     ) -> None:
-        from velociraptor.catalogue.catalogue import VelociraptorCatalogue
+        from velociraptor.catalogue.catalogue import Catalogue
 
         if velociraptor_filebase is not None and velociraptor_files is not None:
             raise ValueError(
@@ -198,7 +198,7 @@ class Velociraptor(_HaloFinder):
         else:
             self.halo_index: int = halo_index
         self.centre_type: str = centre_type
-        self._catalogue: Optional[VelociraptorCatalogue] = None
+        self._catalogue: Optional[Catalogue] = None
         self._particles: Optional[None] = None
         super().__init__(extra_mask=extra_mask)
         # currently velociraptor_python works with a halo index, not halo_id
