@@ -1,6 +1,10 @@
 name: Run tests
 
-on: [push, pull_request]
+on:
+  schedule:
+    - cron: '19 3 * * 1-5'
+  push:
+  pull_request:
 
 jobs:
 
@@ -8,13 +12,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Run Black
         uses: psf/black@stable
       - name: Set up Python environment
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.6"
+          python-version: "3.9"
       - name: Run flake8
         uses: py-actions/flake8@v2
       
@@ -27,13 +31,13 @@ jobs:
         python-version: [3.7, 3.8, 3.9, "3.10"]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Cache pip
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         # This path is specific to Ubuntu
         path: ~/.cache/pip
