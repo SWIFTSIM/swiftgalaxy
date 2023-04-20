@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "swiftgalaxy"
+version="1.0.1"
+authors = [
+    { name="Kyle Oman", email="kyle.a.oman@durham.ac.uk" },
+]
+description="Code abstraction of objects (galaxies) in simulations."
+readme = "README.rst"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "h5py",
+    "unyt",
+    "swiftsimio",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/SWIFTSIM/swiftgalaxy"
+"Bug Tracker" = "https://github.com/SWIFTSIM/swiftgalaxy/issues"
+"Documentation" = "https://swiftgalaxy.readthedocs.io/en/latest"
+
+[project.optional-dependencies]
+velociraptor = ["velociraptor"]
