@@ -1,7 +1,7 @@
 Halo finders
 ============
 
-:mod:`swiftgalaxy` uses a helper class to create a uniform interface to outputs from different halo finders. Provided a python library to read the halo finder outputs already exists, this helper class is usually lightweight and easy to create. Currently, the Velociraptor halo finder has built-in support, and support for HBT+ is planned. Other halo finders may be supported on request -- pull requests to the repository are also welcome.
+:mod:`swiftgalaxy` uses a helper class to create a uniform interface to outputs from different halo finders. Provided a python library to read the halo finder outputs already exists, this helper class is usually lightweight and easy to create. Currently, the Velociraptor halo finder has built-in support, and support for SOAP is planned. Other halo finders may be supported on request -- pull requests to the repository are also welcome.
 
 The second argument to create a :class:`~swiftgalaxy.reader.SWIFTGalaxy` is an instance of a class derived from the base helper class :class:`~swiftgalaxy.halo_finders._HaloFinder`, such as :class:`~swiftgalaxy.halo_finders.Velociraptor`. This object has multiple roles. It will be aware of:
 
@@ -71,12 +71,10 @@ These can be used as, for example:
 	centre_type='mbp'
     )
 
-HBT+
+SOAP
 ----
 
-Future support for `HBT+`_ is planned.
-
-.. _HBT+: https://ui.adsabs.harvard.edu/abs/2018MNRAS.474..604H/abstract
+Future support for `SOAP` is planned.
 
 Other halo finders
 ------------------

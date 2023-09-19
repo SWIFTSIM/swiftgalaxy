@@ -2,7 +2,7 @@
 This module contains classes providing interfaces to halo finders used with
 SWIFT so that :mod:`swiftgalaxy` can obtain the information it requires in a
 streamlined way. Currently only the Velociraptor_ halo finder is supported, but
-support for other halo finders (e.g. `HBT+`_) is planned.
+support for other halo finders (e.g. `SOAP`, `HBT+`_) is planned.
 
 .. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/\
 abstract
