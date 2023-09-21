@@ -363,6 +363,8 @@ class Caesar(_HaloFinder):
         # from information in caesar outputs - requested a new property with
         # maximum particle radius, in the meantime we just the whole box:
         boxsize = sm.metadata.boxsize
+        # presumably max radius will be from standard centre, so should add offset between
+        # minpot centre and normal centre if using minpot centre to be conservative
         load_region = [[0.0 * b, 1.0 * b] for b in boxsize]
         sm.constrain_spatial(load_region)
         return sm
