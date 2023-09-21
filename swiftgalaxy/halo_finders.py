@@ -11,9 +11,9 @@ abstract
 
 from abc import ABC, abstractmethod
 import unyt as u
+from swiftsimio import SWIFTMetadata, SWIFTUnits, SWIFTMask
 from swiftgalaxy.masks import MaskCollection
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
-from swiftsimio.masks import SWIFTMask
 
 from typing import Any, Union, Optional, TYPE_CHECKING
 
@@ -32,7 +32,7 @@ class _HaloFinder(ABC):
         pass
 
     @abstractmethod
-    def _get_spatial_mask(self, SG: "SWIFTGalaxy") -> SWIFTMask:
+    def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         # return _spatial_mask
         pass
 
@@ -306,10 +306,106 @@ class Velociraptor(_HaloFinder):
     def __getattr__(self, attr: str) -> Any:
         # Invoked if attribute not found.
         # Use to expose the masked catalogue.
-        if attr == "_catalogue":
+        if attr == "_catalogue":  # guard infinite recursion
             return object.__getattribute__(self, "_catalogue")
         return getattr(self._catalogue, attr)
 
     def __repr__(self) -> str:
         # Expose the catalogue __repr__ for interactive use.
         return self._catalogue.__repr__()
+
+
+class Caesar(_HaloFinder):
+    def __init__(
+        self,
+        caesar_file: "str" = None,
+        group_type: "str" = None,  # halo galaxy
+        group_index: int = None,
+        centre_type: str = "minpot",  # standard minpot
+        extra_mask: Union[str, MaskCollection] = "bound_only",
+    ) -> None:
+        import caesar
+        import logging
+        from yt.utilities import logger as yt_logger
+
+        log_level = logging.getLogger("yt").level  # cache the log level before we start
+        yt_logger.set_log_level("warning")  # disable INFO log messages
+        self._caesar = caesar.load(caesar_file)
+        yt_logger.set_log_level(log_level)  # restore old log level
+
+        valid_group_types = dict(halo="halos", galaxy="galaxies")
+        if group_type in valid_group_types:
+            self._group = getattr(self._caesar, valid_group_types[group_type])[
+                group_index
+            ]
+        else:
+            raise ValueError(
+                "group_type required, valid values are 'halo' or 'galaxy'."
+            )
+        self.group_type: str = group_type
+        if group_index is None:
+            raise ValueError("group_index (int) required.")
+        else:
+            self.group_index: int = group_index
+
+        self.centre_type = centre_type
+
+        super().__init__(extra_mask=extra_mask)
+        return
+
+    def _load(self) -> None:
+        # any non-trivial io/calculation at initialisation time goes here
+        pass
+
+    def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
+        sm = SWIFTMask(SWIFTMetadata(snapshot_filename, SWIFTUnits(snapshot_filename)))
+        # no guaranteed way to get sub-region containing all group particles
+        # from information in caesar outputs - requested a new property with
+        # maximum particle radius, in the meantime we just the whole box:
+        boxsize = sm.metadata.boxsize
+        load_region = [[0.0 * b, 1.0 * b] for b in boxsize]
+        sm.constrain_spatial(load_region)
+        return sm
+
+    def _get_extra_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+        # seems like name could be dmlist or dlist?
+        if hasattr(self._group, "dlist"):
+            dm_mask = self._group.dlist
+        elif hasattr(self._group, "dmlist"):
+            dm_mask = self._group.dmlist
+        else:
+            dm_mask = None
+        # spatial mask converted to boolean arrays or slices needs to be applied:
+        return MaskCollection(
+            gas=getattr(self._group, "glist", None),
+            dm=dm_mask,
+            stars=getattr(self._group, "slist", None),
+            bh=getattr(self._group, "bhlist", None),
+        )
+
+    def _centre(self) -> cosmo_array:
+        centre_attr = dict(standard="pos", minpot="minpotpos")[self.centre_type]
+        return cosmo_array(
+            getattr(self._group, centre_attr),
+            comoving=True,  # caesar gives comoving centres
+            cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+        ).to_comoving()
+
+    def _vcentre(self) -> cosmo_array:
+        vcentre_attr = dict(standard="vel", minpot="minpotvel")[self.centre_type]
+        return cosmo_array(
+            getattr(self._group, vcentre_attr),
+            comoving=True,  # caesar gives comoving centres
+            cosmo_factor=cosmo_factor(a**0, self._caesar.simulation.scale_factor),
+        ).to_comoving()
+
+    def __getattr__(self, attr: str) -> Any:
+        # Invoked if attribute not found.
+        # Use to expose the masked catalogue.
+        if attr == "_group":  # guard infinite recursion
+            return object.__getattribute__(self, "_group")
+        return getattr(self._group, attr)
+
+    def __repr__(self) -> str:
+        # In Caesar use .info(), suggest this to interactive users
+        return f"{self._group.__repr__()}\nhint: try halo_finder.info()"
