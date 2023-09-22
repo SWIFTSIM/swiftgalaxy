@@ -1,13 +1,19 @@
 import pytest
-from swiftgalaxy import SWIFTGalaxy, Velociraptor
+from swiftgalaxy import SWIFTGalaxy, Velociraptor, Caesar
 from toysnap import (
     create_toysnap,
     remove_toysnap,
     create_toyvr,
     remove_toyvr,
+    create_toycaesar,
+    remove_toycaesar,
     ToyHF,
     toysnap_filename,
+    toyvr_filebase,
+    toycaesar_filename,
 )
+
+hfs = ("vr", "caesar_halo", "caesar_galaxy")
 
 
 @pytest.fixture(scope="function")
@@ -71,7 +77,7 @@ def sg_vr():
 
     yield SWIFTGalaxy(
         toysnap_filename,
-        Velociraptor(velociraptor_filebase="toyvr", halo_index=0),
+        Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=0),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
     )
@@ -84,6 +90,57 @@ def sg_vr():
 def vr():
     create_toyvr()
 
-    yield Velociraptor(velociraptor_filebase="toyvr", halo_index=0)
+    yield Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=0)
 
     remove_toyvr()
+
+
+# SHOULD BE ABLE TO __MERGE THE galaxy AND halo CASES WITH PARAMETRIZE?
+@pytest.fixture(scope="function")
+def caesar_halo():
+    create_toycaesar()
+
+    yield Caesar(caesar_file=toycaesar_filename, group_type="halo", group_index=0)
+
+    remove_toycaesar()
+
+
+@pytest.fixture(scope="function")
+def caesar_galaxy():
+    create_toycaesar()
+
+    yield Caesar(caesar_file=toycaesar_filename, group_type="galaxy", group_index=0)
+
+    remove_toycaesar()
+
+
+@pytest.fixture(scope="function")
+def sg_caesar_halo():
+    create_toysnap()
+    create_toycaesar()
+
+    yield SWIFTGalaxy(
+        toysnap_filename,
+        Caesar(caesar_file=toycaesar_filename, group_type="halo", group_index=0),
+        transforms_like_coordinates={"coordinates", "extra_coordinates"},
+        transforms_like_velocities={"velocities", "extra_velocities"},
+    )
+
+    remove_toysnap()
+    remove_toycaesar()
+
+
+@pytest.fixture(scope="function")
+def sg_caesar_galaxy():
+    create_toysnap()
+    create_toycaesar()
+
+    yield SWIFTGalaxy(
+        toysnap_filename,
+        Caesar(caesar_file=toycaesar_filename, group_type="galaxy", group_index=0),
+        transforms_like_coordinates={"coordinates", "extra_coordinates"},
+        transforms_like_velocities={"velocities", "extra_velocities"},
+    )
+
+    remove_toysnap()
+    remove_toycaesar()
