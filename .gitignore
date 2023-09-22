@@ -5,4 +5,4 @@
 *~
 \#*
 /docs/build
-tests/test.hdf5
+*.hdf5
