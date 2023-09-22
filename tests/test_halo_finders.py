@@ -72,8 +72,8 @@ class TestHaloFinders__MERGE1:
         Check that extra masks of different kinds have the right shape or type.
         """
         if hasattr(vr, "_caesar"):
-            if vr.group_type == "galaxy":
-                expected["dark_matter"] = None
+            if vr.group_type == "galaxy" and extra_mask == "bound_only":
+                expected["dark_matter"] = 0
         vr.extra_mask = extra_mask
         generated_extra_mask = vr._get_extra_mask(sg)
         for particle_type in present_particle_types.values():
@@ -153,8 +153,8 @@ class TestHaloFinders__MERGE2:
         Check that extra masks of different kinds have the right shape or type.
         """
         if hasattr(caesar_halo, "_caesar"):
-            if caesar_halo.group_type == "galaxy":
-                expected["dark_matter"] = None
+            if caesar_halo.group_type == "galaxy" and extra_mask == "bound_only":
+                expected["dark_matter"] = 0
         caesar_halo.extra_mask = extra_mask
         generated_extra_mask = caesar_halo._get_extra_mask(sg)
         for particle_type in present_particle_types.values():
@@ -234,8 +234,8 @@ class TestHaloFinders__MERGE3:
         Check that extra masks of different kinds have the right shape or type.
         """
         if hasattr(caesar_galaxy, "_caesar"):
-            if caesar_galaxy.group_type == "galaxy":
-                expected["dark_matter"] = None
+            if caesar_galaxy.group_type == "galaxy" and extra_mask == "bound_only":
+                expected["dark_matter"] = 0
         caesar_galaxy.extra_mask = extra_mask
         generated_extra_mask = caesar_galaxy._get_extra_mask(sg)
         for particle_type in present_particle_types.values():
