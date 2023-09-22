@@ -10,6 +10,7 @@ abstract
 """
 
 from abc import ABC, abstractmethod
+import numpy as np
 import unyt as u
 from swiftsimio import SWIFTMetadata, SWIFTUnits, SWIFTMask
 from swiftgalaxy.masks import MaskCollection
@@ -358,46 +359,76 @@ class Caesar(_HaloFinder):
         pass
 
     def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
-        sm = SWIFTMask(SWIFTMetadata(snapshot_filename, SWIFTUnits(snapshot_filename)))
+        sm = SWIFTMask(
+            SWIFTMetadata(snapshot_filename, SWIFTUnits(snapshot_filename)),
+            spatial_only=True,
+        )
         # no guaranteed way to get sub-region containing all group particles
         # from information in caesar outputs - requested a new property with
         # maximum particle radius, in the meantime we just the whole box:
         boxsize = sm.metadata.boxsize
         # presumably max radius will be from standard centre, so should add offset between
         # minpot centre and normal centre if using minpot centre to be conservative
-        load_region = [[0.0 * b, 1.0 * b] for b in boxsize]
+        # load_region = [[0.0 * b, 1.0 * b] for b in boxsize]
+        load_region = [
+            [0.39 * boxsize[0], 0.59 * boxsize[0]],
+            [0.52 * boxsize[1], 0.72 * boxsize[1]],
+            [0.64 * boxsize[2], 0.84 * boxsize[2]],
+        ]
         sm.constrain_spatial(load_region)
         return sm
 
     def _get_extra_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+        gas_mask = getattr(self._group, "glist", None)
         # seems like name could be dmlist or dlist?
         if hasattr(self._group, "dlist"):
-            dm_mask = self._group.dlist
+            dark_matter_mask = self._group.dlist
         elif hasattr(self._group, "dmlist"):
-            dm_mask = self._group.dmlist
+            dark_matter_mask = self._group.dmlist
         else:
-            dm_mask = None
+            dark_matter_mask = None
+        stars_mask = getattr(self._group, "slist", None)
+        black_holes_mask = getattr(self._group, "bhlist", None)
+        if gas_mask is not None:
+            gas_mask = np.concatenate(
+                [gas_mask[start:end] for start, end in SG.mask.gas]
+            )
+        if dark_matter_mask is not None:
+            dark_matter_mask = np.concatenate(
+                [dark_matter_mask[start:end] for start, end in SG.mask.dark_matter]
+            )
+        if stars_mask is not None:
+            stars_mask = np.concatenate(
+                [stars_mask[start:end] for start, end in SG.mask.stars]
+            )
+        print(stars_mask.shape, stars_mask.sum())
+        if black_holes_mask is not None:
+            black_holes_mask = np.concatenate(
+                [black_holes_mask[start:end] for start, end in SG.mask.black_holes]
+            )
         # spatial mask converted to boolean arrays or slices needs to be applied:
         return MaskCollection(
-            gas=getattr(self._group, "glist", None),
-            dm=dm_mask,
-            stars=getattr(self._group, "slist", None),
-            bh=getattr(self._group, "bhlist", None),
+            gas=gas_mask,
+            dark_matter=dark_matter_mask,
+            stars=stars_mask,
+            black_holes=black_holes_mask,
         )
 
     def _centre(self) -> cosmo_array:
         centre_attr = dict(standard="pos", minpot="minpotpos")[self.centre_type]
         return cosmo_array(
-            getattr(self._group, centre_attr),
-            comoving=True,  # caesar gives comoving centres
+            getattr(self._group, centre_attr).to(
+                u.kpc
+            ),  # maybe comoving, ensure physical
+            comoving=False,
             cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
         ).to_comoving()
 
     def _vcentre(self) -> cosmo_array:
         vcentre_attr = dict(standard="vel", minpot="minpotvel")[self.centre_type]
         return cosmo_array(
-            getattr(self._group, vcentre_attr),
-            comoving=True,  # caesar gives comoving centres
+            getattr(self._group, vcentre_attr).to(u.km / u.s),
+            comoving=False,
             cosmo_factor=cosmo_factor(a**0, self._caesar.simulation.scale_factor),
         ).to_comoving()
 
@@ -410,4 +441,8 @@ class Caesar(_HaloFinder):
 
     def __repr__(self) -> str:
         # In Caesar use .info(), suggest this to interactive users
-        return f"{self._group.__repr__()}\nhint: try halo_finder.info()"
+        print(
+            "hint: Caesar's interface is available, try e.g. halo_finder.info(), "
+            "halo_finder.pos, halo_finder.virial_quantities.m200c"
+        )
+        return self._group.__repr__()
