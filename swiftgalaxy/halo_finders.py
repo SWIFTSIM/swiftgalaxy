@@ -38,9 +38,26 @@ class _HaloFinder(ABC):
         pass
 
     @abstractmethod
-    def _get_extra_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+    def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
         # return _extra_mask
         pass
+
+    def _get_extra_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+        if self.extra_mask == "bound_only":
+            return self._generate_bound_only_mask(SG)
+        elif self.extra_mask is None:
+            return MaskCollection(
+                **{k: None for k in SG.metadata.present_particle_names}
+            )
+        else:
+            # Keep user provided mask. If no mask provided for a particle type
+            # use None (no mask).
+            return MaskCollection(
+                **{
+                    name: getattr(self.extra_mask, name, None)
+                    for name in SG.metadata.present_particle_names
+                }
+            )
 
     @abstractmethod
     def _centre(self) -> cosmo_array:
@@ -235,24 +252,10 @@ class Velociraptor(_HaloFinder):
 
         return generate_spatial_mask(self._particles, snapshot_filename)
 
-    def _get_extra_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+    def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
         from velociraptor.swift.swift import generate_bound_mask
 
-        if self.extra_mask == "bound_only":
-            return MaskCollection(**generate_bound_mask(SG, self._particles)._asdict())
-        elif self.extra_mask is None:
-            return MaskCollection(
-                **{k: None for k in SG.metadata.present_particle_names}
-            )
-        else:
-            # Keep user provided mask. If no mask provided for a particle type
-            # use None (no mask).
-            return MaskCollection(
-                **{
-                    name: getattr(self.extra_mask, name, None)
-                    for name in SG.metadata.present_particle_names
-                }
-            )
+        return MaskCollection(**generate_bound_mask(SG, self._particles)._asdict())
 
     def _centre(self) -> cosmo_array:
         # According to Velociraptor documentation:
@@ -322,7 +325,7 @@ class Caesar(_HaloFinder):
         caesar_file: "str" = None,
         group_type: "str" = None,  # halo galaxy
         group_index: int = None,
-        centre_type: str = "minpot",  # standard minpot
+        centre_type: str = "minpot",  # "" "minpot"
         extra_mask: Union[str, MaskCollection] = "bound_only",
     ) -> None:
         import caesar
@@ -371,42 +374,68 @@ class Caesar(_HaloFinder):
         # minpot centre and normal centre if using minpot centre to be conservative
         # load_region = [[0.0 * b, 1.0 * b] for b in boxsize]
         load_region = [
-            [0.39 * boxsize[0], 0.59 * boxsize[0]],
-            [0.52 * boxsize[1], 0.72 * boxsize[1]],
-            [0.64 * boxsize[2], 0.84 * boxsize[2]],
+            [0.0 * boxsize[0], 1.0 * boxsize[0]],
+            [0.0 * boxsize[1], 1.0 * boxsize[1]],
+            [0.0 * boxsize[2], 1.0 * boxsize[2]],
         ]
         sm.constrain_spatial(load_region)
         return sm
 
-    def _get_extra_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+    def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+        def in_one_of_ranges(ints: np.ndarray[int], int_ranges: np.ndarray[int]):
+            """
+            Produces a boolean mask corresponding to `ints`. For each element in `ints`,
+            the mask is `True` if the value is between (at least) one of the pairs of
+            integers in `int_ranges`. This is potentially memory intensive with a
+            footprint proportional to ints.size * int_ranges.size.
+            """
+            return np.logical_and(
+                ints >= int_ranges[:, 0, np.newaxis],
+                ints < int_ranges[:, 1, np.newaxis],
+            ).any(axis=0)
+
         gas_mask = getattr(self._group, "glist", None)
+        if gas_mask is not None:
+            gas_mask = gas_mask[in_one_of_ranges(gas_mask, SG.mask.gas)]
+            gas_mask = np.isin(
+                np.concatenate([np.arange(start, end) for start, end in SG.mask.gas]),
+                gas_mask,
+            )
         # seems like name could be dmlist or dlist?
         if hasattr(self._group, "dlist"):
             dark_matter_mask = self._group.dlist
         elif hasattr(self._group, "dmlist"):
             dark_matter_mask = self._group.dmlist
         else:
-            dark_matter_mask = None
-        stars_mask = getattr(self._group, "slist", None)
-        black_holes_mask = getattr(self._group, "bhlist", None)
-        if gas_mask is not None:
-            gas_mask = np.concatenate(
-                [gas_mask[start:end] for start, end in SG.mask.gas]
-            )
+            dark_matter_mask = np.array([])
         if dark_matter_mask is not None:
-            dark_matter_mask = np.concatenate(
-                [dark_matter_mask[start:end] for start, end in SG.mask.dark_matter]
+            dark_matter_mask = dark_matter_mask[
+                in_one_of_ranges(dark_matter_mask, SG.mask.dark_matter)
+            ]
+            dark_matter_mask = np.isin(
+                np.concatenate(
+                    [np.arange(start, end) for start, end in SG.mask.dark_matter]
+                ),
+                dark_matter_mask,
             )
+        stars_mask = getattr(self._group, "slist", None)
         if stars_mask is not None:
-            stars_mask = np.concatenate(
-                [stars_mask[start:end] for start, end in SG.mask.stars]
+            stars_mask = stars_mask[in_one_of_ranges(stars_mask, SG.mask.stars)]
+            stars_mask = np.isin(
+                np.concatenate([np.arange(start, end) for start, end in SG.mask.stars]),
+                stars_mask,
             )
-        print(stars_mask.shape, stars_mask.sum())
+        black_holes_mask = getattr(self._group, "bhlist", None)
         if black_holes_mask is not None:
-            black_holes_mask = np.concatenate(
-                [black_holes_mask[start:end] for start, end in SG.mask.black_holes]
+            black_holes_mask = black_holes_mask[
+                in_one_of_ranges(black_holes_mask, SG.mask.black_holes)
+            ]
+            black_holes_mask = np.isin(
+                np.concatenate(
+                    [np.arange(start, end) for start, end in SG.mask.black_holes]
+                ),
+                black_holes_mask,
             )
-        # spatial mask converted to boolean arrays or slices needs to be applied:
         return MaskCollection(
             gas=gas_mask,
             dark_matter=dark_matter_mask,
@@ -415,7 +444,7 @@ class Caesar(_HaloFinder):
         )
 
     def _centre(self) -> cosmo_array:
-        centre_attr = dict(standard="pos", minpot="minpotpos")[self.centre_type]
+        centre_attr = {"": "pos", "minpot": "minpotpos"}[self.centre_type]
         return cosmo_array(
             getattr(self._group, centre_attr).to(
                 u.kpc
@@ -425,7 +454,7 @@ class Caesar(_HaloFinder):
         ).to_comoving()
 
     def _vcentre(self) -> cosmo_array:
-        vcentre_attr = dict(standard="vel", minpot="minpotvel")[self.centre_type]
+        vcentre_attr = {"": "vel", "minpot": "minpotvel"}[self.centre_type]
         return cosmo_array(
             getattr(self._group, vcentre_attr).to(u.km / u.s),
             comoving=False,
@@ -440,9 +469,4 @@ class Caesar(_HaloFinder):
         return getattr(self._group, attr)
 
     def __repr__(self) -> str:
-        # In Caesar use .info(), suggest this to interactive users
-        print(
-            "hint: Caesar's interface is available, try e.g. halo_finder.info(), "
-            "halo_finder.pos, halo_finder.virial_quantities.m200c"
-        )
         return self._group.__repr__()
