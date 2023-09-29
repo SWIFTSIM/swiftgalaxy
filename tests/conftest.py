@@ -95,49 +95,45 @@ def vr():
     remove_toyvr()
 
 
-# SHOULD BE ABLE TO __MERGE THE galaxy AND halo CASES WITH PARAMETRIZE?
-@pytest.fixture(scope="function")
-def caesar_halo():
+@pytest.fixture(scope="function", params=["halo", "galaxy"])
+def caesar(request):
     create_toycaesar()
 
-    yield Caesar(caesar_file=toycaesar_filename, group_type="halo", group_index=0)
-
-    remove_toycaesar()
-
-
-@pytest.fixture(scope="function")
-def caesar_galaxy():
-    create_toycaesar()
-
-    yield Caesar(caesar_file=toycaesar_filename, group_type="galaxy", group_index=0)
-
-    remove_toycaesar()
-
-
-@pytest.fixture(scope="function")
-def sg_caesar_halo():
-    create_toysnap()
-    create_toycaesar()
-
-    yield SWIFTGalaxy(
-        toysnap_filename,
-        Caesar(caesar_file=toycaesar_filename, group_type="halo", group_index=0),
-        transforms_like_coordinates={"coordinates", "extra_coordinates"},
-        transforms_like_velocities={"velocities", "extra_velocities"},
+    yield Caesar(
+        caesar_file=toycaesar_filename, group_type=request.param, group_index=0
     )
 
-    remove_toysnap()
     remove_toycaesar()
 
 
-@pytest.fixture(scope="function")
-def sg_caesar_galaxy():
+@pytest.fixture(scope="function", params=["vr", "caesar_halo", "caesar_galaxy"])
+def hf(request):
+    if request.param in {"caesar_halo", "caesar_galaxy"}:
+        create_toycaesar()
+
+        yield Caesar(
+            caesar_file=toycaesar_filename,
+            group_type=request.param.split("_")[-1],
+            group_index=0,
+        )
+
+        remove_toycaesar()
+    elif request.param == "vr":
+        create_toyvr()
+
+        yield Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=0)
+
+        remove_toyvr()
+
+
+@pytest.fixture(scope="function", params=["halo", "galaxy"])
+def sg_caesar(request):
     create_toysnap()
     create_toycaesar()
 
     yield SWIFTGalaxy(
         toysnap_filename,
-        Caesar(caesar_file=toycaesar_filename, group_type="galaxy", group_index=0),
+        Caesar(caesar_file=toycaesar_filename, group_type=request.param, group_index=0),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
     )
