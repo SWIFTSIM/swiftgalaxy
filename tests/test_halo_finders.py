@@ -274,6 +274,18 @@ class TestCaesar:
         else:
             raise AttributeError
 
+    @pytest.mark.xfail
+    def test_spatial_mask_applied(self):
+        """
+        Until this issue is resolved:
+
+        https://github.com/dnarayanan/caesar/issues/92
+
+        Caesar catalogues don't contain enough information to construct a spatial mask.
+        For now we just read the whole box (!), and expect to fail this test.
+        """
+        raise NotImplementedError
+
 
 class TestCaesarWithSWIFTGalaxy:
     """

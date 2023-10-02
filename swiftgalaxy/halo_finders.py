@@ -490,6 +490,14 @@ class Caesar(_HaloFinder):
             [0.0 * boxsize[1], 1.0 * boxsize[1]],
             [0.0 * boxsize[2], 1.0 * boxsize[2]],
         ]
+        # make this warning more specific once newer caesar catalogues support better mask
+        from warnings import warn
+
+        warn(
+            "CAESAR catalogue does not contain group extent information, so spatial "
+            "mask defaults to entire box. Reading will be inefficient. See "
+            "https://github.com/dnarayanan/caesar/issues/92"
+        )
         sm.constrain_spatial(load_region)
         return sm
 
