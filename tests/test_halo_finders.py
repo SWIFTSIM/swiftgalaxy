@@ -10,6 +10,10 @@ from toysnap import (
     n_dm_all,
     n_s,
     n_bh,
+    m_g,
+    # m_dm,
+    m_s,
+    m_bh,
     present_particle_types,
     create_toysnap,
     remove_toysnap,
@@ -23,22 +27,15 @@ abstol_m = 1e4 * u.Msun  # less than this is ~0
 reltol_nd = 1.0e-4
 
 
-class TestVelociraptor:
-    def test_load(self, vr):
-        """
-        Check that the loading function is doing it's job.
-        """
-        # _load called during super().__init__
-        assert vr._catalogue is not None
-
-    def test_get_spatial_mask(self, vr):
+class TestHaloFinders:
+    def test_get_spatial_mask(self, hf):
         """
         Check that we get spatial masks that we expect.
         """
         # don't use sg fixture here, just need the snapshot file
         # so don't want overhead of a SWIFTGalaxy
         create_toysnap()
-        spatial_mask = vr._get_spatial_mask(toysnap_filename)
+        spatial_mask = hf._get_spatial_mask(toysnap_filename)
         remove_toysnap()
         assert np.array_equal(spatial_mask.gas, np.array([[0, n_g_all]]))
         assert np.array_equal(spatial_mask.dark_matter, np.array([[0, n_dm_all]]))
@@ -68,12 +65,15 @@ class TestVelociraptor:
             ),
         ),
     )
-    def test_get_extra_mask(self, sg, vr, extra_mask, expected):
+    def test_get_extra_mask(self, sg, hf, extra_mask, expected):
         """
         Check that extra masks of different kinds have the right shape or type.
         """
-        vr.extra_mask = extra_mask
-        generated_extra_mask = vr._get_extra_mask(sg)
+        if hasattr(hf, "_caesar"):
+            if hf.group_type == "galaxy" and extra_mask == "bound_only":
+                expected["dark_matter"] = 0
+        hf.extra_mask = extra_mask
+        generated_extra_mask = hf._get_extra_mask(sg)
         for particle_type in present_particle_types.values():
             if getattr(generated_extra_mask, particle_type) is not None:
                 assert (
@@ -83,29 +83,38 @@ class TestVelociraptor:
             else:
                 assert expected[particle_type] is None
 
-    def test_centre(self, vr):
+    def test_centre(self, hf):
         """
         Check that the _centre function returns the expected centre.
         """
         # default is minpot == 2.001 Mpc
         assert_allclose_units(
-            vr._centre(),
+            hf.centre,
             cosmo_array([2.001, 2.001, 2.001], u.Mpc),
             rtol=reltol_nd,
             atol=abstol_c,
         )
 
-    def test_vcentre(self, vr):
+    def test_velocity_centre(self, hf):
         """
-        Check that the _vcentre function returns the expected velocity centre.
+        Check that the velocity_centre function returns the expected velocity centre.
         """
         # default is minpot == 201. km/s
         assert_allclose_units(
-            vr._vcentre(),
+            hf.velocity_centre,
             cosmo_array([201.0, 201.0, 201.0], u.km / u.s),
             rtol=reltol_nd,
             atol=abstol_v,
         )
+
+
+class TestVelociraptor:
+    def test_load(self, vr):
+        """
+        Check that the loading function is doing it's job.
+        """
+        # _load called during super().__init__
+        assert vr._catalogue is not None
 
     @pytest.mark.parametrize(
         "centre_type, expected",
@@ -123,7 +132,7 @@ class TestVelociraptor:
         """
         vr.centre_type = centre_type
         assert_allclose_units(
-            vr._centre(),
+            vr.centre,
             cosmo_array([expected, expected, expected], u.Mpc),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -139,14 +148,14 @@ class TestVelociraptor:
             ("_stars", 204.0),
         ),
     )
-    def test_vcentre_types(self, vr, centre_type, expected):
+    def test_velocity_centre_types(self, vr, centre_type, expected):
         """
         Check that velocity centres of each type retrieve expected values.
         """
         vr.centre_type = centre_type
-        print(vr._vcentre())
+        print(vr.velocity_centre)
         assert_allclose_units(
-            vr._vcentre(),
+            vr.velocity_centre,
             cosmo_array([expected, expected, expected], u.km / u.s),
             rtol=reltol_nd,
             atol=abstol_v,
@@ -191,6 +200,133 @@ class TestVelociraptorWithSWIFTGalaxy:
         assert (
             getattr(sg_vr, particle_type).masses.size
             == dict(gas=10000, dark_matter=10000, stars=10000, black_holes=1)[
+                particle_type
+            ]
+        )
+
+
+class TestCaesar:
+    def test_load(self, caesar):
+        """
+        Check that the loading function is doing it's job.
+        """
+        # _load called during super().__init__
+        pass  # Caesar has nothing to do in _load
+
+    @pytest.mark.parametrize(
+        "centre_type, expected",
+        (
+            ("", 2.0),
+            ("minpot", 2.001),
+        ),
+    )
+    def test_centre_types(self, caesar, centre_type, expected):
+        """
+        Check that centres of each type retrieve expected values.
+        """
+        caesar.centre_type = centre_type
+        assert_allclose_units(
+            caesar.centre,
+            cosmo_array([expected, expected, expected], u.Mpc),
+            rtol=reltol_nd,
+            atol=abstol_c,
+        )
+
+    @pytest.mark.parametrize(
+        "centre_type, expected",
+        (
+            ("", 200.0),
+            ("minpot", 201.0),
+        ),
+    )
+    def test_vcentre_types(self, caesar, centre_type, expected):
+        """
+        Check that velocity centres of each type retrieve expected values.
+        """
+        caesar.centre_type = centre_type
+        print(caesar.velocity_centre)
+        assert_allclose_units(
+            caesar.velocity_centre,
+            cosmo_array([expected, expected, expected], u.km / u.s),
+            rtol=reltol_nd,
+            atol=abstol_v,
+        )
+
+    def test_catalogue_exposed(self, caesar):
+        """
+        Check that exposing the halo properties is working.
+        """
+        # pick one of the default attributes to check
+        if hasattr(caesar, "virial_quantities"):
+            assert_allclose_units(
+                caesar.virial_quantities["m200c"],
+                1.0e12 * u.Msun,
+                rtol=reltol_nd,
+                atol=abstol_m,
+            )
+        elif hasattr(caesar, "masses"):
+            assert_allclose_units(
+                caesar.masses["total"],
+                n_g * m_g + n_s * m_s + n_bh * m_bh,
+                rtol=reltol_nd,
+                atol=abstol_m,
+            )
+        else:
+            raise AttributeError
+
+    @pytest.mark.xfail
+    def test_spatial_mask_applied(self):
+        """
+        Until this issue is resolved:
+
+        https://github.com/dnarayanan/caesar/issues/92
+
+        Caesar catalogues don't contain enough information to construct a spatial mask.
+        For now we just read the whole box (!), and expect to fail this test.
+        """
+        raise NotImplementedError
+
+
+class TestCaesarWithSWIFTGalaxy:
+    """
+    Most interaction between the halo finder and swiftgalaxy.reader.SWIFTGalaxy
+    is tested using the toysnap.ToyHF testing class (that inherits from
+    swiftgalaxy.halo_finders._HaloFinder). Here we just want to test anything
+    caesar-specific.
+    """
+
+    def test_catalogue_exposed(self, sg_caesar):
+        """
+        Check that exposing the halo properties is working, through the
+        SWIFTGalaxy object.
+        """
+        if hasattr(sg_caesar.halo_finder, "virial_quantities"):
+            assert_allclose_units(
+                sg_caesar.halo_finder.virial_quantities["m200c"],
+                1.0e12 * u.Msun,
+                rtol=reltol_nd,
+                atol=abstol_m,
+            )
+        elif hasattr(sg_caesar.halo_finder, "masses"):
+            assert_allclose_units(
+                sg_caesar.halo_finder.masses["total"],
+                n_g * m_g + n_s * m_s + n_bh * m_bh,
+                rtol=reltol_nd,
+                atol=abstol_m,
+            )
+        else:
+            raise AttributeError
+
+    @pytest.mark.parametrize("particle_type", present_particle_types.values())
+    def test_masks_compatible(self, sg_caesar, particle_type):
+        """
+        Check that the bound_only default mask works with the spatial mask,
+        giving the expected shapes for arrays.
+        """
+        expected_dm = 0 if sg_caesar.halo_finder.group_type == "galaxy" else 10000
+        assert (
+            getattr(sg_caesar, particle_type).masses.size
+            == dict(gas=10000, dark_matter=expected_dm, stars=10000, black_holes=1)[
                 particle_type
             ]
         )

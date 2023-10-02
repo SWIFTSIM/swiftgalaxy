@@ -1100,7 +1100,7 @@ class SWIFTGalaxy(SWIFTDataset):
         id_particle_dataset_name: str = "particle_ids",
         coordinates_dataset_name: str = "coordinates",
         velocities_dataset_name: str = "velocities",
-        coordinate_frame_from: "SWIFTGalaxy" = None,
+        coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
         # arguments beginning _ are not intended for users, but
         # for the __copy__ and __deepcopy__ functions.
         _spatial_mask: Optional[SWIFTMask] = None,
@@ -1217,8 +1217,8 @@ class SWIFTGalaxy(SWIFTDataset):
                 )
 
         if auto_recentre:
-            self.recentre(self.halo_finder._centre())
-            self.recentre_velocity(self.halo_finder._vcentre())
+            self.recentre(self.halo_finder.centre)
+            self.recentre_velocity(self.halo_finder.velocity_centre)
 
         self._initialised: bool = True
 

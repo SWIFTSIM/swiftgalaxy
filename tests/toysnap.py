@@ -2,6 +2,8 @@ import os
 import h5py
 import numpy as np
 import unyt as u
+from astropy.cosmology import LambdaCDM
+from astropy import units as U
 from swiftsimio.objects import cosmo_array
 from swiftsimio import Writer
 from swiftgalaxy import MaskCollection
@@ -10,8 +12,9 @@ from swiftsimio.units import cosmo_units
 
 toysnap_filename = "toysnap.hdf5"
 toyvr_filebase = "toyvr"
+toycaesar_filename = "toycaesar.hdf5"
 present_particle_types = {0: "gas", 1: "dark_matter", 4: "stars", 5: "black_holes"}
-boxsize = 10.0
+boxsize = 10.0 * u.Mpc
 n_g_all = 32**3
 n_g = 10000
 n_g_b = n_g_all - n_g
@@ -20,6 +23,25 @@ n_dm = 10000
 n_dm_b = n_dm_all - n_dm
 n_s = 10000
 n_bh = 1
+m_g = 1e3 * u.msun
+T_g = 1e4 * u.K
+m_dm = 1e4 * u.msun
+m_s = 1e3 * u.msun
+m_bh = 1e6 * u.msun
+
+Om_m = 0.3
+Om_l = 0.7
+Om_b = 0.05
+h0 = 0.7
+w0 = -1.0
+rho_c = (3 * (h0 * 100 * u.km / u.s / u.Mpc) ** 2 / 8 / np.pi / u.G).to(
+    u.msun / u.kpc**3
+)
+age = u.unyt_quantity.from_astropy(
+    LambdaCDM(
+        H0=h0 * 100 * U.km / U.s / U.Mpc, Om0=Om_m, Ode0=Om_l, Ob0=Om_b
+    ).lookback_time(np.inf)
+)
 
 
 class ToyHF(_HaloFinder):
@@ -39,16 +61,18 @@ class ToyHF(_HaloFinder):
         swift_mask.constrain_spatial(spatial_mask)
         return swift_mask
 
-    def _get_extra_mask(self, SG):
+    def _generate_bound_only_mask(self, SG):
         extra_mask = MaskCollection(
             gas=np.s_[-10000:], dark_matter=np.s_[-10000:], stars=..., black_holes=...
         )
         return extra_mask
 
-    def _centre(self):
+    @property
+    def centre(self):
         return cosmo_array([2, 2, 2], u.Mpc)
 
-    def _vcentre(self):
+    @property
+    def velocity_centre(self):
         return cosmo_array([200, 200, 200], u.km / u.s)
 
 
@@ -59,7 +83,7 @@ def create_toysnap(
     Creates a sample dataset of a toy galaxy.
     """
 
-    sd = Writer(cosmo_units, np.ones(3, dtype=float) * boxsize * u.Mpc)
+    sd = Writer(cosmo_units, np.ones(3, dtype=float) * boxsize)
 
     # Insert a uniform gas background plus a galaxy disc
     phi = np.random.rand(n_g, 1) * 2 * np.pi
@@ -99,9 +123,7 @@ def create_toysnap(
         / u.s
     )
     getattr(sd, present_particle_types[0]).masses = (
-        np.concatenate((np.ones(n_g_b, dtype=float), np.ones(n_g, dtype=float)))
-        * 1e3
-        * u.msun
+        np.concatenate((np.ones(n_g_b, dtype=float), np.ones(n_g, dtype=float))) * m_g
     )
     getattr(sd, present_particle_types[0]).internal_energy = (
         np.concatenate(
@@ -110,13 +132,12 @@ def create_toysnap(
                 np.ones(n_g, dtype=float) / 10,  # 1e3 K
             )
         )
-        * 1e4
+        * T_g
         * u.kb
-        * u.K
-        / (1e3 * u.msun)
+        / (m_g)
     )
     getattr(sd, present_particle_types[0]).generate_smoothing_lengths(
-        boxsize=boxsize * u.Mpc, dimension=3
+        boxsize=boxsize, dimension=3
     )
 
     # Insert a uniform DM background plus a galaxy halo
@@ -155,11 +176,10 @@ def create_toysnap(
     )
     getattr(sd, present_particle_types[1]).masses = (
         np.concatenate((np.ones(n_dm_b, dtype=float), np.ones(n_dm, dtype=float)))
-        * 1e4
-        * u.msun
+        * m_dm
     )
     getattr(sd, present_particle_types[1]).generate_smoothing_lengths(
-        boxsize=boxsize * u.Mpc, dimension=3
+        boxsize=boxsize, dimension=3
     )
 
     # Insert a galaxy stellar disc
@@ -191,26 +211,22 @@ def create_toysnap(
         * u.km
         / u.s
     )
-    getattr(sd, present_particle_types[4]).masses = (
-        np.ones(n_g, dtype=float) * 1e3 * u.msun
-    )
+    getattr(sd, present_particle_types[4]).masses = np.ones(n_g, dtype=float) * m_s
     getattr(sd, present_particle_types[4]).generate_smoothing_lengths(
-        boxsize=boxsize * u.Mpc, dimension=3
+        boxsize=boxsize, dimension=3
     )
     getattr(sd, present_particle_types[5]).particle_ids = np.arange(
         n_g_all + n_dm_all + n_s, n_g_all + n_dm_all + n_s + n_bh
     )
     getattr(sd, present_particle_types[5]).coordinates = (
-        2 + np.zeros((n_bh, 3), dtype=float)
+        2 - 0.000003 * np.ones((n_bh, 3), dtype=float)  # 3 pc to avoid r==0 warnings
     ) * u.Mpc
     getattr(sd, present_particle_types[5]).velocities = (
         (200 + np.zeros((n_bh, 3), dtype=float)) * u.km / u.s
     )
-    getattr(sd, present_particle_types[5]).masses = (
-        np.ones(n_bh, dtype=float) * 1e6 * u.msun
-    )
+    getattr(sd, present_particle_types[5]).masses = np.ones(n_bh, dtype=float) * m_bh
     getattr(sd, present_particle_types[5]).generate_smoothing_lengths(
-        boxsize=boxsize * u.Mpc, dimension=3
+        boxsize=boxsize, dimension=3
     )
 
     sd.write(snapfile)  # IDs auto-generated
@@ -231,7 +247,10 @@ def create_toysnap(
         mdg = g.create_group("Meta-data")
         mdg.attrs["dimension"] = np.array([[1, 1, 1]], dtype=int)
         mdg.attrs["nr_cells"] = np.array([1], dtype=int)
-        mdg.attrs["size"] = np.array([boxsize, boxsize, boxsize], dtype=int)
+        mdg.attrs["size"] = np.array(
+            [boxsize.to_value(u.Mpc), boxsize.to_value(u.Mpc), boxsize.to_value(u.Mpc)],
+            dtype=int,
+        )
         og = g.create_group("OffsetsInFile")
         og.create_dataset("PartType0", data=np.array([0], dtype=int))
         og.create_dataset("PartType1", data=np.array([0], dtype=int))
@@ -315,12 +334,12 @@ def create_toyvr(filebase=toyvr_filebase):
                 f[f"V{coord}{ct}"].attrs["Dimension_Time"] = 0.0
                 f[f"V{coord}{ct}"].attrs["Dimension_Velocity"] = 1.0
         f.create_group("Configuration")
-        f["Configuration"].attrs["h_val"] = 0.7
-        f["Configuration"].attrs["w_of_DE"] = -1.0
-        f["Configuration"].attrs["Omega_DE"] = 0.7
-        f["Configuration"].attrs["Omega_b"] = 0.05
-        f["Configuration"].attrs["Omega_m"] = 0.3
-        f["Configuration"].attrs["Period"] = boxsize
+        f["Configuration"].attrs["h_val"] = h0
+        f["Configuration"].attrs["w_of_DE"] = w0
+        f["Configuration"].attrs["Omega_DE"] = Om_l
+        f["Configuration"].attrs["Omega_b"] = Om_b
+        f["Configuration"].attrs["Omega_m"] = Om_m
+        f["Configuration"].attrs["Period"] = boxsize.to_value(u.Mpc)
         f.create_dataset("File_id", data=np.array([0], dtype=int))
         f.create_dataset("ID", data=np.array([1], dtype=int))
         f["ID"].attrs["Dimension_Length"] = 0.0
@@ -383,7 +402,7 @@ def create_toyvr(filebase=toyvr_filebase):
         f.attrs["Length_unit_to_kpc"] = 1000.000000
         f.attrs["Mass_unit_to_solarmass"] = 10000000000.000000
         f.attrs["Metallicity_unit_to_solar"] = 83.330000
-        f.attrs["Period"] = boxsize
+        f.attrs["Period"] = boxsize.to_value(u.Mpc)
         f.attrs["SFR_unit_to_solarmassperyear"] = 97.780000
         f.attrs["Stellar_age_unit_to_yr"] = 977813413600.000000
         f.attrs["Time"] = 1.0
@@ -514,4 +533,208 @@ def remove_toyvr(filebase=toyvr_filebase):
     os.remove(f"{toyvr_filebase}.catalog_particles.unbound")
     os.remove(f"{toyvr_filebase}.catalog_parttypes")
     os.remove(f"{toyvr_filebase}.catalog_parttypes.unbound")
+    return
+
+
+def create_toycaesar(filebase=toycaesar_filename):
+    with h5py.File(toycaesar_filename, "w") as f:
+        f.attrs["caesar"] = "fake"
+        f.attrs["nclouds"] = 0
+        f.attrs["ngalaxies"] = 1
+        f.attrs["nhalos"] = 1
+        with open("tests/json/caesar_unit_registry.json") as json:
+            f.attrs["unit_registry_json"] = json.read()
+        f.create_group("galaxy_data")
+        f["/galaxy_data"].create_dataset("GroupID", data=np.array([0], dtype=int))
+        f["/galaxy_data"].create_dataset("bhlist_end", data=np.array([n_bh], dtype=int))
+        f["/galaxy_data"].create_dataset("bhlist_start", data=np.array([0], dtype=int))
+        f["/galaxy_data"].create_dataset("central", data=np.array([True], dtype=bool))
+        f["/galaxy_data"].create_group("dicts")
+        f["/galaxy_data/dicts"].create_dataset(
+            "masses.total",
+            data=np.array(
+                [(n_g * m_g + n_s * m_s + n_bh * m_bh).to_value(u.msun)], dtype=float
+            ),
+        )
+        f["/galaxy_data/dicts/masses.total"].attrs["unit"] = "Msun"
+        f["/galaxy_data"].create_dataset("glist_end", data=np.array([n_g], dtype=int))
+        f["/galaxy_data"].create_dataset("glist_start", data=np.array([0], dtype=int))
+        f["/galaxy_data"].create_group("lists")
+        f["/galaxy_data/lists"].create_dataset("bhlist", data=np.array([0], dtype=int))
+        f["/galaxy_data/lists"].create_dataset(
+            "glist", data=np.arange(n_g_b, n_g_all, dtype=int)
+        )
+        f["/galaxy_data/lists"].create_dataset("slist", data=np.arange(n_s, dtype=int))
+        f["/galaxy_data"].create_dataset(
+            "minpotpos", data=np.array([[2001.0, 2001.0, 2001.0]], dtype=float)
+        )
+        f["/galaxy_data/minpotpos"].attrs["unit"] = "kpccm"
+        f["/galaxy_data"].create_dataset(
+            "minpotvel", data=np.array([[201.0, 201.0, 201.0]], dtype=float)
+        )
+        f["/galaxy_data/minpotvel"].attrs["unit"] = "km/s"
+        f["/galaxy_data"].create_dataset("nbh", data=np.array([n_bh], dtype=int))
+        f["/galaxy_data"].create_dataset("ndm", data=np.array([0], dtype=int))
+        f["/galaxy_data"].create_dataset("ndm2", data=np.array([0], dtype=int))
+        f["/galaxy_data"].create_dataset("ndm3", data=np.array([0], dtype=int))
+        f["/galaxy_data"].create_dataset("ndust", data=np.array([0], dtype=int))
+        f["/galaxy_data"].create_dataset("ngas", data=np.array([n_g], dtype=int))
+        f["/galaxy_data"].create_dataset("nstar", data=np.array([n_s], dtype=int))
+        f["/galaxy_data"].create_dataset(
+            "parent_halo_index", data=np.array([0], dtype=int)
+        )
+        f["/galaxy_data"].create_dataset(
+            "pos", data=np.array([[2000.0, 2000.0, 2000.0]], dtype=float)
+        )
+        f["/galaxy_data/pos"].attrs["unit"] = "kpccm"
+        f["/galaxy_data"].create_dataset("slist_end", data=np.array([n_s], dtype=int))
+        f["/galaxy_data"].create_dataset("slist_start", data=np.array([0], dtype=int))
+        f["/galaxy_data"].create_dataset(
+            "vel", data=np.array([[200.0, 200.0, 200.0]], dtype=float)
+        )
+        f["/galaxy_data/vel"].attrs["unit"] = "km/s"
+        f.create_group("global_lists")
+        f["/global_lists"].create_dataset(
+            "galaxy_bhlist", data=np.zeros(n_bh, dtype=int)
+        )
+        f["/global_lists"].create_dataset(
+            "galaxy_glist",
+            data=np.r_[-np.ones(n_g_b, dtype=int), np.zeros(n_g, dtype=int)],
+        )
+        f["/global_lists"].create_dataset("galaxy_slist", data=np.zeros(n_s, dtype=int))
+        f["/global_lists"].create_dataset("halo_bhlist", data=np.zeros(n_bh, dtype=int))
+        f["/global_lists"].create_dataset(
+            "halo_dmlist",
+            data=np.r_[-np.ones(n_dm_b, dtype=int), np.zeros(n_dm, dtype=int)],
+        )
+        f["/global_lists"].create_dataset(
+            "halo_glist",
+            data=np.r_[-np.ones(n_g_b, dtype=int), np.zeros(n_g, dtype=int)],
+        )
+        f["/global_lists"].create_dataset("halo_slist", data=np.zeros(n_s, dtype=int))
+        f.create_group("halo_data")
+        f["/halo_data"].create_dataset("GroupID", data=np.array([0], dtype=int))
+        f["/halo_data"].create_dataset("bhlist_end", data=np.array([n_bh], dtype=int))
+        f["/halo_data"].create_dataset("bhlist_start", data=np.array([0], dtype=int))
+        f["/halo_data"].create_dataset("central_galaxy", data=np.array([0], dtype=int))
+        f["/halo_data"].create_dataset("child", data=np.array([False], dtype=bool))
+        f["/halo_data"].create_group("dicts")
+        f["/halo_data/dicts"].create_dataset(
+            "masses.total",
+            data=np.array(
+                [(n_g * m_g + n_dm * m_dm + n_s * m_s + n_bh * m_bh).to_value(u.msun)],
+                dtype=float,
+            ),
+        )
+        f["/halo_data/dicts"].create_dataset(
+            "virial_quantities.m200c", data=np.array([1.0e12], dtype=float)
+        )
+        f["/halo_data/dicts/virial_quantities.m200c"].attrs["unit"] = "Msun"
+        f["/halo_data"].create_dataset("dmlist_end", data=np.array([n_dm], dtype=int))
+        f["/halo_data"].create_dataset("dmlist_start", data=np.array([0], dtype=int))
+        f["/halo_data"].create_dataset(
+            "galaxy_index_list_end", data=np.array([1], dtype=int)
+        )
+        f["/halo_data"].create_dataset(
+            "galaxy_index_list_start", data=np.array([0], dtype=int)
+        )
+        f["/halo_data"].create_dataset("glist_end", data=np.array([n_g], dtype=int))
+        f["/halo_data"].create_dataset("glist_start", data=np.array([0], dtype=int))
+        f["/halo_data"].create_group("lists")
+        f["/halo_data/lists"].create_dataset("bhlist", data=np.array([0], dtype=int))
+        f["/halo_data/lists"].create_dataset(
+            "dmlist", data=np.arange(n_dm_b, n_dm_all, dtype=int)
+        )
+        f["/halo_data/lists"].create_dataset(
+            "galaxy_index_list", data=np.array([0], dtype=int)
+        )
+        f["/halo_data/lists"].create_dataset(
+            "glist", data=np.arange(n_g_b, n_g_all, dtype=int)
+        )
+        f["/halo_data/lists"].create_dataset("slist", data=np.arange(n_s, dtype=int))
+        f["/halo_data"].create_dataset(
+            "minpotpos", data=np.array([[2001.0, 2001.0, 2001.0]], dtype=float)
+        )
+        f["/halo_data/minpotpos"].attrs["unit"] = "kpccm"
+        f["/halo_data"].create_dataset(
+            "minpotvel", data=np.array([[201.0, 201.0, 201.0]], dtype=float)
+        )
+        f["/halo_data/minpotvel"].attrs["unit"] = "km/s"
+        f["/halo_data"].create_dataset("nbh", data=np.array([n_bh], dtype=int))
+        f["/halo_data"].create_dataset("ndm", data=np.array([0], dtype=int))
+        f["/halo_data"].create_dataset("ndm2", data=np.array([0], dtype=int))
+        f["/halo_data"].create_dataset("ndm3", data=np.array([0], dtype=int))
+        f["/halo_data"].create_dataset("ndust", data=np.array([0], dtype=int))
+        f["/halo_data"].create_dataset("ngas", data=np.array([n_g], dtype=int))
+        f["/halo_data"].create_dataset("nstar", data=np.array([n_s], dtype=int))
+        f["/halo_data"].create_dataset(
+            "pos", data=np.array([[2000.0, 2000.0, 2000.0]], dtype=float)
+        )
+        f["/halo_data/pos"].attrs["unit"] = "kpccm"
+        f["/halo_data"].create_dataset("slist_end", data=np.array([n_s], dtype=int))
+        f["/halo_data"].create_dataset("slist_start", data=np.array([0], dtype=int))
+        f["/halo_data"].create_dataset(
+            "vel", data=np.array([[200.0, 200.0, 200.0]], dtype=float)
+        )
+        f["/halo_data/vel"].attrs["unit"] = "km/s"
+        f.create_group("simulation_attributes")
+        f["/simulation_attributes"].attrs["Densities"] = [
+            200 * rho_c.to_value(u.msun / u.kpc**3),
+            500 * rho_c.to_value(u.msun / u.kpc**3),
+            2500 * rho_c.to_value(u.msun / u.kpc**3),
+        ]
+        # f["/simulation_attributes"].attrs["E_z"] = ...
+        f["/simulation_attributes"].attrs["G"] = 4.51691362044e-39
+        f["/simulation_attributes"].attrs["H_z"] = (
+            h0 * 100 * u.km / u.s / u.Mpc
+        ).to_value(u.s**-1)
+        # f["/simulation_attributes"].attrs["Om_z"] = ...
+        f["/simulation_attributes"].attrs["XH"] = 0.76
+        f["/simulation_attributes"].attrs["baryons_present"] = True
+        f["/simulation_attributes"].attrs["basename"] = "toysnap.hdf5"
+        f["/simulation_attributes"].attrs["boxsize"] = boxsize.to_value(u.kpc)
+        f["/simulation_attributes"].attrs["boxsize_units"] = "kpccm"
+        f["/simulation_attributes"].attrs["cosmological_simulation"] = True
+        f["/simulation_attributes"].attrs["critical_density"] = rho_c.to_value(
+            u.msun / u.kpc**3
+        )
+        f["/simulation_attributes"].attrs["ds_type"] = "SwiftDataset"
+        # f["/simulation_attributes"].attrs["effective_resolution"] = ...
+        # f["/simulation_attributes"].attrs["fullpath"] = ...
+        f["/simulation_attributes"].attrs["hubble_constant"] = 0.7
+        f["/simulation_attributes"].attrs[
+            "mean_interparticle_separation"
+        ] = boxsize.to_value(u.kpc) / n_dm ** (1 / 3)
+        f["/simulation_attributes"].attrs["nbh"] = n_bh
+        f["/simulation_attributes"].attrs["ndm"] = n_dm_all
+        f["/simulation_attributes"].attrs["ndust"] = 0
+        f["/simulation_attributes"].attrs["ngas"] = n_g_all
+        f["/simulation_attributes"].attrs["nstar"] = n_s
+        f["/simulation_attributes"].attrs["ntot"] = n_g_all + n_dm_all + n_s + n_bh
+        f["/simulation_attributes"].attrs["omega_baryon"] = 0.05
+        f["/simulation_attributes"].attrs["omega_lambda"] = 0.7
+        f["/simulation_attributes"].attrs["omega_matter"] = 0.3
+        f["/simulation_attributes"].attrs["redshift"] = 0.0
+        f["/simulation_attributes"].attrs["scale_factor"] = 1.0
+        f["/simulation_attributes"].attrs["search_radius"] = [300.0, 1000.0, 3000.0]
+        f["/simulation_attributes"].attrs["time"] = age.to_value(u.s)
+        f["/simulation_attributes"].attrs["unbind_galaxies"] = False
+        f["/simulation_attributes"].attrs["unbind_halos"] = False
+        f["/simulation_attributes"].create_group("parameters")  # attrs not needed
+        f["/simulation_attributes"].create_group("units")
+        f["/simulation_attributes/units"].attrs["Densities"] = "Msun/kpc**3"
+        f["/simulation_attributes/units"].attrs["G"] = "kpc**3/(Msun*s**2)"
+        f["/simulation_attributes/units"].attrs["H_z"] = "1/s"
+        f["/simulation_attributes/units"].attrs["boxsize"] = "kpccm"
+        f["/simulation_attributes/units"].attrs["critical_density"] = "Msun/kpc**3"
+        f["/simulation_attributes/units"].attrs[
+            "mean_interparticle_separation"
+        ] = "kpccm"
+        f["/simulation_attributes/units"].attrs["search_radius"] = "kpccm"
+        f["/simulation_attributes/units"].attrs["time"] = "s"
+    return
+
+
+def remove_toycaesar(filename=toycaesar_filename):
+    os.remove(filename)
     return
