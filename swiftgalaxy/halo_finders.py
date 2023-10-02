@@ -59,13 +59,15 @@ class _HaloFinder(ABC):
                 }
             )
 
+    @property
     @abstractmethod
-    def _centre(self) -> cosmo_array:
+    def centre(self) -> cosmo_array:
         # return halo centre
         pass
 
+    @property
     @abstractmethod
-    def _vcentre(self) -> cosmo_array:
+    def velocity_centre(self) -> cosmo_array:
         # return halo velocity centre
         pass
 
@@ -257,7 +259,16 @@ class Velociraptor(_HaloFinder):
 
         return MaskCollection(**generate_bound_mask(SG, self._particles)._asdict())
 
-    def _centre(self) -> cosmo_array:
+    @property
+    def centre(self) -> cosmo_array:
+        """
+        Obtain the centre specified by the ``centre_type`` from the halo catalogue.
+
+        Returns
+        -------
+        centre: :class:`~swiftsimio.objects.cosmo_array`
+            The centre provided by the halo catalogue.
+        """
         # According to Velociraptor documentation:
         if self.centre_type in ("_gas", "_stars"):
             # {XYZ}c_gas and {XYZ}c_stars are relative to {XYZ}c
@@ -282,7 +293,17 @@ class Velociraptor(_HaloFinder):
             cosmo_factor=cosmo_factor(a**1, self.scale_factor),
         ).to_comoving()
 
-    def _vcentre(self) -> cosmo_array:
+    @property
+    def velocity_centre(self) -> cosmo_array:
+        """
+        Obtain the velocity centre specified by the ``centre_type`` from the halo
+        catalogue.
+
+        Returns
+        -------
+        velocity_centre: :class:`~swiftsimio.objects.cosmo_array`
+            The velocity centre provided by the halo catalogue.
+        """
         # According to Velociraptor documentation:
         if self.centre_type in ("_gas", "_stars"):
             # V{XYZ}c_gas and V{XYZ}c_stars are relative to {XYZ}c
@@ -536,7 +557,16 @@ class Caesar(_HaloFinder):
             black_holes=black_holes_mask,
         )
 
-    def _centre(self) -> cosmo_array:
+    @property
+    def centre(self) -> cosmo_array:
+        """
+        Obtain the centre specified by the ``centre_type`` from the halo catalogue.
+
+        Returns
+        -------
+        centre: :class:`~swiftsimio.objects.cosmo_array`
+            The centre provided by the halo catalogue.
+        """
         centre_attr = {"": "pos", "minpot": "minpotpos"}[self.centre_type]
         return cosmo_array(
             getattr(self._group, centre_attr).to(
@@ -546,7 +576,18 @@ class Caesar(_HaloFinder):
             cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
         ).to_comoving()
 
-    def _vcentre(self) -> cosmo_array:
+    @property
+    def velocity_centre(self) -> cosmo_array:
+        """
+        Obtain the velocity centre specified by the ``centre_type`` from the halo
+        catalogue.
+
+        Returns
+        -------
+        velocity_centre: :class:`~swiftsimio.objects.cosmo_array`
+            The velocity centre provided by the halo catalogue.
+        """
+
         vcentre_attr = {"": "vel", "minpot": "minpotvel"}[self.centre_type]
         return cosmo_array(
             getattr(self._group, vcentre_attr).to(u.km / u.s),

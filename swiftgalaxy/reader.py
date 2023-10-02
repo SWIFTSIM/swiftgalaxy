@@ -1217,8 +1217,8 @@ class SWIFTGalaxy(SWIFTDataset):
                 )
 
         if auto_recentre:
-            self.recentre(self.halo_finder._centre())
-            self.recentre_velocity(self.halo_finder._vcentre())
+            self.recentre(self.halo_finder.centre)
+            self.recentre_velocity(self.halo_finder.velocity_centre)
 
         self._initialised: bool = True
 

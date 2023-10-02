@@ -67,10 +67,12 @@ class ToyHF(_HaloFinder):
         )
         return extra_mask
 
-    def _centre(self):
+    @property
+    def centre(self):
         return cosmo_array([2, 2, 2], u.Mpc)
 
-    def _vcentre(self):
+    @property
+    def velocity_centre(self):
         return cosmo_array([200, 200, 200], u.km / u.s)
 
 

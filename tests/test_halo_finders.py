@@ -89,19 +89,19 @@ class TestHaloFinders:
         """
         # default is minpot == 2.001 Mpc
         assert_allclose_units(
-            hf._centre(),
+            hf.centre,
             cosmo_array([2.001, 2.001, 2.001], u.Mpc),
             rtol=reltol_nd,
             atol=abstol_c,
         )
 
-    def test_vcentre(self, hf):
+    def test_velocity_centre(self, hf):
         """
-        Check that the _vcentre function returns the expected velocity centre.
+        Check that the velocity_centre function returns the expected velocity centre.
         """
         # default is minpot == 201. km/s
         assert_allclose_units(
-            hf._vcentre(),
+            hf.velocity_centre,
             cosmo_array([201.0, 201.0, 201.0], u.km / u.s),
             rtol=reltol_nd,
             atol=abstol_v,
@@ -132,7 +132,7 @@ class TestVelociraptor:
         """
         vr.centre_type = centre_type
         assert_allclose_units(
-            vr._centre(),
+            vr.centre,
             cosmo_array([expected, expected, expected], u.Mpc),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -148,14 +148,14 @@ class TestVelociraptor:
             ("_stars", 204.0),
         ),
     )
-    def test_vcentre_types(self, vr, centre_type, expected):
+    def test_velocity_centre_types(self, vr, centre_type, expected):
         """
         Check that velocity centres of each type retrieve expected values.
         """
         vr.centre_type = centre_type
-        print(vr._vcentre())
+        print(vr.velocity_centre)
         assert_allclose_units(
-            vr._vcentre(),
+            vr.velocity_centre,
             cosmo_array([expected, expected, expected], u.km / u.s),
             rtol=reltol_nd,
             atol=abstol_v,
@@ -226,7 +226,7 @@ class TestCaesar:
         """
         caesar.centre_type = centre_type
         assert_allclose_units(
-            caesar._centre(),
+            caesar.centre,
             cosmo_array([expected, expected, expected], u.Mpc),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -244,9 +244,9 @@ class TestCaesar:
         Check that velocity centres of each type retrieve expected values.
         """
         caesar.centre_type = centre_type
-        print(caesar._vcentre())
+        print(caesar.velocity_centre)
         assert_allclose_units(
-            caesar._vcentre(),
+            caesar.velocity_centre,
             cosmo_array([expected, expected, expected], u.km / u.s),
             rtol=reltol_nd,
             atol=abstol_v,
