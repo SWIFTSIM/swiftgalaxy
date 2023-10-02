@@ -111,8 +111,8 @@ class Velociraptor(_HaloFinder):
     halo_index: ``int``
         Position of the object of interest in the catalogue arrays.
 
-    extra_mask: ``Union[str, MaskCollection]``, default: ``'bound_only'``
-        Mask to apply to particles after spatial masking. If ``'bound_only'``,
+    extra_mask: ``Union[str, MaskCollection]``, default: ``"bound_only"``
+        Mask to apply to particles after spatial masking. If ``"bound_only"``,
         then the galaxy is masked to include only the gravitationally bound
         particles as determined by :mod:`velociraptor`. A user-defined mask
         can also be provided as an an object (such as a
@@ -120,11 +120,11 @@ class Velociraptor(_HaloFinder):
         names corresponding to present particle names (e.g. gas, dark_matter,
         etc.), each containing a mask.
 
-    centre_type: ``str``, default: ``'minpot'``
+    centre_type: ``str``, default: ``"minpot"``
         Type of centre, chosen from those provided by :mod:`velociraptor`.
         Default is the position of the particle with the minimum potential,
-        ``'minpot'``; other possibilities may include ``''``, ``'_gas'``,
-        ``'_star'``, ``'mbp'`` (most bound particle).
+        ``"minpot"``; other possibilities may include ``""``, ``"_gas"``,
+        ``"_star"``, ``"mbp"`` (most bound particle).
 
     Notes
     -----
@@ -145,8 +145,8 @@ class Velociraptor(_HaloFinder):
     ::
 
         >>> cat = Velociraptor(
-        >>>     '/output/path/halos',  # halos.properties file is at
-        >>>                            # /output/path/
+        >>>     velociraptor_filebase="/output/path/halos",  # halos.properties file is at
+        >>>                                                  # /output/path/
         >>>     halo_index=3,  # 4th entry in catalogue (indexed from 0)
         >>> )
         >>> cat
@@ -320,10 +320,103 @@ class Velociraptor(_HaloFinder):
 
 
 class Caesar(_HaloFinder):
+
+    """
+    Interface to caesar halo catalogues for use with :mod:`swiftgalaxy`.
+
+    Takes a :mod:`caesar` output file and configuration options and provides
+    an interface that :mod:`swiftgalaxy` understands. Also exposes the halo/galaxy
+    properties computed by :mod:`velociraptor` for a single object of interest with
+    the same interface_ provided by the :mod:`caesar` python package. Reading of
+    properties is done on-the-fly, and only rows corresponding to the object of
+    interest are read from disk.
+
+    .. _interface: https://caesar.readthedocs.io/en/latest/
+
+    Parameters
+    ----------
+
+    caesar_file: ``str``
+        The catalogue file (hdf5 format) output by caesar.
+
+    group_type: ``str``
+        The category of the object of interest, either ``"halo"`` or ``"galaxy"``.
+
+    group_index: ``int``
+        Position of the object of interest in the catalogue arrays.
+
+    extra_mask: ``Union[str, MaskCollection]``, default: ``"bound_only"``
+        Mask to apply to particles after spatial masking. If ``"bound_only"``,
+        then the galaxy is masked to include only the gravitationally bound
+        particles as provided by :mod:`caesar`. A user-defined mask can also be
+        as an an object (such as a :class:`swiftgalaxy.masks.MaskCollection`) that has
+        attributes with names corresponding to present particle names (e.g. gas,
+        dark_matter, etc.), each containing a mask.
+
+    centre_type: ``str``, default: ``"minpot"``
+        Type of centre, chosen from those provided by :mod:`caesar`.
+        Default is the position of the particle with the minimum potential,
+        ``"minpot"``, alternatively ``""`` can be used for the centre of mass.
+
+    Notes
+    -----
+
+    .. note::
+        :mod:`caesar` only supports index access to catalogue arrays, not
+        identifier access. This means that the ``group_index`` is simply the
+        position of the object of interest in the catalogue arrays.
+
+    Examples
+    --------
+    Given a file :file:`s12.5n128_0012.hdf5` at :file:`/output/path/`, the
+    following creates a :class:`Caesar` object for the entry at index
+    ``3`` in the catalogue (i.e. the 4th row, indexed from 0) and demonstrates
+    retrieving its virial mass.
+
+    ::
+
+        >>> cat = Caesar(
+        >>>     caesar_file="/output/path/s12.5n128_0012.hdf5",
+        >>>     group_type="halo",
+        >>>     group_index=3,  # 4th entry in catalogue (indexed from 0)
+        >>> )
+        >>> cat.info()
+        {'GroupID': 3,
+        'ages': {'mass_weighted': unyt_quantity(2.26558173, 'Gyr'),
+                 'metal_weighted': unyt_quantity(2.21677032, 'Gyr')},
+        'bh_fedd': unyt_quantity(3.97765937, 'dimensionless'),
+        'bhlist_end': 12,
+        'bhlist_start': 11,
+        ...
+        'virial_quantities': {'circular_velocity': unyt_quantity(158.330253, 'km/s'),
+                              'm200c': unyt_quantity(1.46414384e+12, 'Msun'),
+                              'm2500c': unyt_quantity(8.72801239e+11, 'Msun'),
+                              'm500c': unyt_quantity(1.23571772e+12, 'Msun'),
+                              'r200': unyt_quantity(425.10320408, 'kpccm'),
+                              'r200c': unyt_quantity(327.46600342, 'kpccm'),
+                              'r2500c': unyt_quantity(118.77589417, 'kpccm'),
+                              'r500c': unyt_quantity(228.03265381, 'kpccm'),
+                              'spin_param': unyt_quantity(2.28429179,'s/(Msun*km*kpccm)'),
+                              'temperature': unyt_quantity(902464.88453405, 'K')}}
+        >>> cat.virial_quantities
+        {'circular_velocity': unyt_quantity(158.330253, 'km/s'),
+         'm200c': unyt_quantity(1.46414384e+12, 'Msun'),
+         'm2500c': unyt_quantity(8.72801239e+11, 'Msun'),
+         'm500c': unyt_quantity(1.23571772e+12, 'Msun'),
+         'r200': unyt_quantity(425.10320408, 'kpccm'),
+         'r200c': unyt_quantity(327.46600342, 'kpccm'),
+         'r2500c': unyt_quantity(118.77589417, 'kpccm'),
+         'r500c': unyt_quantity(228.03265381, 'kpccm'),
+         'spin_param': unyt_quantity(2.28429179, 's/(Msun*km*kpccm)'),
+         'temperature': unyt_quantity(902464.88453405, 'K')}
+        >>> cat.virial_quantities["m200c"]
+        unyt_quantity(1.46414384e+12, 'Msun')
+    """
+
     def __init__(
         self,
         caesar_file: "str" = None,
-        group_type: "str" = None,  # halo galaxy
+        group_type: "str" = None,  # halos galaxies
         group_index: int = None,
         centre_type: str = "minpot",  # "" "minpot"
         extra_mask: Union[str, MaskCollection] = "bound_only",
