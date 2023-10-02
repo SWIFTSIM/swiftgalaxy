@@ -197,8 +197,6 @@ class Velociraptor(_HaloFinder):
         centre_type: str = "minpot",  # _gas _star mbp minpot
         velociraptor_suffix: str = "",
     ) -> None:
-        from velociraptor.catalogue.catalogue import Catalogue
-
         if velociraptor_filebase is not None and velociraptor_files is not None:
             raise ValueError(
                 "Provide either velociraptor_filebase or velociraptor_files, not both."
@@ -226,6 +224,7 @@ class Velociraptor(_HaloFinder):
 
     def _load(self) -> None:
         import h5py
+        from velociraptor.catalogue.catalogue import Catalogue
         from velociraptor import load as load_catalogue
         from velociraptor.particles import load_groups
 
@@ -236,7 +235,7 @@ class Velociraptor(_HaloFinder):
                 else 1.0
             )
 
-        self._catalogue = load_catalogue(
+        self._catalogue: Catalogue = load_catalogue(
             self.velociraptor_files["properties"], mask=self.halo_index
         )
         groups = load_groups(
