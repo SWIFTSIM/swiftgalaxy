@@ -88,12 +88,12 @@ class Velociraptor(_HaloFinder):
     Takes a set of :mod:`velociraptor` output files and configuration options
     and provides an interface that :mod:`swiftgalaxy` understands. Also exposes
     the halo/galaxy properties computed by :mod:`velociraptor` for a single
-    object of interest with the same interface_ provided by the
+    object of interest with the same `interface <vr-interface>`_ provided by the
     :mod:`velociraptor` python package. Reading of properties is done
     on-the-fly, and only rows corresponding to the object of interest are read
     from disk.
 
-    .. _interface: https://velociraptor-python.readthedocs.io/en/latest/
+    .. _vr-interface: https://velociraptor-python.readthedocs.io/en/latest/
 
     Parameters
     ----------
@@ -341,16 +341,16 @@ class Velociraptor(_HaloFinder):
 class Caesar(_HaloFinder):
 
     """
-    Interface to caesar halo catalogues for use with :mod:`swiftgalaxy`.
+    Interface to Caesar halo catalogues for use with :mod:`swiftgalaxy`.
 
     Takes a :mod:`caesar` output file and configuration options and provides
     an interface that :mod:`swiftgalaxy` understands. Also exposes the halo/galaxy
-    properties computed by :mod:`velociraptor` for a single object of interest with
-    the same interface_ provided by the :mod:`caesar` python package. Reading of
-    properties is done on-the-fly, and only rows corresponding to the object of
-    interest are read from disk.
+    properties computed by CAESAR for a single object of interest with
+    the same `interface <caesar-interface>`_ provided by the :class:`~loader.Group` class
+    in the :mod:`caesar` python package. Reading of properties is done on-the-fly, and
+    only rows corresponding to the object of interest are read from disk.
 
-    .. _interface: https://caesar.readthedocs.io/en/latest/
+    .. _caesar-interface: https://caesar.readthedocs.io/en/latest/
 
     Parameters
     ----------
@@ -381,9 +381,9 @@ class Caesar(_HaloFinder):
     -----
 
     .. note::
-        :mod:`caesar` only supports index access to catalogue arrays, not
+        :mod:`loader.CAESAR` only supports index access to catalogue lists, not
         identifier access. This means that the ``group_index`` is simply the
-        position of the object of interest in the catalogue arrays.
+        position of the object of interest in the catalogue list.
 
     Examples
     --------
