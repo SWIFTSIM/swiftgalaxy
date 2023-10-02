@@ -219,7 +219,7 @@ def create_toysnap(
         n_g_all + n_dm_all + n_s, n_g_all + n_dm_all + n_s + n_bh
     )
     getattr(sd, present_particle_types[5]).coordinates = (
-        2 + np.zeros((n_bh, 3), dtype=float)
+        2 - 0.000003 * np.ones((n_bh, 3), dtype=float)  # 3 pc to avoid r==0 warnings
     ) * u.Mpc
     getattr(sd, present_particle_types[5]).velocities = (
         (200 + np.zeros((n_bh, 3), dtype=float)) * u.km / u.s
