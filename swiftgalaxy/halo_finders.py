@@ -17,6 +17,7 @@ from swiftgalaxy.masks import MaskCollection
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 
 from typing import Any, Union, Optional, TYPE_CHECKING
+from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from swiftgalaxy.reader import SWIFTGalaxy
@@ -189,9 +190,9 @@ class Velociraptor(_HaloFinder):
 
     def __init__(
         self,
-        velociraptor_filebase: str = None,
-        velociraptor_files: dict = None,
-        halo_index: int = None,
+        velociraptor_filebase: Optional[str] = None,
+        velociraptor_files: Optional[dict] = None,
+        halo_index: Optional[int] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "minpot",  # _gas _star mbp minpot
         velociraptor_suffix: str = "",
@@ -218,8 +219,6 @@ class Velociraptor(_HaloFinder):
         else:
             self.halo_index: int = halo_index
         self.centre_type: str = centre_type
-        self._catalogue: Optional[Catalogue] = None
-        self._particles: Optional[None] = None
         super().__init__(extra_mask=extra_mask)
         # currently velociraptor_python works with a halo index, not halo_id
         # self.catalogue_mask = (catalogue.ids.id == halo_id).nonzero()
@@ -436,9 +435,9 @@ class Caesar(_HaloFinder):
 
     def __init__(
         self,
-        caesar_file: "str" = None,
-        group_type: "str" = None,  # halos galaxies
-        group_index: int = None,
+        caesar_file: Optional[str] = None,
+        group_type: Optional[str] = None,  # halos galaxies
+        group_index: Optional[int] = None,
         centre_type: str = "minpot",  # "" "minpot"
         extra_mask: Union[str, MaskCollection] = "bound_only",
     ) -> None:
@@ -496,7 +495,10 @@ class Caesar(_HaloFinder):
         return sm
 
     def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
-        def in_one_of_ranges(ints: np.ndarray[int], int_ranges: np.ndarray[int]):
+        def in_one_of_ranges(
+            ints: NDArray[np.int_],
+            int_ranges: NDArray[np.int_],
+        ):
             """
             Produces a boolean mask corresponding to `ints`. For each element in `ints`,
             the mask is `True` if the value is between (at least) one of the pairs of
