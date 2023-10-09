@@ -92,7 +92,7 @@ def create_toysnap(
     getattr(sd, present_particle_types[0]).coordinates = (
         np.vstack(
             (
-                np.random.rand(n_g_b, 3) * 10,
+                np.random.rand(n_g_b // 2, 3) * np.array([5, 10, 10]),
                 np.hstack(
                     (
                         # 10 kpc disc radius, offcentred in box
@@ -101,6 +101,8 @@ def create_toysnap(
                         2 + (np.random.rand(n_g, 1) * 2 - 1) * 0.001,  # 1 kpc height
                     )
                 ),
+                np.random.rand(n_g_b // 2, 3) * np.array([5, 10, 10])
+                + np.array([5, 0, 0]),
             )
         )
         * u.Mpc
@@ -108,7 +110,7 @@ def create_toysnap(
     getattr(sd, present_particle_types[0]).velocities = (
         np.vstack(
             (
-                np.random.rand(n_g_b, 3) * 2 - 1,  # 1 km/s for background
+                np.random.rand(n_g_b // 2, 3) * 2 - 1,  # 1 km/s for background
                 np.hstack(
                     (
                         # solid body, 100 km/s at edge
@@ -117,6 +119,7 @@ def create_toysnap(
                         200 + np.random.rand(n_g, 1) * 20 - 10,  # 10 km/s vertical
                     )
                 ),
+                np.random.rand(n_g_b // 2, 3) * 2 - 1,  # 1 km/s for background
             )
         )
         * u.km
@@ -150,7 +153,7 @@ def create_toysnap(
     getattr(sd, present_particle_types[1]).coordinates = (
         np.vstack(
             (
-                np.random.rand(n_dm_b, 3) * 10,
+                np.random.rand(n_dm_b // 2, 3) * np.array([5, 10, 10]),
                 np.hstack(
                     (
                         # 100 kpc halo radius, offcentred in box
@@ -159,6 +162,8 @@ def create_toysnap(
                         2 + r * np.cos(theta) * 0.1,
                     )
                 ),
+                np.random.rand(n_dm_b // 2, 3) * np.array([5, 10, 10])
+                + np.array([5, 0, 0]),
             )
         )
         * u.Mpc
@@ -215,6 +220,7 @@ def create_toysnap(
     getattr(sd, present_particle_types[4]).generate_smoothing_lengths(
         boxsize=boxsize, dimension=3
     )
+    # Insert a black hole
     getattr(sd, present_particle_types[5]).particle_ids = np.arange(
         n_g_all + n_dm_all + n_s, n_g_all + n_dm_all + n_s + n_bh
     )
@@ -233,29 +239,131 @@ def create_toysnap(
 
     with h5py.File(snapfile, "r+") as f:
         g = f.create_group("Cells")
-        g.create_dataset("Centres", data=np.array([[5, 5, 5]], dtype=float))
+        g.create_dataset(
+            "Centres", data=np.array([[2.5, 5, 5], [7.5, 5, 5]], dtype=float)
+        )
         cg = g.create_group("Counts")
-        cg.create_dataset("PartType0", data=np.array([n_g_all]), dtype=int)
-        cg.create_dataset("PartType1", data=np.array([n_dm_all]), dtype=int)
-        cg.create_dataset("PartType4", data=np.array([n_s]), dtype=int)
-        cg.create_dataset("PartType5", data=np.array([n_bh]), dtype=int)
+        cg.create_dataset(
+            "PartType0",
+            data=np.array(
+                [
+                    np.sum(
+                        getattr(sd, present_particle_types[0]).coordinates[:, 0] <= 5
+                    ),
+                    np.sum(
+                        getattr(sd, present_particle_types[0]).coordinates[:, 0] > 5
+                    ),
+                ]
+            ),
+            dtype=int,
+        )
+        cg.create_dataset(
+            "PartType1",
+            data=np.array(
+                [
+                    np.sum(
+                        getattr(sd, present_particle_types[1]).coordinates[:, 0] <= 5
+                    ),
+                    np.sum(
+                        getattr(sd, present_particle_types[1]).coordinates[:, 0] > 5
+                    ),
+                ]
+            ),
+            dtype=int,
+        )
+        cg.create_dataset(
+            "PartType4",
+            data=np.array(
+                [
+                    np.sum(
+                        getattr(sd, present_particle_types[4]).coordinates[:, 0] <= 5
+                    ),
+                    np.sum(
+                        getattr(sd, present_particle_types[4]).coordinates[:, 0] > 5
+                    ),
+                ]
+            ),
+            dtype=int,
+        )
+        cg.create_dataset(
+            "PartType5",
+            data=np.array(
+                [
+                    np.sum(
+                        getattr(sd, present_particle_types[5]).coordinates[:, 0] <= 5
+                    ),
+                    np.sum(
+                        getattr(sd, present_particle_types[5]).coordinates[:, 0] > 5
+                    ),
+                ]
+            ),
+            dtype=int,
+        )
         fg = g.create_group("Files")
-        fg.create_dataset("PartType0", data=np.array([0], dtype=int))
-        fg.create_dataset("PartType1", data=np.array([0], dtype=int))
-        fg.create_dataset("PartType4", data=np.array([0], dtype=int))
-        fg.create_dataset("PartType5", data=np.array([0], dtype=int))
+        fg.create_dataset("PartType0", data=np.array([0, 0], dtype=int))
+        fg.create_dataset("PartType1", data=np.array([0, 0], dtype=int))
+        fg.create_dataset("PartType4", data=np.array([0, 0], dtype=int))
+        fg.create_dataset("PartType5", data=np.array([0, 0], dtype=int))
         mdg = g.create_group("Meta-data")
-        mdg.attrs["dimension"] = np.array([[1, 1, 1]], dtype=int)
-        mdg.attrs["nr_cells"] = np.array([1], dtype=int)
+        mdg.attrs["dimension"] = np.array([[2, 1, 1]], dtype=int)
+        mdg.attrs["nr_cells"] = np.array([2], dtype=int)
         mdg.attrs["size"] = np.array(
-            [boxsize.to_value(u.Mpc), boxsize.to_value(u.Mpc), boxsize.to_value(u.Mpc)],
+            [
+                0.5 * boxsize.to_value(u.Mpc),
+                boxsize.to_value(u.Mpc),
+                boxsize.to_value(u.Mpc),
+            ],
             dtype=int,
         )
         og = g.create_group("OffsetsInFile")
-        og.create_dataset("PartType0", data=np.array([0], dtype=int))
-        og.create_dataset("PartType1", data=np.array([0], dtype=int))
-        og.create_dataset("PartType4", data=np.array([0], dtype=int))
-        og.create_dataset("PartType5", data=np.array([0], dtype=int))
+        og.create_dataset(
+            "PartType0",
+            data=np.array(
+                [
+                    0,
+                    np.sum(
+                        getattr(sd, present_particle_types[0]).coordinates[:, 0] <= 5
+                    ),
+                ],
+                dtype=int,
+            ),
+        )
+        og.create_dataset(
+            "PartType1",
+            data=np.array(
+                [
+                    0,
+                    np.sum(
+                        getattr(sd, present_particle_types[1]).coordinates[:, 0] <= 5
+                    ),
+                ],
+                dtype=int,
+            ),
+        )
+        og.create_dataset(
+            "PartType4",
+            data=np.array(
+                [
+                    0,
+                    np.sum(
+                        getattr(sd, present_particle_types[4]).coordinates[:, 0] <= 5
+                    ),
+                ],
+                dtype=int,
+            ),
+        )
+        og.create_dataset(
+            "PartType5",
+            data=np.array(
+                [
+                    0,
+                    np.sum(
+                        getattr(sd, present_particle_types[5]).coordinates[:, 0] <= 5
+                    ),
+                ],
+                dtype=int,
+            ),
+        )
         hsg = f.create_group("HydroScheme")
         hsg.attrs["Adiabatic index"] = 5.0 / 3.0
 
@@ -451,8 +559,10 @@ def create_toyvr(filebase=toyvr_filebase):
             "Particle_IDs",
             data=np.concatenate(
                 (
-                    np.arange(n_g_b, n_g_all, dtype=int),
-                    np.arange(n_g_all + n_dm_b, n_g_all + n_dm_all, dtype=int),
+                    np.arange(n_g_b // 2, n_g_b // 2 + n_g, dtype=int),
+                    np.arange(
+                        n_g_all + n_dm_b // 2, n_g_all + n_dm_b // 2 + n_dm, dtype=int
+                    ),
                     np.arange(n_g_all + n_dm_all, n_g_all + n_dm_all + n_s, dtype=int),
                     np.arange(
                         n_g_all + n_dm_all + n_s,
@@ -476,8 +586,12 @@ def create_toyvr(filebase=toyvr_filebase):
             "Particle_IDs",
             data=np.concatenate(
                 (
-                    np.arange(n_g_b, dtype=int),
-                    np.arange(n_g_all, n_g_all + n_dm_b, dtype=int),
+                    np.arange(n_g_b // 2, dtype=int),
+                    np.arange(n_g_b // 2 + n_g, n_g_all, dtype=int),
+                    np.arange(n_g_all, n_g_all + n_dm_b // 2, dtype=int),
+                    np.arange(
+                        n_g_all + n_dm_b // 2 + n_dm, n_g_all + n_dm_all, dtype=int
+                    ),
                 )
             ),
         )
@@ -490,7 +604,7 @@ def create_toyvr(filebase=toyvr_filebase):
         f.create_dataset("Num_of_files", data=np.array([1], dtype=int))
         f.create_dataset(
             "Num_of_particles_in_groups",
-            data=np.array([n_g + n_dm, +n_s + n_bh], dtype=int),
+            data=np.array([n_g + n_dm + n_s + n_bh], dtype=int),
         )
         f.create_dataset(
             "Particle_types",
@@ -536,8 +650,8 @@ def remove_toyvr(filebase=toyvr_filebase):
     return
 
 
-def create_toycaesar(filebase=toycaesar_filename):
-    with h5py.File(toycaesar_filename, "w") as f:
+def create_toycaesar(filename=toycaesar_filename):
+    with h5py.File(filename, "w") as f:
         f.attrs["caesar"] = "fake"
         f.attrs["nclouds"] = 0
         f.attrs["ngalaxies"] = 1
@@ -557,12 +671,16 @@ def create_toycaesar(filebase=toycaesar_filename):
             ),
         )
         f["/galaxy_data/dicts/masses.total"].attrs["unit"] = "Msun"
+        f["/galaxy_data/dicts"].create_dataset(
+            "radii.total_rmax", data=np.array([100], dtype=float)
+        )
+        f["/galaxy_data/dicts/radii.total_rmax"].attrs["unit"] = "kpccm"
         f["/galaxy_data"].create_dataset("glist_end", data=np.array([n_g], dtype=int))
         f["/galaxy_data"].create_dataset("glist_start", data=np.array([0], dtype=int))
         f["/galaxy_data"].create_group("lists")
         f["/galaxy_data/lists"].create_dataset("bhlist", data=np.array([0], dtype=int))
         f["/galaxy_data/lists"].create_dataset(
-            "glist", data=np.arange(n_g_b, n_g_all, dtype=int)
+            "glist", data=np.arange(n_g_b // 2, n_g_b // 2 + n_g, dtype=int)
         )
         f["/galaxy_data/lists"].create_dataset("slist", data=np.arange(n_s, dtype=int))
         f["/galaxy_data"].create_dataset(
@@ -599,17 +717,29 @@ def create_toycaesar(filebase=toycaesar_filename):
         )
         f["/global_lists"].create_dataset(
             "galaxy_glist",
-            data=np.r_[-np.ones(n_g_b, dtype=int), np.zeros(n_g, dtype=int)],
+            data=np.r_[
+                -np.ones(n_g_b // 2, dtype=int),
+                np.zeros(n_g, dtype=int),
+                -np.ones(n_g_b // 2, dtype=int),
+            ],
         )
         f["/global_lists"].create_dataset("galaxy_slist", data=np.zeros(n_s, dtype=int))
         f["/global_lists"].create_dataset("halo_bhlist", data=np.zeros(n_bh, dtype=int))
         f["/global_lists"].create_dataset(
             "halo_dmlist",
-            data=np.r_[-np.ones(n_dm_b, dtype=int), np.zeros(n_dm, dtype=int)],
+            data=np.r_[
+                -np.ones(n_dm_b // 2, dtype=int),
+                np.zeros(n_dm, dtype=int),
+                -np.ones(n_dm_b // 2, dtype=int),
+            ],
         )
         f["/global_lists"].create_dataset(
             "halo_glist",
-            data=np.r_[-np.ones(n_g_b, dtype=int), np.zeros(n_g, dtype=int)],
+            data=np.r_[
+                -np.ones(n_g_b // 2, dtype=int),
+                np.zeros(n_g, dtype=int),
+                -np.ones(n_g_b // 2, dtype=int),
+            ],
         )
         f["/global_lists"].create_dataset("halo_slist", data=np.zeros(n_s, dtype=int))
         f.create_group("halo_data")
@@ -627,6 +757,11 @@ def create_toycaesar(filebase=toycaesar_filename):
             ),
         )
         f["/halo_data/dicts"].create_dataset(
+            "radii.total_rmax", data=np.array([100], dtype=float)
+        )
+        f["/halo_data/dicts/radii.total_rmax"].attrs["unit"] = "kpccm"
+
+        f["/halo_data/dicts"].create_dataset(
             "virial_quantities.m200c", data=np.array([1.0e12], dtype=float)
         )
         f["/halo_data/dicts/virial_quantities.m200c"].attrs["unit"] = "Msun"
@@ -643,13 +778,13 @@ def create_toycaesar(filebase=toycaesar_filename):
         f["/halo_data"].create_group("lists")
         f["/halo_data/lists"].create_dataset("bhlist", data=np.array([0], dtype=int))
         f["/halo_data/lists"].create_dataset(
-            "dmlist", data=np.arange(n_dm_b, n_dm_all, dtype=int)
+            "dmlist", data=np.arange(n_dm_b // 2, n_dm_b // 2 + n_dm, dtype=int)
         )
         f["/halo_data/lists"].create_dataset(
             "galaxy_index_list", data=np.array([0], dtype=int)
         )
         f["/halo_data/lists"].create_dataset(
-            "glist", data=np.arange(n_g_b, n_g_all, dtype=int)
+            "glist", data=np.arange(n_g_b // 2, n_g_b // 2 + n_g, dtype=int)
         )
         f["/halo_data/lists"].create_dataset("slist", data=np.arange(n_s, dtype=int))
         f["/halo_data"].create_dataset(

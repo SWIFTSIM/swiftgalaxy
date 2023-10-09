@@ -86,6 +86,22 @@ def sg_vr():
     remove_toyvr()
 
 
+@pytest.fixture(scope="function", params=["halo", "galaxy"])
+def sg_caesar(request):
+    create_toysnap()
+    create_toycaesar()
+
+    yield SWIFTGalaxy(
+        toysnap_filename,
+        Caesar(caesar_file=toycaesar_filename, group_type=request.param, group_index=0),
+        transforms_like_coordinates={"coordinates", "extra_coordinates"},
+        transforms_like_velocities={"velocities", "extra_velocities"},
+    )
+
+    remove_toysnap()
+    remove_toycaesar()
+
+
 @pytest.fixture(scope="function")
 def vr():
     create_toyvr()
@@ -107,6 +123,34 @@ def caesar(request):
 
 
 @pytest.fixture(scope="function", params=["vr", "caesar_halo", "caesar_galaxy"])
+def sg_hf(request):
+    create_toysnap()
+    if request.param in {"caesar_halo", "caesar_galaxy"}:
+        create_toycaesar()
+        yield SWIFTGalaxy(
+            toysnap_filename,
+            Caesar(
+                caesar_file=toycaesar_filename,
+                group_type=request.param.split("_")[-1],
+                group_index=0,
+            ),
+            transforms_like_coordinates={"coordinates", "extra_coordinates"},
+            transforms_like_velocities={"velocities", "extra_velocities"},
+        )
+        remove_toycaesar()
+    elif request.param == "vr":
+        create_toyvr()
+        yield SWIFTGalaxy(
+            toysnap_filename,
+            Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=0),
+            transforms_like_coordinates={"coordinates", "extra_coordinates"},
+            transforms_like_velocities={"velocities", "extra_velocities"},
+        )
+        remove_toyvr()
+    remove_toysnap()
+
+
+@pytest.fixture(scope="function", params=["vr", "caesar_halo", "caesar_galaxy"])
 def hf(request):
     if request.param in {"caesar_halo", "caesar_galaxy"}:
         create_toycaesar()
@@ -124,19 +168,3 @@ def hf(request):
         yield Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=0)
 
         remove_toyvr()
-
-
-@pytest.fixture(scope="function", params=["halo", "galaxy"])
-def sg_caesar(request):
-    create_toysnap()
-    create_toycaesar()
-
-    yield SWIFTGalaxy(
-        toysnap_filename,
-        Caesar(caesar_file=toycaesar_filename, group_type=request.param, group_index=0),
-        transforms_like_coordinates={"coordinates", "extra_coordinates"},
-        transforms_like_velocities={"velocities", "extra_velocities"},
-    )
-
-    remove_toysnap()
-    remove_toycaesar()

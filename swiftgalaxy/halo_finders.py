@@ -478,26 +478,27 @@ class Caesar(_HaloFinder):
             SWIFTMetadata(snapshot_filename, SWIFTUnits(snapshot_filename)),
             spatial_only=True,
         )
-        # no guaranteed way to get sub-region containing all group particles
-        # from information in caesar outputs - requested a new property with
-        # maximum particle radius, in the meantime we just the whole box:
-        boxsize = sm.metadata.boxsize
-        # presumably max radius will be from standard centre, so should add offset between
-        # minpot centre and normal centre if using minpot centre to be conservative
-        # load_region = [[0.0 * b, 1.0 * b] for b in boxsize]
-        load_region = [
-            [0.0 * boxsize[0], 1.0 * boxsize[0]],
-            [0.0 * boxsize[1], 1.0 * boxsize[1]],
-            [0.0 * boxsize[2], 1.0 * boxsize[2]],
-        ]
-        # make this warning more specific once newer caesar catalogues support better mask
-        from warnings import warn
+        if "total_rmax" in self._group.radii.keys():
+            # spatial extent information is present, define the mask
+            load_region = [
+                [
+                    self._group.pos[ax] - self._group.radii["total_rmax"],
+                    self._group.pos[ax] + self._group.radii["total_rmax"],
+                ]
+                for ax in range(3)
+            ]
+        else:
+            # probably an older caesar output file, not enough information to define mask
+            # so we read the entire box and warn
+            from warnings import warn
 
-        warn(
-            "CAESAR catalogue does not contain group extent information, so spatial "
-            "mask defaults to entire box. Reading will be inefficient. See "
-            "https://github.com/dnarayanan/caesar/issues/92"
-        )
+            boxsize = sm.metadata.boxsize
+            load_region = [[0.0 * b, 1.0 * b] for b in boxsize]
+            warn(
+                "CAESAR catalogue does not contain group extent information, so spatial "
+                "mask defaults to entire box. Reading will be inefficient. See "
+                "https://github.com/dnarayanan/caesar/issues/92"
+            )
         sm.constrain_spatial(load_region)
         return sm
 
@@ -530,7 +531,7 @@ class Caesar(_HaloFinder):
         elif hasattr(self._group, "dmlist"):
             dark_matter_mask = self._group.dmlist
         else:
-            dark_matter_mask = np.array([])
+            dark_matter_mask = None
         if dark_matter_mask is not None:
             dark_matter_mask = dark_matter_mask[
                 in_one_of_ranges(dark_matter_mask, SG.mask.dark_matter)
