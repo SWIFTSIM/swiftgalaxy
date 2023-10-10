@@ -494,9 +494,18 @@ class _SWIFTParticleDatasetHelper(object):
         if getattr(self._swiftgalaxy._extra_mask, particle_name) is None:
             setattr(self._swiftgalaxy._extra_mask, particle_name, mask)
         else:
-            num_part = self._particle_dataset.metadata.num_part[
-                particle_metadata.particle_type
-            ]
+            if self._swiftgalaxy._spatial_mask is None:
+                # get a count of particles in the box
+                num_part = self._particle_dataset.metadata.num_part[
+                    particle_metadata.particle_type
+                ]
+            else:
+                # get a count of particles in the spatial mask region
+                num_part = np.sum(
+                    self._swiftgalaxy._spatial_mask.get_masked_counts_offsets()[0][
+                        particle_name
+                    ]
+                )
             old_mask = getattr(self._swiftgalaxy._extra_mask, particle_name)
             # need to convert to an integer mask to combine
             # (boolean is insufficient in case of re-ordering masks)
