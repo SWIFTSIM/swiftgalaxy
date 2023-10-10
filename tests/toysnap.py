@@ -56,7 +56,7 @@ class ToyHF(_HaloFinder):
     def _get_spatial_mask(self, SG):
         import swiftsimio
 
-        spatial_mask = [None, None, None]
+        spatial_mask = np.array([[2 - 0.1, 2 + 0.1] for ax in range(3)]) * u.Mpc
         swift_mask = swiftsimio.mask(self.snapfile, spatial_only=True)
         swift_mask.constrain_spatial(spatial_mask)
         return swift_mask
@@ -172,8 +172,9 @@ def create_toysnap(
         np.vstack(
             (
                 # 1 km/s background, 100 km/s halo
-                np.random.rand(n_dm_b, 3) * 2 - 1,
+                np.random.rand(n_dm_b // 2, 3) * 2 - 1,
                 200 + (np.random.rand(n_dm, 3) * 2 - 1) * 100,
+                np.random.rand(n_dm_b // 2, 3) * 2 - 1,
             )
         )
         * u.km
