@@ -333,7 +333,6 @@ class TestCaesar:
         else:
             raise AttributeError
 
-    @pytest.mark.xfail
     def test_spatial_mask_applied(self):
         """
         Until this issue is resolved:
