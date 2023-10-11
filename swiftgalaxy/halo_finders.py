@@ -478,26 +478,33 @@ class Caesar(_HaloFinder):
             SWIFTMetadata(snapshot_filename, SWIFTUnits(snapshot_filename)),
             spatial_only=True,
         )
-        # no guaranteed way to get sub-region containing all group particles
-        # from information in caesar outputs - requested a new property with
-        # maximum particle radius, in the meantime we just the whole box:
-        boxsize = sm.metadata.boxsize
-        # presumably max radius will be from standard centre, so should add offset between
-        # minpot centre and normal centre if using minpot centre to be conservative
-        # load_region = [[0.0 * b, 1.0 * b] for b in boxsize]
-        load_region = [
-            [0.0 * boxsize[0], 1.0 * boxsize[0]],
-            [0.0 * boxsize[1], 1.0 * boxsize[1]],
-            [0.0 * boxsize[2], 1.0 * boxsize[2]],
-        ]
-        # make this warning more specific once newer caesar catalogues support better mask
-        from warnings import warn
+        if "total_rmax" in self._group.radii.keys():
+            # spatial extent information is present, define the mask
+            pos = cosmo_array(
+                self._group.pos.to(u.kpc),  # maybe comoving, ensure physical
+                comoving=False,
+                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+            ).to_comoving()
+            rmax = cosmo_array(
+                self._group.radii["total_rmax"].to(
+                    u.kpc
+                ),  # maybe comoving, ensure physical
+                comoving=False,
+                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+            ).to_comoving()
+            load_region = cosmo_array([pos - rmax, pos + rmax]).T
+        else:
+            # probably an older caesar output file, not enough information to define mask
+            # so we read the entire box and warn
+            from warnings import warn
 
-        warn(
-            "CAESAR catalogue does not contain group extent information, so spatial "
-            "mask defaults to entire box. Reading will be inefficient. See "
-            "https://github.com/dnarayanan/caesar/issues/92"
-        )
+            boxsize = sm.metadata.boxsize
+            load_region = [[0.0 * b, 1.0 * b] for b in boxsize]
+            warn(
+                "CAESAR catalogue does not contain group extent information, so spatial "
+                "mask defaults to entire box. Reading will be inefficient. See "
+                "https://github.com/dnarayanan/caesar/issues/92"
+            )
         sm.constrain_spatial(load_region)
         return sm
 
@@ -517,8 +524,9 @@ class Caesar(_HaloFinder):
                 ints < int_ranges[:, 1, np.newaxis],
             ).any(axis=0)
 
-        gas_mask = getattr(self._group, "glist", None)
-        if gas_mask is not None:
+        null_slice = np.s_[:0]  # mask that selects no particles
+        gas_mask = getattr(self._group, "glist", null_slice)
+        if gas_mask is not null_slice:
             gas_mask = gas_mask[in_one_of_ranges(gas_mask, SG.mask.gas)]
             gas_mask = np.isin(
                 np.concatenate([np.arange(start, end) for start, end in SG.mask.gas]),
@@ -530,8 +538,8 @@ class Caesar(_HaloFinder):
         elif hasattr(self._group, "dmlist"):
             dark_matter_mask = self._group.dmlist
         else:
-            dark_matter_mask = np.array([])
-        if dark_matter_mask is not None:
+            dark_matter_mask = null_slice
+        if dark_matter_mask is not null_slice:
             dark_matter_mask = dark_matter_mask[
                 in_one_of_ranges(dark_matter_mask, SG.mask.dark_matter)
             ]
@@ -541,15 +549,15 @@ class Caesar(_HaloFinder):
                 ),
                 dark_matter_mask,
             )
-        stars_mask = getattr(self._group, "slist", None)
-        if stars_mask is not None:
+        stars_mask = getattr(self._group, "slist", null_slice)
+        if stars_mask is not null_slice:
             stars_mask = stars_mask[in_one_of_ranges(stars_mask, SG.mask.stars)]
             stars_mask = np.isin(
                 np.concatenate([np.arange(start, end) for start, end in SG.mask.stars]),
                 stars_mask,
             )
-        black_holes_mask = getattr(self._group, "bhlist", None)
-        if black_holes_mask is not None:
+        black_holes_mask = getattr(self._group, "bhlist", null_slice)
+        if black_holes_mask is not null_slice:
             black_holes_mask = black_holes_mask[
                 in_one_of_ranges(black_holes_mask, SG.mask.black_holes)
             ]

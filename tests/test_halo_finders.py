@@ -1,13 +1,16 @@
 import pytest
+import h5py
 import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
 from toysnap import (
     toysnap_filename,
     n_g,
+    n_g_b,
     n_g_all,
     n_dm,
-    n_dm_all,
+    n_dm_b,
+    # n_dm_all,
     n_s,
     n_bh,
     m_g,
@@ -18,7 +21,7 @@ from toysnap import (
     create_toysnap,
     remove_toysnap,
 )
-from swiftgalaxy import MaskCollection
+from swiftgalaxy import SWIFTGalaxy, MaskCollection
 from swiftsimio.objects import cosmo_array
 
 abstol_c = 1 * u.pc  # less than this is ~0
@@ -36,52 +39,91 @@ class TestHaloFinders:
         # so don't want overhead of a SWIFTGalaxy
         create_toysnap()
         spatial_mask = hf._get_spatial_mask(toysnap_filename)
+        snap = h5py.File(toysnap_filename, "r")
+        n_g_firstcell = snap["/Cells/Counts/PartType0"][0]
+        n_dm_firstcell = snap["/Cells/Counts/PartType1"][0]
+        n_s_firstcell = snap["/Cells/Counts/PartType4"][0]
+        n_bh_firstcell = snap["/Cells/Counts/PartType5"][0]
         remove_toysnap()
-        assert np.array_equal(spatial_mask.gas, np.array([[0, n_g_all]]))
-        assert np.array_equal(spatial_mask.dark_matter, np.array([[0, n_dm_all]]))
-        assert np.array_equal(spatial_mask.stars, np.array([[0, n_s]]))
-        assert np.array_equal(spatial_mask.black_holes, np.array([[0, n_bh]]))
+        # we have 2 cells, covering 0-5 and 5-10 Mpc in x, and the entire range in y and z
+        # the galaxy is at (2,2,2)Mpc, so in the first cell
+        assert np.array_equal(spatial_mask.gas, np.array([[0, n_g_firstcell]]))
+        assert np.array_equal(spatial_mask.dark_matter, np.array([[0, n_dm_firstcell]]))
+        assert np.array_equal(spatial_mask.stars, np.array([[0, n_s_firstcell]]))
+        assert np.array_equal(spatial_mask.black_holes, np.array([[0, n_bh_firstcell]]))
 
-    @pytest.mark.parametrize(
-        "extra_mask, expected",
-        (
-            (
-                "bound_only",
-                dict(gas=n_g, dark_matter=n_dm, stars=n_s, black_holes=n_bh),
-            ),
-            (None, dict(gas=None, dark_matter=None, stars=None, black_holes=None)),
-            (
-                MaskCollection(
-                    gas=np.r_[
-                        np.ones(100, dtype=bool), np.zeros(n_g_all - 100, dtype=bool)
-                    ],
-                    dark_matter=None,
-                    stars=np.r_[
-                        np.ones(100, dtype=bool), np.zeros(n_s - 100, dtype=bool)
-                    ],
-                    black_holes=np.ones(n_bh, dtype=bool),
-                ),
-                dict(gas=100, dark_matter=None, stars=100, black_holes=n_bh),
-            ),
-        ),
-    )
-    def test_get_extra_mask(self, sg, hf, extra_mask, expected):
+    def test_get_bound_only_extra_mask(self, hf):
+        """
+        Check that bound_only extra mask has the right shape.
+        """
+        hf.extra_mask = "bound_only"
+        create_toysnap()
+        sg = SWIFTGalaxy(toysnap_filename, hf)
+        generated_extra_mask = sg._extra_mask
+        expected_shape = dict()
+        for particle_type in present_particle_types.values():
+            with h5py.File(toysnap_filename, "r") as snap:
+                expected_shape[particle_type] = snap[
+                    "Cells/Counts/PartType"
+                    f"{dict(gas=0, dark_matter=1, stars=4, black_holes=5)[particle_type]}"
+                ][0]
+        if hasattr(hf, "_caesar") and hf.group_type == "galaxy":
+            expected_shape["dark_matter"] = None
+        for particle_type in present_particle_types.values():
+            if expected_shape[particle_type] is not None:
+                assert (
+                    getattr(generated_extra_mask, particle_type).shape
+                    == expected_shape[particle_type]
+                )
+                assert (
+                    getattr(generated_extra_mask, particle_type).sum()
+                    == dict(gas=n_g, dark_matter=n_dm, stars=n_s, black_holes=n_bh)[
+                        particle_type
+                    ]
+                )
+        remove_toysnap()
+
+    def test_get_void_extra_mask(self, hf):
+        """
+        Check that None extra mask gives expected result.
+        """
+        hf.extra_mask = None
+        create_toysnap()
+        sg = SWIFTGalaxy(toysnap_filename, hf)
+        generated_extra_mask = sg._extra_mask
+        for particle_type in present_particle_types.values():
+            assert getattr(generated_extra_mask, particle_type) is None
+        remove_toysnap()
+
+    def test_get_user_extra_mask(self, hf):
         """
         Check that extra masks of different kinds have the right shape or type.
         """
-        if hasattr(hf, "_caesar"):
-            if hf.group_type == "galaxy" and extra_mask == "bound_only":
-                expected["dark_matter"] = 0
-        hf.extra_mask = extra_mask
-        generated_extra_mask = hf._get_extra_mask(sg)
+        hf.extra_mask = MaskCollection(
+            gas=np.r_[np.ones(100, dtype=bool), np.zeros(n_g_all - 100, dtype=bool)],
+            dark_matter=None,
+            stars=np.r_[np.ones(100, dtype=bool), np.zeros(n_s - 100, dtype=bool)],
+            black_holes=np.ones(n_bh, dtype=bool),
+        )
+        create_toysnap()
+        sg = SWIFTGalaxy(toysnap_filename, hf)
+        generated_extra_mask = sg._extra_mask
         for particle_type in present_particle_types.values():
-            if getattr(generated_extra_mask, particle_type) is not None:
+            if getattr(generated_extra_mask, particle_type) is None:
                 assert (
-                    getattr(generated_extra_mask, particle_type).sum()
-                    == expected[particle_type]
+                    dict(gas=100, dark_matter=None, stars=100, black_holes=n_bh)[
+                        particle_type
+                    ]
+                    is None
                 )
             else:
-                assert expected[particle_type] is None
+                assert (
+                    getattr(generated_extra_mask, particle_type).sum()
+                    == dict(gas=100, dark_matter=None, stars=100, black_holes=n_bh)[
+                        particle_type
+                    ]
+                )
+        remove_toysnap()
 
     def test_centre(self, hf):
         """
@@ -153,7 +195,6 @@ class TestVelociraptor:
         Check that velocity centres of each type retrieve expected values.
         """
         vr.centre_type = centre_type
-        print(vr.velocity_centre)
         assert_allclose_units(
             vr.velocity_centre,
             cosmo_array([expected, expected, expected], u.km / u.s),
@@ -244,7 +285,6 @@ class TestCaesar:
         Check that velocity centres of each type retrieve expected values.
         """
         caesar.centre_type = centre_type
-        print(caesar.velocity_centre)
         assert_allclose_units(
             caesar.velocity_centre,
             cosmo_array([expected, expected, expected], u.km / u.s),
@@ -274,17 +314,25 @@ class TestCaesar:
         else:
             raise AttributeError
 
-    @pytest.mark.xfail
-    def test_spatial_mask_applied(self):
+    def test_spatial_mask_applied(self, caesar):
         """
-        Until this issue is resolved:
-
-        https://github.com/dnarayanan/caesar/issues/92
-
-        Caesar catalogues don't contain enough information to construct a spatial mask.
-        For now we just read the whole box (!), and expect to fail this test.
+        Check that we get the expected number of particles when only the spatial mask is
+        applied.
         """
-        raise NotImplementedError
+        caesar.extra_mask = None  # apply only the spatial mask
+        create_toysnap()
+        sg = SWIFTGalaxy(toysnap_filename, caesar)
+        for particle_type in present_particle_types.values():
+            assert (
+                getattr(sg, particle_type).masses.size
+                == dict(
+                    gas=n_g_b // 2 + n_g,
+                    dark_matter=n_dm_b // 2 + n_dm,
+                    stars=n_s,
+                    black_holes=n_bh,
+                )[particle_type]
+            )
+        remove_toysnap()
 
 
 class TestCaesarWithSWIFTGalaxy:
@@ -323,10 +371,10 @@ class TestCaesarWithSWIFTGalaxy:
         Check that the bound_only default mask works with the spatial mask,
         giving the expected shapes for arrays.
         """
-        expected_dm = 0 if sg_caesar.halo_finder.group_type == "galaxy" else 10000
+        expected_dm = 0 if sg_caesar.halo_finder.group_type == "galaxy" else n_dm
         assert (
             getattr(sg_caesar, particle_type).masses.size
-            == dict(gas=10000, dark_matter=expected_dm, stars=10000, black_holes=1)[
+            == dict(gas=n_g, dark_matter=expected_dm, stars=n_s, black_holes=n_bh)[
                 particle_type
             ]
         )
