@@ -288,7 +288,7 @@ class Velociraptor(_HaloFinder):
                 ]
             ),
             comoving=False,  # velociraptor gives physical centres!
-            cosmo_factor=cosmo_factor(a ** 1, self.scale_factor),
+            cosmo_factor=cosmo_factor(a**1, self.scale_factor),
         ).to_comoving()
 
     @property
@@ -323,7 +323,7 @@ class Velociraptor(_HaloFinder):
                 ]
             ),
             comoving=False,
-            cosmo_factor=cosmo_factor(a ** 0, self.scale_factor),
+            cosmo_factor=cosmo_factor(a**0, self.scale_factor),
         ).to_comoving()
 
     def __getattr__(self, attr: str) -> Any:
@@ -584,7 +584,7 @@ class Caesar(_HaloFinder):
                 u.kpc
             ),  # maybe comoving, ensure physical
             comoving=False,
-            cosmo_factor=cosmo_factor(a ** 1, self._caesar.simulation.scale_factor),
+            cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
         ).to_comoving()
 
     @property
@@ -603,7 +603,7 @@ class Caesar(_HaloFinder):
         return cosmo_array(
             getattr(self._group, vcentre_attr).to(u.km / u.s),
             comoving=False,
-            cosmo_factor=cosmo_factor(a ** 0, self._caesar.simulation.scale_factor),
+            cosmo_factor=cosmo_factor(a**0, self._caesar.simulation.scale_factor),
         ).to_comoving()
 
     def __getattr__(self, attr: str) -> Any:

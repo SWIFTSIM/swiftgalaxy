@@ -15,10 +15,10 @@ toyvr_filebase = "toyvr"
 toycaesar_filename = "toycaesar.hdf5"
 present_particle_types = {0: "gas", 1: "dark_matter", 4: "stars", 5: "black_holes"}
 boxsize = 10.0 * u.Mpc
-n_g_all = 32 ** 3
+n_g_all = 32**3
 n_g = 10000
 n_g_b = n_g_all - n_g
-n_dm_all = 32 ** 3
+n_dm_all = 32**3
 n_dm = 10000
 n_dm_b = n_dm_all - n_dm
 n_s = 10000
@@ -35,7 +35,7 @@ Om_b = 0.05
 h0 = 0.7
 w0 = -1.0
 rho_c = (3 * (h0 * 100 * u.km / u.s / u.Mpc) ** 2 / 8 / np.pi / u.G).to(
-    u.msun / u.kpc ** 3
+    u.msun / u.kpc**3
 )
 age = u.unyt_quantity.from_astropy(
     LambdaCDM(
@@ -456,13 +456,13 @@ def create_toyvr(filebase=toyvr_filebase):
         f["ID"].attrs["Dimension_Time"] = 0.0
         f["ID"].attrs["Dimension_Velocity"] = 0.0
         # pick arbitrary particle in the galaxy to be most bound
-        f.create_dataset("ID_mbp", data=np.array([32 ** 3 - 9999], dtype=int))
+        f.create_dataset("ID_mbp", data=np.array([32**3 - 9999], dtype=int))
         f["ID_mbp"].attrs["Dimension_Length"] = 0.0
         f["ID_mbp"].attrs["Dimension_Mass"] = 0.0
         f["ID_mbp"].attrs["Dimension_Time"] = 0.0
         f["ID_mbp"].attrs["Dimension_Velocity"] = 0.0
         # pick arbitrary particle in the galaxy to be potential minimum
-        f.create_dataset("ID_minpot", data=np.array([32 ** 3 - 9998], dtype=int))
+        f.create_dataset("ID_minpot", data=np.array([32**3 - 9998], dtype=int))
         f["ID_minpot"].attrs["Dimension_Length"] = 0.0
         f["ID_minpot"].attrs["Dimension_Mass"] = 0.0
         f["ID_minpot"].attrs["Dimension_Time"] = 0.0
@@ -815,15 +815,15 @@ def create_toycaesar(filename=toycaesar_filename):
         f["/halo_data/vel"].attrs["unit"] = "km/s"
         f.create_group("simulation_attributes")
         f["/simulation_attributes"].attrs["Densities"] = [
-            200 * rho_c.to_value(u.msun / u.kpc ** 3),
-            500 * rho_c.to_value(u.msun / u.kpc ** 3),
-            2500 * rho_c.to_value(u.msun / u.kpc ** 3),
+            200 * rho_c.to_value(u.msun / u.kpc**3),
+            500 * rho_c.to_value(u.msun / u.kpc**3),
+            2500 * rho_c.to_value(u.msun / u.kpc**3),
         ]
         # f["/simulation_attributes"].attrs["E_z"] = ...
         f["/simulation_attributes"].attrs["G"] = 4.51691362044e-39
         f["/simulation_attributes"].attrs["H_z"] = (
             h0 * 100 * u.km / u.s / u.Mpc
-        ).to_value(u.s ** -1)
+        ).to_value(u.s**-1)
         # f["/simulation_attributes"].attrs["Om_z"] = ...
         f["/simulation_attributes"].attrs["XH"] = 0.76
         f["/simulation_attributes"].attrs["baryons_present"] = True
@@ -832,7 +832,7 @@ def create_toycaesar(filename=toycaesar_filename):
         f["/simulation_attributes"].attrs["boxsize_units"] = "kpccm"
         f["/simulation_attributes"].attrs["cosmological_simulation"] = True
         f["/simulation_attributes"].attrs["critical_density"] = rho_c.to_value(
-            u.msun / u.kpc ** 3
+            u.msun / u.kpc**3
         )
         f["/simulation_attributes"].attrs["ds_type"] = "SwiftDataset"
         # f["/simulation_attributes"].attrs["effective_resolution"] = ...
