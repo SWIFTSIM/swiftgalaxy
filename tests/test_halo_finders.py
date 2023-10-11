@@ -344,15 +344,12 @@ class TestCaesar:
         create_toysnap()
         sg = SWIFTGalaxy(toysnap_filename, caesar)
         for particle_type in present_particle_types.values():
-            assert (
-                getattr(sg, particle_type).masses.size
-                == dict(
-                    gas=n_g_b // 2 + n_g,
-                    dark_matter=n_dm_b // 2 + n_dm,
-                    stars=n_s,
-                    black_holes=n_bh,
-                )[particle_type]
-            )
+            assert getattr(sg, particle_type).masses.size == dict(
+                gas=n_g_b // 2 + n_g,
+                dark_matter=n_dm_b // 2 + n_dm,
+                stars=n_s,
+                black_holes=n_bh,
+            )[particle_type]
         remove_toysnap()
 
 
