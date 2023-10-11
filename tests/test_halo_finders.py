@@ -7,7 +7,7 @@ from toysnap import (
     toysnap_filename,
     n_g,
     n_g_b,
-    # n_g_all,
+    n_g_all,
     n_dm,
     n_dm_b,
     # n_dm_all,
@@ -21,7 +21,7 @@ from toysnap import (
     create_toysnap,
     remove_toysnap,
 )
-from swiftgalaxy import SWIFTGalaxy
+from swiftgalaxy import SWIFTGalaxy, MaskCollection
 from swiftsimio.objects import cosmo_array
 
 abstol_c = 1 * u.pc  # less than this is ~0
