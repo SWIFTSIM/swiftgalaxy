@@ -480,13 +480,19 @@ class Caesar(_HaloFinder):
         )
         if "total_rmax" in self._group.radii.keys():
             # spatial extent information is present, define the mask
-            load_region = [
-                [
-                    self._group.pos[ax] - self._group.radii["total_rmax"],
-                    self._group.pos[ax] + self._group.radii["total_rmax"],
-                ]
-                for ax in range(3)
-            ]
+            pos = cosmo_array(
+                self._group.pos.to(u.kpc),  # maybe comoving, ensure physical
+                comoving=False,
+                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+            ).to_comoving()
+            rmax = cosmo_array(
+                self._group.radii["total_rmax"].to(
+                    u.kpc
+                ),  # maybe comoving, ensure physical
+                comoving=False,
+                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+            ).to_comoving()
+            load_region = cosmo_array([pos - rmax, pos + rmax]).T
         else:
             # probably an older caesar output file, not enough information to define mask
             # so we read the entire box and warn
