@@ -518,8 +518,9 @@ class Caesar(_HaloFinder):
                 ints < int_ranges[:, 1, np.newaxis],
             ).any(axis=0)
 
-        gas_mask = getattr(self._group, "glist", None)
-        if gas_mask is not None:
+        null_slice = np.s_[:0]  # mask that selects no particles
+        gas_mask = getattr(self._group, "glist", null_slice)
+        if gas_mask is not null_slice:
             gas_mask = gas_mask[in_one_of_ranges(gas_mask, SG.mask.gas)]
             gas_mask = np.isin(
                 np.concatenate([np.arange(start, end) for start, end in SG.mask.gas]),
@@ -531,8 +532,8 @@ class Caesar(_HaloFinder):
         elif hasattr(self._group, "dmlist"):
             dark_matter_mask = self._group.dmlist
         else:
-            dark_matter_mask = None
-        if dark_matter_mask is not None:
+            dark_matter_mask = null_slice
+        if dark_matter_mask is not null_slice:
             dark_matter_mask = dark_matter_mask[
                 in_one_of_ranges(dark_matter_mask, SG.mask.dark_matter)
             ]
@@ -542,15 +543,15 @@ class Caesar(_HaloFinder):
                 ),
                 dark_matter_mask,
             )
-        stars_mask = getattr(self._group, "slist", None)
-        if stars_mask is not None:
+        stars_mask = getattr(self._group, "slist", null_slice)
+        if stars_mask is not null_slice:
             stars_mask = stars_mask[in_one_of_ranges(stars_mask, SG.mask.stars)]
             stars_mask = np.isin(
                 np.concatenate([np.arange(start, end) for start, end in SG.mask.stars]),
                 stars_mask,
             )
-        black_holes_mask = getattr(self._group, "bhlist", None)
-        if black_holes_mask is not None:
+        black_holes_mask = getattr(self._group, "bhlist", null_slice)
+        if black_holes_mask is not null_slice:
             black_holes_mask = black_holes_mask[
                 in_one_of_ranges(black_holes_mask, SG.mask.black_holes)
             ]

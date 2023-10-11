@@ -6,8 +6,10 @@ from unyt.testing import assert_allclose_units
 from toysnap import (
     toysnap_filename,
     n_g,
-    n_g_all,
+    n_g_b,
+    # n_g_all,
     n_dm,
+    n_dm_b,
     # n_dm_all,
     n_s,
     n_bh,
@@ -19,7 +21,7 @@ from toysnap import (
     create_toysnap,
     remove_toysnap,
 )
-from swiftgalaxy import MaskCollection, SWIFTGalaxy
+from swiftgalaxy import SWIFTGalaxy
 from swiftsimio.objects import cosmo_array
 
 abstol_c = 1 * u.pc  # less than this is ~0
@@ -333,16 +335,25 @@ class TestCaesar:
         else:
             raise AttributeError
 
-    def test_spatial_mask_applied(self):
+    def test_spatial_mask_applied(self, caesar):
         """
-        Until this issue is resolved:
-
-        https://github.com/dnarayanan/caesar/issues/92
-
-        Caesar catalogues don't contain enough information to construct a spatial mask.
-        For now we just read the whole box (!), and expect to fail this test.
+        Check that we get the expected number of particles when only the spatial mask is
+        applied.
         """
-        raise NotImplementedError
+        caesar.extra_mask = None  # apply only the spatial mask
+        create_toysnap()
+        sg = SWIFTGalaxy(toysnap_filename, caesar)
+        for particle_type in present_particle_types.values():
+            assert (
+                getattr(sg, particle_type).masses.size
+                == dict(
+                    gas=n_g_b // 2 + n_g,
+                    dark_matter=n_dm_b // 2 + n_dm,
+                    stars=n_s,
+                    black_holes=n_bh,
+                )[particle_type]
+            )
+        remove_toysnap()
 
 
 class TestCaesarWithSWIFTGalaxy:
@@ -381,10 +392,10 @@ class TestCaesarWithSWIFTGalaxy:
         Check that the bound_only default mask works with the spatial mask,
         giving the expected shapes for arrays.
         """
-        expected_dm = 0 if sg_caesar.halo_finder.group_type == "galaxy" else 10000
+        expected_dm = 0 if sg_caesar.halo_finder.group_type == "galaxy" else n_dm
         assert (
             getattr(sg_caesar, particle_type).masses.size
-            == dict(gas=10000, dark_matter=expected_dm, stars=10000, black_holes=1)[
+            == dict(gas=n_g, dark_matter=expected_dm, stars=n_s, black_holes=n_bh)[
                 particle_type
             ]
         )
