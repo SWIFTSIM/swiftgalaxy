@@ -88,12 +88,11 @@ class Velociraptor(_HaloFinder):
     Takes a set of :mod:`velociraptor` output files and configuration options
     and provides an interface that :mod:`swiftgalaxy` understands. Also exposes
     the halo/galaxy properties computed by :mod:`velociraptor` for a single
-    object of interest with the same `interface <vr-interface>`_ provided by the
-    :mod:`velociraptor` python package. Reading of properties is done
-    on-the-fly, and only rows corresponding to the object of interest are read
-    from disk.
+    object of interest with the `API`_ provided by the :mod:`velociraptor`
+    python package. Reading of properties is done on-the-fly, and only rows
+    corresponding to the object of interest are read from disk.
 
-    .. _vr-interface: https://velociraptor-python.readthedocs.io/en/latest/
+    .. _API: https://velociraptor-python.readthedocs.io/en/latest/
 
     Parameters
     ----------
@@ -346,11 +345,11 @@ class Caesar(_HaloFinder):
     Takes a :mod:`caesar` output file and configuration options and provides
     an interface that :mod:`swiftgalaxy` understands. Also exposes the halo/galaxy
     properties computed by CAESAR for a single object of interest with
-    the same `interface <caesar-interface>`_ provided by the :class:`~loader.Group` class
+    the same `interface`_ provided by the :class:`~loader.Group` class
     in the :mod:`caesar` python package. Reading of properties is done on-the-fly, and
     only rows corresponding to the object of interest are read from disk.
 
-    .. _caesar-interface: https://caesar.readthedocs.io/en/latest/
+    .. _interface: https://caesar.readthedocs.io/en/latest/
 
     Parameters
     ----------

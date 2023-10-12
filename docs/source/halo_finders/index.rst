@@ -48,6 +48,21 @@ This lists available integrated properties of the object of interest, for exampl
 
 Caesar is compatible with yt and returns values with units specified with yt that :mod:`unyt` understands by default.
 
+.. warning ::
+
+    Caesar defines its own unit registry that specifies how some customised units convert to units provided by yt. For example, a `Mpccm` (co-moving Mpc) unit is defined. Because :mod:`swiftsimio` provides its own custom implementation of co-moving units that is not explicitly aware of the :mod:`caesar` implementation, but both are compatible with yt, some issues can arise. The :class:`~swiftsimio.objects.cosmo_array` provided by :mod:`swiftsimio` does produce a warning when potentially ambiguous calculations are attempted (e.g. where its doesn't know that both argument are co-moving, or that both are physical), and this will trigger on calculations mixing incompatible :mod:`caesar`-style and :class:`~swiftsimio.objects.cosmo_array` units. However, occasionally :mod:`swiftsimio` uses bare :mod:`unyt` quantities or arrays, and if a :mod:`caesar`-style quantity collides with one of these in a calculation silent and incorrect conversion from comoving to physical units (or any other redshift-dependent units) can occur. It is therefore recommended that users convert :mod:`caesar`-style quantities to use :class:`~swiftsimio.objects.cosmo_array` before they are passed to :mod:`swiftsimio` or :mod:`swiftgalaxy` functions. For example:
+
+    .. code-block:: python
+
+        import unyt as u
+        from swiftsimio.objects import cosmo_array, cosmo_factor
+	scale_factor = ...  # retrieve scale factor from snapshot or catalogue file
+        cosmo_array(
+	    cat.virial_quantities["r200c"].to(u.kpc),  # ensures physical units
+	    comoving=False,
+	    cosmo_factor=cosmo_factor(a**1, scale_factor=scale_factor)
+	).to_comoving()  # or leave in physical units if desired
+
 Usually the :class:`~swiftgalaxy.halo_finders.Caesar` object is used to create a :class:`~swiftgalaxy.reader.SWIFTGalaxy` object. In this case the interface is exposed through the ``halo_finder`` attribute, for example:
 
 .. code-block:: python
@@ -69,6 +84,10 @@ By default, the :class:`~swiftgalaxy.halo_finders.Caesar` class will identify th
     )
 
 This behaviour can be adjusted. If ``None`` is passed instead, then only the spatial masking provided by :meth:`~swiftgalaxy.halo_finders.Caesar._get_spatial_mask` is used. This means that all particles in the set of (probably cubic) subvolumes of the simulation that overlap with the region of interest will be read in. Alternatively, a :class:`~swiftgalaxy.masks.MaskCollection` can be provided. This will be used to select particles from those already selected spatially.
+
+.. warning::
+
+   Older :mod:`caesar` outputs (prior to updates to the package in October 2023) do not contain enough information to define a spatial sub-region to take advantage of :mod:`swiftsimio`'s spatial masking. :mod:`swiftgalaxy` is still compatible with these older output files but properties of all particles in the box will be read and then masked down to the object of interest, which is very inefficient. When :mod:`swiftgalaxy` doesn't find the information needed for spatial masking in a :mod:`caesar` output file, it will produce a warning at runtime before proceeding (very inefficiently).
 
 If a different subset of particles is desired, often the most practical option is to first set up the :class:`~swiftgalaxy.reader.SWIFTGalaxy` with either ``extra_mask="bound_only"`` or ``extra_mask=None`` and then use the loaded particles to :doc:`compute a new mask that can then be applied <../masking/index>`, perhaps permanently. Since all particles within the spatially masked region will always be read in any case, this does not imply any loss of efficiency.
 
