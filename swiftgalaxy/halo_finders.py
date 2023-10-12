@@ -2,7 +2,7 @@
 This module contains classes providing interfaces to halo finders used with
 SWIFT so that :mod:`swiftgalaxy` can obtain the information it requires in a
 streamlined way. Currently only the Velociraptor_ halo finder is supported, but
-support for other halo finders (e.g. `HBT+`_) is planned.
+support for other halo finders (e.g. `SOAP`, `HBT+`_) is planned.
 
 .. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/\
 abstract
@@ -10,12 +10,14 @@ abstract
 """
 
 from abc import ABC, abstractmethod
+import numpy as np
 import unyt as u
+from swiftsimio import SWIFTMetadata, SWIFTUnits, SWIFTMask
 from swiftgalaxy.masks import MaskCollection
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
-from swiftsimio.masks import SWIFTMask
 
 from typing import Any, Union, Optional, TYPE_CHECKING
+from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from swiftgalaxy.reader import SWIFTGalaxy
@@ -32,22 +34,41 @@ class _HaloFinder(ABC):
         pass
 
     @abstractmethod
-    def _get_spatial_mask(self, SG: "SWIFTGalaxy") -> SWIFTMask:
+    def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         # return _spatial_mask
         pass
 
     @abstractmethod
-    def _get_extra_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+    def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
         # return _extra_mask
         pass
 
+    def _get_extra_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+        if self.extra_mask == "bound_only":
+            return self._generate_bound_only_mask(SG)
+        elif self.extra_mask is None:
+            return MaskCollection(
+                **{k: None for k in SG.metadata.present_particle_names}
+            )
+        else:
+            # Keep user provided mask. If no mask provided for a particle type
+            # use None (no mask).
+            return MaskCollection(
+                **{
+                    name: getattr(self.extra_mask, name, None)
+                    for name in SG.metadata.present_particle_names
+                }
+            )
+
+    @property
     @abstractmethod
-    def _centre(self) -> cosmo_array:
+    def centre(self) -> cosmo_array:
         # return halo centre
         pass
 
+    @property
     @abstractmethod
-    def _vcentre(self) -> cosmo_array:
+    def velocity_centre(self) -> cosmo_array:
         # return halo velocity centre
         pass
 
@@ -67,12 +88,12 @@ class Velociraptor(_HaloFinder):
     Takes a set of :mod:`velociraptor` output files and configuration options
     and provides an interface that :mod:`swiftgalaxy` understands. Also exposes
     the halo/galaxy properties computed by :mod:`velociraptor` for a single
-    object of interest with the same interface_ provided by the
+    object of interest with the same `interface <vr-interface>`_ provided by the
     :mod:`velociraptor` python package. Reading of properties is done
     on-the-fly, and only rows corresponding to the object of interest are read
     from disk.
 
-    .. _interface: https://velociraptor-python.readthedocs.io/en/latest/
+    .. _vr-interface: https://velociraptor-python.readthedocs.io/en/latest/
 
     Parameters
     ----------
@@ -93,8 +114,8 @@ class Velociraptor(_HaloFinder):
     halo_index: ``int``
         Position of the object of interest in the catalogue arrays.
 
-    extra_mask: ``Union[str, MaskCollection]``, default: ``'bound_only'``
-        Mask to apply to particles after spatial masking. If ``'bound_only'``,
+    extra_mask: ``Union[str, MaskCollection]``, default: ``"bound_only"``
+        Mask to apply to particles after spatial masking. If ``"bound_only"``,
         then the galaxy is masked to include only the gravitationally bound
         particles as determined by :mod:`velociraptor`. A user-defined mask
         can also be provided as an an object (such as a
@@ -102,11 +123,11 @@ class Velociraptor(_HaloFinder):
         names corresponding to present particle names (e.g. gas, dark_matter,
         etc.), each containing a mask.
 
-    centre_type: ``str``, default: ``'minpot'``
+    centre_type: ``str``, default: ``"minpot"``
         Type of centre, chosen from those provided by :mod:`velociraptor`.
         Default is the position of the particle with the minimum potential,
-        ``'minpot'``; other possibilities may include ``''``, ``'_gas'``,
-        ``'_star'``, ``'mbp'`` (most bound particle).
+        ``"minpot"``; other possibilities may include ``""``, ``"_gas"``,
+        ``"_star"``, ``"mbp"`` (most bound particle).
 
     Notes
     -----
@@ -127,8 +148,8 @@ class Velociraptor(_HaloFinder):
     ::
 
         >>> cat = Velociraptor(
-        >>>     '/output/path/halos',  # halos.properties file is at
-        >>>                            # /output/path/
+        >>>     velociraptor_filebase="/output/path/halos",  # halos.properties file is at
+        >>>                                                  # /output/path/
         >>>     halo_index=3,  # 4th entry in catalogue (indexed from 0)
         >>> )
         >>> cat
@@ -169,15 +190,13 @@ class Velociraptor(_HaloFinder):
 
     def __init__(
         self,
-        velociraptor_filebase: str = None,
-        velociraptor_files: dict = None,
-        halo_index: int = None,
+        velociraptor_filebase: Optional[str] = None,
+        velociraptor_files: Optional[dict] = None,
+        halo_index: Optional[int] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "minpot",  # _gas _star mbp minpot
         velociraptor_suffix: str = "",
     ) -> None:
-        from velociraptor.catalogue.catalogue import Catalogue
-
         if velociraptor_filebase is not None and velociraptor_files is not None:
             raise ValueError(
                 "Provide either velociraptor_filebase or velociraptor_files, not both."
@@ -198,8 +217,6 @@ class Velociraptor(_HaloFinder):
         else:
             self.halo_index: int = halo_index
         self.centre_type: str = centre_type
-        self._catalogue: Optional[Catalogue] = None
-        self._particles: Optional[None] = None
         super().__init__(extra_mask=extra_mask)
         # currently velociraptor_python works with a halo index, not halo_id
         # self.catalogue_mask = (catalogue.ids.id == halo_id).nonzero()
@@ -207,6 +224,7 @@ class Velociraptor(_HaloFinder):
 
     def _load(self) -> None:
         import h5py
+        from velociraptor.catalogue.catalogue import Catalogue
         from velociraptor import load as load_catalogue
         from velociraptor.particles import load_groups
 
@@ -217,7 +235,7 @@ class Velociraptor(_HaloFinder):
                 else 1.0
             )
 
-        self._catalogue = load_catalogue(
+        self._catalogue: Catalogue = load_catalogue(
             self.velociraptor_files["properties"], mask=self.halo_index
         )
         groups = load_groups(
@@ -234,26 +252,21 @@ class Velociraptor(_HaloFinder):
 
         return generate_spatial_mask(self._particles, snapshot_filename)
 
-    def _get_extra_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+    def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
         from velociraptor.swift.swift import generate_bound_mask
 
-        if self.extra_mask == "bound_only":
-            return MaskCollection(**generate_bound_mask(SG, self._particles)._asdict())
-        elif self.extra_mask is None:
-            return MaskCollection(
-                **{k: None for k in SG.metadata.present_particle_names}
-            )
-        else:
-            # Keep user provided mask. If no mask provided for a particle type
-            # use None (no mask).
-            return MaskCollection(
-                **{
-                    name: getattr(self.extra_mask, name, None)
-                    for name in SG.metadata.present_particle_names
-                }
-            )
+        return MaskCollection(**generate_bound_mask(SG, self._particles)._asdict())
 
-    def _centre(self) -> cosmo_array:
+    @property
+    def centre(self) -> cosmo_array:
+        """
+        Obtain the centre specified by the ``centre_type`` from the halo catalogue.
+
+        Returns
+        -------
+        centre: :class:`~swiftsimio.objects.cosmo_array`
+            The centre provided by the halo catalogue.
+        """
         # According to Velociraptor documentation:
         if self.centre_type in ("_gas", "_stars"):
             # {XYZ}c_gas and {XYZ}c_stars are relative to {XYZ}c
@@ -278,7 +291,17 @@ class Velociraptor(_HaloFinder):
             cosmo_factor=cosmo_factor(a**1, self.scale_factor),
         ).to_comoving()
 
-    def _vcentre(self) -> cosmo_array:
+    @property
+    def velocity_centre(self) -> cosmo_array:
+        """
+        Obtain the velocity centre specified by the ``centre_type`` from the halo
+        catalogue.
+
+        Returns
+        -------
+        velocity_centre: :class:`~swiftsimio.objects.cosmo_array`
+            The velocity centre provided by the halo catalogue.
+        """
         # According to Velociraptor documentation:
         if self.centre_type in ("_gas", "_stars"):
             # V{XYZ}c_gas and V{XYZ}c_stars are relative to {XYZ}c
@@ -306,10 +329,295 @@ class Velociraptor(_HaloFinder):
     def __getattr__(self, attr: str) -> Any:
         # Invoked if attribute not found.
         # Use to expose the masked catalogue.
-        if attr == "_catalogue":
+        if attr == "_catalogue":  # guard infinite recursion
             return object.__getattribute__(self, "_catalogue")
         return getattr(self._catalogue, attr)
 
     def __repr__(self) -> str:
         # Expose the catalogue __repr__ for interactive use.
         return self._catalogue.__repr__()
+
+
+class Caesar(_HaloFinder):
+
+    """
+    Interface to Caesar halo catalogues for use with :mod:`swiftgalaxy`.
+
+    Takes a :mod:`caesar` output file and configuration options and provides
+    an interface that :mod:`swiftgalaxy` understands. Also exposes the halo/galaxy
+    properties computed by CAESAR for a single object of interest with
+    the same `interface <caesar-interface>`_ provided by the :class:`~loader.Group` class
+    in the :mod:`caesar` python package. Reading of properties is done on-the-fly, and
+    only rows corresponding to the object of interest are read from disk.
+
+    .. _caesar-interface: https://caesar.readthedocs.io/en/latest/
+
+    Parameters
+    ----------
+
+    caesar_file: ``str``
+        The catalogue file (hdf5 format) output by caesar.
+
+    group_type: ``str``
+        The category of the object of interest, either ``"halo"`` or ``"galaxy"``.
+
+    group_index: ``int``
+        Position of the object of interest in the catalogue arrays.
+
+    extra_mask: ``Union[str, MaskCollection]``, default: ``"bound_only"``
+        Mask to apply to particles after spatial masking. If ``"bound_only"``,
+        then the galaxy is masked to include only the gravitationally bound
+        particles as provided by :mod:`caesar`. A user-defined mask can also be
+        as an an object (such as a :class:`swiftgalaxy.masks.MaskCollection`) that has
+        attributes with names corresponding to present particle names (e.g. gas,
+        dark_matter, etc.), each containing a mask.
+
+    centre_type: ``str``, default: ``"minpot"``
+        Type of centre, chosen from those provided by :mod:`caesar`.
+        Default is the position of the particle with the minimum potential,
+        ``"minpot"``, alternatively ``""`` can be used for the centre of mass.
+
+    Notes
+    -----
+
+    .. note::
+        :mod:`loader.CAESAR` only supports index access to catalogue lists, not
+        identifier access. This means that the ``group_index`` is simply the
+        position of the object of interest in the catalogue list.
+
+    Examples
+    --------
+    Given a file :file:`s12.5n128_0012.hdf5` at :file:`/output/path/`, the
+    following creates a :class:`Caesar` object for the entry at index
+    ``3`` in the catalogue (i.e. the 4th row, indexed from 0) and demonstrates
+    retrieving its virial mass.
+
+    ::
+
+        >>> cat = Caesar(
+        >>>     caesar_file="/output/path/s12.5n128_0012.hdf5",
+        >>>     group_type="halo",
+        >>>     group_index=3,  # 4th entry in catalogue (indexed from 0)
+        >>> )
+        >>> cat.info()
+        {'GroupID': 3,
+        'ages': {'mass_weighted': unyt_quantity(2.26558173, 'Gyr'),
+                 'metal_weighted': unyt_quantity(2.21677032, 'Gyr')},
+        'bh_fedd': unyt_quantity(3.97765937, 'dimensionless'),
+        'bhlist_end': 12,
+        'bhlist_start': 11,
+        ...
+        'virial_quantities': {'circular_velocity': unyt_quantity(158.330253, 'km/s'),
+                              'm200c': unyt_quantity(1.46414384e+12, 'Msun'),
+                              'm2500c': unyt_quantity(8.72801239e+11, 'Msun'),
+                              'm500c': unyt_quantity(1.23571772e+12, 'Msun'),
+                              'r200': unyt_quantity(425.10320408, 'kpccm'),
+                              'r200c': unyt_quantity(327.46600342, 'kpccm'),
+                              'r2500c': unyt_quantity(118.77589417, 'kpccm'),
+                              'r500c': unyt_quantity(228.03265381, 'kpccm'),
+                              'spin_param': unyt_quantity(2.28429179,'s/(Msun*km*kpccm)'),
+                              'temperature': unyt_quantity(902464.88453405, 'K')}}
+        >>> cat.virial_quantities
+        {'circular_velocity': unyt_quantity(158.330253, 'km/s'),
+         'm200c': unyt_quantity(1.46414384e+12, 'Msun'),
+         'm2500c': unyt_quantity(8.72801239e+11, 'Msun'),
+         'm500c': unyt_quantity(1.23571772e+12, 'Msun'),
+         'r200': unyt_quantity(425.10320408, 'kpccm'),
+         'r200c': unyt_quantity(327.46600342, 'kpccm'),
+         'r2500c': unyt_quantity(118.77589417, 'kpccm'),
+         'r500c': unyt_quantity(228.03265381, 'kpccm'),
+         'spin_param': unyt_quantity(2.28429179, 's/(Msun*km*kpccm)'),
+         'temperature': unyt_quantity(902464.88453405, 'K')}
+        >>> cat.virial_quantities["m200c"]
+        unyt_quantity(1.46414384e+12, 'Msun')
+    """
+
+    def __init__(
+        self,
+        caesar_file: Optional[str] = None,
+        group_type: Optional[str] = None,  # halos galaxies
+        group_index: Optional[int] = None,
+        centre_type: str = "minpot",  # "" "minpot"
+        extra_mask: Union[str, MaskCollection] = "bound_only",
+    ) -> None:
+        import caesar
+        import logging
+        from yt.utilities import logger as yt_logger
+
+        log_level = logging.getLogger("yt").level  # cache the log level before we start
+        yt_logger.set_log_level("warning")  # disable INFO log messages
+        self._caesar = caesar.load(caesar_file)
+        yt_logger.set_log_level(log_level)  # restore old log level
+
+        valid_group_types = dict(halo="halos", galaxy="galaxies")
+        if group_type in valid_group_types:
+            self._group = getattr(self._caesar, valid_group_types[group_type])[
+                group_index
+            ]
+        else:
+            raise ValueError(
+                "group_type required, valid values are 'halo' or 'galaxy'."
+            )
+        self.group_type: str = group_type
+        if group_index is None:
+            raise ValueError("group_index (int) required.")
+        else:
+            self.group_index: int = group_index
+
+        self.centre_type = centre_type
+
+        super().__init__(extra_mask=extra_mask)
+        return
+
+    def _load(self) -> None:
+        # any non-trivial io/calculation at initialisation time goes here
+        pass
+
+    def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
+        sm = SWIFTMask(
+            SWIFTMetadata(snapshot_filename, SWIFTUnits(snapshot_filename)),
+            spatial_only=True,
+        )
+        if "total_rmax" in self._group.radii.keys():
+            # spatial extent information is present, define the mask
+            pos = cosmo_array(
+                self._group.pos.to(u.kpc),  # maybe comoving, ensure physical
+                comoving=False,
+                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+            ).to_comoving()
+            rmax = cosmo_array(
+                self._group.radii["total_rmax"].to(
+                    u.kpc
+                ),  # maybe comoving, ensure physical
+                comoving=False,
+                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+            ).to_comoving()
+            load_region = cosmo_array([pos - rmax, pos + rmax]).T
+        else:
+            # probably an older caesar output file, not enough information to define mask
+            # so we read the entire box and warn
+            from warnings import warn
+
+            boxsize = sm.metadata.boxsize
+            load_region = [[0.0 * b, 1.0 * b] for b in boxsize]
+            warn(
+                "CAESAR catalogue does not contain group extent information, so spatial "
+                "mask defaults to entire box. Reading will be inefficient. See "
+                "https://github.com/dnarayanan/caesar/issues/92"
+            )
+        sm.constrain_spatial(load_region)
+        return sm
+
+    def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+        def in_one_of_ranges(
+            ints: NDArray[np.int_],
+            int_ranges: NDArray[np.int_],
+        ):
+            """
+            Produces a boolean mask corresponding to `ints`. For each element in `ints`,
+            the mask is `True` if the value is between (at least) one of the pairs of
+            integers in `int_ranges`. This is potentially memory intensive with a
+            footprint proportional to ints.size * int_ranges.size.
+            """
+            return np.logical_and(
+                ints >= int_ranges[:, 0, np.newaxis],
+                ints < int_ranges[:, 1, np.newaxis],
+            ).any(axis=0)
+
+        null_slice = np.s_[:0]  # mask that selects no particles
+        gas_mask = getattr(self._group, "glist", null_slice)
+        if gas_mask is not null_slice:
+            gas_mask = gas_mask[in_one_of_ranges(gas_mask, SG.mask.gas)]
+            gas_mask = np.isin(
+                np.concatenate([np.arange(start, end) for start, end in SG.mask.gas]),
+                gas_mask,
+            )
+        # seems like name could be dmlist or dlist?
+        if hasattr(self._group, "dlist"):
+            dark_matter_mask = self._group.dlist
+        elif hasattr(self._group, "dmlist"):
+            dark_matter_mask = self._group.dmlist
+        else:
+            dark_matter_mask = null_slice
+        if dark_matter_mask is not null_slice:
+            dark_matter_mask = dark_matter_mask[
+                in_one_of_ranges(dark_matter_mask, SG.mask.dark_matter)
+            ]
+            dark_matter_mask = np.isin(
+                np.concatenate(
+                    [np.arange(start, end) for start, end in SG.mask.dark_matter]
+                ),
+                dark_matter_mask,
+            )
+        stars_mask = getattr(self._group, "slist", null_slice)
+        if stars_mask is not null_slice:
+            stars_mask = stars_mask[in_one_of_ranges(stars_mask, SG.mask.stars)]
+            stars_mask = np.isin(
+                np.concatenate([np.arange(start, end) for start, end in SG.mask.stars]),
+                stars_mask,
+            )
+        black_holes_mask = getattr(self._group, "bhlist", null_slice)
+        if black_holes_mask is not null_slice:
+            black_holes_mask = black_holes_mask[
+                in_one_of_ranges(black_holes_mask, SG.mask.black_holes)
+            ]
+            black_holes_mask = np.isin(
+                np.concatenate(
+                    [np.arange(start, end) for start, end in SG.mask.black_holes]
+                ),
+                black_holes_mask,
+            )
+        return MaskCollection(
+            gas=gas_mask,
+            dark_matter=dark_matter_mask,
+            stars=stars_mask,
+            black_holes=black_holes_mask,
+        )
+
+    @property
+    def centre(self) -> cosmo_array:
+        """
+        Obtain the centre specified by the ``centre_type`` from the halo catalogue.
+
+        Returns
+        -------
+        centre: :class:`~swiftsimio.objects.cosmo_array`
+            The centre provided by the halo catalogue.
+        """
+        centre_attr = {"": "pos", "minpot": "minpotpos"}[self.centre_type]
+        return cosmo_array(
+            getattr(self._group, centre_attr).to(
+                u.kpc
+            ),  # maybe comoving, ensure physical
+            comoving=False,
+            cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+        ).to_comoving()
+
+    @property
+    def velocity_centre(self) -> cosmo_array:
+        """
+        Obtain the velocity centre specified by the ``centre_type`` from the halo
+        catalogue.
+
+        Returns
+        -------
+        velocity_centre: :class:`~swiftsimio.objects.cosmo_array`
+            The velocity centre provided by the halo catalogue.
+        """
+
+        vcentre_attr = {"": "vel", "minpot": "minpotvel"}[self.centre_type]
+        return cosmo_array(
+            getattr(self._group, vcentre_attr).to(u.km / u.s),
+            comoving=False,
+            cosmo_factor=cosmo_factor(a**0, self._caesar.simulation.scale_factor),
+        ).to_comoving()
+
+    def __getattr__(self, attr: str) -> Any:
+        # Invoked if attribute not found.
+        # Use to expose the masked catalogue.
+        if attr == "_group":  # guard infinite recursion
+            return object.__getattribute__(self, "_group")
+        return getattr(self._group, attr)
+
+    def __repr__(self) -> str:
+        return self._group.__repr__()

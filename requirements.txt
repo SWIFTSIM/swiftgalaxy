@@ -3,3 +3,4 @@ scipy
 h5py
 unyt
 swiftsimio
+astropy

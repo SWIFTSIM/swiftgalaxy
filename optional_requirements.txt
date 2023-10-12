@@ -2,3 +2,4 @@ pytest
 black
 wily
 velociraptor
+git+https://github.com/dnarayanan/caesar.git

@@ -494,9 +494,18 @@ class _SWIFTParticleDatasetHelper(object):
         if getattr(self._swiftgalaxy._extra_mask, particle_name) is None:
             setattr(self._swiftgalaxy._extra_mask, particle_name, mask)
         else:
-            num_part = self._particle_dataset.metadata.num_part[
-                particle_metadata.particle_type
-            ]
+            if self._swiftgalaxy._spatial_mask is None:
+                # get a count of particles in the box
+                num_part = self._particle_dataset.metadata.num_part[
+                    particle_metadata.particle_type
+                ]
+            else:
+                # get a count of particles in the spatial mask region
+                num_part = np.sum(
+                    self._swiftgalaxy._spatial_mask.get_masked_counts_offsets()[0][
+                        particle_name
+                    ]
+                )
             old_mask = getattr(self._swiftgalaxy._extra_mask, particle_name)
             # need to convert to an integer mask to combine
             # (boolean is insufficient in case of re-ordering masks)
@@ -1100,7 +1109,7 @@ class SWIFTGalaxy(SWIFTDataset):
         id_particle_dataset_name: str = "particle_ids",
         coordinates_dataset_name: str = "coordinates",
         velocities_dataset_name: str = "velocities",
-        coordinate_frame_from: "SWIFTGalaxy" = None,
+        coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
         # arguments beginning _ are not intended for users, but
         # for the __copy__ and __deepcopy__ functions.
         _spatial_mask: Optional[SWIFTMask] = None,
@@ -1217,8 +1226,8 @@ class SWIFTGalaxy(SWIFTDataset):
                 )
 
         if auto_recentre:
-            self.recentre(self.halo_finder._centre())
-            self.recentre_velocity(self.halo_finder._vcentre())
+            self.recentre(self.halo_finder.centre)
+            self.recentre_velocity(self.halo_finder.velocity_centre)
 
         self._initialised: bool = True
 

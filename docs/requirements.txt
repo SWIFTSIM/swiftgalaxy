@@ -8,3 +8,5 @@ h5py
 unyt
 swiftsimio
 velociraptor
+Cython
+git+https://github.com/dnarayanan/caesar.git
