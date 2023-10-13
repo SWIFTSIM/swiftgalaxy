@@ -183,3 +183,49 @@ Entrepreneurial users may also create their own helper class inheriting from :cl
   + :meth:`~swiftgalaxy.halo_finders._HaloFinder.velocity_centre`: return the coordinates (as a :class:`~swiftsimio.objects.cosmo_array`) to be used as the bulk velocity of the galaxy of interest (implemented with the `@property` decorator).
 
 In addition, it is recommended to expose the properties computed by the halo finder, masked to the values corresponding to the object of interest. To make this intuitive for users, the syntax to access attributes of the galaxy of interest should preferably match the syntax used for the library conventionally used to read outputs of that halo finder, if it exists. For instance, for Velociraptor this is implemented via ``__getattr__`` (dot syntax), which simply exposes the usual interface (with a mask to pick out the galaxy of interest).
+
+Using swiftgalaxy without a halo catalogue
+------------------------------------------
+
+A helper class called :class:`swiftgalaxy.halo_finders.Standalone` is provided so that the features of :mod:`swiftgalaxy` that aren't directly tied to a halo catalogue (e.g. spherical and cylindrical coordinates, consistent coordinate frame, etc.) can be used when no supported halo catalogue is available.
+
+Often the most pragmatic way to create a selection of particles using :class:`~swiftgalaxy.halo_finders.Standalone` is to first select a spatial region guaranteed to contain the particles of interest and then create the final mask programatically using :class:`~swiftgalaxy.reader.SWIFTGalaxy`'s masking features. For example, suppose that you know that there is a galaxy with its centre at (2, 2, 2) Mpc and that you eventually want to select all particles in a spherical aperture 1 Mpc in radius around this point. Start with a cubic spatial mask enclosing this region:
+
+.. code-block:: python
+
+    from swiftgalaxy import SWIFTGalaxy, Standalone, MaskCollection
+    from swiftsimio import cosmo_array
+    import unyt as u
+
+    sg = SWIFTGalaxy(
+        "my_snapshot.hdf5",
+        Standalone(
+            centre=cosmo_array([2.0, 2.0, 2.0], u.Mpc),
+            velocity_centre=cosmo_array([0.0, 0.0, 0.0], u.km / u.s),
+            spatial_offsets=cosmo_array([[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]], u.Mpc),
+            extra_mask=None,  # we'll define the exact set of particles later
+        )
+    )
+
+You can next define the masks selecting particles in your desired spherical aperture, using :class:`~swiftgalaxy.reader.SWIFTGalaxy`'s convenient spherical coordinates feature, and store them in a :class:`~swiftgalaxy.masks.MaskCollection`:
+
+.. code-block:: python
+
+    mask_collection = MaskCollection(
+        gas=sg.gas.spherical_coordinates.r < 1 * u.Mpc,
+        dark_matter=sg.dark_matter.spherical_coordinates.r < 1 * u.Mpc,
+        stars=sg.stars.spherical_coordinates.r < 1 * u.Mpc,
+        black_holes=sg.black_holes.spherical_coordinates.r < 1 * u.Mpc,
+    )
+
+Finally, apply the mask to the ``sg`` object:
+
+.. code-block:: python
+
+   sg.mask_particles(mask_collection)
+
+You're now ready to proceed with analysis of the particles in the 1 Mpc spherical aperture using this ``sg`` object.
+
+.. note::
+
+   :meth:`~swiftgalaxy.reader.SWIFTGalaxy.mask_particles` applies the masks in-place. The mask could also be applied with the :meth:`~swiftgalaxy.reader.SWIFTGalaxy.__getattr__` method (i.e. in square brackets), but this returns a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object. If memory efficiency is a concern, prefer the :meth:`~swiftgalaxy.reader.SWIFTGalaxy.mask_particles` approach.
