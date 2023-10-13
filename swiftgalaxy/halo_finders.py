@@ -9,14 +9,15 @@ abstract
 .. _HBT+: https://ui.adsabs.harvard.edu/abs/2018MNRAS.474..604H/abstract
 """
 
+from warnings import warn
 from abc import ABC, abstractmethod
 import numpy as np
 import unyt as u
-from swiftsimio import SWIFTMetadata, SWIFTUnits, SWIFTMask
+from swiftsimio import mask, SWIFTMask
 from swiftgalaxy.masks import MaskCollection
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 
-from typing import Any, Union, Optional, TYPE_CHECKING
+from typing import Any, Union, Optional, List, TYPE_CHECKING
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:
@@ -24,7 +25,11 @@ if TYPE_CHECKING:
 
 
 class _HaloFinder(ABC):
-    def __init__(self, extra_mask: Union[str, MaskCollection] = "bound_only") -> None:
+    _user_spatial_offsets: Optional[List] = None
+
+    def __init__(
+        self, extra_mask: Optional[Union[str, MaskCollection]] = "bound_only"
+    ) -> None:
         self.extra_mask = extra_mask
         self._load()
         return
@@ -37,6 +42,22 @@ class _HaloFinder(ABC):
     def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         # return _spatial_mask
         pass
+
+    def _get_user_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
+        sm = mask(snapshot_filename, spatial_only=True)
+        region = self._user_spatial_offsets
+        if region is not None:
+            for ax in range(3):
+                region[ax] = (
+                    [
+                        self.centre[ax] + region[ax][0],
+                        self.centre[ax] + region[ax][1],
+                    ]
+                    if region[ax] is not None
+                    else None
+                )
+            sm.constrain_spatial(region)
+        return sm
 
     @abstractmethod
     def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
@@ -128,6 +149,16 @@ class Velociraptor(_HaloFinder):
         ``"minpot"``; other possibilities may include ``""``, ``"_gas"``,
         ``"_star"``, ``"mbp"`` (most bound particle).
 
+    custom_spatial_offsets: ``Optional[cosmo_array]``, default: ``None``
+        A region to override the automatically-determined region enclosing
+        group member particles. May be used in conjunction with ``extra_mask``,
+        for example to select all simulation particles in an aperture around
+        the object of interest (see 'Masking' section of documentation for a
+        cookbook example). Provide a pair of offsets from the object's centre
+        along each axis to define the region, for example for a cube extending
+        +/- 1 Mpc from the centre:
+        ``cosmo_array([[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]], u.Mpc)``.
+
     Notes
     -----
 
@@ -195,6 +226,7 @@ class Velociraptor(_HaloFinder):
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "minpot",  # _gas _star mbp minpot
         velociraptor_suffix: str = "",
+        custom_spatial_offsets: Optional[cosmo_array] = None,
     ) -> None:
         if velociraptor_filebase is not None and velociraptor_files is not None:
             raise ValueError(
@@ -216,6 +248,7 @@ class Velociraptor(_HaloFinder):
         else:
             self.halo_index: int = halo_index
         self.centre_type: str = centre_type
+        self._user_spatial_offsets = custom_spatial_offsets
         super().__init__(extra_mask=extra_mask)
         # currently velociraptor_python works with a halo index, not halo_id
         # self.catalogue_mask = (catalogue.ids.id == halo_id).nonzero()
@@ -376,6 +409,16 @@ class Caesar(_HaloFinder):
         Default is the position of the particle with the minimum potential,
         ``"minpot"``, alternatively ``""`` can be used for the centre of mass.
 
+    custom_spatial_offsets: ``Optional[cosmo_array]``, default: ``None``
+        A region to override the automatically-determined region enclosing
+        group member particles. May be used in conjunction with ``extra_mask``,
+        for example to select all simulation particles in an aperture around
+        the object of interest (see 'Masking' section of documentation for a
+        cookbook example). Provide a pair of offsets from the object's centre
+        along each axis to define the region, for example for a cube extending
+        +/- 1 Mpc from the centre:
+        ``cosmo_array([[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]], u.Mpc)``.
+
     Notes
     -----
 
@@ -438,6 +481,7 @@ class Caesar(_HaloFinder):
         group_index: Optional[int] = None,
         centre_type: str = "minpot",  # "" "minpot"
         extra_mask: Union[str, MaskCollection] = "bound_only",
+        custom_spatial_offsets: Optional[cosmo_array] = None,
     ) -> None:
         import caesar
         import logging
@@ -464,6 +508,7 @@ class Caesar(_HaloFinder):
             self.group_index: int = group_index
 
         self.centre_type = centre_type
+        self._user_spatial_offsets = custom_spatial_offsets
 
         super().__init__(extra_mask=extra_mask)
         return
@@ -473,10 +518,7 @@ class Caesar(_HaloFinder):
         pass
 
     def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
-        sm = SWIFTMask(
-            SWIFTMetadata(snapshot_filename, SWIFTUnits(snapshot_filename)),
-            spatial_only=True,
-        )
+        sm = mask(snapshot_filename, spatial_only=True)
         if "total_rmax" in self._group.radii.keys():
             # spatial extent information is present, define the mask
             pos = cosmo_array(
@@ -495,8 +537,6 @@ class Caesar(_HaloFinder):
         else:
             # probably an older caesar output file, not enough information to define mask
             # so we read the entire box and warn
-            from warnings import warn
-
             boxsize = sm.metadata.boxsize
             load_region = [[0.0 * b, 1.0 * b] for b in boxsize]
             warn(
@@ -511,7 +551,7 @@ class Caesar(_HaloFinder):
         def in_one_of_ranges(
             ints: NDArray[np.int_],
             int_ranges: NDArray[np.int_],
-        ):
+        ) -> NDArray[np.bool_]:
             """
             Produces a boolean mask corresponding to `ints`. For each element in `ints`,
             the mask is `True` if the value is between (at least) one of the pairs of
@@ -523,9 +563,9 @@ class Caesar(_HaloFinder):
                 ints < int_ranges[:, 1, np.newaxis],
             ).any(axis=0)
 
-        null_slice = np.s_[:0]  # mask that selects no particles
-        gas_mask = getattr(self._group, "glist", null_slice)
-        if gas_mask is not null_slice:
+        null_mask = np.array([], dtype=bool)  # mask that selects no particles
+        gas_mask = getattr(self._group, "glist", null_mask)
+        if gas_mask is not null_mask:
             gas_mask = gas_mask[in_one_of_ranges(gas_mask, SG.mask.gas)]
             gas_mask = np.isin(
                 np.concatenate([np.arange(start, end) for start, end in SG.mask.gas]),
@@ -537,8 +577,8 @@ class Caesar(_HaloFinder):
         elif hasattr(self._group, "dmlist"):
             dark_matter_mask = self._group.dmlist
         else:
-            dark_matter_mask = null_slice
-        if dark_matter_mask is not null_slice:
+            dark_matter_mask = null_mask
+        if dark_matter_mask is not null_mask:
             dark_matter_mask = dark_matter_mask[
                 in_one_of_ranges(dark_matter_mask, SG.mask.dark_matter)
             ]
@@ -548,15 +588,15 @@ class Caesar(_HaloFinder):
                 ),
                 dark_matter_mask,
             )
-        stars_mask = getattr(self._group, "slist", null_slice)
-        if stars_mask is not null_slice:
+        stars_mask = getattr(self._group, "slist", null_mask)
+        if stars_mask is not null_mask:
             stars_mask = stars_mask[in_one_of_ranges(stars_mask, SG.mask.stars)]
             stars_mask = np.isin(
                 np.concatenate([np.arange(start, end) for start, end in SG.mask.stars]),
                 stars_mask,
             )
-        black_holes_mask = getattr(self._group, "bhlist", null_slice)
-        if black_holes_mask is not null_slice:
+        black_holes_mask = getattr(self._group, "bhlist", null_mask)
+        if black_holes_mask is not null_mask:
             black_holes_mask = black_holes_mask[
                 in_one_of_ranges(black_holes_mask, SG.mask.black_holes)
             ]
@@ -620,3 +660,183 @@ class Caesar(_HaloFinder):
 
     def __repr__(self) -> str:
         return self._group.__repr__()
+
+
+class Standalone(_HaloFinder):
+    """
+    A bare-bones tool to initialize a :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+    without an associated halo catalogue.
+
+    Provides an interface to specify the minimum required information to
+    instantiate a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    Parameters
+    ----------
+
+    centre: ``Optional[cosmo_array]``, default: ``None``
+        A value for this parameter is required, and must have units of length.
+        Specifies the geometric centre in simulation coordinates. Particle
+        coordinates will be shifted such that this position is located at (0, 0, 0)
+        and if the boundary is periodic it will be wrapped to place the origin at
+        the centre.
+
+    velocity_centre: ``Optional[cosmo_array]``, default: ``None``
+        A value for this parameter is required, and must have units of speed.
+        Specifies the reference velocity relative to the simulation frame. Particle
+        velocities will be shifted such that a particle with the specified velocity
+        in the simulation frame will have zero velocity in the
+        :class:`~swiftgalaxy.reader.SWIFTGalaxy` frame.
+
+    spatial_offsets: ``Optional[cosmo_array]``, default: ``None``
+        Offsets along each axis to select a spatial region around the ``centre``.
+        May be used in conjunction with ``extra_mask``, for example to select all
+        simulation particles in an aperture around the object of interest (see
+        'Masking' section of documentation for a cookbook example). Provide a pair
+        of offsets from the object's centre along each axis to define the region,
+        for example for a cube extending +/- 1 Mpc from the centre:
+        ``cosmo_array([[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]], u.Mpc)``.
+
+    extra_mask: ``Optional[Union[str, MaskCollection]]``, default: ``None``
+        Mask to apply to particles after spatial masking. A user-defined mask
+        can be provided as an an object (such as a
+        :class:`swiftgalaxy.masks.MaskCollection`) that has attributes with
+        names corresponding to present particle names (e.g. gas, dark_matter,
+        etc.), each containing a mask.
+
+    Examples
+    --------
+    Often the most pragmatic way to create a selection of particles using
+    :class:`~swiftgalaxy.halo_finders.Standalone` is to first select a spatial region
+    guaranteed to contain the particles of interest and then create the final mask
+    programatically using :class:`~swiftgalaxy.reader.SWIFTGalaxy`'s masking features.
+    For example, suppose we know that there is a galaxy with its centre at
+    (2, 2, 2) Mpc and we eventually want all particles in a spherical aperture 1 Mpc
+    in radius around this point. We start with a cubic spatial mask enclosing this
+    region:
+
+    ::
+
+        from swiftgalaxy import SWIFTGalaxy, Standalone, MaskCollection
+        from swiftsimio import cosmo_array
+        import unyt as u
+
+        sg = SWIFTGalaxy(
+            "my_snapshot.hdf5",
+            Standalone(
+                centre=cosmo_array([2.0, 2.0, 2.0], u.Mpc),
+                velocity_centre=cosmo_array([0.0, 0.0, 0.0], u.km / u.s),
+                spatial_offsets=cosmo_array(
+                    [[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]],
+                    u.Mpc,
+                ),
+                extra_mask=None,  # we'll define the exact set of particles later
+            )
+        )
+
+    We next define the masks selecting particles in the desired spherical aperture,
+    conveniently using :class:`~swiftgalaxy.reader.SWIFTGalaxy`'s spherical coordinates
+    feature, and store them in a :class:`~swiftgalaxy.masks.MaskCollection`:
+
+    ::
+
+        mask_collection = MaskCollection(
+            gas=sg.gas.spherical_coordinates.r < 1 * u.Mpc,
+            dark_matter=sg.dark_matter.spherical_coordinates.r < 1 * u.Mpc,
+            stars=sg.stars.spherical_coordinates.r < 1 * u.Mpc,
+            black_holes=sg.black_holes.spherical_coordinates.r < 1 * u.Mpc,
+        )
+
+    Finally, we apply the mask to the ``sg`` object:
+
+    ::
+
+        sg = sg.mask_particles(mask_collection)
+
+    We're now ready to proceed with analysis of the particles in the 1 Mpc spherical
+    aperture using this ``sg`` object.
+
+    .. note::
+
+        :meth:`~swiftgalaxy.reader.SWIFTGalaxy.mask_particles` applies the masks in-place.
+        The mask could also be applied with the
+        :meth:`~swiftgalaxy.reader.SWIFTGalaxy.__getattr__` method (i.e. in square
+        brackets), but this returns a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        object. If memory efficiency is a concern, prefer the
+        :meth:`~swiftgalaxy.reader.SWIFTGalaxy.mask_particles` approach.
+
+    """
+
+    def __init__(
+        self,
+        centre: Optional[cosmo_array] = None,
+        velocity_centre: Optional[cosmo_array] = None,
+        spatial_offsets: Optional[cosmo_array] = None,
+        extra_mask: Optional[Union[str, MaskCollection]] = None,
+    ) -> None:
+        if centre is None:
+            raise ValueError("A centre is required.")
+        else:
+            self._centre = centre
+        if velocity_centre is None:
+            raise ValueError("A velocity_centre is required.")
+        else:
+            self._velocity_centre = velocity_centre
+        if spatial_offsets is None:
+            warn(
+                "No spatial_offsets provided. All particles in simulation box will be "
+                "read (before masking). This is likely to be slow/inefficient."
+            )
+        self._user_spatial_offsets = spatial_offsets
+        if extra_mask == "bound_only":
+            raise ValueError(
+                "extra_mask='bound_only' is not supported with Standalone."
+            )
+        super().__init__(extra_mask=extra_mask)
+        return
+
+    def _load(self) -> None:
+        pass
+
+    def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
+        # if we're here then the user didn't provide a mask, read the whole box
+        print("!")
+        sm = mask(snapshot_filename, spatial_only=True)
+        boxsize = sm.metadata.boxsize
+        region = [[0.0 * b, 1.0 * b] for b in boxsize]
+        sm.constrain_spatial(region)
+        return sm
+
+    def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+        raise NotImplementedError  # guarded in initialisation, should not reach here
+
+    def _get_extra_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+        if self.extra_mask == "bound_only":
+            # guarded in initialisation, but simplifies testing
+            return self._generate_bound_only_mask(SG)
+        elif self.extra_mask is None:
+            return MaskCollection(
+                **{k: None for k in SG.metadata.present_particle_names}
+            )
+        else:
+            # Keep user provided mask. If no mask provided for a particle type
+            # use None (no mask).
+            return MaskCollection(
+                **{
+                    name: getattr(self.extra_mask, name, None)
+                    for name in SG.metadata.present_particle_names
+                }
+            )
+
+    @property
+    def centre(self) -> cosmo_array:
+        """
+        Obtain the centre specified at initialisation.
+        """
+        return self._centre
+
+    @property
+    def velocity_centre(self) -> cosmo_array:
+        """
+        Obtain the velocity centre specified at initialisation.
+        """
+        return self._velocity_centre

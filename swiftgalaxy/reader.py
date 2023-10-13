@@ -1125,9 +1125,14 @@ class SWIFTGalaxy(SWIFTDataset):
         if _spatial_mask is not None:
             self._spatial_mask = _spatial_mask
         else:
-            self._spatial_mask = self.halo_finder._get_spatial_mask(
-                self.snapshot_filename
-            )
+            if self.halo_finder._user_spatial_offsets is not None:
+                self._spatial_mask = self.halo_finder._get_user_spatial_mask(
+                    self.snapshot_filename
+                )
+            else:
+                self._spatial_mask = self.halo_finder._get_spatial_mask(
+                    self.snapshot_filename
+                )
         self.transforms_like_coordinates: Set[str] = {coordinates_dataset_name}.union(
             transforms_like_coordinates
         )
