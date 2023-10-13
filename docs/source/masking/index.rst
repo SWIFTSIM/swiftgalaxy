@@ -89,3 +89,43 @@ As may be intuitively expected, individual particle arrays can be masked on-the-
     sg.gas.masses[gasmask]
 
 This returns a masked copy of the individual particle array, so does not imply the same level of potentially expensive copy operations discussed above. While it is possible to assign the result back to the particle array (e.g. ``sg.gas.masses = sg.gas.masses[gasmask]``), this is inadvisable since it will break the consistency between the shapes of the particle arrays for that particle type. After doing this, some operations, such as attempting to mask the :class:`~swiftgalaxy.reader.SWIFTGalaxy` again, are then likely to raise an exception.
+
+Cookbook: all particles in a spherical aperture
+-----------------------------------------------
+
+One of :mod:`swiftgalaxy`'s features is that it can conveniently provide a set of particles that a halo finder has identified as belonging to a galaxy (or other object). However, in some cases this might not be the selection of particles that you want. When the desired particles include some that are not identified as members by the halo finder, a modified approach is needed. For example, let's suppose that you want to select *all* simulation particles within a 1 Mpc aperture of a galaxy's centre, regardless of their membership status according to the halo finder. For illustration we'll take a galaxy picked from a :class:`~swiftgalaxy.halo_finders.Velociraptor` catalogue. The first step is to override the default ``extra_mask="bound_only"`` behaviour with ``extra_mask=None``. We also need to override the default spatial selection from the simulation, because the 1 Mpc spherical region of interest might extend beyond the region occupied by member particles as defined by the halo finder, which is all that the default spatial selection is guaranteed to enclose:
+
+.. code-block:: python
+
+    sg = SWIFTGalaxy(
+        "my_snapshot.hdf5",
+	Velociraptor(
+	    "halos",  # name of output files excluding extension (e.g. 'halos.properties', etc.)
+	    halo_index=3,  # pick the 4th galaxy (i.e. indexed from 0) in the catalogue array
+	    extra_mask=None,  # select all particles in the spatially selected region (for now)
+	    custom_spatial_offsets=cosmo_array([[-1, 1], [-1, 1], [-1, 1]], u.Mpc), # relative to centre
+	),
+    )
+
+You can next define the masks selecting particles in your desired spherical aperture, using :class:`~swiftgalaxy.reader.SWIFTGalaxy`'s convenient spherical coordinates feature, and store them in a :class:`~swiftgalaxy.masks.MaskCollection`:
+
+.. code-block:: python
+
+    mask_collection = MaskCollection(
+        gas=sg.gas.spherical_coordinates.r < 1 * u.Mpc,
+        dark_matter=sg.dark_matter.spherical_coordinates.r < 1 * u.Mpc,
+        stars=sg.stars.spherical_coordinates.r < 1 * u.Mpc,
+        black_holes=sg.black_holes.spherical_coordinates.r < 1 * u.Mpc,
+    )
+
+Finally, apply the mask to the ``sg`` object:
+
+.. code-block:: python
+
+   sg.mask_particles(mask_collection)
+
+You're now ready to proceed with analysis of the particles in the 1 Mpc spherical aperture using this ``sg`` object.
+
+.. note::
+
+   :meth:`~swiftgalaxy.reader.SWIFTGalaxy.mask_particles` applies the masks in-place. The mask could also be applied with the :meth:`~swiftgalaxy.reader.SWIFTGalaxy.__getattr__` method (i.e. in square brackets), but this returns a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object. If memory efficiency is a concern, prefer the :meth:`~swiftgalaxy.reader.SWIFTGalaxy.mask_particles` approach.
