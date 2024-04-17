@@ -102,7 +102,6 @@ class _HaloFinder(ABC):
 
 
 class Velociraptor(_HaloFinder):
-
     """
     Interface to velociraptor halo catalogues for use with :mod:`swiftgalaxy`.
 
@@ -371,7 +370,6 @@ class Velociraptor(_HaloFinder):
 
 
 class Caesar(_HaloFinder):
-
     """
     Interface to Caesar halo catalogues for use with :mod:`swiftgalaxy`.
 

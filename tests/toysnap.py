@@ -838,9 +838,9 @@ def create_toycaesar(filename=toycaesar_filename):
         # f["/simulation_attributes"].attrs["effective_resolution"] = ...
         # f["/simulation_attributes"].attrs["fullpath"] = ...
         f["/simulation_attributes"].attrs["hubble_constant"] = 0.7
-        f["/simulation_attributes"].attrs[
-            "mean_interparticle_separation"
-        ] = boxsize.to_value(u.kpc) / n_dm ** (1 / 3)
+        f["/simulation_attributes"].attrs["mean_interparticle_separation"] = (
+            boxsize.to_value(u.kpc) / n_dm ** (1 / 3)
+        )
         f["/simulation_attributes"].attrs["nbh"] = n_bh
         f["/simulation_attributes"].attrs["ndm"] = n_dm_all
         f["/simulation_attributes"].attrs["ndust"] = 0
