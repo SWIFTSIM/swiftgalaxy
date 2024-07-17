@@ -25,7 +25,7 @@ from swiftsimio import metadata as swiftsimio_metadata
 from swiftsimio.reader import (
     SWIFTDataset,
     __SWIFTNamedColumnDataset,
-    __SWIFTParticleDataset,
+    __SWIFTGroupDatasets,
 )
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from swiftsimio.masks import SWIFTMask
@@ -99,7 +99,6 @@ def _apply_4transform(
 
 
 class _CoordinateHelper(object):
-
     """
     Container class for coordinates.
 
@@ -135,7 +134,6 @@ class _CoordinateHelper(object):
 
 
 class _SWIFTNamedColumnDatasetHelper(object):
-
     """
     A wrapper class to enable :class:`SWIFTGalaxy`
     functionality for a :class:`swiftsimio.reader.__SWIFTNamedColumnDataset`.
@@ -254,16 +252,15 @@ class _SWIFTNamedColumnDatasetHelper(object):
         return getattr(self._particle_dataset_helper._data_copy(mask=mask), self.name)
 
 
-class _SWIFTParticleDatasetHelper(object):
-
+class _SWIFTGroupDatasetsHelper(object):
     """
     A wrapper class to enable :class:`SWIFTGalaxy`
-    functionality for a :class:`swiftsimio.reader.__SWIFTParticleDataset`.
+    functionality for a :class:`swiftsimio.reader.__SWIFTGroupDatasets`.
 
     Unlike the :class:`SWIFTGalaxy` class that inherits
     directly from :class:`~swiftsimio.reader.SWIFTDataset`, for technical
     reasons this class does *not* inherit
-    :class:`swiftsimio.reader.__SWIFTParticleDataset`. It does, however,
+    :class:`swiftsimio.reader.__SWIFTGroupDatasets`. It does, however,
     expose the functionality of that class by maintaining an instance
     internally and forwarding any attribute lookups that it does not handle
     itself to its internal particle dataset.
@@ -289,7 +286,7 @@ class _SWIFTParticleDatasetHelper(object):
 
     Parameters
     ----------
-    particle_dataset: :class:`swiftsimio.reader.__SWIFTParticleDataset`
+    particle_dataset: :class:`swiftsimio.reader.__SWIFTGroupDatasets`
         The particle dataset to be wrapped.
 
     swiftgalaxy: :class:`SWIFTGalaxy`
@@ -330,9 +327,9 @@ class _SWIFTParticleDatasetHelper(object):
     """
 
     def __init__(
-        self, particle_dataset: "__SWIFTParticleDataset", swiftgalaxy: "SWIFTGalaxy"
+        self, particle_dataset: "__SWIFTGroupDatasets", swiftgalaxy: "SWIFTGalaxy"
     ) -> None:
-        self._particle_dataset: __SWIFTParticleDataset = particle_dataset
+        self._particle_dataset: __SWIFTGroupDatasets = particle_dataset
         self._swiftgalaxy: "SWIFTGalaxy" = swiftgalaxy
         self._named_column_dataset_helpers: dict[
             str, _SWIFTNamedColumnDatasetHelper
@@ -359,9 +356,9 @@ class _SWIFTParticleDatasetHelper(object):
             TypeNamedColumnDatasetHelper = type(
                 nice_name, (_SWIFTNamedColumnDatasetHelper, object), dict()
             )
-            self._named_column_dataset_helpers[
-                named_columns_name
-            ] = TypeNamedColumnDatasetHelper(named_columns, self)
+            self._named_column_dataset_helpers[named_columns_name] = (
+                TypeNamedColumnDatasetHelper(named_columns, self)
+            )
         self._spherical_coordinates: Optional[dict] = None
         self._cylindrical_coordinates: Optional[dict] = None
         self._spherical_velocities: Optional[dict] = None
@@ -949,14 +946,14 @@ class _SWIFTParticleDatasetHelper(object):
                 ][mask]
         if self._cylindrical_coordinates is not None:
             for coord in ("rho", "phi", "z"):
-                self._cylindrical_coordinates[
-                    f"_{coord}"
-                ] = self._cylindrical_coordinates[f"_{coord}"][mask]
+                self._cylindrical_coordinates[f"_{coord}"] = (
+                    self._cylindrical_coordinates[f"_{coord}"][mask]
+                )
         if self._cylindrical_velocities is not None:
             for coord in ("v_rho", "v_phi", "v_z"):
-                self._cylindrical_velocities[
-                    f"_{coord}"
-                ] = self._cylindrical_velocities[f"_{coord}"][mask]
+                self._cylindrical_velocities[f"_{coord}"] = (
+                    self._cylindrical_velocities[f"_{coord}"][mask]
+                )
         return
 
     def _void_derived_coordinates(self) -> None:
@@ -968,7 +965,6 @@ class _SWIFTParticleDatasetHelper(object):
 
 
 class SWIFTGalaxy(SWIFTDataset):
-
     """
     A representation of a simulated galaxy.
 
@@ -978,7 +974,7 @@ class SWIFTGalaxy(SWIFTDataset):
     and to provide integrated properties. The implementation is an extension of
     the :class:`~swiftsimio.reader.SWIFTDataset` class, so all the
     functionality of such a dataset is also available for a
-    :class:`SWIFTGalaxy`. The :class:`swiftsimio.reader.__SWIFTParticleDataset`
+    :class:`SWIFTGalaxy`. The :class:`swiftsimio.reader.__SWIFTGroupDatasets`
     objects familiar to :mod:`swiftsimio` users (e.g. a ``GasDataset``) are
     wrapped by a :class:`_SWIFTParticleDatasetHelper` class that exposes their
     usual functionality and extends it with new features.
@@ -1298,27 +1294,27 @@ class SWIFTGalaxy(SWIFTDataset):
             if particle_dataset_helper._spherical_coordinates is not None:
                 new_particle_dataset_helper._spherical_coordinates = dict()
                 for c in ("_r", "_theta", "_phi"):
-                    new_particle_dataset_helper._spherical_coordinates[
-                        c
-                    ] = particle_dataset_helper._spherical_coordinates[c][mask]
+                    new_particle_dataset_helper._spherical_coordinates[c] = (
+                        particle_dataset_helper._spherical_coordinates[c][mask]
+                    )
             if particle_dataset_helper._spherical_velocities is not None:
                 new_particle_dataset_helper._spherical_velocities = dict()
                 for c in ("_v_r", "_v_t", "_v_p"):
-                    new_particle_dataset_helper._spherical_velocities[
-                        c
-                    ] = particle_dataset_helper._spherical_velocities[c][mask]
+                    new_particle_dataset_helper._spherical_velocities[c] = (
+                        particle_dataset_helper._spherical_velocities[c][mask]
+                    )
             if particle_dataset_helper._cylindrical_coordinates is not None:
                 new_particle_dataset_helper._cylindrical_coordinates = dict()
                 for c in ("_rho", "_phi", "_z"):
-                    new_particle_dataset_helper._cylindrical_coordinates[
-                        c
-                    ] = particle_dataset_helper._cylindrical_coordinates[c][mask]
+                    new_particle_dataset_helper._cylindrical_coordinates[c] = (
+                        particle_dataset_helper._cylindrical_coordinates[c][mask]
+                    )
             if particle_dataset_helper._cylindrical_velocities is not None:
                 new_particle_dataset_helper._cylindrical_velocities = dict()
                 for c in ("_v_rho", "_v_phi", "_v_z"):
-                    new_particle_dataset_helper._cylindrical_velocities[
-                        c
-                    ] = particle_dataset_helper._cylindrical_velocities[c][mask]
+                    new_particle_dataset_helper._cylindrical_velocities[c] = (
+                        particle_dataset_helper._cylindrical_velocities[c][mask]
+                    )
         return SG
 
     def __getattribute__(self, attr: str) -> Any:
