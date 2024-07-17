@@ -25,7 +25,7 @@ from swiftsimio import metadata as swiftsimio_metadata
 from swiftsimio.reader import (
     SWIFTDataset,
     __SWIFTNamedColumnDataset,
-    __SWIFTParticleDataset,
+    __SWIFTGroupDatasets,
 )
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from swiftsimio.masks import SWIFTMask
@@ -179,10 +179,10 @@ class _SWIFTNamedColumnDatasetHelper(object):
     def __init__(
         self,
         named_column_dataset: "__SWIFTNamedColumnDataset",
-        particle_dataset_helper: "_SWIFTParticleDatasetHelper",
+        particle_dataset_helper: "_SWIFTGroupDatasetsHelper",
     ) -> None:
         self._named_column_dataset: __SWIFTNamedColumnDataset = named_column_dataset
-        self._particle_dataset_helper: "_SWIFTParticleDatasetHelper" = (
+        self._particle_dataset_helper: "_SWIFTGroupDatasetsHelper" = (
             particle_dataset_helper
         )
         self._initialised: bool = True
@@ -252,15 +252,15 @@ class _SWIFTNamedColumnDatasetHelper(object):
         return getattr(self._particle_dataset_helper._data_copy(mask=mask), self.name)
 
 
-class _SWIFTParticleDatasetHelper(object):
+class _SWIFTGroupDatasetsHelper(object):
     """
     A wrapper class to enable :class:`SWIFTGalaxy`
-    functionality for a :class:`swiftsimio.reader.__SWIFTParticleDataset`.
+    functionality for a :class:`swiftsimio.reader.__SWIFTGroupDatasets`.
 
     Unlike the :class:`SWIFTGalaxy` class that inherits
     directly from :class:`~swiftsimio.reader.SWIFTDataset`, for technical
     reasons this class does *not* inherit
-    :class:`swiftsimio.reader.__SWIFTParticleDataset`. It does, however,
+    :class:`swiftsimio.reader.__SWIFTGroupDatasets`. It does, however,
     expose the functionality of that class by maintaining an instance
     internally and forwarding any attribute lookups that it does not handle
     itself to its internal particle dataset.
@@ -286,7 +286,7 @@ class _SWIFTParticleDatasetHelper(object):
 
     Parameters
     ----------
-    particle_dataset: :class:`swiftsimio.reader.__SWIFTParticleDataset`
+    particle_dataset: :class:`swiftsimio.reader.__SWIFTGroupDatasets`
         The particle dataset to be wrapped.
 
     swiftgalaxy: :class:`SWIFTGalaxy`
@@ -327,9 +327,9 @@ class _SWIFTParticleDatasetHelper(object):
     """
 
     def __init__(
-        self, particle_dataset: "__SWIFTParticleDataset", swiftgalaxy: "SWIFTGalaxy"
+        self, particle_dataset: "__SWIFTGroupDatasets", swiftgalaxy: "SWIFTGalaxy"
     ) -> None:
-        self._particle_dataset: __SWIFTParticleDataset = particle_dataset
+        self._particle_dataset: __SWIFTGroupDatasets = particle_dataset
         self._swiftgalaxy: "SWIFTGalaxy" = swiftgalaxy
         self._named_column_dataset_helpers: dict[
             str, _SWIFTNamedColumnDatasetHelper
@@ -422,18 +422,18 @@ class _SWIFTParticleDatasetHelper(object):
             object.__setattr__(self, attr, value)
             return
 
-    def __getitem__(self, mask: slice) -> "_SWIFTParticleDatasetHelper":
+    def __getitem__(self, mask: slice) -> "_SWIFTGroupDatasetsHelper":
         return self._data_copy(mask=mask)
 
-    def __copy__(self) -> "_SWIFTParticleDatasetHelper":
+    def __copy__(self) -> "_SWIFTGroupDatasetsHelper":
         return getattr(self._swiftgalaxy.__copy__(), self.particle_name)
 
     def __deepcopy__(
         self, memo: Optional[dict] = None
-    ) -> "_SWIFTParticleDatasetHelper":
+    ) -> "_SWIFTGroupDatasetsHelper":
         return self._data_copy()
 
-    def _data_copy(self, mask: Optional[slice] = None) -> "_SWIFTParticleDatasetHelper":
+    def _data_copy(self, mask: Optional[slice] = None) -> "_SWIFTGroupDatasetsHelper":
         mask_collection = MaskCollection(
             **{
                 k: None if k != self.particle_name else mask
@@ -974,9 +974,9 @@ class SWIFTGalaxy(SWIFTDataset):
     and to provide integrated properties. The implementation is an extension of
     the :class:`~swiftsimio.reader.SWIFTDataset` class, so all the
     functionality of such a dataset is also available for a
-    :class:`SWIFTGalaxy`. The :class:`swiftsimio.reader.__SWIFTParticleDataset`
+    :class:`SWIFTGalaxy`. The :class:`swiftsimio.reader.__SWIFTGroupDatasets`
     objects familiar to :mod:`swiftsimio` users (e.g. a ``GasDataset``) are
-    wrapped by a :class:`_SWIFTParticleDatasetHelper` class that exposes their
+    wrapped by a :class:`_SWIFTGroupDatasetsHelper` class that exposes their
     usual functionality and extends it with new features.
     :class:`swiftsimio.reader.__SWIFTNamedColumnDataset` instances are also
     wrapped, using a :class:`_SWIFTNamedColumnDatasetHelper` class.
@@ -1029,7 +1029,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
     See Also
     --------
-    :class:`_SWIFTParticleDatasetHelper`
+    :class:`_SWIFTGroupDatasetsHelper`
     :class:`_SWIFTNamedColumnDatasetHelper`
     :mod:`swiftgalaxy.halo_finders`
 
@@ -1175,7 +1175,7 @@ class SWIFTGalaxy(SWIFTDataset):
             ]
             TypeDatasetHelper = type(
                 f"{nice_name}DatasetHelper",
-                (_SWIFTParticleDatasetHelper, object),
+                (_SWIFTGroupDatasetsHelper, object),
                 dict(),
             )
             self._particle_dataset_helpers[particle_name] = TypeDatasetHelper(
@@ -1585,7 +1585,7 @@ class SWIFTGalaxy(SWIFTDataset):
         galaxy. Temporary masks (e.g. for interactive use) can be created by
         using the :meth:`~SWIFTGalaxy.__getitem__` (square brackets) method of
         the :class:`SWIFTGalaxy`, any of its associated
-        :class:`_SWIFTParticleDatasetHelper` or
+        :class:`_SWIFTGroupDatasetsHelper` or
         :class:`_SWIFTNamedColumnDatasetHelper` objects, but
         note that to ensure internal consistency, these return a masked copy of
         the *entire* :class:`SWIFTGalaxy`, and are therefore

@@ -11,9 +11,10 @@ abstract
 
 from warnings import warn
 from abc import ABC, abstractmethod
+import os
 import numpy as np
 import unyt as u
-from swiftsimio import mask, SWIFTMask
+from swiftsimio import SWIFTMask, SWIFTDataset, mask
 from swiftgalaxy.masks import MaskCollection
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 
@@ -99,6 +100,103 @@ class _HaloFinder(ABC):
     # to match the syntax used to the usual syntax for the halo finder
     # in question? See e.g. implementation in __getattr__ in Velociraptor
     # subclass below.
+
+
+class SOAP(_HaloFinder):
+    def __init__(
+        self,
+        soap_file: Optional[str] = None,
+        membership_file_base: Optional[dict] = None,
+        halo_index: Optional[int] = None,
+        extra_mask: Union[str, MaskCollection] = "bound_only",
+    ) -> None:
+        if soap_file is not None:
+            self.soap_file: str = soap_file
+        else:
+            raise ValueError("Provide a soap_file.")
+        if membership_file_base is not None:
+            self.membership_file_base: str = membership_file_base
+        else:
+            if "halo_properties_" in os.path.basename(
+                soap_file
+            ) and ".hdf5" in os.path.basename(soap_file):
+                snapnum = (
+                    os.path.basename(soap_file)
+                    .replace("halo_properties_", "")
+                    .replace(".hdf5", "")
+                )
+                try:
+                    int(snapnum)  # raises ValueError if not interpretable as int
+                    membership_file_base = os.path.join(
+                        os.path.dirname(soap_file),
+                        f"membership_{snapnum}",
+                        f"membership_{snapnum}",  # omit .X.hdf5
+                    )
+                    if not os.path.isfile(f"{membership_file_base}.0.hdf5"):
+                        raise ValueError
+                except ValueError:
+                    raise ValueError(
+                        "Failed to guess membership file location, provide "
+                        "membership_file_base."
+                    )
+                else:
+                    self.membership_file_base: str = membership_file_base
+        self._membership_files: List[str] = list()
+        membership_file_number = 0
+        while True:
+            membership_file_candidate = (
+                f"{self.membership_file_base}.{membership_file_number}.hdf5"
+            )
+            if os.path.isfile(membership_file_candidate):
+                self._membership_files.append(membership_file_candidate)
+                membership_file_number += 1
+            else:
+                break
+
+        if halo_index is not None:
+            self.halo_index: int = halo_index
+        else:
+            raise ValueError("Provide a halo_index.")
+        super().__init__(extra_mask=extra_mask)
+        return
+
+    def _load(self) -> None:
+        self._swift_dataset = SWIFTDataset(
+            self.soap_file,
+            mask=None,  # want to mask down to a single row here
+        )
+
+    def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
+        # self._swift_dataset.bound_subhalo.centre_of_mass
+        # self._swift_dataset.bound_subhalo.enclose_radius
+        # CoM +/- enclose radius in x, y & z define bbox
+        return None  # need to implement
+
+    def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+        return MaskCollection()  # need to implement
+
+    @property
+    def centre(self) -> cosmo_array:
+        # masking here will go away when mask in _load implemented
+        return self._swift_dataset.bound_subhalo.centre_of_mass[self.halo_index]
+
+    @property
+    def velocity_centre(self) -> cosmo_array:
+        # masking here will go away when mask in _load implemented
+        return self._swift_dataset.bound_subhalo.centre_of_mass_velocity[
+            self.halo_index
+        ]
+
+    def __getattr__(self, attr: str) -> Any:
+        # Invoked if attribute not found.
+        # Use to expose the masked catalogue.
+        if attr == "_swift_dataset":  # guard infinite recursion
+            return object.__getattribute__(self, "_swift_dataset")
+        return getattr(self._swift_dataset, attr)
+
+    def __repr__(self) -> str:
+        # Expose the catalogue __repr__ for interactive use.
+        return self._swift_dataset.__repr__()
 
 
 class Velociraptor(_HaloFinder):
