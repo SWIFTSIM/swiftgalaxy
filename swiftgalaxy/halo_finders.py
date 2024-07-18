@@ -18,7 +18,7 @@ from swiftsimio import SWIFTMask, SWIFTDataset, mask
 from swiftgalaxy.masks import MaskCollection
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 
-from typing import Any, Union, Optional, List, TYPE_CHECKING
+from typing import Any, Union, Optional, TYPE_CHECKING, List
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:
@@ -103,19 +103,25 @@ class _HaloFinder(ABC):
 
 
 class SOAP(_HaloFinder):
+
+    membership_file_base: str
+    soap_file: str
+    _membership_files: List[str]
+    halo_index: int
+
     def __init__(
         self,
         soap_file: Optional[str] = None,
-        membership_file_base: Optional[dict] = None,
+        membership_file_base: Optional[str] = None,
         halo_index: Optional[int] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
     ) -> None:
         if soap_file is not None:
-            self.soap_file: str = soap_file
+            self.soap_file = soap_file
         else:
             raise ValueError("Provide a soap_file.")
         if membership_file_base is not None:
-            self.membership_file_base: str = membership_file_base
+            self.membership_file_base = membership_file_base
         else:
             if "halo_properties_" in os.path.basename(
                 soap_file
@@ -136,12 +142,12 @@ class SOAP(_HaloFinder):
                         raise ValueError
                 except ValueError:
                     raise ValueError(
-                        "Failed to guess membership file location, provide "
-                        "membership_file_base."
+                        "Failed to guess membership file location, provide"
+                        " membership_file_base."
                     )
                 else:
-                    self.membership_file_base: str = membership_file_base
-        self._membership_files: List[str] = list()
+                    self.membership_file_base = membership_file_base
+        self._membership_files = list()
         membership_file_number = 0
         while True:
             membership_file_candidate = (
@@ -154,7 +160,7 @@ class SOAP(_HaloFinder):
                 break
 
         if halo_index is not None:
-            self.halo_index: int = halo_index
+            self.halo_index = halo_index
         else:
             raise ValueError("Provide a halo_index.")
         super().__init__(extra_mask=extra_mask)
@@ -659,22 +665,19 @@ class Caesar(_HaloFinder):
                 ints < int_ranges[:, 1, np.newaxis],
             ).any(axis=0)
 
-        null_mask = np.array([], dtype=bool)  # mask that selects no particles
-        gas_mask = getattr(self._group, "glist", null_mask)
-        if gas_mask is not null_mask:
+        null_slice = np.s_[:0]  # mask that selects no particles
+        if hasattr(self._group, "glist"):
+            gas_mask = self._group.glist
             gas_mask = gas_mask[in_one_of_ranges(gas_mask, SG.mask.gas)]
             gas_mask = np.isin(
                 np.concatenate([np.arange(start, end) for start, end in SG.mask.gas]),
                 gas_mask,
             )
-        # seems like name could be dmlist or dlist?
-        if hasattr(self._group, "dlist"):
-            dark_matter_mask = self._group.dlist
-        elif hasattr(self._group, "dmlist"):
-            dark_matter_mask = self._group.dmlist
         else:
-            dark_matter_mask = null_mask
-        if dark_matter_mask is not null_mask:
+            gas_mask = null_slice
+        # seems like name could be dmlist or dlist?
+        if hasattr(self._group, "dlist") or hasattr(self._group, "dmlist"):
+            dark_matter_mask = getattr(self._group, "dlist", self._group.dmlist)
             dark_matter_mask = dark_matter_mask[
                 in_one_of_ranges(dark_matter_mask, SG.mask.dark_matter)
             ]
@@ -684,15 +687,20 @@ class Caesar(_HaloFinder):
                 ),
                 dark_matter_mask,
             )
-        stars_mask = getattr(self._group, "slist", null_mask)
-        if stars_mask is not null_mask:
+        else:
+            dark_matter_mask = null_slice
+
+        if hasattr(self._group, "slist"):
+            stars_mask = self._group.slist
             stars_mask = stars_mask[in_one_of_ranges(stars_mask, SG.mask.stars)]
             stars_mask = np.isin(
                 np.concatenate([np.arange(start, end) for start, end in SG.mask.stars]),
                 stars_mask,
             )
-        black_holes_mask = getattr(self._group, "bhlist", null_mask)
-        if black_holes_mask is not null_mask:
+        else:
+            stars_mask = null_slice
+        if hasattr(self._group, "bhlist"):
+            black_holes_mask = self._group.bhlist
             black_holes_mask = black_holes_mask[
                 in_one_of_ranges(black_holes_mask, SG.mask.black_holes)
             ]
@@ -702,6 +710,8 @@ class Caesar(_HaloFinder):
                 ),
                 black_holes_mask,
             )
+        else:
+            black_holes_mask = null_slice
         return MaskCollection(
             gas=gas_mask,
             dark_matter=dark_matter_mask,

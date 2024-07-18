@@ -428,9 +428,7 @@ class _SWIFTGroupDatasetsHelper(object):
     def __copy__(self) -> "_SWIFTGroupDatasetsHelper":
         return getattr(self._swiftgalaxy.__copy__(), self.particle_name)
 
-    def __deepcopy__(
-        self, memo: Optional[dict] = None
-    ) -> "_SWIFTGroupDatasetsHelper":
+    def __deepcopy__(self, memo: Optional[dict] = None) -> "_SWIFTGroupDatasetsHelper":
         return self._data_copy()
 
     def _data_copy(self, mask: Optional[slice] = None) -> "_SWIFTGroupDatasetsHelper":
