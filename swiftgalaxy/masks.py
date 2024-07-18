@@ -1,5 +1,4 @@
 class MaskCollection(object):
-
     """
     Barebones container for mask objects.
 
