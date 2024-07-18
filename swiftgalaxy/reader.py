@@ -179,10 +179,10 @@ class _SWIFTNamedColumnDatasetHelper(object):
     def __init__(
         self,
         named_column_dataset: "__SWIFTNamedColumnDataset",
-        particle_dataset_helper: "_SWIFTParticleDatasetHelper",
+        particle_dataset_helper: "_SWIFTGroupDatasetsHelper",
     ) -> None:
         self._named_column_dataset: __SWIFTNamedColumnDataset = named_column_dataset
-        self._particle_dataset_helper: "_SWIFTParticleDatasetHelper" = (
+        self._particle_dataset_helper: "_SWIFTGroupDatasetsHelper" = (
             particle_dataset_helper
         )
         self._initialised: bool = True
@@ -422,18 +422,16 @@ class _SWIFTGroupDatasetsHelper(object):
             object.__setattr__(self, attr, value)
             return
 
-    def __getitem__(self, mask: slice) -> "_SWIFTParticleDatasetHelper":
+    def __getitem__(self, mask: slice) -> "_SWIFTGroupDatasetsHelper":
         return self._data_copy(mask=mask)
 
-    def __copy__(self) -> "_SWIFTParticleDatasetHelper":
+    def __copy__(self) -> "_SWIFTGroupDatasetsHelper":
         return getattr(self._swiftgalaxy.__copy__(), self.particle_name)
 
-    def __deepcopy__(
-        self, memo: Optional[dict] = None
-    ) -> "_SWIFTParticleDatasetHelper":
+    def __deepcopy__(self, memo: Optional[dict] = None) -> "_SWIFTGroupDatasetsHelper":
         return self._data_copy()
 
-    def _data_copy(self, mask: Optional[slice] = None) -> "_SWIFTParticleDatasetHelper":
+    def _data_copy(self, mask: Optional[slice] = None) -> "_SWIFTGroupDatasetsHelper":
         mask_collection = MaskCollection(
             **{
                 k: None if k != self.particle_name else mask
@@ -1170,7 +1168,7 @@ class SWIFTGalaxy(SWIFTDataset):
             ]
             TypeDatasetHelper = type(
                 f"{nice_name}DatasetHelper",
-                (_SWIFTParticleDatasetHelper, object),
+                (_SWIFTGroupDatasetsHelper, object),
                 dict(),
             )
             self._particle_dataset_helpers[particle_name] = TypeDatasetHelper(
