@@ -1,5 +1,5 @@
 pytest
 black
 wily
-velociraptor
+git+https://github.com/kyleaoman/velociraptor-python.git@load_fof_catalogues
 git+https://github.com/dnarayanan/caesar.git
