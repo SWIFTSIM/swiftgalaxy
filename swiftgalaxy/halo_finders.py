@@ -69,16 +69,14 @@ class _HaloFinder(ABC):
         if self.extra_mask == "bound_only":
             return self._generate_bound_only_mask(SG)
         elif self.extra_mask is None:
-            return MaskCollection(
-                **{k: None for k in SG.metadata.present_particle_names}
-            )
+            return MaskCollection(**{k: None for k in SG.metadata.present_group_names})
         else:
             # Keep user provided mask. If no mask provided for a particle type
             # use None (no mask).
             return MaskCollection(
                 **{
                     name: getattr(self.extra_mask, name, None)
-                    for name in SG.metadata.present_particle_names
+                    for name in SG.metadata.present_group_names
                 }
             )
 
@@ -920,16 +918,14 @@ class Standalone(_HaloFinder):
             # guarded in initialisation, but simplifies testing
             return self._generate_bound_only_mask(SG)
         elif self.extra_mask is None:
-            return MaskCollection(
-                **{k: None for k in SG.metadata.present_particle_names}
-            )
+            return MaskCollection(**{k: None for k in SG.metadata.present_group_names})
         else:
             # Keep user provided mask. If no mask provided for a particle type
             # use None (no mask).
             return MaskCollection(
                 **{
                     name: getattr(self.extra_mask, name, None)
-                    for name in SG.metadata.present_particle_names
+                    for name in SG.metadata.present_group_names
                 }
             )
 
