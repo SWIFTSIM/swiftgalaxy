@@ -79,7 +79,11 @@ class ToyHF(_HaloFinder):
 
 
 def create_toysnap(
-    snapfile=toysnap_filename, alt_coord_name=None, alt_vel_name=None, alt_id_name=None
+    snapfile=toysnap_filename,
+    alt_coord_name=None,
+    alt_vel_name=None,
+    alt_id_name=None,
+    withfof=False,
 ):
     """
     Creates a sample dataset of a toy galaxy.
@@ -410,6 +414,61 @@ def create_toysnap(
         hifd.attrs["U_t exponent"] = np.array([0.0], dtype=float)
         hifd.attrs["a-scale exponent"] = np.array([0.0], dtype=float)
         hifd.attrs["h-scale exponent"] = np.array([0.0], dtype=float)
+        if withfof:
+            for ptype, n_group, n_notgroup in [
+                (0, n_g, n_g_all - n_g),
+                (1, n_dm, n_dm_all - n_dm),
+                (4, n_s, 0),
+                (5, n_bh, 0),
+            ]:
+                f[f"PartType{ptype}"].create_dataset(
+                    "FOFGroupIDs",
+                    data=np.concatenate(
+                        (
+                            np.ones(n_group, dtype=int),
+                            np.ones(n_notgroup, dtype=int) * 2**31 - 1,
+                        )
+                    ),
+                    dtype=int,
+                )
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs[
+                    "Conversion factor to CGS "
+                    "(not including cosmological corrections)"
+                ] = np.array([1.0])
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs[
+                    "Conversion factor to physical CGS "
+                    "(including cosmological corrections)"
+                ] = np.array([1.0])
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs[
+                    "Description"
+                ] = b"Friends-Of-Friends ID of the group the particles belong to"
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs[
+                    "Expression for physical CGS units"
+                ] = b"[ - ] "
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs[
+                    "Lossy compression filter"
+                ] = b"None"
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs["U_I exponent"] = np.array(
+                    [0.0]
+                )
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs["U_L exponent"] = np.array(
+                    [0.0]
+                )
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs["U_M exponent"] = np.array(
+                    [0.0]
+                )
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs["U_T exponent"] = np.array(
+                    [0.0]
+                )
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs["U_t exponent"] = np.array(
+                    [0.0]
+                )
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs["a-scale exponent"] = np.array(
+                    [0.0]
+                )
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs["h-scale exponent"] = np.array(
+                    [0.0]
+                )
 
     return
 
@@ -886,47 +945,47 @@ def create_toysoap(
         f.create_group("Code")
         f["Code"].attrs["Code"] = "SOAP"
         f["Code"].attrs["git_hash"] = "undefined"
-        # f["Cosmology"].attrs["Cosmological run"] = np.array([1])
-        # f["Cosmology"].attrs["Critical density [internal units]"] = np.array(
-        #     [12.87106552]
-        # )
-        # f["Cosmology"].attrs["H [internal units]"] = np.array([68.09999997])
-        # f["Cosmology"].attrs["H0 [internal units]"] = np.array([68.09999997])
-        # f["Cosmology"].attrs["Hubble time [internal units]"] = np.array([0.01468429])
-        # f["Cosmology"].attrs["Lookback time [internal units]"] = np.array(
-        #     [9.02056208e-16]
-        # )
-        # f["Cosmology"].attrs["M_nu_eV"] = np.array([0.06])
-        # f["Cosmology"].attrs["N_eff"] = np.array([3.04400163])
-        # f["Cosmology"].attrs["N_nu"] = np.array([1.0])
-        # f["Cosmology"].attrs["N_ur"] = np.array([2.0308])
-        # f["Cosmology"].attrs["Omega_b"] = np.array([0.0486])
-        # f["Cosmology"].attrs["Omega_cdm"] = np.array([0.256011])
-        # f["Cosmology"].attrs["Omega_g"] = np.array([5.33243487e-05])
-        # f["Cosmology"].attrs["Omega_k"] = np.array([2.5212783e-09])
-        # f["Cosmology"].attrs["Omega_lambda"] = np.array([0.693922])
-        # f["Cosmology"].attrs["Omega_m"] = np.array([0.304611])
-        # f["Cosmology"].attrs["Omega_nu"] = np.array([0.00138908])
-        # f["Cosmology"].attrs["Omega_nu_0"] = np.array([0.00138908])
-        # f["Cosmology"].attrs["Omega_r"] = np.array([7.79180471e-05])
-        # f["Cosmology"].attrs["Omega_ur"] = np.array([2.45936984e-05])
-        # f["Cosmology"].attrs["Redshift"] = np.array([0.0])
-        # f["Cosmology"].attrs["Scale-factor"] = np.array([1.0])
-        # f["Cosmology"].attrs["T_CMB_0 [K]"] = np.array([2.7255])
-        # f["Cosmology"].attrs["T_CMB_0 [internal units]"] = np.array([2.7255])
-        # f["Cosmology"].attrs["T_nu_0 [eV]"] = np.array([0.00016819])
-        # f["Cosmology"].attrs["T_nu_0 [internal units]"] = np.array([1.9517578])
-        # f["Cosmology"].attrs["Universe age [internal units]"] = np.array([0.01407376])
-        # f["Cosmology"].attrs["a_beg"] = np.array([0.03125])
-        # f["Cosmology"].attrs["a_end"] = np.array([1.0])
-        # f["Cosmology"].attrs["deg_nu"] = np.array([1.0])
-        # f["Cosmology"].attrs["deg_nu_tot"] = np.array([1.0])
-        # f["Cosmology"].attrs["h"] = np.array([0.681])
-        # f["Cosmology"].attrs["time_beg [internal units]"] = np.array([9.66296122e-05])
-        # f["Cosmology"].attrs["time_end [internal units]"] = np.array([0.01407376])
-        # f["Cosmology"].attrs["w"] = np.array([-1.0])
-        # f["Cosmology"].attrs["w_0"] = np.array([-1.0])
-        # f["Cosmology"].attrs["w_a"] = np.array([0.0])
+        f["Cosmology"].attrs["Cosmological run"] = np.array([1])
+        f["Cosmology"].attrs["Critical density [internal units]"] = np.array(
+            [12.87106552]
+        )
+        f["Cosmology"].attrs["H [internal units]"] = np.array([68.09999997])
+        f["Cosmology"].attrs["H0 [internal units]"] = np.array([68.09999997])
+        f["Cosmology"].attrs["Hubble time [internal units]"] = np.array([0.01468429])
+        f["Cosmology"].attrs["Lookback time [internal units]"] = np.array(
+            [9.02056208e-16]
+        )
+        f["Cosmology"].attrs["M_nu_eV"] = np.array([0.06])
+        f["Cosmology"].attrs["N_eff"] = np.array([3.04400163])
+        f["Cosmology"].attrs["N_nu"] = np.array([1.0])
+        f["Cosmology"].attrs["N_ur"] = np.array([2.0308])
+        f["Cosmology"].attrs["Omega_b"] = np.array([0.0486])
+        f["Cosmology"].attrs["Omega_cdm"] = np.array([0.256011])
+        f["Cosmology"].attrs["Omega_g"] = np.array([5.33243487e-05])
+        f["Cosmology"].attrs["Omega_k"] = np.array([2.5212783e-09])
+        f["Cosmology"].attrs["Omega_lambda"] = np.array([0.693922])
+        f["Cosmology"].attrs["Omega_m"] = np.array([0.304611])
+        f["Cosmology"].attrs["Omega_nu"] = np.array([0.00138908])
+        f["Cosmology"].attrs["Omega_nu_0"] = np.array([0.00138908])
+        f["Cosmology"].attrs["Omega_r"] = np.array([7.79180471e-05])
+        f["Cosmology"].attrs["Omega_ur"] = np.array([2.45936984e-05])
+        f["Cosmology"].attrs["Redshift"] = np.array([0.0])
+        f["Cosmology"].attrs["Scale-factor"] = np.array([1.0])
+        f["Cosmology"].attrs["T_CMB_0 [K]"] = np.array([2.7255])
+        f["Cosmology"].attrs["T_CMB_0 [internal units]"] = np.array([2.7255])
+        f["Cosmology"].attrs["T_nu_0 [eV]"] = np.array([0.00016819])
+        f["Cosmology"].attrs["T_nu_0 [internal units]"] = np.array([1.9517578])
+        f["Cosmology"].attrs["Universe age [internal units]"] = np.array([0.01407376])
+        f["Cosmology"].attrs["a_beg"] = np.array([0.03125])
+        f["Cosmology"].attrs["a_end"] = np.array([1.0])
+        f["Cosmology"].attrs["deg_nu"] = np.array([1.0])
+        f["Cosmology"].attrs["deg_nu_tot"] = np.array([1.0])
+        f["Cosmology"].attrs["h"] = np.array([0.681])
+        f["Cosmology"].attrs["time_beg [internal units]"] = np.array([9.66296122e-05])
+        f["Cosmology"].attrs["time_end [internal units]"] = np.array([0.01407376])
+        f["Cosmology"].attrs["w"] = np.array([-1.0])
+        f["Cosmology"].attrs["w_0"] = np.array([-1.0])
+        f["Cosmology"].attrs["w_a"] = np.array([0.0])
         f.create_group("Header")
         f["Header"].attrs["BoxSize"] = np.array(
             [boxsize.to_value(u.Mpc), boxsize.to_value(u.Mpc), boxsize.to_value(u.Mpc)]
@@ -1031,6 +1090,35 @@ def create_toysoap(
         f["Parameters"].attrs["snapshot_nr"] = 0
         f["Parameters"].attrs["swift_filename"] = "toysnap.hdf5"
         f.create_group("PhysicalConstants")
+        f["PhysicalConstants"].create_group("CGS")
+        f["PhysicalConstants/CGS"].attrs["T_CMB_0"] = np.array([2.7255])
+        f["PhysicalConstants/CGS"].attrs["astronomical_unit"] = np.array(
+            [1.49597871e13]
+        )
+        f["PhysicalConstants/CGS"].attrs["avogadro_number"] = np.array([6.02214076e23])
+        f["PhysicalConstants/CGS"].attrs["boltzmann_k"] = np.array([1.380649e-16])
+        f["PhysicalConstants/CGS"].attrs["caseb_recomb"] = np.array([2.6e-13])
+        f["PhysicalConstants/CGS"].attrs["earth_mass"] = np.array([5.97217e27])
+        f["PhysicalConstants/CGS"].attrs["electron_charge"] = np.array([1.60217663e-19])
+        f["PhysicalConstants/CGS"].attrs["electron_mass"] = np.array([9.1093837e-28])
+        f["PhysicalConstants/CGS"].attrs["electron_volt"] = np.array([1.60217663e-12])
+        f["PhysicalConstants/CGS"].attrs["light_year"] = np.array([9.46063e17])
+        f["PhysicalConstants/CGS"].attrs["newton_G"] = np.array([6.6743e-08])
+        f["PhysicalConstants/CGS"].attrs["parsec"] = np.array([3.08567758e18])
+        f["PhysicalConstants/CGS"].attrs["planck_h"] = np.array([6.62607015e-27])
+        f["PhysicalConstants/CGS"].attrs["planck_hbar"] = np.array([1.05457182e-27])
+        f["PhysicalConstants/CGS"].attrs["primordial_He_fraction"] = np.array([0.248])
+        f["PhysicalConstants/CGS"].attrs["proton_mass"] = np.array([1.67262192e-24])
+        f["PhysicalConstants/CGS"].attrs["reduced_hubble"] = np.array([3.24077929e-18])
+        f["PhysicalConstants/CGS"].attrs["solar_mass"] = np.array([1.98841e33])
+        f["PhysicalConstants/CGS"].attrs["speed_light_c"] = np.array([2.99792458e10])
+        f["PhysicalConstants/CGS"].attrs["stefan_boltzmann"] = np.array(
+            [5.67037442e-05]
+        )
+        f["PhysicalConstants/CGS"].attrs["thomson_cross_section"] = np.array(
+            [6.65245873e-25]
+        )
+        f["PhysicalConstants/CGS"].attrs["year"] = np.array([31556925.1])
         f.create_group("SWIFT")
         f.create_group("Units")
         f["Units"].attrs["Unit current in cgs (U_I)"] = np.array([1.0])
@@ -1210,6 +1298,392 @@ def create_toysoap(
         f["SO/BN98"].attrs["Mask Threshold"] = 100
         f["SO/BN98"].attrs["Masked"] = True
         f.create_group("SOAP")
+        soap_hhi = f["SOAP"].create_dataset(
+            "HostHaloIndex",
+            data=np.array([-1]),
+            dtype=int,
+        )
+        soap_hhi.attrs[
+            "Conversion factor to CGS " "(not including cosmological corrections)"
+        ] = np.array([1.0])
+        soap_hhi.attrs[
+            "Conversion factor to physical CGS " "(including cosmological corrections)"
+        ] = np.array([1.0])
+        soap_hhi.attrs["Description"] = (
+            "Index (within the SOAP arrays) of the top level "
+            "parent of this subhalo. -1 for central subhalos."
+        )
+        soap_hhi.attrs["Is Compressed"] = np.True_
+        soap_hhi.attrs["Lossy compression filter"] = "None"
+        soap_hhi.attrs["Masked"] = np.False_
+        soap_hhi.attrs["Property can be converted to comoving"] = np.array([0])
+        soap_hhi.attrs["U_I exponent"] = np.array([0.0])
+        soap_hhi.attrs["U_L exponent"] = np.array([0.0])
+        soap_hhi.attrs["U_M exponent"] = np.array([0.0])
+        soap_hhi.attrs["U_T exponent"] = np.array([0.0])
+        soap_hhi.attrs["U_t exponent"] = np.array([0.0])
+        soap_hhi.attrs["Value stored as physical"] = np.array([1])
+        soap_hhi.attrs["a-scale exponent"] = np.array([0.0])
+        soap_hhi.attrs["h-scale exponent"] = np.array([0.0])
+        for i_so, so in enumerate(
+            [
+                "/BoundSubhalo",
+                "/ExclusiveSphere/1000kpc",
+                "/ExclusiveSphere/100kpc",
+                "/ExclusiveSphere/10kpc",
+                "/ExclusiveSphere/3000kpc",
+                "/ExclusiveSphere/300kpc",
+                "/ExclusiveSphere/30kpc",
+                "/ExclusiveSphere/500kpc",
+                "/ExclusiveSphere/50kpc",
+                "/InclusiveSphere/1000kpc",
+                "/InclusiveSphere/100kpc",
+                "/InclusiveSphere/10kpc",
+                "/InclusiveSphere/3000kpc",
+                "/InclusiveSphere/300kpc",
+                "/InclusiveSphere/30kpc",
+                "/InclusiveSphere/500kpc",
+                "/InclusiveSphere/50kpc",
+                "/ProjectedAperture/100kpc/projx",
+                "/ProjectedAperture/100kpc/projy",
+                "/ProjectedAperture/100kpc/projz",
+                "/ProjectedAperture/10kpc/projx",
+                "/ProjectedAperture/10kpc/projy",
+                "/ProjectedAperture/10kpc/projz",
+                "/ProjectedAperture/30kpc/projx",
+                "/ProjectedAperture/30kpc/projy",
+                "/ProjectedAperture/30kpc/projz",
+                "/ProjectedAperture/50kpc/projx",
+                "/ProjectedAperture/50kpc/projy",
+                "/ProjectedAperture/50kpc/projz",
+                "/SO/1000_crit",
+                "/SO/100_crit",
+                "/SO/200_crit",
+                "/SO/200_mean",
+                "/SO/2500_crit",
+                "/SO/500_crit",
+                "/SO/50_crit",
+                "/SO/5xR_500_crit",
+                "/SO/BN98",
+            ]
+        ):
+            com_ds = f[so].create_dataset(
+                "CentreOfMass",
+                data=np.array([[2.0, 2.0, 2.0]]) + i_so * 0.001,
+                dtype=float,
+            )
+            com_ds.attrs[
+                "Conversion factor to CGS (not including cosmological corrections)"
+            ] = np.array([3.08567758e24])
+            com_ds.attrs[
+                "Conversion factor to physical CGS (including cosmological corrections)"
+            ] = np.array([3.08567758e24])
+            com_ds.attrs["Description"] = "Centre of mass."
+            com_ds.attrs["Is Compressed"] = np.True_
+            com_ds.attrs["Lossy compression filter"] = "DScale5"
+            com_ds.attrs["Masked"] = np.False_
+            com_ds.attrs["Property can be converted to comoving"] = np.array([1])
+            com_ds.attrs["U_I exponent"] = np.array([0.0])
+            com_ds.attrs["U_L exponent"] = np.array([1.0])
+            com_ds.attrs["U_M exponent"] = np.array([0.0])
+            com_ds.attrs["U_T exponent"] = np.array([0.0])
+            com_ds.attrs["U_t exponent"] = np.array([0.0])
+            com_ds.attrs["Value stored as physical"] = np.array([0])
+            com_ds.attrs["a-scale exponent"] = np.array([1])
+            com_ds.attrs["h-scale exponent"] = np.array([0.0])
+            comv_ds = f[so].create_dataset(
+                "CentreOfMassVelocity",
+                data=np.array([[200.0, 200.0, 200.0]]) + i_so,
+                dtype=float,
+            )
+            comv_ds.attrs[
+                "Conversion factor to CGS (not including cosmological corrections)"
+            ] = np.array([100000.0])
+            comv_ds.attrs[
+                "Conversion factor to physical CGS (including cosmological corrections)"
+            ] = np.array([100000.0])
+            comv_ds.attrs["Description"] = "Centre of mass velocity."
+            comv_ds.attrs["Is Compressed"] = np.True_
+            comv_ds.attrs["Lossy compression filter"] = "DScale1"
+            comv_ds.attrs["Masked"] = np.False_
+            comv_ds.attrs["Property can be converted to comoving"] = np.array([1])
+            comv_ds.attrs["U_I exponent"] = np.array([0.0])
+            comv_ds.attrs["U_L exponent"] = np.array([1.0])
+            comv_ds.attrs["U_M exponent"] = np.array([0.0])
+            comv_ds.attrs["U_T exponent"] = np.array([0.0])
+            comv_ds.attrs["U_t exponent"] = np.array([-1.0])
+            comv_ds.attrs["Value stored as physical"] = np.array([0])
+            comv_ds.attrs["a-scale exponent"] = np.array([1])
+            comv_ds.attrs["h-scale exponent"] = np.array([0.0])
+        er = f["BoundSubhalo"].create_dataset(
+            "EncloseRadius",
+            data=np.array([]),
+            dtype=float,
+        )
+        er.attrs[
+            "Conversion factor to CGS " "(not including cosmological corrections)"
+        ] = np.array([3.08567758e24])
+        er.attrs[
+            "Conversion factor to physical CGS " "(including cosmological corrections)"
+        ] = np.array([3.08567758e24])
+        er.attrs["Description"] = "Radius of the particle furthest from the halo centre"
+        er.attrs["Is Compressed"] = np.True_
+        er.attrs["Lossy compression filter"] = "FMantissa9"
+        er.attrs["Masked"] = np.False_
+        er.attrs["Property can be converted to comoving"] = np.array([1])
+        er.attrs["U_I exponent"] = np.array([0.0])
+        er.attrs["U_L exponent"] = np.array([1.0])
+        er.attrs["U_M exponent"] = np.array([0.0])
+        er.attrs["U_T exponent"] = np.array([0.0])
+        er.attrs["U_t exponent"] = np.array([0.0])
+        er.attrs["Value stored as physical"] = np.array([0])
+        er.attrs["a-scale exponent"] = np.array([1])
+        er.attrs["h-scale exponent"] = np.array([0.0])
+        f["Cells"].create_dataset(
+            "Centres", data=np.array([[2.5, 5, 5], [7.5, 5, 5]], dtype=float)
+        )
+        f["Cells"].create_group("Counts")
+        f["Cells/Counts"].create_dataset(
+            "Subhalos",
+            data=np.array([1, 0]),
+            dtype=int,
+        )
+        f["Cells"].create_group("Files")
+        f["Cells/Files"].create_dataset("Subhalos", data=np.array([0, 0], dtype=int))
+        f["Cells"].create_group("Meta-data")
+        f["Cells/Meta-data"].attrs["dimension"] = np.array([[2, 1, 1]], dtype=int)
+        f["Cells/Meta-data"].attrs["nr_cells"] = np.array([2], dtype=int)
+        f["Cells/Meta-data"].attrs["size"] = np.array(
+            [
+                0.5 * boxsize.to_value(u.Mpc),
+                boxsize.to_value(u.Mpc),
+                boxsize.to_value(u.Mpc),
+            ],
+            dtype=int,
+        )
+        f["Cells"].create_group("OffsetsInFile")
+        f["Cells/OffsetsInFile"].create_dataset(
+            "Subhalos",
+            data=np.array(
+                [0, 1, 1],
+            ),
+            dtype=int,
+        )
+        fof_c = f["InputHalos/FOF"].create_dataset(
+            "Centres",
+            data=np.array([[2.0, 2.0, 2.0]]),
+            dtype=float,
+        )
+        fof_c.attrs[
+            "Conversion factor to CGS " "(not including cosmological corrections)"
+        ] = np.array([3.08567758e24])
+        fof_c.attrs[
+            "Conversion factor to physical CGS " "(including cosmological corrections)"
+        ] = np.array([3.08567758e24])
+        fof_c.attrs["Description"] = (
+            "Centre of mass of the host FOF halo of this subhalo. "
+            "Zero for satellite and hostless subhalos."
+        )
+        fof_c.attrs["Is Compressed"] = np.True_
+        fof_c.attrs["Lossy compression filter"] = "DScale5"
+        fof_c.attrs["Masked"] = np.False_
+        fof_c.attrs["Property can be converted to comoving"] = np.array([1])
+        fof_c.attrs["U_I exponent"] = np.array([0.0])
+        fof_c.attrs["U_L exponent"] = np.array([1.0])
+        fof_c.attrs["U_M exponent"] = np.array([0.0])
+        fof_c.attrs["U_T exponent"] = np.array([0.0])
+        fof_c.attrs["U_t exponent"] = np.array([0.0])
+        fof_c.attrs["Value stored as physical"] = np.array([0])
+        fof_c.attrs["a-scale exponent"] = np.array([1])
+        fof_c.attrs["h-scale exponent"] = np.array([0.0])
+        fof_m = f["InputHalos/FOF"].create_dataset(
+            "Masses",
+            data=np.array(
+                [(n_g * m_g + n_dm * m_dm + n_s * m_s + n_bh * m_bh).to_value(u.msun)]
+            ),
+            dtype=float,
+        )
+        fof_m.attrs[
+            "Conversion factor to CGS " "(not including cosmological corrections)"
+        ] = np.array([1.98841e43])
+        fof_m.attrs[
+            "Conversion factor to physical CGS " "(including cosmological corrections)"
+        ] = np.array([1.98841e43])
+        fof_m.attrs["Description"] = (
+            "Mass of the host FOF halo of this subhalo. "
+            "Zero for satellite and hostless subhalos."
+        )
+        fof_m.attrs["Is Compressed"] = np.True_
+        fof_m.attrs["Lossy compression filter"] = "FMantissa9"
+        fof_m.attrs["Masked"] = np.False_
+        fof_m.attrs["Property can be converted to comoving"] = np.array([1])
+        fof_m.attrs["U_I exponent"] = np.array([0.0])
+        fof_m.attrs["U_L exponent"] = np.array([0.0])
+        fof_m.attrs["U_M exponent"] = np.array([1.0])
+        fof_m.attrs["U_T exponent"] = np.array([0.0])
+        fof_m.attrs["U_t exponent"] = np.array([0.0])
+        fof_m.attrs["Value stored as physical"] = np.array([1])
+        fof_m.attrs["a-scale exponent"] = np.array([0])
+        fof_m.attrs["h-scale exponent"] = np.array([0.0])
+        fof_s = f["InputHalos/FOF"].create_dataset(
+            "Sizes",
+            data=np.array([n_g + n_dm + n_s + n_bh]),
+            dtype=int,
+        )
+        fof_s.attrs[
+            "Conversion factor to CGS " "(not including cosmological corrections)"
+        ] = np.array([1.0])
+        fof_s.attrs[
+            "Conversion factor to physical CGS " "(including cosmological corrections)"
+        ] = np.array([1.0])
+        fof_s.attrs["Description"] = (
+            "Number of particles in the host FOF halo of this subhalo. "
+            "Zero for satellite and hostless subhalos."
+        )
+        fof_s.attrs["Is Compressed"] = np.True_
+        fof_s.attrs["Lossy compression filter"] = "None"
+        fof_s.attrs["Masked"] = np.False_
+        fof_s.attrs["Property can be converted to comoving"] = np.array([0])
+        fof_s.attrs["U_I exponent"] = np.array([0.0])
+        fof_s.attrs["U_L exponent"] = np.array([0.0])
+        fof_s.attrs["U_M exponent"] = np.array([0.0])
+        fof_s.attrs["U_T exponent"] = np.array([0.0])
+        fof_s.attrs["U_t exponent"] = np.array([0.0])
+        fof_s.attrs["Value stored as physical"] = np.array([1])
+        fof_s.attrs["a-scale exponent"] = np.array([0.0])
+        fof_s.attrs["h-scale exponent"] = np.array([0.0])
+        hbt_hostfof = f["InputHalos/HBTplus"].create_dataset(
+            "HostFOFId",
+            data=np.array([1]),
+            dtype=int,
+        )
+        hbt_hostfof.attrs[
+            "Conversion factor to CGS " "(not including cosmological corrections)"
+        ] = np.array([1.0])
+        hbt_hostfof.attrs[
+            "Conversion factor to physical CGS " "(including cosmological corrections)"
+        ] = np.array([1.0])
+        hbt_hostfof.attrs["Description"] = (
+            "ID of the host FOF halo of this subhalo. "
+            "Hostless halos have HostFOFId == -1"
+        )
+        hbt_hostfof.attrs["Is Compressed"] = np.True_
+        hbt_hostfof.attrs["Lossy compression filter"] = "None"
+        hbt_hostfof.attrs["Masked"] = np.False_
+        hbt_hostfof.attrs["Property can be converted to comoving"] = np.array([0])
+        hbt_hostfof.attrs["U_I exponent"] = np.array([0.0])
+        hbt_hostfof.attrs["U_L exponent"] = np.array([0.0])
+        hbt_hostfof.attrs["U_M exponent"] = np.array([0.0])
+        hbt_hostfof.attrs["U_T exponent"] = np.array([0.0])
+        hbt_hostfof.attrs["U_t exponent"] = np.array([0.0])
+        hbt_hostfof.attrs["Value stored as physical"] = np.array([1])
+        hbt_hostfof.attrs["a-scale exponent"] = np.array([0.0])
+        hbt_hostfof.attrs["h-scale exponent"] = np.array([0.0])
+        hci = f["InputHalos"].create_dataset(
+            "HaloCatalogueIndex", data=np.array([0]), dtype=int
+        )
+        hci.attrs[
+            "Conversion factor to CGS " "(not including cosmological corrections)"
+        ] = np.array([1.0])
+        hci.attrs[
+            "Conversion factor to physical CGS " "(including cosmological corrections)"
+        ] = np.array([1.0])
+        hci.attrs["Description"] = (
+            "Index of this halo in the original halo finder catalogue "
+            "(first halo has index=0)."
+        )
+        hci.attrs["Is Compressed"] = np.True_
+        hci.attrs["Lossy compression filter"] = "None"
+        hci.attrs["Masked"] = np.False_
+        hci.attrs["Property can be converted to comoving"] = np.array([0])
+        hci.attrs["U_I exponent"] = np.array([0.0])
+        hci.attrs["U_L exponent"] = np.array([0.0])
+        hci.attrs["U_M exponent"] = np.array([0.0])
+        hci.attrs["U_T exponent"] = np.array([0.0])
+        hci.attrs["U_t exponent"] = np.array([0.0])
+        hci.attrs["Value stored as physical"] = np.array([1])
+        hci.attrs["a-scale exponent"] = np.array([0.0])
+        hci.attrs["h-scale exponent"] = np.array([0.0])
+        hcentre = f["InputHalos"].create_dataset(
+            "HaloCentre",
+            data=np.array([[2.0, 2.0, 2.0]]),
+            dtype=float,
+        )
+        hcentre.attrs[
+            "Conversion factor to CGS " "(not including cosmological corrections)"
+        ] = np.array([3.08567758e24])
+        hcentre.attrs[
+            "Conversion factor to physical CGS " "(including cosmological corrections)"
+        ] = np.array([3.08567758e24])
+        hcentre.attrs["Description"] = (
+            "The centre of the subhalo as given by the halo finder. "
+            "Used as reference for all relative positions. "
+            "For VR and HBTplus this is equal to the position of the most bound particle "
+            "in the subhalo."
+        )
+        hcentre.attrs["Is Compressed"] = np.True_
+        hcentre.attrs["Lossy compression filter"] = "DScale5"
+        hcentre.attrs["Masked"] = np.False_
+        hcentre.attrs["Property can be converted to comoving"] = np.array([1])
+        hcentre.attrs["U_I exponent"] = np.array([0.0])
+        hcentre.attrs["U_L exponent"] = np.array([1.0])
+        hcentre.attrs["U_M exponent"] = np.array([0.0])
+        hcentre.attrs["U_T exponent"] = np.array([0.0])
+        hcentre.attrs["U_t exponent"] = np.array([0.0])
+        hcentre.attrs["Value stored as physical"] = np.array([0])
+        hcentre.attrs["a-scale exponent"] = np.array([1])
+        hcentre.attrs["h-scale exponent"] = np.array([0.0])
+        iscent = f["InputHalos"].create_dataset(
+            "IsCentral",
+            data=np.array([1]),
+            dtype=int,
+        )
+        iscent.attrs[
+            "Conversion factor to CGS " "(not including cosmological corrections)"
+        ] = np.array([1.0])
+        iscent.attrs[
+            "Conversion factor to physical CGS " "(including cosmological corrections)"
+        ] = np.array([1.0])
+        iscent.attrs["Description"] = (
+            "Whether the halo finder flagged the halo as "
+            "central (1) or satellite (0)."
+        )
+        iscent.attrs["Is Compressed"] = np.True_
+        iscent.attrs["Lossy compression filter"] = "None"
+        iscent.attrs["Masked"] = np.False_
+        iscent.attrs["Property can be converted to comoving"] = np.array([0])
+        iscent.attrs["U_I exponent"] = np.array([0.0])
+        iscent.attrs["U_L exponent"] = np.array([0.0])
+        iscent.attrs["U_M exponent"] = np.array([0.0])
+        iscent.attrs["U_T exponent"] = np.array([0.0])
+        iscent.attrs["U_t exponent"] = np.array([0.0])
+        iscent.attrs["Value stored as physical"] = np.array([1])
+        iscent.attrs["a-scale exponent"] = np.array([0.0])
+        iscent.attrs["h-scale exponent"] = np.array([0.0])
+        nbp = f["InputHalos"].create_dataset(
+            "NumberOfBoundParticles",
+            data=np.array([n_g + n_dm + n_s + n_bh]),
+            dtype=int,
+        )
+        nbp.attrs[
+            "Conversion factor to CGS " "(not including cosmological corrections)"
+        ] = np.array([1.0])
+        nbp.attrs[
+            "Conversion factor to physical CGS " "(including cosmological corrections)"
+        ] = np.array([1.0])
+        nbp.attrs["Description"] = "Total number of particles bound to the subhalo."
+        nbp.attrs["Is Compressed"] = np.True_
+        nbp.attrs["Lossy compression filter"] = "None"
+        nbp.attrs["Masked"] = np.False_
+        nbp.attrs["Property can be converted to comoving"] = np.array([0])
+        nbp.attrs["U_I exponent"] = np.array([0.0])
+        nbp.attrs["U_L exponent"] = np.array([0.0])
+        nbp.attrs["U_M exponent"] = np.array([0.0])
+        nbp.attrs["U_T exponent"] = np.array([0.0])
+        nbp.attrs["U_t exponent"] = np.array([0.0])
+        nbp.attrs["Value stored as physical"] = np.array([1])
+        nbp.attrs["a-scale exponent"] = np.array([0.0])
+        nbp.attrs["h-scale exponent"] = np.array([0.0])
 
 
 def remove_toysoap(
