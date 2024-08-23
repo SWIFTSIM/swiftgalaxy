@@ -12,6 +12,8 @@ from swiftsimio.units import cosmo_units
 
 toysnap_filename = "toysnap.hdf5"
 toyvr_filebase = "toyvr"
+toysoap_filename = "toysoap.hdf5"
+toysoap_membership_filebase = "toysoap_membership"
 toycaesar_filename = "toycaesar.hdf5"
 present_particle_types = {0: "gas", 1: "dark_matter", 4: "stars", 5: "black_holes"}
 boxsize = 10.0 * u.Mpc
@@ -874,3 +876,351 @@ def create_toycaesar(filename=toycaesar_filename):
 def remove_toycaesar(filename=toycaesar_filename):
     os.remove(filename)
     return
+
+
+def create_toysoap(
+    filename=toysoap_filename, membership_filebase=toysoap_membership_filebase
+):
+    with h5py.File(filename, "w") as f:
+        f.create_group("Cells")
+        f.create_group("Code")
+        f["Code"].attrs["Code"] = "SOAP"
+        f["Code"].attrs["git_hash"] = "undefined"
+        # f["Cosmology"].attrs["Cosmological run"] = np.array([1])
+        # f["Cosmology"].attrs["Critical density [internal units]"] = np.array(
+        #     [12.87106552]
+        # )
+        # f["Cosmology"].attrs["H [internal units]"] = np.array([68.09999997])
+        # f["Cosmology"].attrs["H0 [internal units]"] = np.array([68.09999997])
+        # f["Cosmology"].attrs["Hubble time [internal units]"] = np.array([0.01468429])
+        # f["Cosmology"].attrs["Lookback time [internal units]"] = np.array(
+        #     [9.02056208e-16]
+        # )
+        # f["Cosmology"].attrs["M_nu_eV"] = np.array([0.06])
+        # f["Cosmology"].attrs["N_eff"] = np.array([3.04400163])
+        # f["Cosmology"].attrs["N_nu"] = np.array([1.0])
+        # f["Cosmology"].attrs["N_ur"] = np.array([2.0308])
+        # f["Cosmology"].attrs["Omega_b"] = np.array([0.0486])
+        # f["Cosmology"].attrs["Omega_cdm"] = np.array([0.256011])
+        # f["Cosmology"].attrs["Omega_g"] = np.array([5.33243487e-05])
+        # f["Cosmology"].attrs["Omega_k"] = np.array([2.5212783e-09])
+        # f["Cosmology"].attrs["Omega_lambda"] = np.array([0.693922])
+        # f["Cosmology"].attrs["Omega_m"] = np.array([0.304611])
+        # f["Cosmology"].attrs["Omega_nu"] = np.array([0.00138908])
+        # f["Cosmology"].attrs["Omega_nu_0"] = np.array([0.00138908])
+        # f["Cosmology"].attrs["Omega_r"] = np.array([7.79180471e-05])
+        # f["Cosmology"].attrs["Omega_ur"] = np.array([2.45936984e-05])
+        # f["Cosmology"].attrs["Redshift"] = np.array([0.0])
+        # f["Cosmology"].attrs["Scale-factor"] = np.array([1.0])
+        # f["Cosmology"].attrs["T_CMB_0 [K]"] = np.array([2.7255])
+        # f["Cosmology"].attrs["T_CMB_0 [internal units]"] = np.array([2.7255])
+        # f["Cosmology"].attrs["T_nu_0 [eV]"] = np.array([0.00016819])
+        # f["Cosmology"].attrs["T_nu_0 [internal units]"] = np.array([1.9517578])
+        # f["Cosmology"].attrs["Universe age [internal units]"] = np.array([0.01407376])
+        # f["Cosmology"].attrs["a_beg"] = np.array([0.03125])
+        # f["Cosmology"].attrs["a_end"] = np.array([1.0])
+        # f["Cosmology"].attrs["deg_nu"] = np.array([1.0])
+        # f["Cosmology"].attrs["deg_nu_tot"] = np.array([1.0])
+        # f["Cosmology"].attrs["h"] = np.array([0.681])
+        # f["Cosmology"].attrs["time_beg [internal units]"] = np.array([9.66296122e-05])
+        # f["Cosmology"].attrs["time_end [internal units]"] = np.array([0.01407376])
+        # f["Cosmology"].attrs["w"] = np.array([-1.0])
+        # f["Cosmology"].attrs["w_0"] = np.array([-1.0])
+        # f["Cosmology"].attrs["w_a"] = np.array([0.0])
+        f.create_group("Header")
+        f["Header"].attrs["BoxSize"] = np.array(
+            [boxsize.to_value(u.Mpc), boxsize.to_value(u.Mpc), boxsize.to_value(u.Mpc)]
+        )
+        f["Header"].attrs["Code"] = "SOAP"
+        f["Header"].attrs["Dimension"] = np.array([3])
+        f["Header"].attrs["NumFilesPerSnapshot"] = np.array([1])
+        f["Header"].attrs["NumPartTypes"] = np.array([6])
+        f["Header"].attrs["NumPart_ThisFile"] = np.array([0, 0, 0, 0, 0, 0])
+        f["Header"].attrs["NumPart_Total"] = np.array([0, 0, 0, 0, 0, 0])
+        f["Header"].attrs["NumPart_Total_Highword"] = np.array([0, 0, 0, 0, 0, 0])
+        f["Header"].attrs["NumSubhalos_ThisFile"] = np.array([1])
+        f["Header"].attrs["NumSubhalos_Total"] = np.array([1])
+        f["Header"].attrs["OutputType"] = "SOAP"
+        f["Header"].attrs["Redshift"] = np.array([0.0])
+        f["Header"].attrs["RunName"] = "swiftgalaxy-test"
+        f["Header"].attrs["Scale-factor"] = np.array([1.0])
+        f["Header"].attrs["SnapshotDate"] = "00:00:00 1900-01-01 GMT"
+        f["Header"].attrs["SubhaloTypes"] = [
+            "BoundSubhalo"
+            "ExclusiveSphere/1000kpc"
+            "ExclusiveSphere/100kpc"
+            "ExclusiveSphere/10kpc"
+            "ExclusiveSphere/3000kpc"
+            "ExclusiveSphere/300kpc"
+            "ExclusiveSphere/30kpc"
+            "ExclusiveSphere/500kpc"
+            "ExclusiveSphere/50kpc"
+            "InclusiveSphere/1000kpc"
+            "InclusiveSphere/100kpc"
+            "InclusiveSphere/10kpc"
+            "InclusiveSphere/3000kpc"
+            "InclusiveSphere/300kpc"
+            "InclusiveSphere/30kpc"
+            "InclusiveSphere/500kpc"
+            "InclusiveSphere/50kpc"
+            "InputHalos"
+            "InputHalos/FOF"
+            "InputHalos/HBTplus"
+            "ProjectedAperture/100kpc/projx"
+            "ProjectedAperture/100kpc/projy"
+            "ProjectedAperture/100kpc/projz"
+            "ProjectedAperture/10kpc/projx"
+            "ProjectedAperture/10kpc/projy"
+            "ProjectedAperture/10kpc/projz"
+            "ProjectedAperture/30kpc/projx"
+            "ProjectedAperture/30kpc/projy"
+            "ProjectedAperture/30kpc/projz"
+            "ProjectedAperture/50kpc/projx"
+            "ProjectedAperture/50kpc/projy"
+            "ProjectedAperture/50kpc/projz"
+            "SO/1000_crit"
+            "SO/100_crit"
+            "SO/200_crit"
+            "SO/200_mean"
+            "SO/2500_crit"
+            "SO/500_crit"
+            "SO/50_crit"
+            "SO/5xR_500_crit"
+            "SO/BN98"
+            "SOAP"
+        ]
+        f["Header"].attrs["System"] = "swiftgalaxy-test"
+        f["Header"].attrs["ThisFile"] = np.array([0])
+        f.create_group("Parameters")
+        f["Parameters"].attrs["calculations"] = [
+            "SO_1000_crit",
+            "SO_100_crit",
+            "SO_200_crit",
+            "SO_200_mean",
+            "SO_2500_crit",
+            "SO_500_crit",
+            "SO_50_crit",
+            "SO_5xR_500_crit",
+            "SO_BN98",
+            "bound_subhalo_properties",
+            "exclusive_sphere_1000kpc",
+            "exclusive_sphere_100kpc",
+            "exclusive_sphere_10kpc",
+            "exclusive_sphere_3000kpc",
+            "exclusive_sphere_300kpc",
+            "exclusive_sphere_30kpc",
+            "exclusive_sphere_500kpc",
+            "exclusive_sphere_50kpc",
+            "inclusive_sphere_1000kpc",
+            "inclusive_sphere_100kpc",
+            "inclusive_sphere_10kpc",
+            "inclusive_sphere_3000kpc",
+            "inclusive_sphere_300kpc",
+            "inclusive_sphere_30kpc",
+            "inclusive_sphere_500kpc",
+            "inclusive_sphere_50kpc",
+            "projected_aperture_100kpc",
+            "projected_aperture_10kpc",
+            "projected_aperture_30kpc",
+            "projected_aperture_50kpc",
+        ]
+        f["Parameters"].attrs["centrals_only"] = 0
+        f["Parameters"].attrs["halo_basename"] = "undefined"
+        f["Parameters"].attrs["halo_format"] = "HBTplus"
+        f["Parameters"].attrs["halo_indices"] = np.array([])
+        f["Parameters"].attrs["snapshot_nr"] = 0
+        f["Parameters"].attrs["swift_filename"] = "toysnap.hdf5"
+        f.create_group("PhysicalConstants")
+        f.create_group("SWIFT")
+        f.create_group("Units")
+        f["Units"].attrs["Unit current in cgs (U_I)"] = np.array([1.0])
+        f["Units"].attrs["Unit length in cgs (U_L)"] = np.array([3.08567758e24])
+        f["Units"].attrs["Unit mass in cgs (U_M)"] = np.array([1.98841586e43])
+        f["Units"].attrs["Unit temperature in cgs (U_T)"] = np.array([1.0])
+        f["Units"].attrs["Unit time in cgs (U_t)"] = np.array([3.08567758e19])
+        f.create_group("BoundSubhalo")
+        f["BoundSubhalo"].attrs["Masked"] = False
+        f.create_group("ExclusiveSphere")
+        f.create_group("ExclusiveSphere/1000kpc")
+        f["ExclusiveSphere/1000kpc"].attrs["Mask Dataset Combination"] = "sum"
+        f["ExclusiveSphere/1000kpc"].attrs["Mask Datasets"] = [
+            "BoundSubhalo/NumberOfGasParticles",
+            "BoundSubhalo/NumberOfDarkMatterParticles",
+            "BoundSubhalo/NumberOfStarParticles",
+            "BoundSubhalo/NumberOfBlackHoleParticles",
+        ]
+        f["ExclusiveSphere/1000kpc"].attrs["Mask Threshold"] = 100
+        f["ExclusiveSphere/1000kpc"].attrs["Masked"] = True
+        f.create_group("ExclusiveSphere/100kpc")
+        f["ExclusiveSphere/100kpc"].attrs["Masked"] = False
+        f.create_group("ExclusiveSphere/10kpc")
+        f["ExclusiveSphere/10kpc"].attrs["Masked"] = False
+        f.create_group("ExclusiveSphere/3000kpc")
+        f["ExclusiveSphere/3000kpc"].attrs["Mask Dataset Combination"] = "sum"
+        f["ExclusiveSphere/3000kpc"].attrs["Mask Datasets"] = [
+            "BoundSubhalo/NumberOfGasParticles",
+            "BoundSubhalo/NumberOfDarkMatterParticles",
+            "BoundSubhalo/NumberOfStarParticles",
+            "BoundSubhalo/NumberOfBlackHoleParticles",
+        ]
+        f["ExclusiveSphere/3000kpc"].attrs["Mask Threshold"] = 100
+        f["ExclusiveSphere/3000kpc"].attrs["Masked"] = True
+        f.create_group("ExclusiveSphere/300kpc")
+        f["ExclusiveSphere/300kpc"].attrs["Masked"] = False
+        f.create_group("ExclusiveSphere/30kpc")
+        f["ExclusiveSphere/30kpc"].attrs["Masked"] = False
+        f.create_group("ExclusiveSphere/500kpc")
+        f["ExclusiveSphere/500kpc"].attrs["Mask Dataset Combination"] = "sum"
+        f["ExclusiveSphere/500kpc"].attrs["Mask Datasets"] = [
+            "BoundSubhalo/NumberOfGasParticles",
+            "BoundSubhalo/NumberOfDarkMatterParticles",
+            "BoundSubhalo/NumberOfStarParticles",
+            "BoundSubhalo/NumberOfBlackHoleParticles",
+        ]
+        f["ExclusiveSphere/500kpc"].attrs["Mask Threshold"] = 100
+        f["ExclusiveSphere/500kpc"].attrs["Masked"] = True
+        f.create_group("ExclusiveSphere/50kpc")
+        f["ExclusiveSphere/50kpc"].attrs["Masked"] = False
+        f.create_group("InclusiveSphere")
+        f.create_group("InclusiveSphere/1000kpc")
+        f["InclusiveSphere/1000kpc"].attrs["Mask Dataset Combination"] = "sum"
+        f["InclusiveSphere/1000kpc"].attrs["Mask Datasets"] = [
+            "BoundSubhalo/NumberOfGasParticles",
+            "BoundSubhalo/NumberOfDarkMatterParticles",
+            "BoundSubhalo/NumberOfStarParticles",
+            "BoundSubhalo/NumberOfBlackHoleParticles",
+        ]
+        f["InclusiveSphere/1000kpc"].attrs["Mask Threshold"] = 100
+        f["InclusiveSphere/1000kpc"].attrs["Masked"] = True
+        f.create_group("InclusiveSphere/100kpc")
+        f["InclusiveSphere/100kpc"].attrs["Masked"] = False
+        f.create_group("InclusiveSphere/10kpc")
+        f["InclusiveSphere/10kpc"].attrs["Masked"] = False
+        f.create_group("InclusiveSphere/3000kpc")
+        f["InclusiveSphere/3000kpc"].attrs["Mask Dataset Combination"] = "sum"
+        f["InclusiveSphere/3000kpc"].attrs["Mask Datasets"] = [
+            "BoundSubhalo/NumberOfGasParticles",
+            "BoundSubhalo/NumberOfDarkMatterParticles",
+            "BoundSubhalo/NumberOfStarParticles",
+            "BoundSubhalo/NumberOfBlackHoleParticles",
+        ]
+        f["InclusiveSphere/3000kpc"].attrs["Mask Threshold"] = 100
+        f["InclusiveSphere/3000kpc"].attrs["Masked"] = True
+        f.create_group("InclusiveSphere/300kpc")
+        f["InclusiveSphere/300kpc"].attrs["Masked"] = False
+        f.create_group("InclusiveSphere/30kpc")
+        f["InclusiveSphere/30kpc"].attrs["Masked"] = False
+        f.create_group("InclusiveSphere/500kpc")
+        f["InclusiveSphere/500kpc"].attrs["Mask Dataset Combination"] = "sum"
+        f["InclusiveSphere/500kpc"].attrs["Mask Datasets"] = [
+            "BoundSubhalo/NumberOfGasParticles",
+            "BoundSubhalo/NumberOfDarkMatterParticles",
+            "BoundSubhalo/NumberOfStarParticles",
+            "BoundSubhalo/NumberOfBlackHoleParticles",
+        ]
+        f["InclusiveSphere/500kpc"].attrs["Mask Threshold"] = 100
+        f["InclusiveSphere/500kpc"].attrs["Masked"] = True
+        f.create_group("InclusiveSphere/50kpc")
+        f["InclusiveSphere/50kpc"].attrs["Masked"] = False
+        f.create_group("InputHalos")
+        f.create_group("InputHalos/FOF")
+        f.create_group("InputHalos/HBTplus")
+        f.create_group("ProjectedAperture")
+        f.create_group("ProjectedAperture/100kpc")
+        f.create_group("ProjectedAperture/10kpc")
+        f.create_group("ProjectedAperture/30kpc")
+        f.create_group("ProjectedAperture/50kpc")
+        f.create_group("ProjectedAperture/100kpc/projx")
+        f.create_group("ProjectedAperture/100kpc/projy")
+        f.create_group("ProjectedAperture/100kpc/projz")
+        f.create_group("ProjectedAperture/10kpc/projx")
+        f.create_group("ProjectedAperture/10kpc/projy")
+        f.create_group("ProjectedAperture/10kpc/projz")
+        f.create_group("ProjectedAperture/30kpc/projx")
+        f.create_group("ProjectedAperture/30kpc/projy")
+        f.create_group("ProjectedAperture/30kpc/projz")
+        f.create_group("ProjectedAperture/50kpc/projx")
+        f.create_group("ProjectedAperture/50kpc/projy")
+        f.create_group("ProjectedAperture/50kpc/projz")
+        f.create_group("SO")
+        f.create_group("SO/1000_crit")
+        f["SO/1000_crit"].attrs["Mask Dataset Combination"] = "sum"
+        f["SO/1000_crit"].attrs["Mask Datasets"] = [
+            "BoundSubhalo/NumberOfGasParticles",
+            "BoundSubhalo/NumberOfDarkMatterParticles",
+            "BoundSubhalo/NumberOfStarParticles",
+            "BoundSubhalo/NumberOfBlackHoleParticles",
+        ]
+        f["SO/1000_crit"].attrs["Mask Threshold"] = 100
+        f["SO/1000_crit"].attrs["Masked"] = True
+        f.create_group("SO/100_crit")
+        f["SO/100_crit"].attrs["Mask Dataset Combination"] = "sum"
+        f["SO/100_crit"].attrs["Mask Datasets"] = [
+            "BoundSubhalo/NumberOfGasParticles",
+            "BoundSubhalo/NumberOfDarkMatterParticles",
+            "BoundSubhalo/NumberOfStarParticles",
+            "BoundSubhalo/NumberOfBlackHoleParticles",
+        ]
+        f["SO/100_crit"].attrs["Mask Threshold"] = 100
+        f["SO/100_crit"].attrs["Masked"] = True
+        f.create_group("SO/200_crit")
+        f["SO/200_crit"].attrs["Masked"] = False
+        f.create_group("SO/200_mean")
+        f["SO/200_mean"].attrs["Masked"] = False
+        f.create_group("SO/2500_crit")
+        f["SO/2500_crit"].attrs["Mask Dataset Combination"] = "sum"
+        f["SO/2500_crit"].attrs["Mask Datasets"] = [
+            "BoundSubhalo/NumberOfGasParticles",
+            "BoundSubhalo/NumberOfDarkMatterParticles",
+            "BoundSubhalo/NumberOfStarParticles",
+            "BoundSubhalo/NumberOfBlackHoleParticles",
+        ]
+        f["SO/2500_crit"].attrs["Mask Threshold"] = 100
+        f["SO/2500_crit"].attrs["Masked"] = True
+        f.create_group("SO/500_crit")
+        f["SO/500_crit"].attrs["Masked"] = False
+        f.create_group("SO/50_crit")
+        f["SO/50_crit"].attrs["Mask Dataset Combination"] = "sum"
+        f["SO/50_crit"].attrs["Mask Datasets"] = [
+            "BoundSubhalo/NumberOfGasParticles",
+            "BoundSubhalo/NumberOfDarkMatterParticles",
+            "BoundSubhalo/NumberOfStarParticles",
+            "BoundSubhalo/NumberOfBlackHoleParticles",
+        ]
+        f["SO/50_crit"].attrs["Mask Threshold"] = 100
+        f["SO/50_crit"].attrs["Masked"] = True
+        f.create_group("SO/5xR_500_crit")
+        f["SO/5xR_500_crit"].attrs["Mask Dataset Combination"] = "sum"
+        f["SO/5xR_500_crit"].attrs["Mask Datasets"] = [
+            "BoundSubhalo/NumberOfGasParticles",
+            "BoundSubhalo/NumberOfDarkMatterParticles",
+            "BoundSubhalo/NumberOfStarParticles",
+            "BoundSubhalo/NumberOfBlackHoleParticles",
+        ]
+        f["SO/5xR_500_crit"].attrs["Mask Threshold"] = 100
+        f["SO/5xR_500_crit"].attrs["Masked"] = True
+        f.create_group("SO/BN98")
+        f["SO/BN98"].attrs["Mask Dataset Combination"] = "sum"
+        f["SO/BN98"].attrs["Mask Datasets"] = [
+            "BoundSubhalo/NumberOfGasParticles",
+            "BoundSubhalo/NumberOfDarkMatterParticles",
+            "BoundSubhalo/NumberOfStarParticles",
+            "BoundSubhalo/NumberOfBlackHoleParticles",
+        ]
+        f["SO/BN98"].attrs["Mask Threshold"] = 100
+        f["SO/BN98"].attrs["Masked"] = True
+        f.create_group("SOAP")
+
+
+def remove_toysoap(
+    filename=toysoap_filename, membership_filebase=toysoap_membership_filebase
+):
+    os.remove(filename)
+    i = 0
+    while True:
+        membership_file = f"{membership_filebase}.{i}.hdf5"
+        if os.path.isfile(membership_file):
+            os.remove(membership_file)
+            i += 1
+        else:
+            break
