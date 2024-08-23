@@ -945,6 +945,7 @@ def create_toysoap(
         f.create_group("Code")
         f["Code"].attrs["Code"] = "SOAP"
         f["Code"].attrs["git_hash"] = "undefined"
+        f.create_group("Cosmology")
         f["Cosmology"].attrs["Cosmological run"] = np.array([1])
         f["Cosmology"].attrs["Critical density [internal units]"] = np.array(
             [12.87106552]
@@ -1005,48 +1006,48 @@ def create_toysoap(
         f["Header"].attrs["Scale-factor"] = np.array([1.0])
         f["Header"].attrs["SnapshotDate"] = "00:00:00 1900-01-01 GMT"
         f["Header"].attrs["SubhaloTypes"] = [
-            "BoundSubhalo"
-            "ExclusiveSphere/1000kpc"
-            "ExclusiveSphere/100kpc"
-            "ExclusiveSphere/10kpc"
-            "ExclusiveSphere/3000kpc"
-            "ExclusiveSphere/300kpc"
-            "ExclusiveSphere/30kpc"
-            "ExclusiveSphere/500kpc"
-            "ExclusiveSphere/50kpc"
-            "InclusiveSphere/1000kpc"
-            "InclusiveSphere/100kpc"
-            "InclusiveSphere/10kpc"
-            "InclusiveSphere/3000kpc"
-            "InclusiveSphere/300kpc"
-            "InclusiveSphere/30kpc"
-            "InclusiveSphere/500kpc"
-            "InclusiveSphere/50kpc"
-            "InputHalos"
-            "InputHalos/FOF"
-            "InputHalos/HBTplus"
-            "ProjectedAperture/100kpc/projx"
-            "ProjectedAperture/100kpc/projy"
-            "ProjectedAperture/100kpc/projz"
-            "ProjectedAperture/10kpc/projx"
-            "ProjectedAperture/10kpc/projy"
-            "ProjectedAperture/10kpc/projz"
-            "ProjectedAperture/30kpc/projx"
-            "ProjectedAperture/30kpc/projy"
-            "ProjectedAperture/30kpc/projz"
-            "ProjectedAperture/50kpc/projx"
-            "ProjectedAperture/50kpc/projy"
-            "ProjectedAperture/50kpc/projz"
-            "SO/1000_crit"
-            "SO/100_crit"
-            "SO/200_crit"
-            "SO/200_mean"
-            "SO/2500_crit"
-            "SO/500_crit"
-            "SO/50_crit"
-            "SO/5xR_500_crit"
-            "SO/BN98"
-            "SOAP"
+            "BoundSubhalo",
+            "ExclusiveSphere/1000kpc",
+            "ExclusiveSphere/100kpc",
+            "ExclusiveSphere/10kpc",
+            "ExclusiveSphere/3000kpc",
+            "ExclusiveSphere/300kpc",
+            "ExclusiveSphere/30kpc",
+            "ExclusiveSphere/500kpc",
+            "ExclusiveSphere/50kpc",
+            "InclusiveSphere/1000kpc",
+            "InclusiveSphere/100kpc",
+            "InclusiveSphere/10kpc",
+            "InclusiveSphere/3000kpc",
+            "InclusiveSphere/300kpc",
+            "InclusiveSphere/30kpc",
+            "InclusiveSphere/500kpc",
+            "InclusiveSphere/50kpc",
+            "InputHalos",
+            "InputHalos/FOF",
+            "InputHalos/HBTplus",
+            "ProjectedAperture/100kpc/projx",
+            "ProjectedAperture/100kpc/projy",
+            "ProjectedAperture/100kpc/projz",
+            "ProjectedAperture/10kpc/projx",
+            "ProjectedAperture/10kpc/projy",
+            "ProjectedAperture/10kpc/projz",
+            "ProjectedAperture/30kpc/projx",
+            "ProjectedAperture/30kpc/projy",
+            "ProjectedAperture/30kpc/projz",
+            "ProjectedAperture/50kpc/projx",
+            "ProjectedAperture/50kpc/projy",
+            "ProjectedAperture/50kpc/projz",
+            "SO/1000_crit",
+            "SO/100_crit",
+            "SO/200_crit",
+            "SO/200_mean",
+            "SO/2500_crit",
+            "SO/500_crit",
+            "SO/50_crit",
+            "SO/5xR_500_crit",
+            "SO/BN98",
+            "SOAP",
         ]
         f["Header"].attrs["System"] = "swiftgalaxy-test"
         f["Header"].attrs["ThisFile"] = np.array([0])
