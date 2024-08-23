@@ -1,12 +1,12 @@
 """
 This module contains classes providing interfaces to halo finders used with
 SWIFT so that :mod:`swiftgalaxy` can obtain the information it requires in a
-streamlined way. Currently only the Velociraptor_ halo finder is supported, but
-support for other halo finders (e.g. `SOAP`, `HBT+`_) is planned.
+streamlined way. Currently the SOAP and Velociraptor_ halo finders are supported,
+as well as Caesar_ catalogues, others can be supported on request.
 
 .. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/\
 abstract
-.. _HBT+: https://ui.adsabs.harvard.edu/abs/2018MNRAS.474..604H/abstract
+.. _Caesar: https://caesar.readthedocs.io/en/latest/
 """
 
 from warnings import warn
