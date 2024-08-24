@@ -224,9 +224,7 @@ def sg_sa():
     remove_toysnap()
 
 
-@pytest.fixture(
-    scope="function", params=["soap", "vr", "caesar_halo", "caesar_galaxy", "sa"]
-)
+@pytest.fixture(scope="function", params=hfs)
 def sg_hf(request):
     create_toysnap(withfof=request.param == "soap")
     if request.param in {"caesar_halo", "caesar_galaxy"}:
@@ -279,9 +277,7 @@ def sg_hf(request):
     remove_toysnap()
 
 
-@pytest.fixture(
-    scope="function", params=["soap", "vr", "caesar_halo", "caesar_galaxy", "sa"]
-)
+@pytest.fixture(scope="function", params=hfs)
 def hf(request):
     if request.param in {"caesar_halo", "caesar_galaxy"}:
         create_toycaesar()
