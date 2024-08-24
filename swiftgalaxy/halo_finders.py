@@ -145,6 +145,11 @@ class SOAP(_HaloFinder):
                     )
                 else:
                     self.membership_file_base = membership_file_base
+            else:
+                raise ValueError(
+                    "Failed to guess membership file location, provide"
+                    " membership_file_base."
+                )
         self._membership_files = list()
         membership_file_number = 0
         while True:
@@ -165,7 +170,7 @@ class SOAP(_HaloFinder):
         return
 
     def _load(self) -> None:
-        self._swift_dataset = SWIFTDataset(
+        self._swift_dataset: SWIFTDataset = SWIFTDataset(
             self.soap_file,
             mask=None,  # want to mask down to a single row here
         )
@@ -192,6 +197,7 @@ class SOAP(_HaloFinder):
         ]
 
     def __getattr__(self, attr: str) -> Any:
+        print(attr)
         # Invoked if attribute not found.
         # Use to expose the masked catalogue.
         if attr == "_swift_dataset":  # guard infinite recursion

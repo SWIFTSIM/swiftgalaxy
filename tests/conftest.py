@@ -22,13 +22,14 @@ from toysnap import (
     ToyHF,
     toysnap_filename,
     toysoap_filename,
+    toysoap_membership_filebase,
     toyvr_filebase,
     toycaesar_filename,
     n_g_b,
     n_dm_b,
 )
 
-hfs = ("soap", "vr", "caesar_halo", "caesar_galaxy", "sa")
+hfs = ("vr", "caesar_halo", "caesar_galaxy", "sa")  # add soap to this list
 
 
 @pytest.fixture(scope="function")
@@ -110,7 +111,11 @@ def sg_soap():
 
     yield SWIFTGalaxy(
         toysnap_filename,
-        SOAP(soap_file=toysoap_filename, halo_index=0),
+        SOAP(
+            soap_file=toysoap_filename,
+            membership_file_base=toysoap_membership_filebase,
+            halo_index=0,
+        ),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
     )
@@ -155,7 +160,11 @@ def sg_caesar(request):
 def soap():
     create_toysoap()
 
-    yield SOAP(soap_file=toysoap_filename, halo_index=0)
+    yield SOAP(
+        soap_file=toysoap_filename,
+        membership_file_base=toysoap_membership_filebase,
+        halo_index=0,
+    )
 
     remove_toysoap()
 
@@ -237,7 +246,11 @@ def sg_hf(request):
         create_toysoap()
         yield SWIFTGalaxy(
             toysnap_filename,
-            SOAP(soap_file=toysoap_filename, halo_index=0),
+            SOAP(
+                soap_file=toysoap_filename,
+                membership_file_base=toysoap_membership_filebase,
+                halo_index=0,
+            ),
             transforms_like_coordinates={"coordinates", "extra_coordinates"},
             transforms_like_velocities={"velocities", "extra_velocities"},
         )
@@ -283,7 +296,11 @@ def hf(request):
     elif request.param == "soap":
         create_toysoap()
 
-        yield SOAP(soap_file=toysoap_filename, halo_index=0)
+        yield SOAP(
+            soap_file=toysoap_filename,
+            membership_file_base=toysoap_membership_filebase,
+            halo_index=0,
+        )
 
         remove_toysoap()
     elif request.param == "vr":
