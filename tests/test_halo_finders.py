@@ -444,3 +444,15 @@ class TestStandalone:
                     black_holes=n_bh,
                 )[particle_type]
             )
+
+
+class TestSOAP:
+    @pytest.mark.xfail
+    def test_something(self):
+        raise NotImplementedError
+
+
+class TestSOAPWithSWIFTGalaxy:
+    @pytest.mark.xfail
+    def test_something(self):
+        raise NotImplementedError
