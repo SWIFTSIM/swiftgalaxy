@@ -132,7 +132,6 @@ class SOAP(_HaloCatalogue):
         )
 
     def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
-        # CoM +/- enclose radius in x, y & z define bbox
         sm = mask(snapshot_filename, spatial_only=True)
         pos = self._swift_dataset.bound_subhalo.centre_of_mass.squeeze()
         rmax = self._swift_dataset.bound_subhalo.enclose_radius.squeeze()
@@ -141,7 +140,24 @@ class SOAP(_HaloCatalogue):
         return sm
 
     def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
-        return MaskCollection()  # need to implement
+        if hasattr(SG, "gas"):
+            gas_mask = SG.gas._particle_dataset.group_nr_bound == self.halo_index
+            del SG.gas._particle_dataset.group_nr_bound
+        if hasattr(SG, "dark_matter"):
+            dm_mask = SG.dark_matter._particle_dataset.group_nr_bound == self.halo_index
+            del SG.dark_matter._particle_dataset.group_nr_bound
+        if hasattr(SG, "stars"):
+            star_mask = SG.stars._particle_dataset.group_nr_bound == self.halo_index
+            del SG.stars._particle_dataset.group_nr_bound
+        if hasattr(SG, "black_holes"):
+            bh_mask = SG.black_holes.group_nr_bound == self.halo_index
+            del SG.black_holes._particle_dataset.group_nr_bound
+        return MaskCollection(
+            gas=gas_mask,
+            dark_matter=dm_mask,
+            stars=star_mask,
+            black_holes=bh_mask,
+        )
 
     @property
     def centre(self) -> cosmo_array:

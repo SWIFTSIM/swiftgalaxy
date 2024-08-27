@@ -5,6 +5,8 @@ import unyt as u
 from unyt.testing import assert_allclose_units
 from toysnap import (
     toysnap_filename,
+    toysoap_virtual_snapshot_filename,
+    toysoap_membership_filebase,
     n_g,
     n_g_b,
     n_g_all,
@@ -107,11 +109,25 @@ class TestHaloCatalogues:
         Check that bound_only extra mask has the right shape.
         """
         hf.extra_mask = "bound_only"
-        try:
-            sg = SWIFTGalaxy(toysnap_filename, hf)
-        except NotImplementedError:
-            # expected for Standalone
-            return
+        if hasattr(hf, "soap_file"):
+            from toysnap import soap_script_path
+            import sys
+
+            sys.path.append(soap_script_path)
+            from make_virtual_snapshot import make_virtual_snapshot
+
+            make_virtual_snapshot(
+                toysnap_filename,
+                f"{toysoap_membership_filebase}.%(file_nr).d.hdf5",
+                toysoap_virtual_snapshot_filename,
+            )
+            sg = SWIFTGalaxy(toysoap_virtual_snapshot_filename, hf)
+        else:
+            try:
+                sg = SWIFTGalaxy(toysnap_filename, hf)
+            except NotImplementedError:
+                # expected for Standalone
+                return
         generated_extra_mask = sg._extra_mask
         expected_shape = dict()
         for particle_type in present_particle_types.values():
