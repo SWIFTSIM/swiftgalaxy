@@ -22,14 +22,14 @@ from toysnap import (
     ToyHF,
     toysnap_filename,
     toysoap_filename,
-    toysoap_membership_filebase,
+    toysoap_virtual_snapshot_filename,
     toyvr_filebase,
     toycaesar_filename,
     n_g_b,
     n_dm_b,
 )
 
-hfs = ("vr", "caesar_halo", "caesar_galaxy", "sa")  # add soap to this list
+hfs = ("vr", "caesar_halo", "caesar_galaxy", "sa", "soap")
 
 
 @pytest.fixture(scope="function")
@@ -107,13 +107,12 @@ def sg_autorecentre_off():
 @pytest.fixture(scope="function")
 def sg_soap():
     create_toysnap(withfof=True)
-    create_toysoap()
+    create_toysoap(create_virtual_snapshot=True)
 
     yield SWIFTGalaxy(
-        toysnap_filename,
+        toysoap_virtual_snapshot_filename,
         SOAP(
             soap_file=toysoap_filename,
-            membership_file_base=toysoap_membership_filebase,
             halo_index=0,
         ),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
@@ -162,7 +161,6 @@ def soap():
 
     yield SOAP(
         soap_file=toysoap_filename,
-        membership_file_base=toysoap_membership_filebase,
         halo_index=0,
     )
 
@@ -241,12 +239,11 @@ def sg_hf(request):
         )
         remove_toycaesar()
     elif request.param == "soap":
-        create_toysoap()
+        create_toysoap(create_virtual_snapshot=True)
         yield SWIFTGalaxy(
-            toysnap_filename,
+            toysoap_virtual_snapshot_filename,
             SOAP(
                 soap_file=toysoap_filename,
-                membership_file_base=toysoap_membership_filebase,
                 halo_index=0,
             ),
             transforms_like_coordinates={"coordinates", "extra_coordinates"},
@@ -294,7 +291,6 @@ def hf(request):
 
         yield SOAP(
             soap_file=toysoap_filename,
-            membership_file_base=toysoap_membership_filebase,
             halo_index=0,
         )
 

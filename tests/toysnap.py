@@ -10,10 +10,13 @@ from swiftgalaxy import MaskCollection
 from swiftgalaxy.halo_finders import _HaloFinder
 from swiftsimio.units import cosmo_units
 
+soap_script_path = "/cosma/home/durham/dc-oman1/code/SOAP-sgsoap-dev/"
+
 toysnap_filename = "toysnap.hdf5"
 toyvr_filebase = "toyvr"
 toysoap_filename = "toysoap.hdf5"
 toysoap_membership_filebase = "toysoap_membership"
+toysoap_virtual_snapshot_filename = "toysnap_virtual.hdf5"
 toycaesar_filename = "toycaesar.hdf5"
 present_particle_types = {0: "gas", 1: "dark_matter", 4: "stars", 5: "black_holes"}
 boxsize = 10.0 * u.Mpc
@@ -938,7 +941,12 @@ def remove_toycaesar(filename=toycaesar_filename):
 
 
 def create_toysoap(
-    filename=toysoap_filename, membership_filebase=toysoap_membership_filebase
+    filename=toysoap_filename,
+    membership_filebase=toysoap_membership_filebase,
+    create_membership=True,
+    create_virtual_snapshot=False,
+    create_virtual_snapshot_from=toysnap_filename,
+    virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
 ):
     with h5py.File(filename, "w") as f:
         f.create_group("Cells")
@@ -1418,7 +1426,7 @@ def create_toysoap(
             comv_ds.attrs["h-scale exponent"] = np.array([0.0])
         er = f["BoundSubhalo"].create_dataset(
             "EncloseRadius",
-            data=np.array([]),
+            data=np.array([0.1]),
             dtype=float,
         )
         er.attrs[
@@ -1446,7 +1454,7 @@ def create_toysoap(
         f["Cells"].create_group("Counts")
         f["Cells/Counts"].create_dataset(
             "Subhalos",
-            data=np.array([1, 0]),
+            data=np.array([1, 0, 0]),
             dtype=int,
         )
         f["Cells"].create_group("Files")
@@ -1466,7 +1474,7 @@ def create_toysoap(
         f["Cells/OffsetsInFile"].create_dataset(
             "Subhalos",
             data=np.array(
-                [0, 1, 1],
+                [0, 1],
             ),
             dtype=int,
         )
@@ -1686,9 +1694,132 @@ def create_toysoap(
         nbp.attrs["a-scale exponent"] = np.array([0.0])
         nbp.attrs["h-scale exponent"] = np.array([0.0])
 
+    if create_membership:
+        with h5py.File(f"{membership_filebase}.0.hdf5", "w") as f:
+            fof_ids = {
+                0: np.concatenate(
+                    (
+                        np.ones(n_g_all - n_g, dtype=int) * 2147483647,
+                        np.ones(n_g, dtype=int),
+                    )
+                ),
+                1: np.concatenate(
+                    (
+                        np.ones(n_dm_all - n_dm, dtype=int) * 2147483647,
+                        np.ones(n_dm, dtype=int),
+                    )
+                ),
+                4: np.ones(n_s, dtype=int),
+                5: np.ones(n_bh, dtype=int),
+            }
+            grnrs = {
+                0: np.concatenate(
+                    (
+                        -np.ones(n_g_all - n_g, dtype=int),
+                        np.zeros(n_g, dtype=int),
+                    )
+                ),
+                1: np.concatenate(
+                    (
+                        -np.ones(n_dm_all - n_dm, dtype=int),
+                        np.zeros(n_dm, dtype=int),
+                    )
+                ),
+                4: np.zeros(n_s, dtype=int),
+                5: np.zeros(n_bh, dtype=int),
+            }
+            ranks = {
+                0: np.concatenate(
+                    (
+                        -np.ones(n_g_all - n_g, dtype=int),
+                        np.arange(n_g, dtype=int),
+                    )
+                ),
+                1: np.concatenate(
+                    (
+                        -np.ones(n_dm_all - n_dm, dtype=int),
+                        np.arange(n_dm, dtype=int),
+                    )
+                ),
+                4: np.arange(n_s, dtype=int),
+                5: np.arange(n_bh, dtype=int),
+            }
+            for ptype in (0, 1, 4, 5):
+                g = f.create_group(f"PartType{ptype}")
+                ds_fof = g.create_dataset("FOFGroupIDs", data=fof_ids[ptype], dtype=int)
+                ds_grnr = g.create_dataset(
+                    "GroupNr_bound", data=grnrs[ptype], dtype=int
+                )
+                ds_rank = g.create_dataset("Rank_bound", data=ranks[ptype], dtype=int)
+                ds_fof.attrs[
+                    "Conversion factor to CGS " "(including cosmological corrections)"
+                ] = np.array([1.0])
+                ds_fof.attrs[
+                    "Conversion factor to CGS "
+                    "(not including cosmological corrections)"
+                ] = np.array([1.0])
+                ds_fof.attrs["Description"] = (
+                    "Friends-Of-Friends ID of the group "
+                    "in which this particle is a member, of -1 if none"
+                )
+                ds_fof.attrs["U_I exponent"] = np.array([0.0])
+                ds_fof.attrs["U_L exponent"] = np.array([0.0])
+                ds_fof.attrs["U_M exponent"] = np.array([0.0])
+                ds_fof.attrs["U_T exponent"] = np.array([0.0])
+                ds_fof.attrs["U_t exponent"] = np.array([0.0])
+                ds_fof.attrs["a-scale exponent"] = np.array([0.0])
+                ds_fof.attrs["h-scale exponent"] = np.array([0.0])
+                ds_grnr.attrs[
+                    "Conversion factor to CGS (including cosmological corrections)"
+                ] = np.array([1.0])
+                ds_grnr.attrs[
+                    "Conversion factor to CGS (not including cosmological corrections)"
+                ] = np.array([1.0])
+                ds_grnr.attrs["Description"] = (
+                    "Index of halo in which this particle "
+                    "is a bound member, or -1 if none"
+                )
+                ds_grnr.attrs["U_I exponent"] = np.array([0.0])
+                ds_grnr.attrs["U_L exponent"] = np.array([0.0])
+                ds_grnr.attrs["U_M exponent"] = np.array([0.0])
+                ds_grnr.attrs["U_T exponent"] = np.array([0.0])
+                ds_grnr.attrs["U_t exponent"] = np.array([0.0])
+                ds_grnr.attrs["a-scale exponent"] = np.array([0.0])
+                ds_grnr.attrs["h-scale exponent"] = np.array([0.0])
+                ds_rank.attrs[
+                    "Conversion factor to CGS (including cosmological corrections)"
+                ] = np.array([1.0])
+                ds_rank.attrs[
+                    "Conversion factor to CGS (not including cosmological corrections)"
+                ] = np.array([1.0])
+                ds_rank.attrs["Description"] = (
+                    "Ranking by binding energy of the "
+                    "bound particles (first in halo=0), or -1 if not bound"
+                )
+                ds_rank.attrs["U_I exponent"] = np.array([0.0])
+                ds_rank.attrs["U_L exponent"] = np.array([0.0])
+                ds_rank.attrs["U_M exponent"] = np.array([0.0])
+                ds_rank.attrs["U_T exponent"] = np.array([0.0])
+                ds_rank.attrs["U_t exponent"] = np.array([0.0])
+                ds_rank.attrs["a-scale exponent"] = np.array([0.0])
+                ds_rank.attrs["h-scale exponent"] = np.array([0.0])
+    if create_virtual_snapshot:
+        import sys
+
+        sys.path.append(soap_script_path)
+        from make_virtual_snapshot import make_virtual_snapshot
+
+        make_virtual_snapshot(
+            create_virtual_snapshot_from,
+            f"{membership_filebase}.%(file_nr).d.hdf5",
+            virtual_snapshot_filename,
+        )
+
 
 def remove_toysoap(
-    filename=toysoap_filename, membership_filebase=toysoap_membership_filebase
+    filename=toysoap_filename,
+    membership_filebase=toysoap_membership_filebase,
+    virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
 ):
     os.remove(filename)
     i = 0
@@ -1699,3 +1830,5 @@ def remove_toysoap(
             i += 1
         else:
             break
+    if os.path.isfile(virtual_snapshot_filename):
+        os.remove(virtual_snapshot_filename)

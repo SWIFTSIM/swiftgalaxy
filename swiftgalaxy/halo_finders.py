@@ -11,7 +11,6 @@ abstract
 
 from warnings import warn
 from abc import ABC, abstractmethod
-import os
 import numpy as np
 import unyt as u
 from swiftsimio import SWIFTMask, SWIFTDataset, mask
@@ -104,13 +103,11 @@ class SOAP(_HaloFinder):
 
     membership_file_base: str
     soap_file: str
-    _membership_files: List[str]
     halo_index: int
 
     def __init__(
         self,
         soap_file: Optional[str] = None,
-        membership_file_base: Optional[str] = None,
         halo_index: Optional[int] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
     ) -> None:
@@ -118,49 +115,6 @@ class SOAP(_HaloFinder):
             self.soap_file = soap_file
         else:
             raise ValueError("Provide a soap_file.")
-        if membership_file_base is not None:
-            self.membership_file_base = membership_file_base
-        else:
-            if "halo_properties_" in os.path.basename(
-                soap_file
-            ) and ".hdf5" in os.path.basename(soap_file):
-                snapnum = (
-                    os.path.basename(soap_file)
-                    .replace("halo_properties_", "")
-                    .replace(".hdf5", "")
-                )
-                try:
-                    int(snapnum)  # raises ValueError if not interpretable as int
-                    membership_file_base = os.path.join(
-                        os.path.dirname(soap_file),
-                        f"membership_{snapnum}",
-                        f"membership_{snapnum}",  # omit .X.hdf5
-                    )
-                    if not os.path.isfile(f"{membership_file_base}.0.hdf5"):
-                        raise ValueError
-                except ValueError:
-                    raise ValueError(
-                        "Failed to guess membership file location, provide"
-                        " membership_file_base."
-                    )
-                else:
-                    self.membership_file_base = membership_file_base
-            else:
-                raise ValueError(
-                    "Failed to guess membership file location, provide"
-                    " membership_file_base."
-                )
-        self._membership_files = list()
-        membership_file_number = 0
-        while True:
-            membership_file_candidate = (
-                f"{self.membership_file_base}.{membership_file_number}.hdf5"
-            )
-            if os.path.isfile(membership_file_candidate):
-                self._membership_files.append(membership_file_candidate)
-                membership_file_number += 1
-            else:
-                break
 
         if halo_index is not None:
             self.halo_index = halo_index
@@ -170,34 +124,34 @@ class SOAP(_HaloFinder):
         return
 
     def _load(self) -> None:
+        sm = mask(self.soap_file)
+        sm.constrain_index(self.halo_index)
         self._swift_dataset: SWIFTDataset = SWIFTDataset(
             self.soap_file,
-            mask=None,  # want to mask down to a single row here
+            mask=sm,
         )
 
     def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
-        # self._swift_dataset.bound_subhalo.centre_of_mass
-        # self._swift_dataset.bound_subhalo.enclose_radius
         # CoM +/- enclose radius in x, y & z define bbox
-        return None  # need to implement
+        sm = mask(snapshot_filename, spatial_only=True)
+        pos = self._swift_dataset.bound_subhalo.centre_of_mass.squeeze()
+        rmax = self._swift_dataset.bound_subhalo.enclose_radius.squeeze()
+        load_region = cosmo_array([pos - rmax, pos + rmax]).T
+        sm.constrain_spatial(load_region)
+        return sm
 
     def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
         return MaskCollection()  # need to implement
 
     @property
     def centre(self) -> cosmo_array:
-        # masking here will go away when mask in _load implemented
-        return self._swift_dataset.bound_subhalo.centre_of_mass[self.halo_index]
+        return self._swift_dataset.bound_subhalo.centre_of_mass
 
     @property
     def velocity_centre(self) -> cosmo_array:
-        # masking here will go away when mask in _load implemented
-        return self._swift_dataset.bound_subhalo.centre_of_mass_velocity[
-            self.halo_index
-        ]
+        return self._swift_dataset.bound_subhalo.centre_of_mass_velocity
 
     def __getattr__(self, attr: str) -> Any:
-        print(attr)
         # Invoked if attribute not found.
         # Use to expose the masked catalogue.
         if attr == "_swift_dataset":  # guard infinite recursion
@@ -909,7 +863,6 @@ class Standalone(_HaloFinder):
 
     def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         # if we're here then the user didn't provide a mask, read the whole box
-        print("!")
         sm = mask(snapshot_filename, spatial_only=True)
         boxsize = sm.metadata.boxsize
         region = [[0.0 * b, 1.0 * b] for b in boxsize]
