@@ -1,7 +1,7 @@
 """
-This module contains classes providing interfaces to halo finders used with
+This module contains classes providing interfaces to halo catalogues used with
 SWIFT so that :mod:`swiftgalaxy` can obtain the information it requires in a
-streamlined way. Currently the SOAP and Velociraptor_ halo finders are supported,
+streamlined way. Currently SOAP and Velociraptor_ halo catalogues are supported,
 as well as Caesar_ catalogues, others can be supported on request.
 
 .. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/\
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from swiftgalaxy.reader import SWIFTGalaxy
 
 
-class _HaloFinder(ABC):
+class _HaloCatalogue(ABC):
     _user_spatial_offsets: Optional[List] = None
 
     def __init__(
@@ -92,14 +92,14 @@ class _HaloFinder(ABC):
         pass
 
     # In addition, it is recommended to expose the properties computed
-    # by the halo finder through this object, masked to the values
+    # by the halo catalogue through this object, masked to the values
     # corresponding to the object of interest. It probably makes sense
-    # to match the syntax used to the usual syntax for the halo finder
+    # to match the syntax used to the usual syntax for the halo catalogue
     # in question? See e.g. implementation in __getattr__ in Velociraptor
     # subclass below.
 
 
-class SOAP(_HaloFinder):
+class SOAP(_HaloCatalogue):
 
     membership_file_base: str
     soap_file: str
@@ -163,7 +163,7 @@ class SOAP(_HaloFinder):
         return self._swift_dataset.__repr__()
 
 
-class Velociraptor(_HaloFinder):
+class Velociraptor(_HaloCatalogue):
     """
     Interface to velociraptor halo catalogues for use with :mod:`swiftgalaxy`.
 
@@ -431,7 +431,7 @@ class Velociraptor(_HaloFinder):
         return self._catalogue.__repr__()
 
 
-class Caesar(_HaloFinder):
+class Caesar(_HaloCatalogue):
     """
     Interface to Caesar halo catalogues for use with :mod:`swiftgalaxy`.
 
@@ -726,7 +726,7 @@ class Caesar(_HaloFinder):
         return self._group.__repr__()
 
 
-class Standalone(_HaloFinder):
+class Standalone(_HaloCatalogue):
     """
     A bare-bones tool to initialize a :class:`~swiftgalaxy.reader.SWIFTGalaxy`
     without an associated halo catalogue.
@@ -770,7 +770,7 @@ class Standalone(_HaloFinder):
     Examples
     --------
     Often the most pragmatic way to create a selection of particles using
-    :class:`~swiftgalaxy.halo_finders.Standalone` is to first select a spatial region
+    :class:`~swiftgalaxy.halo_catalogues.Standalone` is to first select a spatial region
     guaranteed to contain the particles of interest and then create the final mask
     programatically using :class:`~swiftgalaxy.reader.SWIFTGalaxy`'s masking features.
     For example, suppose we know that there is a galaxy with its centre at

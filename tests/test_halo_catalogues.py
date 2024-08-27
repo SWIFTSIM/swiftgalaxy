@@ -28,7 +28,7 @@ abstol_m = 1e4 * u.Msun  # less than this is ~0
 reltol_nd = 1.0e-4
 
 
-class TestHaloFinders:
+class TestHaloCatalogues:
     def test_get_spatial_mask(self, hf, toysnap):
         """
         Check that we get spatial masks that we expect.
@@ -262,9 +262,9 @@ class TestVelociraptor:
 
 class TestVelociraptorWithSWIFTGalaxy:
     """
-    Most interaction between the halo finder and swiftgalaxy.reader.SWIFTGalaxy
+    Most interaction between the halo catalogue and swiftgalaxy.reader.SWIFTGalaxy
     is tested using the toysnap.ToyHF testing class (that inherits from
-    swiftgalaxy.halo_finders._HaloFinder). Here we just want to test anything
+    swiftgalaxy.halo_catalogues._HaloCatalogue). Here we just want to test anything
     velociraptor-specific.
     """
 
@@ -274,7 +274,7 @@ class TestVelociraptorWithSWIFTGalaxy:
         SWIFTGalaxy object.
         """
         assert_allclose_units(
-            sg_vr.halo_finder.masses.mvir,
+            sg_vr.halo_catalogue.masses.mvir,
             1.0e12 * u.Msun,
             rtol=reltol_nd,
             atol=abstol_m,
@@ -383,9 +383,9 @@ class TestCaesar:
 
 class TestCaesarWithSWIFTGalaxy:
     """
-    Most interaction between the halo finder and swiftgalaxy.reader.SWIFTGalaxy
+    Most interaction between the halo catalogue and swiftgalaxy.reader.SWIFTGalaxy
     is tested using the toysnap.ToyHF testing class (that inherits from
-    swiftgalaxy.halo_finders._HaloFinder). Here we just want to test anything
+    swiftgalaxy.halo_catalogues._HaloCatalogue). Here we just want to test anything
     caesar-specific.
     """
 
@@ -394,16 +394,16 @@ class TestCaesarWithSWIFTGalaxy:
         Check that exposing the halo properties is working, through the
         SWIFTGalaxy object.
         """
-        if hasattr(sg_caesar.halo_finder, "virial_quantities"):
+        if hasattr(sg_caesar.halo_catalogue, "virial_quantities"):
             assert_allclose_units(
-                sg_caesar.halo_finder.virial_quantities["m200c"],
+                sg_caesar.halo_catalogue.virial_quantities["m200c"],
                 1.0e12 * u.Msun,
                 rtol=reltol_nd,
                 atol=abstol_m,
             )
-        elif hasattr(sg_caesar.halo_finder, "masses"):
+        elif hasattr(sg_caesar.halo_catalogue, "masses"):
             assert_allclose_units(
-                sg_caesar.halo_finder.masses["total"],
+                sg_caesar.halo_catalogue.masses["total"],
                 n_g * m_g + n_s * m_s + n_bh * m_bh,
                 rtol=reltol_nd,
                 atol=abstol_m,
@@ -417,7 +417,7 @@ class TestCaesarWithSWIFTGalaxy:
         Check that the bound_only default mask works with the spatial mask,
         giving the expected shapes for arrays.
         """
-        expected_dm = 0 if sg_caesar.halo_finder.group_type == "galaxy" else n_dm
+        expected_dm = 0 if sg_caesar.halo_catalogue.group_type == "galaxy" else n_dm
         assert (
             getattr(sg_caesar, particle_type).masses.size
             == dict(gas=n_g, dark_matter=expected_dm, stars=n_s, black_holes=n_bh)[

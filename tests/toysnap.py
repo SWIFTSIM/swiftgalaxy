@@ -7,7 +7,7 @@ from astropy import units as U
 from swiftsimio.objects import cosmo_array
 from swiftsimio import Writer
 from swiftgalaxy import MaskCollection
-from swiftgalaxy.halo_finders import _HaloFinder
+from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftsimio.units import cosmo_units
 
 soap_script_path = "/cosma/home/durham/dc-oman1/code/SOAP-sgsoap-dev/"
@@ -49,7 +49,7 @@ age = u.unyt_quantity.from_astropy(
 )
 
 
-class ToyHF(_HaloFinder):
+class ToyHF(_HaloCatalogue):
     def __init__(self, snapfile=toysnap_filename):
         self.snapfile = snapfile
         super().__init__()

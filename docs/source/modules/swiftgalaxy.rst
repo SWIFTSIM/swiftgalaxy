@@ -13,6 +13,6 @@ Submodules
 .. toctree::
    :maxdepth: 0
 
-   swiftgalaxy.halo_finders
+   swiftgalaxy.halo_catalogues
    swiftgalaxy.masks
    swiftgalaxy.reader

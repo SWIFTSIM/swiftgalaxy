@@ -29,7 +29,7 @@ from swiftsimio.reader import (
 )
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from swiftsimio.masks import SWIFTMask
-from swiftgalaxy.halo_finders import _HaloFinder
+from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftgalaxy.masks import MaskCollection
 
 from typing import Union, Any, Optional, Set
@@ -987,13 +987,13 @@ class SWIFTGalaxy(SWIFTDataset):
     snapshot_filename: :obj:`str`
         Name of file containing snapshot.
 
-    halo_finder: :class:`~swiftgalaxy.halo_finders._HaloFinder`
-        A halo_finder instance from :mod:`swiftgalaxy.halo_finders`, e.g. a
-        :class:`swiftgalaxy.halo_finders.Velociraptor` instance.
+    halo_catalogue: :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+        A halo_catalogue instance from :mod:`swiftgalaxy.halo_catalogues`, e.g. a
+        :class:`swiftgalaxy.halo_catalogues.SOAP` instance.
 
     auto_recentre: :obj:`bool`, default: ``True``
         If ``True``, the coordinate system will be automatically recentred on
-        the position *and* velocity centres defined by the ``halo_finder``.
+        the position *and* velocity centres defined by the ``halo_catalogue``.
 
     transforms_like_coordinates: :obj:`set` [:obj:`str`], \
     default: ``set()``
@@ -1029,7 +1029,7 @@ class SWIFTGalaxy(SWIFTDataset):
     --------
     :class:`_SWIFTGroupDatasetsHelper`
     :class:`_SWIFTNamedColumnDatasetHelper`
-    :mod:`swiftgalaxy.halo_finders`
+    :mod:`swiftgalaxy.halo_catalogues`
 
     Examples
     --------
@@ -1059,10 +1059,10 @@ class SWIFTGalaxy(SWIFTDataset):
         mygalaxy.gas.particle_ids
         mygalaxy.dark_matter.coordinates
 
-    However, information from the halo finder is used to select only the
+    However, information from the halo catalogue is used to select only the
     particles identified as bound to this galaxy. The coordinate system is
     centred in both position and velocity on the centre and peculiar velocity
-    of the galaxy, as determined by the halo finder. The coordinate system can
+    of the galaxy, as determined by the halo catalogue. The coordinate system can
     be further manipulated, and all particle arrays will stay in a consistent
     reference frame at all times.
 
@@ -1074,20 +1074,20 @@ class SWIFTGalaxy(SWIFTDataset):
         mygalaxy.units
         mygalaxy.metadata
 
-    The halo finder interface is accessible as shown below. What this interface
-    looks like depends on the halo finder being used, but will provide values
+    The halo catalogue interface is accessible as shown below. What this interface
+    looks like depends on the halo catalogue being used, but will provide values
     for the individual galaxy of interest.
 
     ::
 
-        mygalaxy.halo_finder
+        mygalaxy.halo_catalogue
 
-    In this case with :class:`~swiftgalaxy.halo_finders.Velociraptor`, we can
+    In this case with :class:`~swiftgalaxy.halo_catalogues.Velociraptor`, we can
     get the virial mass like this:
 
     ::
 
-        mygalaxy.halo_finder.masses.mvir
+        mygalaxy.halo_catalogue.masses.mvir
 
     For a complete description of available features see the narrative
     documentation pages.
@@ -1096,7 +1096,7 @@ class SWIFTGalaxy(SWIFTDataset):
     def __init__(
         self,
         snapshot_filename: str,
-        halo_finder: _HaloFinder,
+        halo_catalogue: _HaloCatalogue,
         auto_recentre: bool = True,
         transforms_like_coordinates: Set[str] = set(),
         transforms_like_velocities: Set[str] = set(),
@@ -1113,18 +1113,18 @@ class SWIFTGalaxy(SWIFTDataset):
     ):
         self._particle_dataset_helpers = dict()
         self.snapshot_filename: str = snapshot_filename
-        self.halo_finder: _HaloFinder = halo_finder
+        self.halo_catalogue: _HaloCatalogue = halo_catalogue
         self.auto_recentre: bool = auto_recentre
         self._spatial_mask: SWIFTMask
         if _spatial_mask is not None:
             self._spatial_mask = _spatial_mask
         else:
-            if self.halo_finder._user_spatial_offsets is not None:
-                self._spatial_mask = self.halo_finder._get_user_spatial_mask(
+            if self.halo_catalogue._user_spatial_offsets is not None:
+                self._spatial_mask = self.halo_catalogue._get_user_spatial_mask(
                     self.snapshot_filename
                 )
             else:
-                self._spatial_mask = self.halo_finder._get_spatial_mask(
+                self._spatial_mask = self.halo_catalogue._get_spatial_mask(
                     self.snapshot_filename
                 )
         self.transforms_like_coordinates: Set[str] = {coordinates_dataset_name}.union(
@@ -1184,7 +1184,7 @@ class SWIFTGalaxy(SWIFTDataset):
         if _extra_mask is not None:
             self._extra_mask = _extra_mask
         else:
-            self._extra_mask = self.halo_finder._get_extra_mask(self)
+            self._extra_mask = self.halo_catalogue._get_extra_mask(self)
             if self._extra_mask is not None:
                 # need to mask any already loaded data
                 for particle_name in self.metadata.present_group_names:
@@ -1225,8 +1225,8 @@ class SWIFTGalaxy(SWIFTDataset):
                 )
 
         if auto_recentre:
-            self.recentre(self.halo_finder.centre)
-            self.recentre_velocity(self.halo_finder.velocity_centre)
+            self.recentre(self.halo_catalogue.centre)
+            self.recentre_velocity(self.halo_catalogue.velocity_centre)
 
         self._initialised: bool = True
 
@@ -1244,7 +1244,7 @@ class SWIFTGalaxy(SWIFTDataset):
     def __copy__(self) -> "SWIFTGalaxy":
         SG = SWIFTGalaxy(
             self.snapshot_filename,
-            self.halo_finder,
+            self.halo_catalogue,
             auto_recentre=False,  # transforms overwritten below
             transforms_like_coordinates=self.transforms_like_coordinates,
             transforms_like_velocities=self.transforms_like_velocities,

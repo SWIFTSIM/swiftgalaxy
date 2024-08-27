@@ -1,6 +1,6 @@
-swiftgalaxy.halo\_finders module
-================================
+swiftgalaxy.halo\_catalogues module
+===================================
 
-.. automodule:: swiftgalaxy.halo_finders
+.. automodule:: swiftgalaxy.halo_catalogues
    :members:
    :show-inheritance:

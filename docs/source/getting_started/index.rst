@@ -74,7 +74,7 @@ Like a :class:`~swiftsimio.reader.SWIFTDataset`, the particle datasets are acces
     sg.gas.particle_ids
     sg.dark_matter.coordinates
 
-However, information from the halo finder is used to select only the particles identified as bound to this galaxy. The coordinate system is centred in both position and velocity on the centre and peculiar velocity of the galaxy, as determined by the halo finder. The coordinate system can be further manipulated, and all particle arrays will stay in a consistent reference frame at all times.
+However, information from the halo catalogue is used to select only the particles identified as bound to this galaxy. The coordinate system is centred in both position and velocity on the centre and peculiar velocity of the galaxy, as determined by the halo finder. The coordinate system can be further manipulated, and all particle arrays will stay in a consistent reference frame at all times.
 
 Again like for a :class:`~swiftsimio.reader.SWIFTDataset`, the units and metadata are available:
 
@@ -83,16 +83,16 @@ Again like for a :class:`~swiftsimio.reader.SWIFTDataset`, the units and metadat
     sg.units
     sg.metadata
 
-The halo finder interface is accessible as shown below. What this interface looks like depends on the halo finder being used, but will provide values for the individual galaxy of interest.
+The halo catalogue interface is accessible as shown below. What this interface looks like depends on the halo finder being used, but will provide values for the individual galaxy of interest.
 
 .. code-block:: python
 
-    sg.halo_finder
+    sg.halo_catalogue
 
-In this case with :class:`~swiftgalaxy.halo_finders.Velociraptor`, we can get the virial mass like this:
+In this case with :class:`~swiftgalaxy.halo_catalogues.Velociraptor`, we can get the virial mass like this:
 
 .. code-block:: python
 
-    sg.halo_finder.masses.mvir
+    sg.halo_catalogue.masses.mvir
 
 The further features of a :class:`~swiftgalaxy.reader.SWIFTGalaxy` are detailed in the next sections.
