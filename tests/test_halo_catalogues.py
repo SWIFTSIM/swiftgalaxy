@@ -80,6 +80,7 @@ class TestHaloCatalogues:
         """
         # override to select both cells in the test snapshot
         hf._user_spatial_offsets = cosmo_array([[-5, 5], [-5, 5], [-5, 5]], u.Mpc)
+        hf.extra_mask = None
         sg = SWIFTGalaxy(toysnap_filename, hf)
         generated_spatial_mask = sg._spatial_mask
         with h5py.File(toysnap_filename, "r") as snap:

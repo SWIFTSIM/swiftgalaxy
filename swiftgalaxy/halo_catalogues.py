@@ -161,11 +161,11 @@ class SOAP(_HaloCatalogue):
 
     @property
     def centre(self) -> cosmo_array:
-        return self._swift_dataset.bound_subhalo.centre_of_mass
+        return self._swift_dataset.bound_subhalo.centre_of_mass.squeeze()
 
     @property
     def velocity_centre(self) -> cosmo_array:
-        return self._swift_dataset.bound_subhalo.centre_of_mass_velocity
+        return self._swift_dataset.bound_subhalo.centre_of_mass_velocity.squeeze()
 
     def __getattr__(self, attr: str) -> Any:
         # Invoked if attribute not found.
