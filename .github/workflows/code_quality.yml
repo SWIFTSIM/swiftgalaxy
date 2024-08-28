@@ -40,6 +40,8 @@ jobs:
     steps:
     - name: Checkout swiftgalaxy
       uses: actions/checkout@v4
+      with:
+        path: swiftgalaxy
     - name: Checkout SOAP (dependency)
       uses: actions/checkout@v4
       with:
@@ -63,9 +65,10 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        if [ -f optional_requirements.txt ]; then pip install -r optional_requirements.txt; fi
-        pip install -e .
+        if [ -f swiftgalaxy/requirements.txt ]; then pip install -r swiftgalaxy/requirements.txt; fi
+        if [ -f swiftgalaxy/optional_requirements.txt ]; then pip install -r swiftgalaxy/optional_requirements.txt; fi
+        pip install -e swiftgalaxy/
     - name: Test with pytest
       run: |
-        pytest tests/
+        cd swiftgalaxy
+        pytest
