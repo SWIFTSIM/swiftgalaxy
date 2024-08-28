@@ -26,7 +26,7 @@ except AssertionError:
     y = os.listdir()
     os.chdir("..")
     z = os.listdir()
-    raise RuntimeError(x + "\n\n" + y + "\n\n" + z)
+    raise RuntimeError(x, y, z)
 
 toysnap_filename = "toysnap.hdf5"
 toyvr_filebase = "toyvr"
