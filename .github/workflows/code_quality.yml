@@ -67,7 +67,7 @@ jobs:
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         if [ -f optional_requirements.txt ]; then pip install -r optional_requirements.txt; fi
-        pip install -e .
+        pip install -e swiftgalaxy/
     - name: Test with pytest
       run: |
-        pytest
+        pytest swiftgalaxy/
