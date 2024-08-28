@@ -39,6 +39,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Checkout SOAP
+      uses: actions/checkout@v4
+      with:
+        repository: SWIFTSIM/SOAP
+	path: SOAP
+	ref: merge_halo_finders
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:

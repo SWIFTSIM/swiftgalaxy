@@ -10,7 +10,15 @@ from swiftgalaxy import MaskCollection
 from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftsimio.units import cosmo_units
 
-soap_script_path = "/cosma/home/durham/dc-oman1/code/SOAP-sgsoap-dev/"
+
+cosma_soap_script_path = "/cosma/home/durham/dc-oman1/code/SOAP-sgsoap-dev/"
+if os.path.exists(cosma_soap_script_path):
+    soap_script_path = cosma_soap_script_path
+try:
+    soap_script_path = os.path.join(os.environ["GITHUB_WORKSPACE"], "SOAP")
+except KeyError:
+    pass  # not on github CI
+assert os.path.exists(soap_script_path)
 
 toysnap_filename = "toysnap.hdf5"
 toyvr_filebase = "toyvr"
