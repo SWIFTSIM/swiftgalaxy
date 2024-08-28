@@ -419,8 +419,8 @@ def create_toysnap(
         hifd.attrs["h-scale exponent"] = np.array([0.0], dtype=float)
         if withfof:
             for ptype, n_group, n_notgroup in [
-                (0, n_g, n_g_all - n_g),
-                (1, n_dm, n_dm_all - n_dm),
+                (0, n_g, n_g_b),
+                (1, n_dm, n_dm_b),
                 (4, n_s, 0),
                 (5, n_bh, 0),
             ]:
@@ -428,8 +428,9 @@ def create_toysnap(
                     "FOFGroupIDs",
                     data=np.concatenate(
                         (
+                            np.ones(n_notgroup // 2, dtype=int) * 2**31 - 1,
                             np.ones(n_group, dtype=int),
-                            np.ones(n_notgroup, dtype=int) * 2**31 - 1,
+                            np.ones(n_notgroup // 2, dtype=int) * 2**31 - 1,
                         )
                     ),
                     dtype=int,
@@ -1699,14 +1700,16 @@ def create_toysoap(
             fof_ids = {
                 0: np.concatenate(
                     (
-                        np.ones(n_g_all - n_g, dtype=int) * 2147483647,
+                        np.ones(n_g_b // 2, dtype=int) * 2147483647,
                         np.ones(n_g, dtype=int),
+                        np.ones(n_g_b // 2, dtype=int) * 2147483647,
                     )
                 ),
                 1: np.concatenate(
                     (
-                        np.ones(n_dm_all - n_dm, dtype=int) * 2147483647,
+                        np.ones(n_dm_b // 2, dtype=int) * 2147483647,
                         np.ones(n_dm, dtype=int),
+                        np.ones(n_dm_b // 2, dtype=int) * 2147483647,
                     )
                 ),
                 4: np.ones(n_s, dtype=int),
@@ -1715,14 +1718,16 @@ def create_toysoap(
             grnrs = {
                 0: np.concatenate(
                     (
-                        -np.ones(n_g_all - n_g, dtype=int),
+                        -np.ones(n_g_b // 2, dtype=int),
                         np.zeros(n_g, dtype=int),
+                        -np.ones(n_g_b // 2, dtype=int),
                     )
                 ),
                 1: np.concatenate(
                     (
-                        -np.ones(n_dm_all - n_dm, dtype=int),
+                        -np.ones(n_dm_b // 2, dtype=int),
                         np.zeros(n_dm, dtype=int),
+                        -np.ones(n_dm_b // 2, dtype=int),
                     )
                 ),
                 4: np.zeros(n_s, dtype=int),
@@ -1731,14 +1736,16 @@ def create_toysoap(
             ranks = {
                 0: np.concatenate(
                     (
-                        -np.ones(n_g_all - n_g, dtype=int),
+                        -np.ones(n_g_b // 2, dtype=int),
                         np.arange(n_g, dtype=int),
+                        -np.ones(n_g_b // 2, dtype=int),
                     )
                 ),
                 1: np.concatenate(
                     (
-                        -np.ones(n_dm_all - n_dm, dtype=int),
+                        -np.ones(n_dm_b // 2, dtype=int),
                         np.arange(n_dm, dtype=int),
+                        -np.ones(n_dm_b // 2, dtype=int),
                     )
                 ),
                 4: np.arange(n_s, dtype=int),
