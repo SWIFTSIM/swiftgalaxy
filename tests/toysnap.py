@@ -730,7 +730,9 @@ def create_toycaesar(filename=toycaesar_filename):
         f.attrs["nclouds"] = 0
         f.attrs["ngalaxies"] = 1
         f.attrs["nhalos"] = 1
-        with open("tests/json/caesar_unit_registry.json") as json:
+        with open(
+            os.path.join(os.path.dirname(__file__), "json/caesar_unit_registry.json")
+        ) as json:
             f.attrs["unit_registry_json"] = json.read()
         f.create_group("galaxy_data")
         f["/galaxy_data"].create_dataset("GroupID", data=np.array([0], dtype=int))

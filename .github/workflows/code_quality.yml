@@ -38,14 +38,14 @@ jobs:
         python-version: [3.9, "3.10", "3.11", "3.12"]
 
     steps:
+    - name: Checkout swiftgalaxy
+      uses: actions/checkout@v4
     - name: Checkout SOAP (dependency)
       uses: actions/checkout@v4
       with:
         repository: SWIFTSIM/SOAP
         path: SOAP
         ref: merge_halo_finders
-    - name: Checkout swiftgalaxy
-      uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
