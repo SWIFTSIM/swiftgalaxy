@@ -464,12 +464,112 @@ class TestStandalone:
 
 
 class TestSOAP:
-    @pytest.mark.xfail
-    def test_something(self):
-        raise NotImplementedError
+    def test_load(self, soap):
+        """
+        Check that the loading function is doing it's job.
+        """
+        # _load called during super().__init__
+        assert soap._swift_dataset is not None
+
+    @pytest.mark.parametrize(
+        "centre_type, expected",
+        (
+            ("bound_subhalo.centre_of_mass", 2.001),
+            ("exclusive_sphere_100kpc.centre_of_mass", 2.003),
+            ("inclusive_sphere_100kpc.centre_of_mass", 2.011),
+            ("input_halos_fof.centres", 2.0),
+            ("input_halos.halo_centre", 2.0),
+            ("projected_aperture_50kpc_projx.centre_of_mass", 2.027),
+            ("spherical_overdensity_200_crit.centre_of_mass", 2.032),
+            ("spherical_overdensity_bn98.centre_of_mass", 2.038),
+        ),
+    )
+    def test_centre_types(self, soap, centre_type, expected):
+        """
+        Check that centres of sample types retrieve expected values.
+        """
+        soap.centre_type = centre_type
+        assert_allclose_units(
+            soap.centre,
+            cosmo_array([expected, expected, expected], u.Mpc),
+            rtol=reltol_nd,
+            atol=abstol_c,
+        )
+
+    @pytest.mark.parametrize(
+        "velocity_centre_type, expected",
+        (
+            ("bound_subhalo.centre_of_mass_velocity", 201),
+            ("exclusive_sphere_100kpc.centre_of_mass_velocity", 203),
+            ("inclusive_sphere_100kpc.centre_of_mass_velocity", 211),
+            ("projected_aperture_50kpc_projx.centre_of_mass_velocity", 227),
+            ("spherical_overdensity_200_crit.centre_of_mass_velocity", 232),
+            ("spherical_overdensity_bn98.centre_of_mass_velocity", 238),
+        ),
+    )
+    def test_velocity_centre_types(self, soap, velocity_centre_type, expected):
+        """
+        Check that velocity centres of sample types retrieve expected values.
+        """
+        soap.velocity_centre_type = velocity_centre_type
+        assert_allclose_units(
+            soap.velocity_centre,
+            cosmo_array([expected, expected, expected], u.km / u.s),
+            rtol=reltol_nd,
+            atol=abstol_v,
+        )
+
+    def test_catalogue_exposed(self, soap):
+        """
+        Check that exposing the halo properties is working.
+        """
+        # pick a couple of attributes to check
+        assert_allclose_units(
+            soap.input_halos_hbtplus.host_fofid,
+            cosmo_array([1], comoving=False),
+        )
+        assert_allclose_units(
+            soap.bound_subhalo.centre_of_mass,
+            cosmo_array([[2.001, 2.001, 2.001]], u.Mpc, comoving=False),
+            rtol=reltol_nd,
+            atol=abstol_c,
+        )
 
 
 class TestSOAPWithSWIFTGalaxy:
-    @pytest.mark.xfail
-    def test_something(self):
-        raise NotImplementedError
+    """
+    Most interaction between the halo catalogue and swiftgalaxy.reader.SWIFTGalaxy
+    is tested using the toysnap.ToyHF testing class (that inherits from
+    swiftgalaxy.halo_catalogues._HaloCatalogue). Here we just want to test anything
+    soap-specific.
+    """
+
+    def test_catalogue_exposed(self, sg_soap):
+        """
+        Check that exposing the halo properties is working, through the
+        SWIFTGalaxy object.
+        """
+        # pick a couple of attributes to check
+        assert_allclose_units(
+            sg_soap.halo_catalogue.input_halos_hbtplus.host_fofid,
+            cosmo_array([1], comoving=False),
+        )
+        assert_allclose_units(
+            sg_soap.halo_catalogue.bound_subhalo.centre_of_mass,
+            cosmo_array([[2.001, 2.001, 2.001]], u.Mpc, comoving=False),
+            rtol=reltol_nd,
+            atol=abstol_c,
+        )
+
+    @pytest.mark.parametrize("particle_type", present_particle_types.values())
+    def test_masks_compatible(self, sg_soap, particle_type):
+        """
+        Check that the bound_only default mask works with the spatial mask,
+        giving the expected shapes for arrays.
+        """
+        assert (
+            getattr(sg_soap, particle_type).masses.size
+            == dict(gas=10000, dark_matter=10000, stars=10000, black_holes=1)[
+                particle_type
+            ]
+        )

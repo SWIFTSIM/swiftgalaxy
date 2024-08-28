@@ -101,15 +101,19 @@ class _HaloCatalogue(ABC):
 
 class SOAP(_HaloCatalogue):
 
-    membership_file_base: str
     soap_file: str
     halo_index: int
+    centre_type: str
+    velocity_centre_type: str
+    _swift_dataset: SWIFTDataset
 
     def __init__(
         self,
         soap_file: Optional[str] = None,
         halo_index: Optional[int] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
+        centre_type: str = "bound_subhalo.centre_of_mass",
+        velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
     ) -> None:
         if soap_file is not None:
             self.soap_file = soap_file
@@ -120,6 +124,8 @@ class SOAP(_HaloCatalogue):
             self.halo_index = halo_index
         else:
             raise ValueError("Provide a halo_index.")
+        self.centre_type = centre_type
+        self.velocity_centre_type = velocity_centre_type
         super().__init__(extra_mask=extra_mask)
         return
 
@@ -161,11 +167,17 @@ class SOAP(_HaloCatalogue):
 
     @property
     def centre(self) -> cosmo_array:
-        return self._swift_dataset.bound_subhalo.centre_of_mass.squeeze()
+        obj = self._swift_dataset
+        for attr in self.centre_type.split("."):
+            obj = getattr(obj, attr)
+        return obj.squeeze()
 
     @property
     def velocity_centre(self) -> cosmo_array:
-        return self._swift_dataset.bound_subhalo.centre_of_mass_velocity.squeeze()
+        obj = self._swift_dataset
+        for attr in self.velocity_centre_type.split("."):
+            obj = getattr(obj, attr)
+        return obj.squeeze()
 
     def __getattr__(self, attr: str) -> Any:
         # Invoked if attribute not found.
