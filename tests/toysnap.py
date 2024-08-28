@@ -1375,7 +1375,8 @@ def create_toysoap(
                 "/SO/50_crit",
                 "/SO/5xR_500_crit",
                 "/SO/BN98",
-            ]
+            ],
+            1,
         ):
             com_ds = f[so].create_dataset(
                 "CentreOfMass",
