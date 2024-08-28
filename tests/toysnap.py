@@ -18,8 +18,15 @@ try:
     soap_script_path = os.path.join(os.environ["GITHUB_WORKSPACE"], "SOAP", "SOAP")
 except KeyError:
     pass  # not on github CI
-print(soap_script_path)
-assert os.path.exists(soap_script_path)
+try:
+    assert os.path.exists(soap_script_path)
+except AssertionError:
+    x = os.listdir()
+    os.chdir("..")
+    y = os.listdir()
+    os.chdir("..")
+    z = os.listdir()
+    raise RuntimeError(x + "\n\n" + y + "\n\n" + z)
 
 toysnap_filename = "toysnap.hdf5"
 toyvr_filebase = "toyvr"
