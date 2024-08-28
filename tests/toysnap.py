@@ -15,9 +15,10 @@ cosma_soap_script_path = "/cosma/home/durham/dc-oman1/code/SOAP-sgsoap-dev/"
 if os.path.exists(cosma_soap_script_path):
     soap_script_path = cosma_soap_script_path
 try:
-    soap_script_path = os.path.join(os.environ["GITHUB_WORKSPACE"], "SOAP")
+    soap_script_path = os.path.join(os.environ["GITHUB_WORKSPACE"], "SOAP", "SOAP")
 except KeyError:
     pass  # not on github CI
+print(soap_script_path)
 assert os.path.exists(soap_script_path)
 
 toysnap_filename = "toysnap.hdf5"
