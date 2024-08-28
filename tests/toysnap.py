@@ -1454,7 +1454,7 @@ def create_toysoap(
         f["Cells"].create_group("Counts")
         f["Cells/Counts"].create_dataset(
             "Subhalos",
-            data=np.array([1, 0, 0]),
+            data=np.array([1, 0]),
             dtype=int,
         )
         f["Cells"].create_group("Files")
