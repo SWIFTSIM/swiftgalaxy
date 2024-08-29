@@ -6,4 +6,4 @@ numba
 scipy
 h5py
 unyt
-swiftsimio
+git+https://github.com/SWIFTSIM/swiftsimio.git@load_fof_catalogues
