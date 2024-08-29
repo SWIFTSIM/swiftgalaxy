@@ -195,7 +195,7 @@ These can be used as, for example:
 	centre_type="",  # centre of mass (no suffix in Caesar catalogue)
     )
 
-To select *all* particles (not only bound particles) in an aperture around the halo of interest, see the :doc:`example below <index:Selecting particles within an aperture>`.
+To select *all* particles (not only bound particles) in an aperture around the halo of interest, see the :ref:`example below <aperture-example>`.
 
 Velociraptor
 ------------
@@ -260,7 +260,7 @@ These can be used as, for example:
 	centre_type="mbp"
     )
 
-To select *all* particles (not only bound particles) in an aperture around the halo of interest, see the :doc:`example below <index:Selecting particles within an aperture>`.
+To select *all* particles (not only bound particles) in an aperture around the halo of interest, see the :ref:`example below <aperture-example>`.
 
 Other halo catalogues
 ---------------------
