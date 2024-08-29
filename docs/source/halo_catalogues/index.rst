@@ -20,7 +20,7 @@ The `SOAP`_ catalogue format is the preferred catalogue format of the `SWIFT com
 
 .. warning ::
 
-   At the time of writing :mod:`swiftsimio` support for reading SOAP catalogues is functional but still under active development. The `master` branch of the :mod:`swiftsimio` repository does not yet allow reading SOAP catalogues. To use :mod:`swiftgalaxy` with SOAP catalogues currently requires installing the `load_fof_catalogues`_ branch of :mod:`swiftsimio`. One way to do this is ``pip install git+https://github.com/SWIFTSIM/swiftsimio.git@load_fof_catalogues``.
+   At the time of writing :mod:`swiftsimio` support for reading SOAP catalogues is functional but still under active development. The ``master`` branch of the :mod:`swiftsimio` repository does not yet allow reading SOAP catalogues. To use :mod:`swiftgalaxy` with SOAP catalogues currently requires installing the `load_fof_catalogues`_ branch of :mod:`swiftsimio`. One way to do this is ``pip install git+https://github.com/SWIFTSIM/swiftsimio.git@load_fof_catalogues``.
 
 Setting up an instance of the helper class is straightforward. We'll assume a SOAP catalogue called :file:`halo_properties_0123.hdf5`, and suppose that we're interested in the first object in the catalogue (row ``0``):
 
@@ -55,7 +55,7 @@ Usually the :class:`~swiftgalaxy.halo_catalogues.SOAP` object is used to create 
 
 .. note::
 
-   SOAP records which particles belong to each individual halo in a set of "membership" files, usually found alongside the halo catalogue (e.g. :file:`halo_properties_0123.hdf5`) in a subdirectory, e.g. :file:`membership_0123/membership_0123.hdf5` (there may be several membership files ending in ``.X.hdf5`` if the raw snapshot was originally written in several files). :mod:`swiftgalaxy` expects to find the information contained in these files directly in the (single, monolithic) simulation snapshot file. The SOAP `code distribution`_ comes with a script ``make_virtual_snapshot.py`` that can create the necessary snapshot file containing the particle membership information. The file is "virtual" in the sense that it doesn't directly store (i.e. copy) the data in the snapshot and membership files but instead contains hyperlinks to the existing data files, providing a single file interface to all of the relevant information. In our example we could create the "virtual" snapshot file as:
+   SOAP records which particles belong to each individual halo in a set of "membership" files, usually found alongside the halo catalogue (e.g. :file:`halo_properties_0123.hdf5`) in a subdirectory, e.g. :file:`membership_0123/membership_0123.hdf5` (there may be several membership files ending in ``.X.hdf5``, where ``X`` is replaced by integers, if the raw snapshot was originally written in several files). :mod:`swiftgalaxy` expects to find the information contained in these files directly in the (single, monolithic) simulation snapshot file. The SOAP `code distribution`_ comes with a script ``make_virtual_snapshot.py`` that can create the necessary snapshot file containing the particle membership information. The file is "virtual" in the sense that it doesn't directly store (i.e. copy) the data in the snapshot and membership files but instead contains hyperlinks to the existing data files, providing a single file interface to all of the relevant information. In our example we could create the "virtual" snapshot file as:
 
    .. code-block:: bash
 
@@ -68,12 +68,12 @@ Usually the :class:`~swiftgalaxy.halo_catalogues.SOAP` object is used to create 
 
 .. warning::
 
-   At the time of writing, the script ``make_virtual_snapshot.py`` is not in the ``master`` branch of the ``SOAP`` catalogue. It can be found in the `merge_halo_finders`_ branch. The script may be developed further (e.g. it currently does not handle snapshots that were initially written as a single file), so the usage instructions above may become outdated.
+   At the time of writing, the script ``make_virtual_snapshot.py`` is not in the ``master`` branch of the ``SOAP`` repository. It can be found in the `merge_halo_finders`_ branch. The script may be developed further (e.g. it currently does not handle snapshots that were initially written as a single file), so the usage instructions above may become outdated.
 
 .. _code distribution: https://github.com/SWIFTSIM/SOAP
 .. _merge_halo_finders: https://github.com/SWIFTSIM/SOAP/tree/merge_halo_finders
 
-When working with a :class:`SWIFTGalaxy` object the interface to the integrated properties is exposed through the ``halo_catalogue`` attribute, for example:
+When working with a :class:`~swiftgalaxy.reader.SWIFTGalaxy` object the interface to the integrated properties is exposed through the ``halo_catalogue`` attribute, for example:
 
 .. code-block:: python
 
