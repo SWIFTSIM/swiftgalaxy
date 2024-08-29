@@ -12,11 +12,18 @@ SWIFTGalaxy
 
 .. INTRO_START_LABEL
 
-SWIFTGalaxy is a module that extends SWIFTSimIO_ tailored to analyses of particles belonging to individual simulated galaxies. It inherits from and extends the functionality of the ``SWIFTDataset``. It understands the output of a halo finder (supported: `Velociraptor`_, `Caesar`_; planned support: `SOAP`) and therefore which particles belong to a galaxy, and its integrated properties. The particles occupy a coordinate frame that is enforced to be consistent, such that particles loaded on-the-fly will match e.g. rotations and translations of particles already in memory. Intuitive masking of particle datasets is also enabled. Finally, some utilities to make working in cylindrical and spherical coordinate systems more convenient are also provided.
+SWIFTGalaxy is a module that extends SWIFTSimIO_ tailored to analyses of particles belonging to individual simulated galaxies. It inherits from and extends the functionality of the ``SWIFTDataset``. It understands the content of halo catalogues (supported: `Velociraptor`_, `Caesar`_, `SOAP`_) and therefore which particles belong to a galaxy or other group of particles, and its integrated properties. The particles occupy a coordinate frame that is enforced to be consistent, such that particles loaded on-the-fly will match e.g. rotations and translations of particles already in memory. Intuitive masking of particle datasets is also enabled. Finally, some utilities to make working in cylindrical and spherical coordinate systems more convenient are also provided.
+
+.. warning::
+
+   In order to support use of SOAP halo catalogues this version (1.1.0) of SWIFTGalaxy depends on the `load_fof_catalogues`_ branch of SWIFTSimIO. This dependency will be automatically handled by ``pip``, but to use SOAP catalogues in SWIFTGalaxy you **must** install from github. One way to do this is ``pip install git+https://github.com/SWIFTSIM/swiftgalaxy.git``. PyPI_ does not allow depending on github repositories so SWIFTGalaxy v1.0.0 will not be released on PyPI (and therefore cannot be installed with ``pip install swiftgalaxy``) until the load_fof_catalogues branch is merged into SWIFTSimIO and itself released on PyPI. You can use the PyPI versions of both SWIFTGalaxy and SWIFTSimIO (these are compatible) but in this case SOAP halo catalogues are not supported.
 
 .. _SWIFTSimIO: http://swiftsimio.readthedocs.org
 .. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/abstract
 .. _Caesar: https://caesar.readthedocs.io/en/latest/
+.. _SOAP: https://github.com/SWIFTSIM/SOAP
+.. _load_fof_catalogues: https://github.com/SWIFTSIM/swiftsimio/tree/load_fof_catalogues
+.. _PyPI: https://pypi.org
 
 .. INTRO_END_LABEL
 

@@ -25,11 +25,11 @@ from swiftsimio import metadata as swiftsimio_metadata
 from swiftsimio.reader import (
     SWIFTDataset,
     __SWIFTNamedColumnDataset,
-    __SWIFTParticleDataset,
+    __SWIFTGroupDatasets,
 )
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from swiftsimio.masks import SWIFTMask
-from swiftgalaxy.halo_finders import _HaloFinder
+from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftgalaxy.masks import MaskCollection
 
 from typing import Union, Any, Optional, Set
@@ -179,10 +179,10 @@ class _SWIFTNamedColumnDatasetHelper(object):
     def __init__(
         self,
         named_column_dataset: "__SWIFTNamedColumnDataset",
-        particle_dataset_helper: "_SWIFTParticleDatasetHelper",
+        particle_dataset_helper: "_SWIFTGroupDatasetsHelper",
     ) -> None:
         self._named_column_dataset: __SWIFTNamedColumnDataset = named_column_dataset
-        self._particle_dataset_helper: "_SWIFTParticleDatasetHelper" = (
+        self._particle_dataset_helper: "_SWIFTGroupDatasetsHelper" = (
             particle_dataset_helper
         )
         self._initialised: bool = True
@@ -252,15 +252,15 @@ class _SWIFTNamedColumnDatasetHelper(object):
         return getattr(self._particle_dataset_helper._data_copy(mask=mask), self.name)
 
 
-class _SWIFTParticleDatasetHelper(object):
+class _SWIFTGroupDatasetsHelper(object):
     """
     A wrapper class to enable :class:`SWIFTGalaxy`
-    functionality for a :class:`swiftsimio.reader.__SWIFTParticleDataset`.
+    functionality for a :class:`swiftsimio.reader.__SWIFTGroupDatasets`.
 
     Unlike the :class:`SWIFTGalaxy` class that inherits
     directly from :class:`~swiftsimio.reader.SWIFTDataset`, for technical
     reasons this class does *not* inherit
-    :class:`swiftsimio.reader.__SWIFTParticleDataset`. It does, however,
+    :class:`swiftsimio.reader.__SWIFTGroupDatasets`. It does, however,
     expose the functionality of that class by maintaining an instance
     internally and forwarding any attribute lookups that it does not handle
     itself to its internal particle dataset.
@@ -286,7 +286,7 @@ class _SWIFTParticleDatasetHelper(object):
 
     Parameters
     ----------
-    particle_dataset: :class:`swiftsimio.reader.__SWIFTParticleDataset`
+    particle_dataset: :class:`swiftsimio.reader.__SWIFTGroupDatasets`
         The particle dataset to be wrapped.
 
     swiftgalaxy: :class:`SWIFTGalaxy`
@@ -327,14 +327,14 @@ class _SWIFTParticleDatasetHelper(object):
     """
 
     def __init__(
-        self, particle_dataset: "__SWIFTParticleDataset", swiftgalaxy: "SWIFTGalaxy"
+        self, particle_dataset: "__SWIFTGroupDatasets", swiftgalaxy: "SWIFTGalaxy"
     ) -> None:
-        self._particle_dataset: __SWIFTParticleDataset = particle_dataset
+        self._particle_dataset: __SWIFTGroupDatasets = particle_dataset
         self._swiftgalaxy: "SWIFTGalaxy" = swiftgalaxy
         self._named_column_dataset_helpers: dict[
             str, _SWIFTNamedColumnDatasetHelper
         ] = dict()
-        particle_metadata = getattr(self.metadata, f"{self.particle_name}_properties")
+        particle_metadata = getattr(self.metadata, f"{self.group_name}_properties")
         named_columns_names = [
             fn
             for (fn, fp) in zip(
@@ -347,7 +347,7 @@ class _SWIFTParticleDatasetHelper(object):
             named_columns = getattr(self._particle_dataset, named_columns_name)
             # We'll make a custom type to present a nice name to the user.
             particle_nice_name = swiftsimio_metadata.particle_types.particle_name_class[
-                getattr(self.metadata, f"{self.particle_name}_properties").particle_type
+                self.group
             ]
             nice_name = (
                 f"{particle_nice_name}"
@@ -373,7 +373,7 @@ class _SWIFTParticleDatasetHelper(object):
         return self.__str__()
 
     def __getattribute__(self, attr: str) -> Any:
-        particle_name = object.__getattribute__(self, "_particle_dataset").particle_name
+        particle_name = object.__getattribute__(self, "_particle_dataset").group_name
         metadata = object.__getattribute__(self, "_particle_dataset").metadata
         particle_metadata = getattr(metadata, f"{particle_name}_properties")
         particle_dataset = object.__getattribute__(self, "_particle_dataset")
@@ -408,7 +408,7 @@ class _SWIFTParticleDatasetHelper(object):
             return
         field_names = getattr(
             self._particle_dataset.metadata,
-            f"{self._particle_dataset.particle_name}_properties",
+            f"{self._particle_dataset.group_name}_properties",
         ).field_names
         if (attr in field_names) and self._is_namedcolumns(attr):
             self._named_column_dataset_helpers[attr] = value
@@ -422,31 +422,29 @@ class _SWIFTParticleDatasetHelper(object):
             object.__setattr__(self, attr, value)
             return
 
-    def __getitem__(self, mask: slice) -> "_SWIFTParticleDatasetHelper":
+    def __getitem__(self, mask: slice) -> "_SWIFTGroupDatasetsHelper":
         return self._data_copy(mask=mask)
 
-    def __copy__(self) -> "_SWIFTParticleDatasetHelper":
+    def __copy__(self) -> "_SWIFTGroupDatasetsHelper":
         return getattr(self._swiftgalaxy.__copy__(), self.particle_name)
 
-    def __deepcopy__(
-        self, memo: Optional[dict] = None
-    ) -> "_SWIFTParticleDatasetHelper":
+    def __deepcopy__(self, memo: Optional[dict] = None) -> "_SWIFTGroupDatasetsHelper":
         return self._data_copy()
 
-    def _data_copy(self, mask: Optional[slice] = None) -> "_SWIFTParticleDatasetHelper":
+    def _data_copy(self, mask: Optional[slice] = None) -> "_SWIFTGroupDatasetsHelper":
         mask_collection = MaskCollection(
             **{
-                k: None if k != self.particle_name else mask
-                for k in self.metadata.present_particle_names
+                k: None if k != self.group_name else mask
+                for k in self.metadata.present_group_names
             }
         )
         return getattr(
             self._swiftgalaxy._data_copy(mask_collection=mask_collection),
-            self.particle_name,
+            self.group_name,
         )
 
     def _is_namedcolumns(self, field_name: str) -> bool:
-        particle_name = self._particle_dataset.particle_name
+        particle_name = self._particle_dataset.group_name
         particle_metadata = getattr(
             self._particle_dataset.metadata, f"{particle_name}_properties"
         )
@@ -458,7 +456,7 @@ class _SWIFTParticleDatasetHelper(object):
     def _apply_data_mask(self, data: cosmo_array) -> cosmo_array:
         if self._swiftgalaxy._extra_mask is not None:
             mask = getattr(
-                self._swiftgalaxy._extra_mask, self._particle_dataset.particle_name
+                self._swiftgalaxy._extra_mask, self._particle_dataset.group_name
             )
             if mask is not None:
                 return data[mask]
@@ -467,7 +465,7 @@ class _SWIFTParticleDatasetHelper(object):
     def _mask_dataset(self, mask: slice) -> None:
         # Users are cautioned against calling this function directly!
         # Use SWIFTGalaxy.mask_particles instead.
-        particle_name = self._particle_dataset.particle_name
+        particle_name = self._particle_dataset.group_name
         particle_metadata = getattr(
             self._particle_dataset.metadata, f"{particle_name}_properties"
         )
@@ -974,9 +972,9 @@ class SWIFTGalaxy(SWIFTDataset):
     and to provide integrated properties. The implementation is an extension of
     the :class:`~swiftsimio.reader.SWIFTDataset` class, so all the
     functionality of such a dataset is also available for a
-    :class:`SWIFTGalaxy`. The :class:`swiftsimio.reader.__SWIFTParticleDataset`
+    :class:`SWIFTGalaxy`. The :class:`swiftsimio.reader.__SWIFTGroupDatasets`
     objects familiar to :mod:`swiftsimio` users (e.g. a ``GasDataset``) are
-    wrapped by a :class:`_SWIFTParticleDatasetHelper` class that exposes their
+    wrapped by a :class:`_SWIFTGroupDatasetsHelper` class that exposes their
     usual functionality and extends it with new features.
     :class:`swiftsimio.reader.__SWIFTNamedColumnDataset` instances are also
     wrapped, using a :class:`_SWIFTNamedColumnDatasetHelper` class.
@@ -989,13 +987,13 @@ class SWIFTGalaxy(SWIFTDataset):
     snapshot_filename: :obj:`str`
         Name of file containing snapshot.
 
-    halo_finder: :class:`~swiftgalaxy.halo_finders._HaloFinder`
-        A halo_finder instance from :mod:`swiftgalaxy.halo_finders`, e.g. a
-        :class:`swiftgalaxy.halo_finders.Velociraptor` instance.
+    halo_catalogue: :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+        A halo_catalogue instance from :mod:`swiftgalaxy.halo_catalogues`, e.g. a
+        :class:`swiftgalaxy.halo_catalogues.SOAP` instance.
 
     auto_recentre: :obj:`bool`, default: ``True``
         If ``True``, the coordinate system will be automatically recentred on
-        the position *and* velocity centres defined by the ``halo_finder``.
+        the position *and* velocity centres defined by the ``halo_catalogue``.
 
     transforms_like_coordinates: :obj:`set` [:obj:`str`], \
     default: ``set()``
@@ -1029,9 +1027,9 @@ class SWIFTGalaxy(SWIFTDataset):
 
     See Also
     --------
-    :class:`_SWIFTParticleDatasetHelper`
+    :class:`_SWIFTGroupDatasetsHelper`
     :class:`_SWIFTNamedColumnDatasetHelper`
-    :mod:`swiftgalaxy.halo_finders`
+    :mod:`swiftgalaxy.halo_catalogues`
 
     Examples
     --------
@@ -1061,10 +1059,10 @@ class SWIFTGalaxy(SWIFTDataset):
         mygalaxy.gas.particle_ids
         mygalaxy.dark_matter.coordinates
 
-    However, information from the halo finder is used to select only the
+    However, information from the halo catalogue is used to select only the
     particles identified as bound to this galaxy. The coordinate system is
     centred in both position and velocity on the centre and peculiar velocity
-    of the galaxy, as determined by the halo finder. The coordinate system can
+    of the galaxy, as determined by the halo catalogue. The coordinate system can
     be further manipulated, and all particle arrays will stay in a consistent
     reference frame at all times.
 
@@ -1076,20 +1074,20 @@ class SWIFTGalaxy(SWIFTDataset):
         mygalaxy.units
         mygalaxy.metadata
 
-    The halo finder interface is accessible as shown below. What this interface
-    looks like depends on the halo finder being used, but will provide values
+    The halo catalogue interface is accessible as shown below. What this interface
+    looks like depends on the halo catalogue being used, but will provide values
     for the individual galaxy of interest.
 
     ::
 
-        mygalaxy.halo_finder
+        mygalaxy.halo_catalogue
 
-    In this case with :class:`~swiftgalaxy.halo_finders.Velociraptor`, we can
+    In this case with :class:`~swiftgalaxy.halo_catalogues.Velociraptor`, we can
     get the virial mass like this:
 
     ::
 
-        mygalaxy.halo_finder.masses.mvir
+        mygalaxy.halo_catalogue.masses.mvir
 
     For a complete description of available features see the narrative
     documentation pages.
@@ -1098,7 +1096,7 @@ class SWIFTGalaxy(SWIFTDataset):
     def __init__(
         self,
         snapshot_filename: str,
-        halo_finder: _HaloFinder,
+        halo_catalogue: _HaloCatalogue,
         auto_recentre: bool = True,
         transforms_like_coordinates: Set[str] = set(),
         transforms_like_velocities: Set[str] = set(),
@@ -1115,18 +1113,18 @@ class SWIFTGalaxy(SWIFTDataset):
     ):
         self._particle_dataset_helpers = dict()
         self.snapshot_filename: str = snapshot_filename
-        self.halo_finder: _HaloFinder = halo_finder
+        self.halo_catalogue: _HaloCatalogue = halo_catalogue
         self.auto_recentre: bool = auto_recentre
         self._spatial_mask: SWIFTMask
         if _spatial_mask is not None:
             self._spatial_mask = _spatial_mask
         else:
-            if self.halo_finder._user_spatial_offsets is not None:
-                self._spatial_mask = self.halo_finder._get_user_spatial_mask(
+            if self.halo_catalogue._user_spatial_offsets is not None:
+                self._spatial_mask = self.halo_catalogue._get_user_spatial_mask(
                     self.snapshot_filename
                 )
             else:
-                self._spatial_mask = self.halo_finder._get_spatial_mask(
+                self._spatial_mask = self.halo_catalogue._get_spatial_mask(
                     self.snapshot_filename
                 )
         self.transforms_like_coordinates: Set[str] = {coordinates_dataset_name}.union(
@@ -1168,14 +1166,14 @@ class SWIFTGalaxy(SWIFTDataset):
             self._velocity_like_transform = (
                 coordinate_frame_from._velocity_like_transform
             )
-        for particle_name in self.metadata.present_particle_names:
+        for particle_name in self.metadata.present_group_names:
             # We'll make a custom type to present a nice name to the user.
             nice_name = swiftsimio_metadata.particle_types.particle_name_class[
-                getattr(self.metadata, f"{particle_name}_properties").particle_type
+                getattr(self.metadata, f"{particle_name}_properties").group
             ]
             TypeDatasetHelper = type(
                 f"{nice_name}DatasetHelper",
-                (_SWIFTParticleDatasetHelper, object),
+                (_SWIFTGroupDatasetsHelper, object),
                 dict(),
             )
             self._particle_dataset_helpers[particle_name] = TypeDatasetHelper(
@@ -1186,10 +1184,10 @@ class SWIFTGalaxy(SWIFTDataset):
         if _extra_mask is not None:
             self._extra_mask = _extra_mask
         else:
-            self._extra_mask = self.halo_finder._get_extra_mask(self)
+            self._extra_mask = self.halo_catalogue._get_extra_mask(self)
             if self._extra_mask is not None:
                 # need to mask any already loaded data
-                for particle_name in self.metadata.present_particle_names:
+                for particle_name in self.metadata.present_group_names:
                     if getattr(self._extra_mask, particle_name) is None:
                         continue
                     particle_metadata = getattr(
@@ -1223,12 +1221,12 @@ class SWIFTGalaxy(SWIFTDataset):
                             )
             else:
                 self._extra_mask = MaskCollection(
-                    **{k: None for k in self.metadata.present_particle_names}
+                    **{k: None for k in self.metadata.present_group_names}
                 )
 
         if auto_recentre:
-            self.recentre(self.halo_finder.centre)
-            self.recentre_velocity(self.halo_finder.velocity_centre)
+            self.recentre(self.halo_catalogue.centre)
+            self.recentre_velocity(self.halo_catalogue.velocity_centre)
 
         self._initialised: bool = True
 
@@ -1246,7 +1244,7 @@ class SWIFTGalaxy(SWIFTDataset):
     def __copy__(self) -> "SWIFTGalaxy":
         SG = SWIFTGalaxy(
             self.snapshot_filename,
-            self.halo_finder,
+            self.halo_catalogue,
             auto_recentre=False,  # transforms overwritten below
             transforms_like_coordinates=self.transforms_like_coordinates,
             transforms_like_velocities=self.transforms_like_velocities,
@@ -1265,7 +1263,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def _data_copy(self, mask_collection: Optional[MaskCollection] = None):
         SG = self.__copy__()
-        for particle_name in SG.metadata.present_particle_names:
+        for particle_name in SG.metadata.present_group_names:
             particle_metadata = getattr(SG.metadata, f"{particle_name}_properties")
             particle_dataset_helper = getattr(self, particle_name)
             new_particle_dataset_helper = getattr(SG, particle_name)
@@ -1334,7 +1332,7 @@ class SWIFTGalaxy(SWIFTDataset):
             # guard against accessing metadata before it is loaded
             return super().__getattribute__(attr)
         else:
-            if attr in metadata.present_particle_names:
+            if attr in metadata.present_group_names:
                 # We are entering a <ParticleType>Dataset, return helper.
                 return object.__getattribute__(self, "_particle_dataset_helpers")[attr]
             else:
@@ -1342,11 +1340,11 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def __setattr__(self, attr: str, value: Any) -> None:
         if (not hasattr(self, "_initialised")) or (
-            attr not in self.metadata.present_particle_names
+            attr not in self.metadata.present_group_names
         ):
             object.__setattr__(self, attr, value)
         else:
-            # attr in self.metadata.present_particle_names
+            # attr in self.metadata.present_group_names
             self._particle_dataset_helpers[attr] = value
         return
 
@@ -1370,7 +1368,7 @@ class SWIFTGalaxy(SWIFTDataset):
         """
         rotation_matrix = rotation.as_matrix()
         rotatable = self.transforms_like_coordinates | self.transforms_like_velocities
-        for particle_name in self.metadata.present_particle_names:
+        for particle_name in self.metadata.present_group_names:
             dataset = getattr(self, particle_name)._particle_dataset
             for field_name in rotatable:
                 field_data = getattr(dataset, f"_{field_name}")
@@ -1390,7 +1388,7 @@ class SWIFTGalaxy(SWIFTDataset):
             if boost
             else self.transforms_like_coordinates
         )
-        for particle_name in self.metadata.present_particle_names:
+        for particle_name in self.metadata.present_group_names:
             dataset = getattr(self, particle_name)._particle_dataset
             for field_name in translatable:
                 field_data = getattr(dataset, f"_{field_name}")
@@ -1564,7 +1562,7 @@ class SWIFTGalaxy(SWIFTDataset):
             rotations, so manually calling this function should usually not be
             necessary.
         """
-        for particle_name in self.metadata.present_particle_names:
+        for particle_name in self.metadata.present_group_names:
             dataset = getattr(self, particle_name)._particle_dataset
             for field_name in self.transforms_like_coordinates:
                 field_data = getattr(dataset, f"_{field_name}")
@@ -1585,7 +1583,7 @@ class SWIFTGalaxy(SWIFTDataset):
         galaxy. Temporary masks (e.g. for interactive use) can be created by
         using the :meth:`~SWIFTGalaxy.__getitem__` (square brackets) method of
         the :class:`SWIFTGalaxy`, any of its associated
-        :class:`_SWIFTParticleDatasetHelper` or
+        :class:`_SWIFTGroupDatasetsHelper` or
         :class:`_SWIFTNamedColumnDatasetHelper` objects, but
         note that to ensure internal consistency, these return a masked copy of
         the *entire* :class:`SWIFTGalaxy`, and are therefore
@@ -1602,7 +1600,7 @@ class SWIFTGalaxy(SWIFTDataset):
             may be omitted by setting their mask to None, or simply omitting
             them from the :class:`swiftgalaxy.masks.MaskCollection`.
         """
-        for particle_name in self.metadata.present_particle_names:
+        for particle_name in self.metadata.present_group_names:
             mask = getattr(mask_collection, particle_name)
             if mask is not None:
                 getattr(self, particle_name)._mask_dataset(mask)
@@ -1622,6 +1620,6 @@ class SWIFTGalaxy(SWIFTDataset):
         # Transforming implies conversion back to cartesian, it's therefore
         # cheaper to just delete any non-cartesian coordinates when a
         # transform occurs and lazily re-calculate them as needed.
-        for particle_name in self.metadata.present_particle_names:
+        for particle_name in self.metadata.present_group_names:
             getattr(self, particle_name)._void_derived_coordinates()
         return

@@ -5,6 +5,8 @@ import unyt as u
 from unyt.testing import assert_allclose_units
 from toysnap import (
     toysnap_filename,
+    toysoap_virtual_snapshot_filename,
+    toysoap_membership_filebase,
     n_g,
     n_g_b,
     n_g_all,
@@ -28,7 +30,7 @@ abstol_m = 1e4 * u.Msun  # less than this is ~0
 reltol_nd = 1.0e-4
 
 
-class TestHaloFinders:
+class TestHaloCatalogues:
     def test_get_spatial_mask(self, hf, toysnap):
         """
         Check that we get spatial masks that we expect.
@@ -78,6 +80,7 @@ class TestHaloFinders:
         """
         # override to select both cells in the test snapshot
         hf._user_spatial_offsets = cosmo_array([[-5, 5], [-5, 5], [-5, 5]], u.Mpc)
+        hf.extra_mask = None
         sg = SWIFTGalaxy(toysnap_filename, hf)
         generated_spatial_mask = sg._spatial_mask
         with h5py.File(toysnap_filename, "r") as snap:
@@ -107,11 +110,25 @@ class TestHaloFinders:
         Check that bound_only extra mask has the right shape.
         """
         hf.extra_mask = "bound_only"
-        try:
-            sg = SWIFTGalaxy(toysnap_filename, hf)
-        except NotImplementedError:
-            # expected for Standalone
-            return
+        if hasattr(hf, "soap_file"):
+            from toysnap import soap_script_path
+            import sys
+
+            sys.path.append(soap_script_path)
+            from make_virtual_snapshot import make_virtual_snapshot
+
+            make_virtual_snapshot(
+                toysnap_filename,
+                f"{toysoap_membership_filebase}.%(file_nr).d.hdf5",
+                toysoap_virtual_snapshot_filename,
+            )
+            sg = SWIFTGalaxy(toysoap_virtual_snapshot_filename, hf)
+        else:
+            try:
+                sg = SWIFTGalaxy(toysnap_filename, hf)
+            except NotImplementedError:
+                # expected for Standalone
+                return
         generated_extra_mask = sg._extra_mask
         expected_shape = dict()
         for particle_type in present_particle_types.values():
@@ -262,9 +279,9 @@ class TestVelociraptor:
 
 class TestVelociraptorWithSWIFTGalaxy:
     """
-    Most interaction between the halo finder and swiftgalaxy.reader.SWIFTGalaxy
+    Most interaction between the halo catalogue and swiftgalaxy.reader.SWIFTGalaxy
     is tested using the toysnap.ToyHF testing class (that inherits from
-    swiftgalaxy.halo_finders._HaloFinder). Here we just want to test anything
+    swiftgalaxy.halo_catalogues._HaloCatalogue). Here we just want to test anything
     velociraptor-specific.
     """
 
@@ -274,7 +291,7 @@ class TestVelociraptorWithSWIFTGalaxy:
         SWIFTGalaxy object.
         """
         assert_allclose_units(
-            sg_vr.halo_finder.masses.mvir,
+            sg_vr.halo_catalogue.masses.mvir,
             1.0e12 * u.Msun,
             rtol=reltol_nd,
             atol=abstol_m,
@@ -383,9 +400,9 @@ class TestCaesar:
 
 class TestCaesarWithSWIFTGalaxy:
     """
-    Most interaction between the halo finder and swiftgalaxy.reader.SWIFTGalaxy
+    Most interaction between the halo catalogue and swiftgalaxy.reader.SWIFTGalaxy
     is tested using the toysnap.ToyHF testing class (that inherits from
-    swiftgalaxy.halo_finders._HaloFinder). Here we just want to test anything
+    swiftgalaxy.halo_catalogues._HaloCatalogue). Here we just want to test anything
     caesar-specific.
     """
 
@@ -394,16 +411,16 @@ class TestCaesarWithSWIFTGalaxy:
         Check that exposing the halo properties is working, through the
         SWIFTGalaxy object.
         """
-        if hasattr(sg_caesar.halo_finder, "virial_quantities"):
+        if hasattr(sg_caesar.halo_catalogue, "virial_quantities"):
             assert_allclose_units(
-                sg_caesar.halo_finder.virial_quantities["m200c"],
+                sg_caesar.halo_catalogue.virial_quantities["m200c"],
                 1.0e12 * u.Msun,
                 rtol=reltol_nd,
                 atol=abstol_m,
             )
-        elif hasattr(sg_caesar.halo_finder, "masses"):
+        elif hasattr(sg_caesar.halo_catalogue, "masses"):
             assert_allclose_units(
-                sg_caesar.halo_finder.masses["total"],
+                sg_caesar.halo_catalogue.masses["total"],
                 n_g * m_g + n_s * m_s + n_bh * m_bh,
                 rtol=reltol_nd,
                 atol=abstol_m,
@@ -417,7 +434,7 @@ class TestCaesarWithSWIFTGalaxy:
         Check that the bound_only default mask works with the spatial mask,
         giving the expected shapes for arrays.
         """
-        expected_dm = 0 if sg_caesar.halo_finder.group_type == "galaxy" else n_dm
+        expected_dm = 0 if sg_caesar.halo_catalogue.group_type == "galaxy" else n_dm
         assert (
             getattr(sg_caesar, particle_type).masses.size
             == dict(gas=n_g, dark_matter=expected_dm, stars=n_s, black_holes=n_bh)[
@@ -444,3 +461,115 @@ class TestStandalone:
                     black_holes=n_bh,
                 )[particle_type]
             )
+
+
+class TestSOAP:
+    def test_load(self, soap):
+        """
+        Check that the loading function is doing it's job.
+        """
+        # _load called during super().__init__
+        assert soap._swift_dataset is not None
+
+    @pytest.mark.parametrize(
+        "centre_type, expected",
+        (
+            ("bound_subhalo.centre_of_mass", 2.001),
+            ("exclusive_sphere_100kpc.centre_of_mass", 2.003),
+            ("inclusive_sphere_100kpc.centre_of_mass", 2.011),
+            ("input_halos_fof.centres", 2.0),
+            ("input_halos.halo_centre", 2.0),
+            ("projected_aperture_50kpc_projx.centre_of_mass", 2.027),
+            ("spherical_overdensity_200_crit.centre_of_mass", 2.032),
+            ("spherical_overdensity_bn98.centre_of_mass", 2.038),
+        ),
+    )
+    def test_centre_types(self, soap, centre_type, expected):
+        """
+        Check that centres of sample types retrieve expected values.
+        """
+        soap.centre_type = centre_type
+        assert_allclose_units(
+            soap.centre,
+            cosmo_array([expected, expected, expected], u.Mpc),
+            rtol=reltol_nd,
+            atol=abstol_c,
+        )
+
+    @pytest.mark.parametrize(
+        "velocity_centre_type, expected",
+        (
+            ("bound_subhalo.centre_of_mass_velocity", 201),
+            ("exclusive_sphere_100kpc.centre_of_mass_velocity", 203),
+            ("inclusive_sphere_100kpc.centre_of_mass_velocity", 211),
+            ("projected_aperture_50kpc_projx.centre_of_mass_velocity", 227),
+            ("spherical_overdensity_200_crit.centre_of_mass_velocity", 232),
+            ("spherical_overdensity_bn98.centre_of_mass_velocity", 238),
+        ),
+    )
+    def test_velocity_centre_types(self, soap, velocity_centre_type, expected):
+        """
+        Check that velocity centres of sample types retrieve expected values.
+        """
+        soap.velocity_centre_type = velocity_centre_type
+        assert_allclose_units(
+            soap.velocity_centre,
+            cosmo_array([expected, expected, expected], u.km / u.s),
+            rtol=reltol_nd,
+            atol=abstol_v,
+        )
+
+    def test_catalogue_exposed(self, soap):
+        """
+        Check that exposing the halo properties is working.
+        """
+        # pick a couple of attributes to check
+        assert_allclose_units(
+            soap.input_halos_hbtplus.host_fofid,
+            cosmo_array([1], comoving=False),
+        )
+        assert_allclose_units(
+            soap.bound_subhalo.centre_of_mass,
+            cosmo_array([[2.001, 2.001, 2.001]], u.Mpc, comoving=False),
+            rtol=reltol_nd,
+            atol=abstol_c,
+        )
+
+
+class TestSOAPWithSWIFTGalaxy:
+    """
+    Most interaction between the halo catalogue and swiftgalaxy.reader.SWIFTGalaxy
+    is tested using the toysnap.ToyHF testing class (that inherits from
+    swiftgalaxy.halo_catalogues._HaloCatalogue). Here we just want to test anything
+    soap-specific.
+    """
+
+    def test_catalogue_exposed(self, sg_soap):
+        """
+        Check that exposing the halo properties is working, through the
+        SWIFTGalaxy object.
+        """
+        # pick a couple of attributes to check
+        assert_allclose_units(
+            sg_soap.halo_catalogue.input_halos_hbtplus.host_fofid,
+            cosmo_array([1], comoving=False),
+        )
+        assert_allclose_units(
+            sg_soap.halo_catalogue.bound_subhalo.centre_of_mass,
+            cosmo_array([[2.001, 2.001, 2.001]], u.Mpc, comoving=False),
+            rtol=reltol_nd,
+            atol=abstol_c,
+        )
+
+    @pytest.mark.parametrize("particle_type", present_particle_types.values())
+    def test_masks_compatible(self, sg_soap, particle_type):
+        """
+        Check that the bound_only default mask works with the spatial mask,
+        giving the expected shapes for arrays.
+        """
+        assert (
+            getattr(sg_soap, particle_type).masses.size
+            == dict(gas=10000, dark_matter=10000, stars=10000, black_holes=1)[
+                particle_type
+            ]
+        )

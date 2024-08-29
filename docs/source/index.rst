@@ -16,7 +16,7 @@ Documentation contents
    getting_started/index
    coordinate_transformations/index
    additional_coordinates/index
-   halo_finders/index
+   halo_catalogues/index
    masking/index
    modules/index
 

@@ -1,30 +1,31 @@
 """
-This module contains classes providing interfaces to halo finders used with
+This module contains classes providing interfaces to halo catalogues used with
 SWIFT so that :mod:`swiftgalaxy` can obtain the information it requires in a
-streamlined way. Currently only the Velociraptor_ halo finder is supported, but
-support for other halo finders (e.g. `SOAP`, `HBT+`_) is planned.
+streamlined way. Currently SOAP_ and Velociraptor_ halo catalogues are supported,
+as well as Caesar_ catalogues, others can be supported on request.
 
 .. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/\
 abstract
-.. _HBT+: https://ui.adsabs.harvard.edu/abs/2018MNRAS.474..604H/abstract
+.. _Caesar: https://caesar.readthedocs.io/en/latest/
+.. _SOAP: https://github.com/SWIFTSIM/SOAP
 """
 
 from warnings import warn
 from abc import ABC, abstractmethod
 import numpy as np
 import unyt as u
-from swiftsimio import mask, SWIFTMask
+from swiftsimio import SWIFTMask, SWIFTDataset, mask
 from swiftgalaxy.masks import MaskCollection
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 
-from typing import Any, Union, Optional, List, TYPE_CHECKING
+from typing import Any, Union, Optional, TYPE_CHECKING, List
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from swiftgalaxy.reader import SWIFTGalaxy
 
 
-class _HaloFinder(ABC):
+class _HaloCatalogue(ABC):
     _user_spatial_offsets: Optional[List] = None
 
     def __init__(
@@ -68,16 +69,14 @@ class _HaloFinder(ABC):
         if self.extra_mask == "bound_only":
             return self._generate_bound_only_mask(SG)
         elif self.extra_mask is None:
-            return MaskCollection(
-                **{k: None for k in SG.metadata.present_particle_names}
-            )
+            return MaskCollection(**{k: None for k in SG.metadata.present_group_names})
         else:
             # Keep user provided mask. If no mask provided for a particle type
             # use None (no mask).
             return MaskCollection(
                 **{
                     name: getattr(self.extra_mask, name, None)
-                    for name in SG.metadata.present_particle_names
+                    for name in SG.metadata.present_group_names
                 }
             )
 
@@ -94,14 +93,176 @@ class _HaloFinder(ABC):
         pass
 
     # In addition, it is recommended to expose the properties computed
-    # by the halo finder through this object, masked to the values
+    # by the halo catalogue through this object, masked to the values
     # corresponding to the object of interest. It probably makes sense
-    # to match the syntax used to the usual syntax for the halo finder
+    # to match the syntax used to the usual syntax for the halo catalogue
     # in question? See e.g. implementation in __getattr__ in Velociraptor
     # subclass below.
 
 
-class Velociraptor(_HaloFinder):
+class SOAP(_HaloCatalogue):
+    """
+    Interface to SOAP halo catalogues for use with :mod:`swiftgalaxy`.
+
+    Takes a set of ``SOAP`` output files and configuration options and provides an
+    interface that :mod:`swiftgalaxy` understands. Also exposes the galaxy properties
+    computed by ``SOAP`` for a single object of interest through the :mod:`swiftsimio`
+    interface.
+
+    Parameters
+    ----------
+
+    soap_file: ``Optional[str]``, default: ``None``
+        The filename of a SOAP catalogue file, possibly including the path.
+    halo_index: ``Optional[int]``, default: ``None``
+        The position (row) in the SOAP catalogue corresponding to the object of interest.
+    extra_mask: ``Union[str, MaskCollection]``, default: ``"bound_only"``
+        Mask to apply to particles after spatial masking. If ``"bound_only"``,
+        then the galaxy is masked to include only the gravitationally bound
+        particles as determined by ``SOAP``. A user-defined mask can also be provided
+        as an an object (such as a :class:`swiftgalaxy.masks.MaskCollection`) that has
+        attributes with names corresponding to present particle names (e.g. gas,
+        dark_matter, etc.), each containing a mask.
+    centre_type: ``str``, default: ``"bound_subhalo.centre_of_mass"``
+        Type of centre, chosen from those provided by ``SOAP``. This should be
+        expressed as a string analogous to what would be written in
+        :mod:`swiftsimio` code (or :mod:`swiftgalaxy`) to access that property in the
+        SOAP catalogue. The default takes the ``"bound_subhalo.centre_of_mass"``;
+        another option amongst many more is ``"input_halos.halo_centre"``.
+    velocity_centre_type: ``str``, default: ``"bound_subhalo.centre_of_mass_velocity"``
+        Type of velocity centre, chosen from those provided by ``SOAP``. This should be
+        expressed as a string analogous to what would be written in
+        :mod:`swiftsimio` code (or :mod:`swiftgalaxy`) to access that property in the
+        SOAP catalogue. The default takes the ``"bound_subhalo.centre_of_mass_velocity"``;
+        note that the other example for the ``centre_type`` has no analogue for velocity
+        (``"input_halos.halo_centre_velocity"`` is not defined).
+    custom_spatial_offsets: ``Optional[cosmo_array]``, default: ``None``
+        A region to override the automatically-determined region enclosing
+        group member particles. May be used in conjunction with ``extra_mask``,
+        for example to select all simulation particles in an aperture around
+        the object of interest (see 'Masking' section of documentation for a
+        cookbook example). Provide a pair of offsets from the object's centre
+        along each axis to define the region, for example for a cube extending
+        +/- 1 Mpc from the centre:
+        ``cosmo_array([[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]], u.Mpc)``.
+
+    Notes
+    -----
+
+    .. note::
+        ``SOAP`` only supports index access to catalogue arrays, not
+        identifier access. This means that the ``halo_index`` is simply the
+        position of the object of interest in the catalogue arrays.
+
+    Examples
+    --------
+    Given a file :file:`halo_properties_0050.hdf5`, the following creates a :class:`SOAP`
+    object for the entry at index ``0`` in the catalogue (i.e. the 1st row, indexed
+    from 0) and demonstrates retrieving its virial mass (M200crit).
+
+    ::
+
+        >>> cat = SOAP(
+        >>>     soap_file="/output/path/halo_properties_0050.hdf5"
+        >>>     halo_index=0,  # 1st entry in catalogue (indexed from 0)
+        >>> )
+        >>> cat.spherical_overdensity_200_crit.total_mass.to(u.Msun)
+        cosmo_array([6.72e+12], dtype=float32, units='1.98841586e+30*kg', comoving=False)
+    """
+
+    soap_file: str
+    halo_index: int
+    centre_type: str
+    velocity_centre_type: str
+    _swift_dataset: SWIFTDataset
+
+    def __init__(
+        self,
+        soap_file: Optional[str] = None,
+        halo_index: Optional[int] = None,
+        extra_mask: Union[str, MaskCollection] = "bound_only",
+        centre_type: str = "bound_subhalo.centre_of_mass",
+        velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
+        custom_spatial_offsets: Optional[cosmo_array] = None,
+    ) -> None:
+        if soap_file is not None:
+            self.soap_file = soap_file
+        else:
+            raise ValueError("Provide a soap_file.")
+
+        if halo_index is not None:
+            self.halo_index = halo_index
+        else:
+            raise ValueError("Provide a halo_index.")
+        self.centre_type = centre_type
+        self.velocity_centre_type = velocity_centre_type
+        self._user_spatial_offsets = custom_spatial_offsets
+        super().__init__(extra_mask=extra_mask)
+        return
+
+    def _load(self) -> None:
+        sm = mask(self.soap_file)
+        sm.constrain_index(self.halo_index)
+        self._swift_dataset: SWIFTDataset = SWIFTDataset(
+            self.soap_file,
+            mask=sm,
+        )
+
+    def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
+        sm = mask(snapshot_filename, spatial_only=True)
+        pos = self._swift_dataset.bound_subhalo.centre_of_mass.squeeze()
+        rmax = self._swift_dataset.bound_subhalo.enclose_radius.squeeze()
+        load_region = cosmo_array([pos - rmax, pos + rmax]).T
+        sm.constrain_spatial(load_region)
+        return sm
+
+    def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+        if hasattr(SG, "gas"):
+            gas_mask = SG.gas._particle_dataset.group_nr_bound == self.halo_index
+            del SG.gas._particle_dataset.group_nr_bound
+        if hasattr(SG, "dark_matter"):
+            dm_mask = SG.dark_matter._particle_dataset.group_nr_bound == self.halo_index
+            del SG.dark_matter._particle_dataset.group_nr_bound
+        if hasattr(SG, "stars"):
+            star_mask = SG.stars._particle_dataset.group_nr_bound == self.halo_index
+            del SG.stars._particle_dataset.group_nr_bound
+        if hasattr(SG, "black_holes"):
+            bh_mask = SG.black_holes.group_nr_bound == self.halo_index
+            del SG.black_holes._particle_dataset.group_nr_bound
+        return MaskCollection(
+            gas=gas_mask,
+            dark_matter=dm_mask,
+            stars=star_mask,
+            black_holes=bh_mask,
+        )
+
+    @property
+    def centre(self) -> cosmo_array:
+        obj = self._swift_dataset
+        for attr in self.centre_type.split("."):
+            obj = getattr(obj, attr)
+        return obj.squeeze()
+
+    @property
+    def velocity_centre(self) -> cosmo_array:
+        obj = self._swift_dataset
+        for attr in self.velocity_centre_type.split("."):
+            obj = getattr(obj, attr)
+        return obj.squeeze()
+
+    def __getattr__(self, attr: str) -> Any:
+        # Invoked if attribute not found.
+        # Use to expose the masked catalogue.
+        if attr == "_swift_dataset":  # guard infinite recursion
+            return object.__getattribute__(self, "_swift_dataset")
+        return getattr(self._swift_dataset, attr)
+
+    def __repr__(self) -> str:
+        # Expose the catalogue __repr__ for interactive use.
+        return self._swift_dataset.__repr__()
+
+
+class Velociraptor(_HaloCatalogue):
     """
     Interface to velociraptor halo catalogues for use with :mod:`swiftgalaxy`.
 
@@ -369,7 +530,7 @@ class Velociraptor(_HaloFinder):
         return self._catalogue.__repr__()
 
 
-class Caesar(_HaloFinder):
+class Caesar(_HaloCatalogue):
     """
     Interface to Caesar halo catalogues for use with :mod:`swiftgalaxy`.
 
@@ -561,22 +722,19 @@ class Caesar(_HaloFinder):
                 ints < int_ranges[:, 1, np.newaxis],
             ).any(axis=0)
 
-        null_mask = np.array([], dtype=bool)  # mask that selects no particles
-        gas_mask = getattr(self._group, "glist", null_mask)
-        if gas_mask is not null_mask:
+        null_slice = np.s_[:0]  # mask that selects no particles
+        if hasattr(self._group, "glist"):
+            gas_mask = self._group.glist
             gas_mask = gas_mask[in_one_of_ranges(gas_mask, SG.mask.gas)]
             gas_mask = np.isin(
                 np.concatenate([np.arange(start, end) for start, end in SG.mask.gas]),
                 gas_mask,
             )
-        # seems like name could be dmlist or dlist?
-        if hasattr(self._group, "dlist"):
-            dark_matter_mask = self._group.dlist
-        elif hasattr(self._group, "dmlist"):
-            dark_matter_mask = self._group.dmlist
         else:
-            dark_matter_mask = null_mask
-        if dark_matter_mask is not null_mask:
+            gas_mask = null_slice
+        # seems like name could be dmlist or dlist?
+        if hasattr(self._group, "dlist") or hasattr(self._group, "dmlist"):
+            dark_matter_mask = getattr(self._group, "dlist", self._group.dmlist)
             dark_matter_mask = dark_matter_mask[
                 in_one_of_ranges(dark_matter_mask, SG.mask.dark_matter)
             ]
@@ -586,15 +744,20 @@ class Caesar(_HaloFinder):
                 ),
                 dark_matter_mask,
             )
-        stars_mask = getattr(self._group, "slist", null_mask)
-        if stars_mask is not null_mask:
+        else:
+            dark_matter_mask = null_slice
+
+        if hasattr(self._group, "slist"):
+            stars_mask = self._group.slist
             stars_mask = stars_mask[in_one_of_ranges(stars_mask, SG.mask.stars)]
             stars_mask = np.isin(
                 np.concatenate([np.arange(start, end) for start, end in SG.mask.stars]),
                 stars_mask,
             )
-        black_holes_mask = getattr(self._group, "bhlist", null_mask)
-        if black_holes_mask is not null_mask:
+        else:
+            stars_mask = null_slice
+        if hasattr(self._group, "bhlist"):
+            black_holes_mask = self._group.bhlist
             black_holes_mask = black_holes_mask[
                 in_one_of_ranges(black_holes_mask, SG.mask.black_holes)
             ]
@@ -604,6 +767,8 @@ class Caesar(_HaloFinder):
                 ),
                 black_holes_mask,
             )
+        else:
+            black_holes_mask = null_slice
         return MaskCollection(
             gas=gas_mask,
             dark_matter=dark_matter_mask,
@@ -660,7 +825,7 @@ class Caesar(_HaloFinder):
         return self._group.__repr__()
 
 
-class Standalone(_HaloFinder):
+class Standalone(_HaloCatalogue):
     """
     A bare-bones tool to initialize a :class:`~swiftgalaxy.reader.SWIFTGalaxy`
     without an associated halo catalogue.
@@ -704,7 +869,7 @@ class Standalone(_HaloFinder):
     Examples
     --------
     Often the most pragmatic way to create a selection of particles using
-    :class:`~swiftgalaxy.halo_finders.Standalone` is to first select a spatial region
+    :class:`~swiftgalaxy.halo_catalogues.Standalone` is to first select a spatial region
     guaranteed to contain the particles of interest and then create the final mask
     programatically using :class:`~swiftgalaxy.reader.SWIFTGalaxy`'s masking features.
     For example, suppose we know that there is a galaxy with its centre at
@@ -797,7 +962,6 @@ class Standalone(_HaloFinder):
 
     def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         # if we're here then the user didn't provide a mask, read the whole box
-        print("!")
         sm = mask(snapshot_filename, spatial_only=True)
         boxsize = sm.metadata.boxsize
         region = [[0.0 * b, 1.0 * b] for b in boxsize]
@@ -812,16 +976,14 @@ class Standalone(_HaloFinder):
             # guarded in initialisation, but simplifies testing
             return self._generate_bound_only_mask(SG)
         elif self.extra_mask is None:
-            return MaskCollection(
-                **{k: None for k in SG.metadata.present_particle_names}
-            )
+            return MaskCollection(**{k: None for k in SG.metadata.present_group_names})
         else:
             # Keep user provided mask. If no mask provided for a particle type
             # use None (no mask).
             return MaskCollection(
                 **{
                     name: getattr(self.extra_mask, name, None)
-                    for name in SG.metadata.present_particle_names
+                    for name in SG.metadata.present_group_names
                 }
             )
 

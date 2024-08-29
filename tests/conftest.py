@@ -2,7 +2,14 @@ import pytest
 import numpy as np
 import unyt as u
 from swiftsimio.objects import cosmo_array
-from swiftgalaxy import SWIFTGalaxy, Velociraptor, Caesar, Standalone, MaskCollection
+from swiftgalaxy import (
+    SWIFTGalaxy,
+    SOAP,
+    Velociraptor,
+    Caesar,
+    Standalone,
+    MaskCollection,
+)
 from toysnap import (
     create_toysnap,
     remove_toysnap,
@@ -10,22 +17,35 @@ from toysnap import (
     remove_toyvr,
     create_toycaesar,
     remove_toycaesar,
+    create_toysoap,
+    remove_toysoap,
     ToyHF,
     toysnap_filename,
+    toysoap_filename,
+    toysoap_virtual_snapshot_filename,
     toyvr_filebase,
     toycaesar_filename,
     n_g_b,
     n_dm_b,
 )
 
-hfs = ("vr", "caesar_halo", "caesar_galaxy", "sa")
+hfs = ("vr", "caesar_halo", "caesar_galaxy", "sa", "soap")
 
 
 @pytest.fixture(scope="function")
 def toysnap():
     create_toysnap()
 
-    yield toysnap
+    yield
+
+    remove_toysnap()
+
+
+@pytest.fixture(scope="function")
+def toysnap_withfof():
+    create_toysnap(withfof=True)
+
+    yield
 
     remove_toysnap()
 
@@ -85,6 +105,25 @@ def sg_autorecentre_off():
 
 
 @pytest.fixture(scope="function")
+def sg_soap():
+    create_toysnap(withfof=True)
+    create_toysoap(create_virtual_snapshot=True)
+
+    yield SWIFTGalaxy(
+        toysoap_virtual_snapshot_filename,
+        SOAP(
+            soap_file=toysoap_filename,
+            halo_index=0,
+        ),
+        transforms_like_coordinates={"coordinates", "extra_coordinates"},
+        transforms_like_velocities={"velocities", "extra_velocities"},
+    )
+
+    remove_toysnap()
+    remove_toysoap()
+
+
+@pytest.fixture(scope="function")
 def sg_vr():
     create_toysnap()
     create_toyvr()
@@ -114,6 +153,18 @@ def sg_caesar(request):
 
     remove_toysnap()
     remove_toycaesar()
+
+
+@pytest.fixture(scope="function")
+def soap():
+    create_toysoap()
+
+    yield SOAP(
+        soap_file=toysoap_filename,
+        halo_index=0,
+    )
+
+    remove_toysoap()
 
 
 @pytest.fixture(scope="function")
@@ -171,9 +222,9 @@ def sg_sa():
     remove_toysnap()
 
 
-@pytest.fixture(scope="function", params=["vr", "caesar_halo", "caesar_galaxy", "sa"])
+@pytest.fixture(scope="function", params=hfs)
 def sg_hf(request):
-    create_toysnap()
+    create_toysnap(withfof=request.param == "soap")
     if request.param in {"caesar_halo", "caesar_galaxy"}:
         create_toycaesar()
         yield SWIFTGalaxy(
@@ -187,6 +238,18 @@ def sg_hf(request):
             transforms_like_velocities={"velocities", "extra_velocities"},
         )
         remove_toycaesar()
+    elif request.param == "soap":
+        create_toysoap(create_virtual_snapshot=True)
+        yield SWIFTGalaxy(
+            toysoap_virtual_snapshot_filename,
+            SOAP(
+                soap_file=toysoap_filename,
+                halo_index=0,
+            ),
+            transforms_like_coordinates={"coordinates", "extra_coordinates"},
+            transforms_like_velocities={"velocities", "extra_velocities"},
+        )
+        remove_toysoap()
     elif request.param == "vr":
         create_toyvr()
         yield SWIFTGalaxy(
@@ -211,7 +274,7 @@ def sg_hf(request):
     remove_toysnap()
 
 
-@pytest.fixture(scope="function", params=["vr", "caesar_halo", "caesar_galaxy", "sa"])
+@pytest.fixture(scope="function", params=hfs)
 def hf(request):
     if request.param in {"caesar_halo", "caesar_galaxy"}:
         create_toycaesar()
@@ -223,6 +286,15 @@ def hf(request):
         )
 
         remove_toycaesar()
+    elif request.param == "soap":
+        create_toysoap()
+
+        yield SOAP(
+            soap_file=toysoap_filename,
+            halo_index=0,
+        )
+
+        remove_toysoap()
     elif request.param == "vr":
         create_toyvr()
 
