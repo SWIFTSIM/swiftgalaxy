@@ -12,9 +12,99 @@ The second argument to create a :class:`~swiftgalaxy.reader.SWIFTGalaxy` is an i
 SOAP
 ----
 
-Future support for `SOAP`_ is planned as soon as a stable python interface to SOAP catalogues becomes available. Such an interface is currently in development.
+The `SOAP`_ catalogue format is the preferred catalogue format of the `SWIFT community`_ and is supported with i/o tools in :mod:`swiftsimio`. The :class:`~swiftgalaxy.halo_catalogues.SOAP` helper class uses :mod:`swiftsimio` to read the information that it needs from the SOAP catalogues.
 
+.. _SWIFT community: https://github.com/SWIFTSIM
 .. _SOAP: https://github.com/SWIFTSIM/SOAP
+.. _load_fof_catalogues: https://github.com/SWIFTSIM/swiftsimio/tree/load_fof_catalogues
+
+.. warning ::
+
+   At the time of writing :mod:`swiftsimio` support for reading SOAP catalogues is functional but still under active development. The `master` branch of the :mod:`swiftsimio` repository does not yet allow reading SOAP catalogues. To use :mod:`swiftgalaxy` with SOAP catalogues currently requires installing the `load_fof_catalogues`_ branch of :mod:`swiftsimio`. One way to do this is ``pip install git+https://github.com/SWIFTSIM/swiftsimio.git@load_fof_catalogues``.
+
+Setting up an instance of the helper class is straightforward. We'll assume a SOAP catalogue called :file:`halo_properties_0123.hdf5`, and suppose that we're interested in the first object in the catalogue (row ``0``):
+
+.. code-block:: python
+
+    soap = SOAP(
+        soap_file="halo_properties_0123.hdf5",
+	halo_index=0,
+    )
+
+The first argument could also include a path if needed, e.g. :file:`/path/to/halo_properties_0123.hdf5`.
+
+The properties of the object of interest are made conveniently available with the :meth:`~swiftgalaxy.halo_catalogues.SOAP.__getattr__` (dot) syntax, which exposes the interface provided by the :class:`~swiftsimio.reader.SWIFTDataset` object handling the SOAP catalogue. For example, the virial mass (M200crit) of our object of interest can be retrieved in the same way as if we were using :mod:`swiftsimio` to read the SOAP catalogue, except that in this case we only get the row corresponding to our chosen object:
+
+.. code-block:: python
+
+    soap.spherical_overdensity_200_crit.total_mass.to(u.Msun)
+
+SOAP calculates well over a hundred integrated quantities for each halo in the catalogue. All are available for the object of interest using similar syntax. Refer to the SOAP and :mod:`swiftsimio` documentation for further details of what quantities are available.
+    
+Usually the :class:`~swiftgalaxy.halo_catalogues.SOAP` object is used to create a :class:`~swiftgalaxy.reader.SWIFTGalaxy` object. Assuming that we have a simulation snapshot file :file:`snapshot_0123.hdf5` that goes with the catalogue file :file:`halo_properties_0123.hdf5` the object is created as:
+
+.. code-block:: python
+
+    sg = SWIFTGalaxy(
+        "snapshot_0123.hdf5",
+	SOAP(
+	    "halo_properties_0123.hdf5",
+	    halo_index=0,
+	)
+    )
+
+.. note::
+
+   SOAP records which particles belong to each individual halo in a set of "membership" files, usually found alongside the halo catalogue (e.g. :file:`halo_properties_0123.hdf5`) in a subdirectory, e.g. :file:`membership_0123/membership_0123.hdf5` (there may be several membership files ending in ``.X.hdf5`` if the raw snapshot was originally written in several files). :mod:`swiftgalaxy` expects to find the information contained in these files directly in the (single, monolithic) simulation snapshot file. The SOAP `code distribution`_ comes with a script ``make_virtual_snapshot.py`` that can create the necessary snapshot file containing the particle membership information. The file is "virtual" in the sense that it doesn't directly store (i.e. copy) the data in the snapshot and membership files but instead contains hyperlinks to the existing data files, providing a single file interface to all of the relevant information. In our example we could create the "virtual" snapshot file as:
+
+   .. code-block:: bash
+
+       python make_virtual_snapshot.py \
+       'snapshot_0123.%(file_nr).d.hdf5' \
+       'membership_0123/membership_0123.%(file_nr).d.hdf5' \
+       'snapshot_0123.hdf5'
+
+   Notice that this script wants the raw, multi-part (``.X.hdf5``) snapshot files and membership files as input. The ``%(file_nr).d`` is the pattern replaced with the number of each file (``.d`` means formatted as an integer). Attempting to use :mod:`swiftgalaxy` with a snapshot file that does not contain the particle membership information will result in an error similar to ``AttributeError: 'GasDataset' object has no attribute 'group_nr_bound'``.
+
+.. warning::
+
+   At the time of writing, the script ``make_virtual_snapshot.py`` is not in the ``master`` branch of the ``SOAP`` catalogue. It can be found in the `merge_halo_finders`_ branch. The script may be developed further (e.g. it currently does not handle snapshots that were initially written as a single file), so the usage instructions above may become outdated.
+
+.. _code distribution: https://github.com/SWIFTSIM/SOAP
+.. _merge_halo_finders: https://github.com/SWIFTSIM/SOAP/tree/merge_halo_finders
+
+When working with a :class:`SWIFTGalaxy` object the interface to the integrated properties is exposed through the ``halo_catalogue`` attribute, for example:
+
+.. code-block:: python
+
+    sg.halo_catalogue.spherical_overdensity_200_crit.total_mass.to(u.Msun)
+
+By default, the :class:`~swiftgalaxy.halo_catalogues.SOAP` class will identify the particles that the halo finder deems bound to the object as belonging to the galaxy. This is controlled by the argument:
+
+.. code-block:: python
+
+    SOAP(
+        ...,
+	extra_mask="bound_only"
+    )
+
+This behaviour can be adjusted. If ``None`` is passed instead, then only the spatial masking (provided internally by :meth:`~swiftgalaxy.halo_catalogues.SOAP._get_spatial_mask`) is used. This means that all particles in the set of (probably cubic) subvolumes of the simulation that overlap with the region of interest will be read in. Alternatively, a :class:`~swiftgalaxy.masks.MaskCollection` can be provided for finer control of the particle selection. This will be used to select particles from those already selected spatially.
+
+If a different subset of particles is desired, often the most practical option is to first set up the :class:`~swiftgalaxy.reader.SWIFTGalaxy` with either ``extra_mask="bound_only"`` or ``extra_mask=None`` and then use the loaded particles to :doc:`compute a new mask that can then be applied <../masking/index>`, perhaps permanently. Since all particles within the spatially masked region will always be read in any case, this does not imply any loss of efficiency.
+
+SOAP catalogues lists many centres for halos. :mod:`swiftgalaxy` uses the centre of mass of the bound particles, and the corresponding velocity in the catalogue, as the :doc:`default coordinate origin <../coordinate_transformations/index>` (unless the argument ``auto_recentre=False`` is passed to :class:`~swiftgalaxy.reader.SWIFTGalaxy`). Any centre and/or reference velocity from a SOAP catalogue can be used, referring to them (in a string) using the same syntax as would be used to access them in :mod:`swiftsimio`, for example:
+
+.. code-block:: python
+
+    SOAP(
+        ...,
+	centre_type="spherical_overdensity_500_crit.centre_of_mass",  # centre of mass of particles in R500crit
+	velocity_centre_type="spherical_overdensity_500_crit.centre_of_mass_velocity",  # and corresponding velocity
+    )
+
+The centre and reference velocity :doc:`can also be shifted (and rotated) <../coordinate_transformations/index>` to an arbitrary coordinate frame after the :class:`~swiftgalaxy.reader.SWIFTGalaxy` has been created.
+
+To select *all* particles (not only bound particles) in an aperture around the halo of interest, see the :ref:`example below <aperture-example>`.
 
 Caesar
 ------
@@ -105,6 +195,7 @@ These can be used as, for example:
 	centre_type="",  # centre of mass (no suffix in Caesar catalogue)
     )
 
+To select *all* particles (not only bound particles) in an aperture around the halo of interest, see the :doc:`example below <index:Selecting particles within an aperture>`.
 
 Velociraptor
 ------------
@@ -169,6 +260,8 @@ These can be used as, for example:
 	centre_type="mbp"
     )
 
+To select *all* particles (not only bound particles) in an aperture around the halo of interest, see the :doc:`example below <index:Selecting particles within an aperture>`.
+
 Other halo catalogues
 ---------------------
 
@@ -222,10 +315,38 @@ Finally, apply the mask to the ``sg`` object:
 
 .. code-block:: python
 
-   sg.mask_particles(mask_collection)
+    sg.mask_particles(mask_collection)
 
 You're now ready to proceed with analysis of the particles in the 1 Mpc spherical aperture using this ``sg`` object.
 
 .. note::
 
    :meth:`~swiftgalaxy.reader.SWIFTGalaxy.mask_particles` applies the masks in-place. The mask could also be applied with the :meth:`~swiftgalaxy.reader.SWIFTGalaxy.__getattr__` method (i.e. in square brackets), but this returns a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object. If memory efficiency is a concern, prefer the :meth:`~swiftgalaxy.reader.SWIFTGalaxy.mask_particles` approach.
+
+.. _aperture-example:
+	 
+Selecting particles within an aperture
+--------------------------------------
+	 
+The workflow to select all particles within a given aperture (e.g. 1 Mpc) also works when starting from a halo catalogue object. For instance, using SOAP you could do the following:
+
+.. code-block:: python
+
+    sg = SWIFTGalaxy(
+        "my_snapshot.hdf5",
+	SOAP(
+	    "my_soap_file.hdf5",
+	    halo_index=0,
+	    extra_mask=None,  # disable selecting only particles flagged as bound by the halo finder
+	    custom_spatial_offsets=cosmo_arrayy([[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]], u.Mpc),
+	)
+    )
+    mask_collection = MaskCollection(
+        gas=sg.gas.spherical_coordinates.r < 1 * u.Mpc,
+        dark_matter=sg.dark_matter.spherical_coordinates.r < 1 * u.Mpc,
+        stars=sg.stars.spherical_coordinates.r < 1 * u.Mpc,
+        black_holes=sg.black_holes.spherical_coordinates.r < 1 * u.Mpc,
+    )
+    sg.mask_particles(mask_collection)
+
+The ``sg`` object is now ready for further analysis. The same approach works with any halo catalogue interface by setting the ``extra_mask`` and ``custom_spatial_offsets`` arguments appropriately.
