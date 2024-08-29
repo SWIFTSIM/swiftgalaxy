@@ -60,9 +60,9 @@ Usually the :class:`~swiftgalaxy.halo_catalogues.SOAP` object is used to create 
    .. code-block:: bash
 
        python make_virtual_snapshot.py \
-       'snapshot_0123.%(file_nr).d.hdf5' \
-       'membership_0123/membership_0123.%(file_nr).d.hdf5' \
-       'snapshot_0123.hdf5'
+       'snapshot_0123.%(file_nr).d.hdf5' \  # input "raw" snapshots
+       'membership_0123/membership_0123.%(file_nr).d.hdf5' \  # input membership files
+       'snapshot_0123.hdf5'  # output "virtual" snapshot
 
    Notice that this script wants the raw, multi-part (``.X.hdf5``) snapshot files and membership files as input. The ``%(file_nr).d`` is the pattern replaced with the number of each file (``.d`` means formatted as an integer). Attempting to use :mod:`swiftgalaxy` with a snapshot file that does not contain the particle membership information will result in an error similar to ``AttributeError: 'GasDataset' object has no attribute 'group_nr_bound'``.
 
