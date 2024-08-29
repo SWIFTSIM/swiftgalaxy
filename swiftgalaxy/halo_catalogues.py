@@ -1,12 +1,13 @@
 """
 This module contains classes providing interfaces to halo catalogues used with
 SWIFT so that :mod:`swiftgalaxy` can obtain the information it requires in a
-streamlined way. Currently SOAP and Velociraptor_ halo catalogues are supported,
+streamlined way. Currently SOAP_ and Velociraptor_ halo catalogues are supported,
 as well as Caesar_ catalogues, others can be supported on request.
 
 .. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/\
 abstract
 .. _Caesar: https://caesar.readthedocs.io/en/latest/
+.. _SOAP: https://github.com/SWIFTSIM/SOAP
 """
 
 from warnings import warn
@@ -100,6 +101,74 @@ class _HaloCatalogue(ABC):
 
 
 class SOAP(_HaloCatalogue):
+    """
+    Interface to SOAP halo catalogues for use with :mod:`swiftgalaxy`.
+
+    Takes a set of ``SOAP`` output files and configuration options and provides an
+    interface that :mod:`swiftgalaxy` understands. Also exposes the galaxy properties
+    computed by ``SOAP`` for a single object of interest through the :mod:`swiftsimio`
+    interface.
+
+    Parameters
+    ----------
+
+    soap_file: ``Optional[str]``, default: ``None``
+        The filename of a SOAP catalogue file, possibly including the path.
+    halo_index: ``Optional[int]``, default: ``None``
+        The position (row) in the SOAP catalogue corresponding to the object of interest.
+    extra_mask: ``Union[str, MaskCollection]``, default: ``"bound_only"``
+        Mask to apply to particles after spatial masking. If ``"bound_only"``,
+        then the galaxy is masked to include only the gravitationally bound
+        particles as determined by ``SOAP``. A user-defined mask can also be provided
+        as an an object (such as a :class:`swiftgalaxy.masks.MaskCollection`) that has
+        attributes with names corresponding to present particle names (e.g. gas,
+        dark_matter, etc.), each containing a mask.
+    centre_type: ``str``, default: ``"bound_subhalo.centre_of_mass"``
+        Type of centre, chosen from those provided by ``SOAP``. This should be
+        expressed as a string analogous to what would be written in
+        :mod:`swiftsimio` code (or :mod:`swiftgalaxy`) to access that property in the
+        SOAP catalogue. The default takes the ``"bound_subhalo.centre_of_mass"``;
+        another option amongst many more is ``"input_halos.halo_centre"``.
+    velocity_centre_type: ``str``, default: ``"bound_subhalo.centre_of_mass_velocity"``
+        Type of velocity centre, chosen from those provided by ``SOAP``. This should be
+        expressed as a string analogous to what would be written in
+        :mod:`swiftsimio` code (or :mod:`swiftgalaxy`) to access that property in the
+        SOAP catalogue. The default takes the ``"bound_subhalo.centre_of_mass_velocity"``;
+        note that the other example for the ``centre_type`` has no analogue for velocity
+        (``"input_halos.halo_centre_velocity"`` is not defined).
+    custom_spatial_offsets: ``Optional[cosmo_array]``, default: ``None``
+        A region to override the automatically-determined region enclosing
+        group member particles. May be used in conjunction with ``extra_mask``,
+        for example to select all simulation particles in an aperture around
+        the object of interest (see 'Masking' section of documentation for a
+        cookbook example). Provide a pair of offsets from the object's centre
+        along each axis to define the region, for example for a cube extending
+        +/- 1 Mpc from the centre:
+        ``cosmo_array([[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]], u.Mpc)``.
+
+    Notes
+    -----
+
+    .. note::
+        ``SOAP`` only supports index access to catalogue arrays, not
+        identifier access. This means that the ``halo_index`` is simply the
+        position of the object of interest in the catalogue arrays.
+
+    Examples
+    --------
+    Given a file :file:`halo_properties_0050.hdf5`, the following creates a :class:`SOAP`
+    object for the entry at index ``0`` in the catalogue (i.e. the 1st row, indexed
+    from 0) and demonstrates retrieving its virial mass (M200crit).
+
+    ::
+
+        >>> cat = SOAP(
+        >>>     soap_file="/output/path/halo_properties_0050.hdf5"
+        >>>     halo_index=0,  # 1st entry in catalogue (indexed from 0)
+        >>> )
+        >>> cat.spherical_overdensity_200_crit.total_mass.to(u.Msun)
+        cosmo_array([6.72e+12], dtype=float32, units='1.98841586e+30*kg', comoving=False)
+    """
 
     soap_file: str
     halo_index: int
@@ -114,6 +183,7 @@ class SOAP(_HaloCatalogue):
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "bound_subhalo.centre_of_mass",
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
+        custom_spatial_offsets: Optional[cosmo_array] = None,
     ) -> None:
         if soap_file is not None:
             self.soap_file = soap_file
@@ -126,6 +196,7 @@ class SOAP(_HaloCatalogue):
             raise ValueError("Provide a halo_index.")
         self.centre_type = centre_type
         self.velocity_centre_type = velocity_centre_type
+        self._user_spatial_offsets = custom_spatial_offsets
         super().__init__(extra_mask=extra_mask)
         return
 
