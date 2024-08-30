@@ -123,19 +123,22 @@ class SOAP(_HaloCatalogue):
         as an an object (such as a :class:`swiftgalaxy.masks.MaskCollection`) that has
         attributes with names corresponding to present particle names (e.g. gas,
         dark_matter, etc.), each containing a mask.
-    centre_type: ``str``, default: ``"bound_subhalo.centre_of_mass"``
+    centre_type: ``str``, default: ``"input_halos.halo_centre"``
         Type of centre, chosen from those provided by ``SOAP``. This should be
         expressed as a string analogous to what would be written in
         :mod:`swiftsimio` code (or :mod:`swiftgalaxy`) to access that property in the
-        SOAP catalogue. The default takes the ``"bound_subhalo.centre_of_mass"``;
-        another option amongst many more is ``"input_halos.halo_centre"``.
+        SOAP catalogue. The default takes the ``"input_halos.halo_centre"`` (usually
+        the centre of potential, e.g. the HBT+ halo finder defines it in this way;
+        another option amongst many more is ``"bound_subhalo.centre_of_mass"``.
     velocity_centre_type: ``str``, default: ``"bound_subhalo.centre_of_mass_velocity"``
         Type of velocity centre, chosen from those provided by ``SOAP``. This should be
         expressed as a string analogous to what would be written in
         :mod:`swiftsimio` code (or :mod:`swiftgalaxy`) to access that property in the
         SOAP catalogue. The default takes the ``"bound_subhalo.centre_of_mass_velocity"``;
-        note that the other example for the ``centre_type`` has no analogue for velocity
-        (``"input_halos.halo_centre_velocity"`` is not defined).
+        note that there is no velocity corresponding to the centre of potential
+        (``"input_halos.halo_centre_velocity"`` is not defined). Another useful option
+        could be ``"exclusive_sphere_1kpc.centre_of_mass_velocity"`` to choose the
+        velocity of bound particles in the central 1 kpc.
     custom_spatial_offsets: ``Optional[cosmo_array]``, default: ``None``
         A region to override the automatically-determined region enclosing
         group member particles. May be used in conjunction with ``extra_mask``,
@@ -152,7 +155,7 @@ class SOAP(_HaloCatalogue):
     .. note::
         ``SOAP`` only supports index access to catalogue arrays, not
         identifier access. This means that the ``halo_index`` is simply the
-        position of the object of interest in the catalogue arrays.
+        position of the object of interest in the SOAP catalogue arrays.
 
     Examples
     --------
@@ -181,7 +184,7 @@ class SOAP(_HaloCatalogue):
         soap_file: Optional[str] = None,
         halo_index: Optional[int] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
-        centre_type: str = "bound_subhalo.centre_of_mass",
+        centre_type: str = "input_halos.halo_centre",
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
         custom_spatial_offsets: Optional[cosmo_array] = None,
     ) -> None:
@@ -217,24 +220,20 @@ class SOAP(_HaloCatalogue):
         return sm
 
     def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
-        if hasattr(SG, "gas"):
-            gas_mask = SG.gas._particle_dataset.group_nr_bound == self.halo_index
-            del SG.gas._particle_dataset.group_nr_bound
-        if hasattr(SG, "dark_matter"):
-            dm_mask = SG.dark_matter._particle_dataset.group_nr_bound == self.halo_index
-            del SG.dark_matter._particle_dataset.group_nr_bound
-        if hasattr(SG, "stars"):
-            star_mask = SG.stars._particle_dataset.group_nr_bound == self.halo_index
-            del SG.stars._particle_dataset.group_nr_bound
-        if hasattr(SG, "black_holes"):
-            bh_mask = SG.black_holes.group_nr_bound == self.halo_index
-            del SG.black_holes._particle_dataset.group_nr_bound
-        return MaskCollection(
-            gas=gas_mask,
-            dark_matter=dm_mask,
-            stars=star_mask,
-            black_holes=bh_mask,
+        # The halo_catalogue_index is the index into the full (HBT+ not SOAP) catalogue;
+        # this is what group_nr_bound matches against.
+        masks = MaskCollection(
+            **{
+                group_name: getattr(
+                    SG, group_name
+                )._particle_dataset.group_nr_bound.to_value(u.dimensionless)
+                == self.input_halos.halo_catalogue_index.to_value(u.dimensionless)
+                for group_name in SG.metadata.present_group_names
+            }
         )
+        for group_name in SG.metadata.present_group_names:
+            del getattr(SG, group_name)._particle_dataset.group_nr_bound
+        return masks
 
     @property
     def centre(self) -> cosmo_array:
