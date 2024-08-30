@@ -92,14 +92,14 @@ This behaviour can be adjusted. If ``None`` is passed instead, then only the spa
 
 If a different subset of particles is desired, often the most practical option is to first set up the :class:`~swiftgalaxy.reader.SWIFTGalaxy` with either ``extra_mask="bound_only"`` or ``extra_mask=None`` and then use the loaded particles to :doc:`compute a new mask that can then be applied <../masking/index>`, perhaps permanently. Since all particles within the spatially masked region will always be read in any case, this does not imply any loss of efficiency.
 
-SOAP catalogues lists many centres for halos. :mod:`swiftgalaxy` uses the centre of mass of the bound particles, and the corresponding velocity in the catalogue, as the :doc:`default coordinate origin <../coordinate_transformations/index>` (unless the argument ``auto_recentre=False`` is passed to :class:`~swiftgalaxy.reader.SWIFTGalaxy`). Any centre and/or reference velocity from a SOAP catalogue can be used, referring to them (in a string) using the same syntax as would be used to access them in :mod:`swiftsimio`, for example:
+SOAP catalogues lists many centres for halos. :mod:`swiftgalaxy` uses the "input halo centre" (for the HBT+ halo finder this is the centre of potential), and the mass-weighted average velocity of bound particles in the catalogue, as the :doc:`default coordinate origin <../coordinate_transformations/index>` (unless the argument ``auto_recentre=False`` is passed to :class:`~swiftgalaxy.reader.SWIFTGalaxy`). Any centre and/or reference velocity from a SOAP catalogue can be used, referring to them (in a string) using the same syntax as would be used to access them in :mod:`swiftsimio`, for example:
 
 .. code-block:: python
 
     SOAP(
         ...,
 	centre_type="spherical_overdensity_500_crit.centre_of_mass",  # centre of mass of particles in R500crit
-	velocity_centre_type="spherical_overdensity_500_crit.centre_of_mass_velocity",  # and corresponding velocity
+	velocity_centre_type="exclusive_sphere_1kpc.centre_of_mass_velocity",  # mass-weighted mean velocity of particles in central 1kpc
     )
 
 The centre and reference velocity :doc:`can also be shifted (and rotated) <../coordinate_transformations/index>` to an arbitrary coordinate frame after the :class:`~swiftgalaxy.reader.SWIFTGalaxy` has been created.
