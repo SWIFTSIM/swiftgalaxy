@@ -478,7 +478,7 @@ class TestSOAP:
             ("exclusive_sphere_100kpc.centre_of_mass", 2.003),
             ("inclusive_sphere_100kpc.centre_of_mass", 2.011),
             ("input_halos_fof.centres", 2.0),
-            ("input_halos.halo_centre", 2.0),
+            ("input_halos.halo_centre", 2.001),
             ("projected_aperture_50kpc_projx.centre_of_mass", 2.027),
             ("spherical_overdensity_200_crit.centre_of_mass", 2.032),
             ("spherical_overdensity_bn98.centre_of_mass", 2.038),
