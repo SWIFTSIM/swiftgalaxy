@@ -1627,7 +1627,7 @@ def create_toysoap(
         hci.attrs["h-scale exponent"] = np.array([0.0])
         hcentre = f["InputHalos"].create_dataset(
             "HaloCentre",
-            data=np.array([[2.0, 2.0, 2.0]]),
+            data=np.array([[2.001, 2.001, 2.001]]),
             dtype=float,
         )
         hcentre.attrs[
