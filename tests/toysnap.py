@@ -11,14 +11,15 @@ from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftsimio.units import cosmo_units
 
 
-cosma_soap_script_path = "/cosma/home/durham/dc-oman1/code/SOAP-sgsoap-dev/"
+cosma_soap_script_path = "/cosma/home/durham/dc-oman1/code/SOAP/"
 if os.path.exists(cosma_soap_script_path):
     soap_script_path = cosma_soap_script_path
 try:
     soap_script_path = os.path.join(os.environ["GITHUB_WORKSPACE"], "SOAP")
 except KeyError:
     pass  # not on github CI
-assert os.path.exists(soap_script_path)
+soap_script = os.path.join(soap_script_path, "make_virtual_snapshot.py")
+assert os.path.exists(soap_script)
 
 toysnap_filename = "toysnap.hdf5"
 toyvr_filebase = "toyvr"
@@ -1822,15 +1823,13 @@ def create_toysoap(
                 ds_rank.attrs["a-scale exponent"] = np.array([0.0])
                 ds_rank.attrs["h-scale exponent"] = np.array([0.0])
     if create_virtual_snapshot:
-        import sys
-
-        sys.path.append(soap_script_path)
-        from make_virtual_snapshot import make_virtual_snapshot
-
-        make_virtual_snapshot(
-            create_virtual_snapshot_from,
-            f"{membership_filebase}.%(file_nr).d.hdf5",
-            virtual_snapshot_filename,
+        os.system(
+            f"python {soap_script} "
+            f"'{create_virtual_snapshot_from}' "
+            f"'{membership_filebase}."
+            "{file_nr}.hdf5' "
+            f"'{virtual_snapshot_filename}' "
+            "0"
         )
 
 

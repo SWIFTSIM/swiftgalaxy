@@ -105,22 +105,23 @@ class TestHaloCatalogues:
             np.array([[0, n_bh_firstcell], [n_bh_firstcell, n_bh]]),
         )
 
-    def test_get_bound_only_extra_mask(self, hf, toysnap):
+    def test_get_bound_only_extra_mask(self, hf, toysnap_withfof):
         """
         Check that bound_only extra mask has the right shape.
         """
         hf.extra_mask = "bound_only"
         if hasattr(hf, "soap_file"):
-            from toysnap import soap_script_path
-            import sys
+            from toysnap import soap_script
+            import os
 
-            sys.path.append(soap_script_path)
-            from make_virtual_snapshot import make_virtual_snapshot
-
-            make_virtual_snapshot(
-                toysnap_filename,
-                f"{toysoap_membership_filebase}.%(file_nr).d.hdf5",
-                toysoap_virtual_snapshot_filename,
+            os.system(
+                f"python {soap_script} "
+                f"--absolute-paths "
+                f"'{toysnap_filename}' "
+                f"'{toysoap_membership_filebase}."
+                "{file_nr}.hdf5' "
+                f"'{toysoap_virtual_snapshot_filename}' "
+                "0"
             )
             sg = SWIFTGalaxy(toysoap_virtual_snapshot_filename, hf)
         else:

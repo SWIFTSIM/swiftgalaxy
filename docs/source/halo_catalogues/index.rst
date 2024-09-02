@@ -55,16 +55,18 @@ Usually the :class:`~swiftgalaxy.halo_catalogues.SOAP` object is used to create 
 
 .. note::
 
-   SOAP records which particles belong to each individual halo in a set of "membership" files, usually found alongside the halo catalogue (e.g. :file:`halo_properties_0123.hdf5`) in a subdirectory, e.g. :file:`membership_0123/membership_0123.hdf5` (there may be several membership files ending in ``.X.hdf5``, where ``X`` is replaced by integers, if the raw snapshot was originally written in several files). :mod:`swiftgalaxy` expects to find the information contained in these files directly in the (single, monolithic) simulation snapshot file. Some simulations (including Colibre) provide a snapshot that includes the membership information already. If such a file is not available, the SOAP `code distribution`_ comes with a script ``make_virtual_snapshot.py`` that can create the necessary snapshot file containing the particle membership information. The file is "virtual" in the sense that it doesn't directly store (i.e. copy) the data in the snapshot and membership files but instead contains hyperlinks to the existing data files, providing a single file interface to all of the relevant information. In our example we could create the "virtual" snapshot file as:
+   SOAP records which particles belong to each individual halo in a set of "membership" files, usually found alongside the halo catalogue (e.g. :file:`halo_properties_0123.hdf5`) in a subdirectory, e.g. :file:`membership_0123/membership_0123.X.hdf5` (where ``X`` is replaced by integers). :mod:`swiftgalaxy` expects to find the information contained in these files directly in the (single, monolithic) simulation snapshot file. Some simulations (including Colibre) provide a snapshot that includes the membership information already. If such a file is not available, the SOAP `code distribution`_ comes with a script ``make_virtual_snapshot.py`` that can create the necessary snapshot file containing the particle membership information. The file is "virtual" in the sense that it doesn't directly store (i.e. copy) the data in the snapshot and membership files but instead contains hyperlinks to the existing data files, providing a single file interface to all of the relevant information. The script help information is available with ``python make_virtual_snapshot.py --help``. In our example we could create the "virtual" snapshot file as:
 
    .. code-block:: bash
 
        python make_virtual_snapshot.py \
-       'snapshot_0123.%(file_nr).d.hdf5' \  # input "raw" snapshots
-       'membership_0123/membership_0123.%(file_nr).d.hdf5' \  # input membership files
-       'snapshot_0123.hdf5'  # output "virtual" snapshot
+       --absolute-paths \
+       'snapshot_{snap_nr:04}.hdf5' \  # input virtual snapshot without membership information
+       'membership_{snap_nr:04}/membership_{snap_nr:04}.{file_nr}.hdf5' \  # input membership files
+       'snapshot_{snap_nr:04}.hdf5' \ # output virtual snapshot with membership information
+       123  # snapshot number
 
-   Notice that this script wants the raw, multi-part (``.X.hdf5``) snapshot files and membership files as input. The ``%(file_nr).d`` is the pattern replaced with the number of each file (``.d`` means formatted as an integer). Attempting to use :mod:`swiftgalaxy` with a snapshot file that does not contain the particle membership information will result in an error similar to ``AttributeError: 'GasDataset' object has no attribute 'group_nr_bound'``.
+   Notice that this script wants a virtual snapshot file as input. This file is copied, so while the script will (probably) work on a non-virtual input snapshot, this will result in data duplication on disk. The ``{snap_nr:04)`` is the pattern replaced with the snapshot number provided as the last argument. The ``{file_nr}`` is replaced with the number of each file. Attempting to use :mod:`swiftgalaxy` with a snapshot file that does not contain the particle membership information will result in an error similar to ``AttributeError: 'GasDataset' object has no attribute 'group_nr_bound'``.
 
 .. _code distribution: https://github.com/SWIFTSIM/SOAP
 
