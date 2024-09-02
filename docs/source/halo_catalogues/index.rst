@@ -66,12 +66,7 @@ Usually the :class:`~swiftgalaxy.halo_catalogues.SOAP` object is used to create 
 
    Notice that this script wants the raw, multi-part (``.X.hdf5``) snapshot files and membership files as input. The ``%(file_nr).d`` is the pattern replaced with the number of each file (``.d`` means formatted as an integer). Attempting to use :mod:`swiftgalaxy` with a snapshot file that does not contain the particle membership information will result in an error similar to ``AttributeError: 'GasDataset' object has no attribute 'group_nr_bound'``.
 
-.. warning::
-
-   At the time of writing, the script ``make_virtual_snapshot.py`` is not in the ``master`` branch of the ``SOAP`` repository. It can be found in the `merge_halo_finders`_ branch. The script may be developed further (e.g. it currently does not handle snapshots that were initially written as a single file), so the usage instructions above may become outdated.
-
 .. _code distribution: https://github.com/SWIFTSIM/SOAP
-.. _merge_halo_finders: https://github.com/SWIFTSIM/SOAP/tree/merge_halo_finders
 
 When working with a :class:`~swiftgalaxy.reader.SWIFTGalaxy` object the interface to the integrated properties is exposed through the ``halo_catalogue`` attribute, for example:
 
