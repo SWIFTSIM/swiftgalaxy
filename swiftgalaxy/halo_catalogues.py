@@ -12,6 +12,7 @@ abstract
 
 from warnings import warn
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 import numpy as np
 import unyt as u
 from swiftsimio import SWIFTMask, SWIFTDataset, mask
@@ -25,8 +26,26 @@ if TYPE_CHECKING:
     from swiftgalaxy.reader import SWIFTGalaxy
 
 
+class _MaskHelper:
+
+    def __init__(self, data, mask):
+        self._mask_helper_data = data
+        self._mask_helper_mask = mask
+
+    def __getattr__(self, attr: str) -> Any:
+        return getattr(self._mask_helper_data, attr)[self._mask_helper_mask]
+
+    def __getitem__(self, key: str) -> Any:
+        return self.__getattr__(key)
+
+    def __repr__(self):
+        return self._mask_helper_data.__repr__()
+
+
 class _HaloCatalogue(ABC):
     _user_spatial_offsets: Optional[List] = None
+    _multi_galaxy: bool = False
+    _multi_galaxy_mask_index: Optional[int] = None
 
     def __init__(
         self, extra_mask: Optional[Union[str, MaskCollection]] = "bound_only"
@@ -34,6 +53,12 @@ class _HaloCatalogue(ABC):
         self.extra_mask = extra_mask
         self._load()
         return
+
+    def _mask_multi_galaxy(self, index):
+        self._multi_galaxy_mask_index = index
+
+    def _unmask_multi_galaxy(self):
+        self._multi_galaxy_mask_index = None
 
     @abstractmethod
     def _load(self) -> None:
@@ -197,6 +222,9 @@ class SOAP(_HaloCatalogue):
             self.halo_index = halo_index
         else:
             raise ValueError("Provide a halo_index.")
+        self._multi_galaxy = isinstance(self.halo_index, Iterable)
+        if self._multi_galaxy:
+            assert extra_mask in (None, "bound_only")
         self.centre_type = centre_type
         self.velocity_centre_type = velocity_centre_type
         self._user_spatial_offsets = custom_spatial_offsets
@@ -205,16 +233,30 @@ class SOAP(_HaloCatalogue):
 
     def _load(self) -> None:
         sm = mask(self.soap_file)
-        sm.constrain_index(self.halo_index)
+        if self._multi_galaxy:
+            sm.constrain_indices(self.halo_index)
+        else:
+            sm.constrain_index(self.halo_index)
         self._swift_dataset: SWIFTDataset = SWIFTDataset(
             self.soap_file,
             mask=sm,
         )
 
+    @property
+    def _bound_centre(self) -> cosmo_array:
+        return self.bound_subhalo.centre_of_mass.squeeze()
+
+    @property
+    def _bound_aperture(self) -> cosmo_array:
+        return self.bound_subhalo.enclose_radius.squeeze()
+
     def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
+        if self._multi_galaxy and self._mask_multi_galaxy is None:
+            raise RuntimeError(
+                "Halo catalogue has multiple galaxies and is not currently masked."
+            )
+        pos, rmax = self._bound_centre, self._bound_aperture
         sm = mask(snapshot_filename, spatial_only=True)
-        pos = self._swift_dataset.bound_subhalo.centre_of_mass.squeeze()
-        rmax = self._swift_dataset.bound_subhalo.enclose_radius.squeeze()
         load_region = cosmo_array([pos - rmax, pos + rmax]).T
         sm.constrain_spatial(load_region)
         return sm
@@ -240,6 +282,8 @@ class SOAP(_HaloCatalogue):
         obj = self._swift_dataset
         for attr in self.centre_type.split("."):
             obj = getattr(obj, attr)
+        if self._multi_galaxy_mask_index is not None:
+            return obj[self._multi_galaxy_mask_index]
         return obj.squeeze()
 
     @property
@@ -247,14 +291,27 @@ class SOAP(_HaloCatalogue):
         obj = self._swift_dataset
         for attr in self.velocity_centre_type.split("."):
             obj = getattr(obj, attr)
+        if self._multi_galaxy_mask_index is not None:
+            return obj[self._multi_galaxy_mask_index]
         return obj.squeeze()
+
+    @property
+    def count(self) -> int:
+        if self._multi_galaxy and self._multi_galaxy_mask_index is None:
+            return len(self.halo_index)
+        else:
+            return 1
 
     def __getattr__(self, attr: str) -> Any:
         # Invoked if attribute not found.
         # Use to expose the masked catalogue.
         if attr == "_swift_dataset":  # guard infinite recursion
             return object.__getattribute__(self, "_swift_dataset")
-        return getattr(self._swift_dataset, attr)
+        obj = getattr(self._swift_dataset, attr)
+        if self._multi_galaxy_mask_index is not None:
+            return _MaskHelper(obj, self._multi_galaxy_mask_index)
+        else:
+            return obj
 
     def __repr__(self) -> str:
         # Expose the catalogue __repr__ for interactive use.

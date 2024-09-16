@@ -1184,7 +1184,10 @@ class SWIFTGalaxy(SWIFTDataset):
         if _extra_mask is not None:
             self._extra_mask = _extra_mask
         else:
-            self._extra_mask = self.halo_catalogue._get_extra_mask(self)
+            if (
+                self.halo_catalogue is not None
+            ):  # in server mode we don't have a halo_catalogue yet
+                self._extra_mask = self.halo_catalogue._get_extra_mask(self)
             if self._extra_mask is not None:
                 # need to mask any already loaded data
                 for particle_name in self.metadata.present_group_names:
