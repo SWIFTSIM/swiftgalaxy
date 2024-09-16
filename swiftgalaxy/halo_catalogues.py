@@ -12,7 +12,7 @@ abstract
 
 from warnings import warn
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Sized
 import numpy as np
 import unyt as u
 from swiftsimio import SWIFTMask, SWIFTDataset, mask
@@ -46,6 +46,7 @@ class _HaloCatalogue(ABC):
     _user_spatial_offsets: Optional[List] = None
     _multi_galaxy: bool = False
     _multi_galaxy_mask_index: Optional[int] = None
+    _multi_count: int
 
     def __init__(
         self, extra_mask: Optional[Union[str, MaskCollection]] = "bound_only"
@@ -199,7 +200,7 @@ class SOAP(_HaloCatalogue):
     """
 
     soap_file: str
-    halo_index: int
+    halo_index: Union[int, Sized]
     centre_type: str
     velocity_centre_type: str
     _swift_dataset: SWIFTDataset
@@ -207,7 +208,7 @@ class SOAP(_HaloCatalogue):
     def __init__(
         self,
         soap_file: Optional[str] = None,
-        halo_index: Optional[int] = None,
+        halo_index: Optional[Union[int, Sized]] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "input_halos.halo_centre",
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
@@ -222,7 +223,13 @@ class SOAP(_HaloCatalogue):
             self.halo_index = halo_index
         else:
             raise ValueError("Provide a halo_index.")
-        self._multi_galaxy = isinstance(self.halo_index, Iterable)
+        if isinstance(self.halo_index, Sized):
+            self._multi_galaxy = True
+            if not isinstance(halo_index, int):  # placate mypy
+                self._multi_count = len(halo_index)
+        else:
+            self._multi_galaxy = False
+            self._multi_count = 1
         if self._multi_galaxy:
             assert extra_mask in (None, "bound_only")
         self.centre_type = centre_type
@@ -298,7 +305,7 @@ class SOAP(_HaloCatalogue):
     @property
     def count(self) -> int:
         if self._multi_galaxy and self._multi_galaxy_mask_index is None:
-            return len(self.halo_index)
+            return self._multi_count
         else:
             return 1
 
