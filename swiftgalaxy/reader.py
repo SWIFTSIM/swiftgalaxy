@@ -1114,7 +1114,6 @@ class SWIFTGalaxy(SWIFTDataset):
         self._particle_dataset_helpers = dict()
         self.snapshot_filename: str = snapshot_filename
         self.halo_catalogue: _HaloCatalogue = halo_catalogue
-        self.auto_recentre: bool = auto_recentre
         self._spatial_mask: SWIFTMask
         if _spatial_mask is not None:
             self._spatial_mask = _spatial_mask
@@ -1385,6 +1384,28 @@ class SWIFTGalaxy(SWIFTDataset):
         self.wrap_box()
         return
 
+    def _transform(self, transform4: cosmo_array, boost: bool = False) -> None:
+        # assumes that the input transformation has compatible implicit units, so not
+        # intended for users
+        transformable = (
+            self.transforms_like_velocities
+            if boost
+            else self.transforms_like_coordinates
+        )
+        for particle_name in self.metadata.present_group_names:
+            dataset = getattr(self, particle_name)._particle_dataset
+            for field_name in transformable:
+                field_data = getattr(dataset, f"_{field_name}")
+                if field_data is not None:
+                    field_data = _apply_4transform(field_data, transform4)
+                    setattr(dataset, f"_{field_name}", field_data)
+        if boost:
+            self._append_to_velocity_like_transform(transform4)
+        else:
+            self._append_to_coordinate_like_transform(transform4)
+        if not boost:
+            self.wrap_box()
+
     def _translate(self, translation: cosmo_array, boost: bool = False) -> None:
         translatable = (
             self.transforms_like_velocities
@@ -1402,19 +1423,19 @@ class SWIFTGalaxy(SWIFTDataset):
             transform_units = self.metadata.units.length / self.metadata.units.time
         else:
             transform_units = self.metadata.units.length
-        translation4 = np.eye(4)
+        transform4 = np.eye(4)
         if hasattr(translation, "comoving"):
-            translation4[3, :3] = translation.to_comoving().to_value(transform_units)
+            transform4[3, :3] = translation.to_comoving().to_value(transform_units)
         else:
-            translation4[3, :3] = translation.to_value(transform_units)
+            transform4[3, :3] = translation.to_value(transform_units)
             warn(
                 "Translation assumed to be in comoving (not physical) coordinates.",
                 category=UserWarning,
             )
         if boost:
-            self._append_to_velocity_like_transform(translation4)
+            self._append_to_velocity_like_transform(transform4)
         else:
-            self._append_to_coordinate_like_transform(translation4)
+            self._append_to_coordinate_like_transform(transform4)
         if not boost:
             self.wrap_box()
         return
