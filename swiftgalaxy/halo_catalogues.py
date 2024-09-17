@@ -239,8 +239,9 @@ class SOAP(_HaloCatalogue):
         return
 
     def _load(self) -> None:
-        sm = mask(self.soap_file)
+        sm = mask(self.soap_file)  # , spatial_only=not self._multi_galaxy)
         if self._multi_galaxy:
+            # will need spatial_only=False in future:
             sm.constrain_indices(self.halo_index)
         else:
             sm.constrain_index(self.halo_index)
@@ -251,7 +252,10 @@ class SOAP(_HaloCatalogue):
 
     @property
     def _bound_centre(self) -> cosmo_array:
-        return self.bound_subhalo.centre_of_mass.squeeze()
+        # should not need to box wrap here but there's a bug upstream
+        boxsize = self._swift_dataset.metadata.boxsize
+        coords = self.bound_subhalo.centre_of_mass.squeeze()
+        return (coords + boxsize / 2.0) % boxsize
 
     @property
     def _bound_aperture(self) -> cosmo_array:
@@ -316,6 +320,7 @@ class SOAP(_HaloCatalogue):
             return object.__getattribute__(self, "_swift_dataset")
         obj = getattr(self._swift_dataset, attr)
         if self._multi_galaxy_mask_index is not None:
+            # should find a way to mask self.halo_index too
             return _MaskHelper(obj, self._multi_galaxy_mask_index)
         else:
             return obj
