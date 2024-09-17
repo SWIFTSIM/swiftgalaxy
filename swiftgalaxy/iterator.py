@@ -76,12 +76,9 @@ class SWIFTGalaxies:
         # optimize_for_dense:
         #  two overlapping region grids, assign each galaxy to nearest centre in either
         # relatively cheap to evaluate both and then choose the one that minimizes i/o
-        target_centres = (
-            self.halo_catalogue._bound_centre
-        )  # NOT NECESSARILY IN THE BOX?? NEED TO WRAP??
-        target_sizes = (
-            self.halo_catalogue._bound_aperture
-        )  # also handle custom_spatial_offset here
+        target_centres = self.halo_catalogue._bound_centre
+        # also handle custom_spatial_offset here:
+        target_sizes = self.halo_catalogue._bound_aperture
         # SWIFTMask gives us a lightweight interface to metadata & cell metadata
         sm = mask(self._init_args["snapshot_filename"], spatial_only=True)
         # grid should be at least 1 cell in size so that we efficiently group targets
@@ -112,36 +109,41 @@ class SWIFTGalaxies:
         target_grid_offsets_offset, target_grid_indices_offset = np.modf(
             (target_centres + 0.5 * grid_element_dim * sm.cell_size)
             / (grid_element_dim * sm.cell_size)
+            - 1
         )
         target_grid_indices_aligned = target_grid_indices_aligned.to_value(
             u.dimensionless
         ).astype(int)
         # need a "box wrap" of targets to the far side of the grid for the offset grid:
-        # I think there's a bug here? check it...
-        # might always force all 3 indices to max instead of only the wrapped one
         target_grid_indices_offset = np.where(
-            target_grid_offsets_offset < 0.5,
+            np.logical_and(
+                target_grid_offsets_offset < 0, target_grid_indices_offset == 0
+            ),
             grid_dim - 1,
             target_grid_indices_offset,
         )  # complains about missing cosmo_array info
         target_grid_indices_offset = target_grid_indices_offset.to_value(
             u.dimensionless
         ).astype(int)
-        # should replace grid_dim.size with dimension from metadata
         target_grid_distances_aligned = np.sqrt(
             np.sum(
-                np.power(0.5 * np.ones(grid_dim.size) - target_grid_offsets_aligned, 2),
+                np.power(
+                    0.5 * np.ones(sm.metadata.dimension) - target_grid_offsets_aligned,
+                    2,
+                ),
                 axis=1,
             )
         )
         target_grid_distances_offset = np.sqrt(
             np.sum(
-                np.power(0.5 * np.ones(grid_dim.size) - target_grid_offsets_offset, 2),
+                np.power(
+                    0.5 * np.ones(sm.metadata.dimension) - target_grid_offsets_offset, 2
+                ),
                 axis=1,
             )
         )
-        assert all(target_grid_distances_aligned < np.sqrt(grid_dim.size))
-        assert all(target_grid_distances_offset < np.sqrt(grid_dim.size))
+        assert all(target_grid_distances_aligned < np.sqrt(sm.metadata.dimension))
+        assert all(target_grid_distances_offset < np.sqrt(sm.metadata.dimension))
         use_offset_grid = target_grid_distances_offset < target_grid_distances_aligned
         # target_regions columns: (1) flag which grid; (2,3,4) grid i, j, k
         target_regions = np.concatenate(
@@ -195,7 +197,7 @@ class SWIFTGalaxies:
                     (target_regions == unique_grid_region).all(axis=1)
                 ).squeeze()
                 for unique_grid_region in unique_grid_regions
-            ],
+            ],  # loop over argwhere is a bottleneck, faster solution?
             cost_min=(
                 np.prod(grid_element_dim)  # cost per grid element (optimistic)
                 * unique_regions.shape[0]  # number of grid elements
@@ -205,13 +207,11 @@ class SWIFTGalaxies:
                 * unique_regions.shape[0]  # number of grid elements
             ),
         )
-        print(
-            self._dense_optimized_solution["cost_min"],
-            self._dense_optimized_solution["cost_max"],
-        )
 
     def __iter__(self):
-        # server creation will later be moved here
+        # solution = self._dense_optimized_solution
+        # # server creation will later be moved here
+        # for region, targets in zip(solution["regions"], solution["region_target_indices"]):
         for igalaxy in range(self.halo_catalogue.count):
             # ----------- SERVER START -------------
             # for now we inefficiently create a server for every iteration
