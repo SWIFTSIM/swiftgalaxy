@@ -6,3 +6,5 @@
 \#*
 /docs/build
 *.hdf5
+/examples/.ipynb_checkpoints/
+*.ewah
