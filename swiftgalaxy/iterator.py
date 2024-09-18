@@ -78,10 +78,19 @@ class SWIFTGalaxies:
         elif optimize_iteration == "sparse":
             self._solution = self._sparse_optimized_solution
 
+    @property
+    def iteration_order(self):
+        return np.concatenate(self._solution["region_target_indices"])
+
     def _eval_sparse_optimized_solution(self):
         target_centres = self.halo_catalogue._bound_centre
-        # also handle custom_spatial_offset here:
-        target_sizes = self.halo_catalogue._bound_aperture
+        if self.halo_catalogue._user_spatial_offsets is not None:
+            target_regions = self.halo_catalogue._user_spatial_offsets[np.newaxis, ...]
+        else:
+            aperture = self.halo_catalogue._bound_aperture
+            target_regions = np.vstack(
+                (-np.repeat(aperture, 3), np.repeat(aperture, 3))
+            ).T.reshape((-1, 3, 2))
         # SWIFTMask gives us a lightweight interface to metadata & cell metadata
         sm = mask(self._init_args["snapshot_filename"], spatial_only=True)
         # get the lower cell vertex, probably at origin but not guaranteed
@@ -94,12 +103,6 @@ class SWIFTGalaxies:
             target_centres + sm.metadata.boxsize,
             target_centres,
         )
-        target_regions = cosmo_array(
-            [
-                target_centres - target_sizes[:, np.newaxis],
-                target_centres + target_sizes[:, np.newaxis],
-            ]
-        ).transpose((1, 2, 0))
         target_region_indices = (
             (
                 (target_regions - cell_vertex_origin[np.newaxis, :, np.newaxis])
@@ -138,15 +141,22 @@ class SWIFTGalaxies:
 
     def _eval_dense_optimized_solution(self):
         target_centres = self.halo_catalogue._bound_centre
-        # also handle custom_spatial_offset here:
-        target_sizes = self.halo_catalogue._bound_aperture
+        if self.halo_catalogue._user_spatial_offsets is not None:
+            target_sizes = np.diff(self.halo_catalogue._user_spatial_offsets).T
+        else:
+            aperture = self.halo_catalogue._bound_aperture
+            target_sizes = np.diff(
+                np.vstack((-np.repeat(aperture, 3), np.repeat(aperture, 3))).T.reshape(
+                    (-1, 3, 2)
+                )
+            ).squeeze(2)
         # SWIFTMask gives us a lightweight interface to metadata & cell metadata
         sm = mask(self._init_args["snapshot_filename"], spatial_only=True)
         # grid should be at least 1 cell in size so that we efficiently group targets
         # in the same grid location
         grid_element_dim = (
             np.max(
-                target_sizes[..., np.newaxis] // sm.cell_size[np.newaxis] + 1,
+                target_sizes // sm.cell_size[np.newaxis] + 1,
                 axis=0,
             )
             .to_value(u.dimensionless)
