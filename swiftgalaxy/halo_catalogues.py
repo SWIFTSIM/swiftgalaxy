@@ -255,7 +255,7 @@ class SOAP(_HaloCatalogue):
         # should not need to box wrap here but there's a bug upstream
         boxsize = self._swift_dataset.metadata.boxsize
         coords = self.bound_subhalo.centre_of_mass.squeeze()
-        return (coords + boxsize / 2.0) % boxsize
+        return coords % boxsize
 
     @property
     def _bound_aperture(self) -> cosmo_array:

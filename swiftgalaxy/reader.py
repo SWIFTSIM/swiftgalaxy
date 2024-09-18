@@ -18,6 +18,7 @@ the :class:`SWIFTGalaxy` class.
 """
 
 from warnings import warn, catch_warnings, filterwarnings
+from copy import deepcopy
 import numpy as np
 from scipy.spatial.transform import Rotation
 import unyt
@@ -1264,7 +1265,22 @@ class SWIFTGalaxy(SWIFTDataset):
         return self._data_copy()
 
     def _data_copy(self, mask_collection: Optional[MaskCollection] = None):
-        SG = self.__copy__()
+        SG = SWIFTGalaxy(
+            deepcopy(self.snapshot_filename),
+            self.halo_catalogue,
+            auto_recentre=False,  # transforms overwritten below
+            transforms_like_coordinates=deepcopy(self.transforms_like_coordinates),
+            transforms_like_velocities=deepcopy(self.transforms_like_velocities),
+            id_particle_dataset_name=deepcopy(self.id_particle_dataset_name),
+            coordinates_dataset_name=deepcopy(self.coordinates_dataset_name),
+            velocities_dataset_name=deepcopy(self.velocities_dataset_name),
+            _spatial_mask=self._spatial_mask,
+            _extra_mask=deepcopy(
+                self._extra_mask
+            ),  # BUG when deepcopied? copied by reference?
+            _coordinate_like_transform=deepcopy(self._coordinate_like_transform),
+            _velocity_like_transform=deepcopy(self._velocity_like_transform),
+        )
         for particle_name in SG.metadata.present_group_names:
             particle_metadata = getattr(SG.metadata, f"{particle_name}_properties")
             particle_dataset_helper = getattr(self, particle_name)

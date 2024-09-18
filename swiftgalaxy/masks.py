@@ -1,3 +1,7 @@
+from copy import copy
+from typing import Optional
+
+
 class MaskCollection(object):
     """
     Barebones container for mask objects.
@@ -50,3 +54,9 @@ class MaskCollection(object):
     def __getattr__(self, attr: str) -> None:
         # If attribute does not exist.
         return None
+
+    def __copy__(self) -> "MaskCollection":
+        return MaskCollection(**self.__dict__)
+
+    def __deepcopy__(self, memo: Optional[dict] = None) -> "MaskCollection":
+        return MaskCollection(**{k: copy(v) for k, v in self.__dict__.items()})

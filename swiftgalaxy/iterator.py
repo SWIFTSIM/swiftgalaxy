@@ -1,34 +1,10 @@
 import numpy as np
 import unyt as u
 from swiftsimio import mask, cosmo_array
-from swiftsimio.masks import SWIFTMask
 from .reader import SWIFTGalaxy
 from .halo_catalogues import _HaloCatalogue
 
 from typing import Optional, Set
-
-
-class _SWIFTGalaxyServer(SWIFTGalaxy):
-
-    def __init__(
-        self,
-        snapshot_filename: str,
-        transforms_like_coordinates: Set[str] = set(),
-        transforms_like_velocities: Set[str] = set(),
-        id_particle_dataset_name: str = "particle_ids",
-        coordinates_dataset_name: str = "coordinates",
-        velocities_dataset_name: str = "velocities",
-        spatial_mask: Optional[SWIFTMask] = None,
-    ):
-        super().__init__(
-            snapshot_filename=snapshot_filename,
-            transforms_like_coordinates=transforms_like_coordinates,
-            transforms_like_velocities=transforms_like_velocities,
-            id_particle_dataset_name=id_particle_dataset_name,
-            coordinates_dataset_name=coordinates_dataset_name,
-            velocities_dataset_name=velocities_dataset_name,
-            _spatial_mask=spatial_mask,
-        )
 
 
 class SWIFTGalaxies:
@@ -48,6 +24,7 @@ class SWIFTGalaxies:
         coordinates_dataset_name: str = "coordinates",
         velocities_dataset_name: str = "velocities",
         coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
+        optimize_iteration: str = "auto",
     ):
         if not halo_catalogue._multi_galaxy:
             raise ValueError(
@@ -67,15 +44,99 @@ class SWIFTGalaxies:
             velocities_dataset_name=velocities_dataset_name,
             coordinate_frame_from=coordinate_frame_from,
         )
-        self._triage_regions()
-
-    def _triage_regions(self):
-        # want 2 modes:
-        # optimize_for_sparse:
+        # want 3 optimization modes:
+        # sparse targets:
         #  determine region for each galaxy, group any that share the same region
-        # optimize_for_dense:
+        # dense targets:
         #  two overlapping region grids, assign each galaxy to nearest centre in either
-        # relatively cheap to evaluate both and then choose the one that minimizes i/o
+        # auto
+        #  evaluate both and then choose the one that minimizes i/o
+        if optimize_iteration not in ("dense", "sparse", "auto"):
+            raise ValueError(
+                "optimize_iteration must be one of 'dense', 'sparse' or 'auto'."
+            )
+        if optimize_iteration in ("dense", "auto"):
+            self._eval_dense_optimized_solution()
+        if optimize_iteration in ("sparse", "auto"):
+            self._eval_sparse_optimized_solution()
+        if optimize_iteration == "auto":
+            # typical cost of the dense solution expected to be average of the minimum
+            # and maxiumum costs (one grid aligns with the cell grid), use sparse solution
+            # if it costs less than this
+            self._solution = (
+                self._sparse_optimized_solution
+                if self._sparse_optimized_solution["cost"]
+                < 0.5
+                * (
+                    self._dense_optimized_solution["cost_min"]
+                    + self._dense_optimized_solution["cost_max"]
+                )
+                else self._dense_optimized_solution
+            )
+        elif optimize_iteration == "dense":
+            self._solution = self._dense_optimized_solution
+        elif optimize_iteration == "sparse":
+            self._solution = self._sparse_optimized_solution
+
+    def _eval_sparse_optimized_solution(self):
+        target_centres = self.halo_catalogue._bound_centre
+        # also handle custom_spatial_offset here:
+        target_sizes = self.halo_catalogue._bound_aperture
+        # SWIFTMask gives us a lightweight interface to metadata & cell metadata
+        sm = mask(self._init_args["snapshot_filename"], spatial_only=True)
+        # get the lower cell vertex, probably at origin but not guaranteed
+        cell_vertex_origin = sm.centers.min(axis=0) - sm.cell_size / 2
+        # align origin with the cell grid, we allow going out the upper bounds of the
+        # box since SWIFTMask handles wrapping for us (but we want a common grid
+        # to easily group shared regions)
+        target_centres = np.where(
+            target_centres < cell_vertex_origin,
+            target_centres + sm.metadata.boxsize,
+            target_centres,
+        )
+        target_regions = cosmo_array(
+            [
+                target_centres - target_sizes[:, np.newaxis],
+                target_centres + target_sizes[:, np.newaxis],
+            ]
+        ).transpose((1, 2, 0))
+        target_region_indices = (
+            (
+                (target_regions - cell_vertex_origin[np.newaxis, :, np.newaxis])
+                // sm.cell_size[np.newaxis, :, np.newaxis]
+            )
+            .to_value(u.dimensionless)
+            .astype(int)
+        )
+        unique_region_indices, inv = np.unique(
+            target_region_indices, axis=0, return_inverse=True
+        )
+        unique_regions = (
+            unique_region_indices + np.array([0.01, 0.99])
+        ) * sm.cell_size[np.newaxis, :, np.newaxis] + cell_vertex_origin[
+            np.newaxis, :, np.newaxis
+        ]
+        sorter = np.argsort(inv)
+        # in the following dict
+        # regions are the bboxes that can be passed directly to spatial mask
+        # (each one an entry along the 0th axis)
+        # region_target_indices contains an array of indices into the targets array
+        # for each region
+        # cost is the integer number of cells that will be read during this iteration
+        self._sparse_optimized_solution = dict(
+            regions=unique_regions,
+            region_target_indices=np.split(
+                np.arange(inv.size)[sorter],
+                np.unique(inv[sorter], return_index=True)[1][1:],
+            ),
+            cost=np.sum(
+                np.prod(
+                    np.diff(unique_region_indices + np.array([0, 1]), axis=2), axis=1
+                )
+            ),
+        )
+
+    def _eval_dense_optimized_solution(self):
         target_centres = self.halo_catalogue._bound_centre
         # also handle custom_spatial_offset here:
         target_sizes = self.halo_catalogue._bound_aperture
@@ -142,8 +203,6 @@ class SWIFTGalaxies:
                 axis=1,
             )
         )
-        assert all(target_grid_distances_aligned < np.sqrt(sm.metadata.dimension))
-        assert all(target_grid_distances_offset < np.sqrt(sm.metadata.dimension))
         use_offset_grid = target_grid_distances_offset < target_grid_distances_aligned
         # target_regions columns: (1) flag which grid; (2,3,4) grid i, j, k
         target_regions = np.concatenate(
@@ -158,7 +217,9 @@ class SWIFTGalaxies:
             axis=1,
         )
         # unique_regions each correspond to a "server" SWIFTGalaxy that will read a region
-        unique_grid_regions = np.unique(target_regions, axis=0)
+        unique_grid_regions, inv = np.unique(
+            target_regions, axis=0, return_inverse=True
+        )
         # `centres_[aligned|offset]` and `grid_element_dim * sm.cell_size` define regions
         centres_aligned = (
             np.array(
@@ -190,14 +251,13 @@ class SWIFTGalaxies:
         # in the best case (assuming both grids are aligned with the cell grid)
         # cost_max is an integer number of cells that will be read during this iteration
         # in the worst case (assuming both grids are mis-aligned with the cell grid)
+        sorter = np.argsort(inv)
         self._dense_optimized_solution = dict(
             regions=unique_regions,
-            region_target_indices=[
-                np.argwhere(
-                    (target_regions == unique_grid_region).all(axis=1)
-                ).squeeze()
-                for unique_grid_region in unique_grid_regions
-            ],  # loop over argwhere is a bottleneck, faster solution?
+            region_target_indices=np.split(
+                np.arange(inv.size)[sorter],
+                np.unique(inv[sorter], return_index=True)[1][1:],
+            ),
             cost_min=(
                 np.prod(grid_element_dim)  # cost per grid element (optimistic)
                 * unique_regions.shape[0]  # number of grid elements
@@ -214,9 +274,8 @@ class SWIFTGalaxies:
         for region, target_indices in zip(
             solution["regions"], solution["region_target_indices"]
         ):
-            # ----------- SERVER START -------------
             region_mask.constrain_spatial(region)
-            server = SWIFTGalaxy(
+            self._server = SWIFTGalaxy(
                 snapshot_filename=self._init_args["snapshot_filename"],
                 halo_catalogue=None,
                 auto_recentre=False,
@@ -229,20 +288,18 @@ class SWIFTGalaxies:
                 id_particle_dataset_name=self._init_args["id_particle_dataset_name"],
                 coordinates_dataset_name=self._init_args["coordinates_dataset_name"],
                 velocities_dataset_name=self._init_args["velocities_dataset_name"],
-                # _spatial_mask=self.halo_catalogue._get_spatial_mask(
-                #     self._init_args["snapshot_filename"]
-                # ),  # replace with common region!
                 _spatial_mask=region_mask,
                 _extra_mask=None,
             )
             for preload_field in self._init_args["preload"]:
-                obj = server
+                obj = self._server
                 for attr in preload_field.split("."):
                     obj = getattr(obj, attr)
-            # ----------- SERVER END -------------
             for igalaxy in target_indices:
                 self.halo_catalogue._mask_multi_galaxy(igalaxy)
-                swift_galaxy = server[self.halo_catalogue._get_extra_mask(server)]
+                swift_galaxy = self._server[
+                    self.halo_catalogue._get_extra_mask(self._server)
+                ]
                 swift_galaxy.halo_catalogue = self.halo_catalogue
                 if (
                     self._init_args["auto_recentre"]
