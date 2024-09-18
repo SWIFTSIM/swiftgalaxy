@@ -209,14 +209,13 @@ class SWIFTGalaxies:
         )
 
     def __iter__(self):
-        # solution = self._dense_optimized_solution
-        # # server creation will later be moved here
-        # for region, targets in zip(solution["regions"], solution["region_target_indices"]):
-        for igalaxy in range(self.halo_catalogue.count):
+        solution = self._dense_optimized_solution
+        region_mask = mask(self._init_args["snapshot_filename"])
+        for region, target_indices in zip(
+            solution["regions"], solution["region_target_indices"]
+        ):
             # ----------- SERVER START -------------
-            # for now we inefficiently create a server for every iteration
-            # later the server should be shared by galaxies in a common region
-            self.halo_catalogue._mask_multi_galaxy(igalaxy)
+            region_mask.constrain_spatial(region)
             server = SWIFTGalaxy(
                 snapshot_filename=self._init_args["snapshot_filename"],
                 halo_catalogue=None,
@@ -230,9 +229,10 @@ class SWIFTGalaxies:
                 id_particle_dataset_name=self._init_args["id_particle_dataset_name"],
                 coordinates_dataset_name=self._init_args["coordinates_dataset_name"],
                 velocities_dataset_name=self._init_args["velocities_dataset_name"],
-                _spatial_mask=self.halo_catalogue._get_spatial_mask(
-                    self._init_args["snapshot_filename"]
-                ),  # replace with common region!
+                # _spatial_mask=self.halo_catalogue._get_spatial_mask(
+                #     self._init_args["snapshot_filename"]
+                # ),  # replace with common region!
+                _spatial_mask=region_mask,
                 _extra_mask=None,
             )
             for preload_field in self._init_args["preload"]:
@@ -240,38 +240,44 @@ class SWIFTGalaxies:
                 for attr in preload_field.split("."):
                     obj = getattr(obj, attr)
             # ----------- SERVER END -------------
-            swift_galaxy = server[self.halo_catalogue._get_extra_mask(server)]
-            swift_galaxy.halo_catalogue = self.halo_catalogue
-            if (
-                self._init_args["auto_recentre"]
-                and self._init_args["coordinate_frame_from"] is not None
-            ):
-                raise ValueError(
-                    "Cannot use coordinate_frame_from with auto_recentre=True."
-                )
-            elif self._init_args["coordinate_frame_from"] is not None:
+            for igalaxy in target_indices:
+                self.halo_catalogue._mask_multi_galaxy(igalaxy)
+                swift_galaxy = server[self.halo_catalogue._get_extra_mask(server)]
+                swift_galaxy.halo_catalogue = self.halo_catalogue
                 if (
-                    self._init_args["coordinate_frame_from"].metadata.units.length
-                    != swift_galaxy.metadata.units.length
-                ) or (
-                    self._init_args["coordinate_frame_from"].metadata.units.time
-                    != swift_galaxy.metadata.units.time
+                    self._init_args["auto_recentre"]
+                    and self._init_args["coordinate_frame_from"] is not None
                 ):
                     raise ValueError(
-                        "Internal units (length and time) of coordinate_frame_from don't"
-                        " match."
+                        "Cannot use coordinate_frame_from with auto_recentre=True."
                     )
-                swift_galaxy._transform(
-                    self._init_args["coordinate_frame_from"]._coordinate_like_transform,
-                    boost=False,
-                )
-                swift_galaxy._transform(
-                    self._init_args["coordinate_frame_from"]._velocity_like_transform,
-                    boost=True,
-                )
-            elif self._init_args["auto_recentre"]:
-                swift_galaxy.recentre(self.halo_catalogue.centre)
-                swift_galaxy.recentre_velocity(self.halo_catalogue.velocity_centre)
-            swift_galaxy._initialised = True
-            yield swift_galaxy
-            self.halo_catalogue._unmask_multi_galaxy()
+                elif self._init_args["coordinate_frame_from"] is not None:
+                    if (
+                        self._init_args["coordinate_frame_from"].metadata.units.length
+                        != swift_galaxy.metadata.units.length
+                    ) or (
+                        self._init_args["coordinate_frame_from"].metadata.units.time
+                        != swift_galaxy.metadata.units.time
+                    ):
+                        raise ValueError(
+                            "Internal units (length and time) of coordinate_frame_from"
+                            " don't match."
+                        )
+                    swift_galaxy._transform(
+                        self._init_args[
+                            "coordinate_frame_from"
+                        ]._coordinate_like_transform,
+                        boost=False,
+                    )
+                    swift_galaxy._transform(
+                        self._init_args[
+                            "coordinate_frame_from"
+                        ]._velocity_like_transform,
+                        boost=True,
+                    )
+                elif self._init_args["auto_recentre"]:
+                    swift_galaxy.recentre(self.halo_catalogue.centre)
+                    swift_galaxy.recentre_velocity(self.halo_catalogue.velocity_centre)
+                swift_galaxy._initialised = True
+                yield swift_galaxy
+                self.halo_catalogue._unmask_multi_galaxy()

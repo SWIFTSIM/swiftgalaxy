@@ -1254,7 +1254,7 @@ class SWIFTGalaxy(SWIFTDataset):
             coordinates_dataset_name=self.coordinates_dataset_name,
             velocities_dataset_name=self.velocities_dataset_name,
             _spatial_mask=self._spatial_mask,
-            _extra_mask=self._extra_mask,
+            _extra_mask=self._extra_mask,  # BUG when deepcopied? copied by reference?
             _coordinate_like_transform=self._coordinate_like_transform,
             _velocity_like_transform=self._velocity_like_transform,
         )
@@ -1397,7 +1397,9 @@ class SWIFTGalaxy(SWIFTDataset):
             for field_name in transformable:
                 field_data = getattr(dataset, f"_{field_name}")
                 if field_data is not None:
-                    field_data = _apply_4transform(field_data, transform4)
+                    field_data = _apply_4transform(
+                        field_data, transform4.to_value(), transform4.units
+                    )
                     setattr(dataset, f"_{field_name}", field_data)
         if boost:
             self._append_to_velocity_like_transform(transform4)
