@@ -25,7 +25,7 @@ from swiftsimio import metadata as swiftsimio_metadata
 from swiftsimio.reader import (
     SWIFTDataset,
     __SWIFTNamedColumnDataset,
-    __SWIFTGroupDatasets,
+    __SWIFTGroupDataset,
 )
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from swiftsimio.masks import SWIFTMask
@@ -329,7 +329,7 @@ class _SWIFTGroupDatasetsHelper(object):
     def __init__(
         self, particle_dataset: "__SWIFTGroupDatasets", swiftgalaxy: "SWIFTGalaxy"
     ) -> None:
-        self._particle_dataset: __SWIFTGroupDatasets = particle_dataset
+        self._particle_dataset: __SWIFTGroupDataset = particle_dataset
         self._swiftgalaxy: "SWIFTGalaxy" = swiftgalaxy
         self._named_column_dataset_helpers: dict[
             str, _SWIFTNamedColumnDatasetHelper
