@@ -8,7 +8,7 @@ Getting Started
 Requirements
 ------------
 
-``python3.8`` or higher is required (``>=3.9`` is preferred).
+``python3.10`` or higher is required.
 
 Python packages
 ^^^^^^^^^^^^^^^
