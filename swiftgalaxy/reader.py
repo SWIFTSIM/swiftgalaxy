@@ -180,10 +180,10 @@ class _SWIFTNamedColumnDatasetHelper(object):
     def __init__(
         self,
         named_column_dataset: "__SWIFTNamedColumnDataset",
-        particle_dataset_helper: "_SWIFTGroupDatasetsHelper",
+        particle_dataset_helper: "_SWIFTGroupDatasetHelper",
     ) -> None:
         self._named_column_dataset: __SWIFTNamedColumnDataset = named_column_dataset
-        self._particle_dataset_helper: "_SWIFTGroupDatasetsHelper" = (
+        self._particle_dataset_helper: "_SWIFTGroupDatasetHelper" = (
             particle_dataset_helper
         )
         self._initialised: bool = True
@@ -253,7 +253,7 @@ class _SWIFTNamedColumnDatasetHelper(object):
         return getattr(self._particle_dataset_helper._data_copy(mask=mask), self.name)
 
 
-class _SWIFTGroupDatasetsHelper(object):
+class _SWIFTGroupDatasetHelper(object):
     """
     A wrapper class to enable :class:`SWIFTGalaxy`
     functionality for a :class:`swiftsimio.reader.__SWIFTGroupDatasets`.
@@ -328,7 +328,7 @@ class _SWIFTGroupDatasetsHelper(object):
     """
 
     def __init__(
-        self, particle_dataset: "__SWIFTGroupDatasets", swiftgalaxy: "SWIFTGalaxy"
+        self, particle_dataset: "__SWIFTGroupDataset", swiftgalaxy: "SWIFTGalaxy"
     ) -> None:
         self._particle_dataset: __SWIFTGroupDataset = particle_dataset
         self._swiftgalaxy: "SWIFTGalaxy" = swiftgalaxy
@@ -423,16 +423,16 @@ class _SWIFTGroupDatasetsHelper(object):
             object.__setattr__(self, attr, value)
             return
 
-    def __getitem__(self, mask: slice) -> "_SWIFTGroupDatasetsHelper":
+    def __getitem__(self, mask: slice) -> "_SWIFTGroupDatasetHelper":
         return self._data_copy(mask=mask)
 
-    def __copy__(self) -> "_SWIFTGroupDatasetsHelper":
+    def __copy__(self) -> "_SWIFTGroupDatasetHelper":
         return getattr(self._swiftgalaxy.__copy__(), self.particle_name)
 
-    def __deepcopy__(self, memo: Optional[dict] = None) -> "_SWIFTGroupDatasetsHelper":
+    def __deepcopy__(self, memo: Optional[dict] = None) -> "_SWIFTGroupDatasetHelper":
         return self._data_copy()
 
-    def _data_copy(self, mask: Optional[slice] = None) -> "_SWIFTGroupDatasetsHelper":
+    def _data_copy(self, mask: Optional[slice] = None) -> "_SWIFTGroupDatasetHelper":
         mask_collection = MaskCollection(
             **{
                 k: None if k != self.group_name else mask
@@ -975,7 +975,7 @@ class SWIFTGalaxy(SWIFTDataset):
     functionality of such a dataset is also available for a
     :class:`SWIFTGalaxy`. The :class:`swiftsimio.reader.__SWIFTGroupDatasets`
     objects familiar to :mod:`swiftsimio` users (e.g. a ``GasDataset``) are
-    wrapped by a :class:`_SWIFTGroupDatasetsHelper` class that exposes their
+    wrapped by a :class:`_SWIFTGroupDatasetHelper` class that exposes their
     usual functionality and extends it with new features.
     :class:`swiftsimio.reader.__SWIFTNamedColumnDataset` instances are also
     wrapped, using a :class:`_SWIFTNamedColumnDatasetHelper` class.
@@ -1028,7 +1028,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
     See Also
     --------
-    :class:`_SWIFTGroupDatasetsHelper`
+    :class:`_SWIFTGroupDatasetHelper`
     :class:`_SWIFTNamedColumnDatasetHelper`
     :mod:`swiftgalaxy.halo_catalogues`
 
@@ -1173,7 +1173,7 @@ class SWIFTGalaxy(SWIFTDataset):
             ]
             TypeDatasetHelper = type(
                 f"{nice_name}DatasetHelper",
-                (_SWIFTGroupDatasetsHelper, object),
+                (_SWIFTGroupDatasetHelper, object),
                 dict(),
             )
             self._particle_dataset_helpers[particle_name] = TypeDatasetHelper(
@@ -1625,7 +1625,7 @@ class SWIFTGalaxy(SWIFTDataset):
         galaxy. Temporary masks (e.g. for interactive use) can be created by
         using the :meth:`~SWIFTGalaxy.__getitem__` (square brackets) method of
         the :class:`SWIFTGalaxy`, any of its associated
-        :class:`_SWIFTGroupDatasetsHelper` or
+        :class:`_SWIFTGroupDatasetHelper` or
         :class:`_SWIFTNamedColumnDatasetHelper` objects, but
         note that to ensure internal consistency, these return a masked copy of
         the *entire* :class:`SWIFTGalaxy`, and are therefore
