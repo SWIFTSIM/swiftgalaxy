@@ -118,6 +118,23 @@ class _HaloCatalogue(ABC):
         # return halo velocity centre
         pass
 
+    # @property
+    # @abstractmethod
+    # def _region_centre(self) -> cosmo_array:
+    #     # return a centre for the spatial region
+    #     pass
+
+    # @property
+    # @abstractmethod
+    # def _region_aperture(self) -> cosmo_array:
+    #     # return a size for the spatial region
+    #     pass
+
+    # @abstractmethod
+    # def _get_preload_fields(self, SG: "SWIFTGalaxy") -> Set[str]:
+    #     # define fields that need preloading to compute masks
+    #     pass
+
     # In addition, it is recommended to expose the properties computed
     # by the halo catalogue through this object, masked to the values
     # corresponding to the object of interest. It probably makes sense
