@@ -113,7 +113,7 @@ def sg_soap():
         toysoap_virtual_snapshot_filename,
         SOAP(
             soap_file=toysoap_filename,
-            halo_index=0,
+            soap_index=0,
         ),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
@@ -161,7 +161,7 @@ def soap():
 
     yield SOAP(
         soap_file=toysoap_filename,
-        halo_index=0,
+        soap_index=0,
     )
 
     remove_toysoap()
@@ -244,7 +244,7 @@ def sg_hf(request):
             toysoap_virtual_snapshot_filename,
             SOAP(
                 soap_file=toysoap_filename,
-                halo_index=0,
+                soap_index=0,
             ),
             transforms_like_coordinates={"coordinates", "extra_coordinates"},
             transforms_like_velocities={"velocities", "extra_velocities"},
@@ -291,7 +291,7 @@ def hf(request):
 
         yield SOAP(
             soap_file=toysoap_filename,
-            halo_index=0,
+            soap_index=0,
         )
 
         remove_toysoap()

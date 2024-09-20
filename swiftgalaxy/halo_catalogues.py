@@ -157,7 +157,7 @@ class SOAP(_HaloCatalogue):
 
     soap_file: ``Optional[str]``, default: ``None``
         The filename of a SOAP catalogue file, possibly including the path.
-    halo_index: ``Optional[int]``, default: ``None``
+    soap_index: ``Optional[int]``, default: ``None``
         The position (row) in the SOAP catalogue corresponding to the object of interest.
     extra_mask: ``Union[str, MaskCollection]``, default: ``"bound_only"``
         Mask to apply to particles after spatial masking. If ``"bound_only"``,
@@ -197,7 +197,7 @@ class SOAP(_HaloCatalogue):
 
     .. note::
         ``SOAP`` only supports index access to catalogue arrays, not
-        identifier access. This means that the ``halo_index`` is simply the
+        identifier access. This means that the ``soap_index`` is simply the
         position of the object of interest in the SOAP catalogue arrays.
 
     Examples
@@ -210,14 +210,14 @@ class SOAP(_HaloCatalogue):
 
         >>> cat = SOAP(
         >>>     soap_file="/output/path/halo_properties_0050.hdf5"
-        >>>     halo_index=0,  # 1st entry in catalogue (indexed from 0)
+        >>>     soap_index=0,  # 1st entry in catalogue (indexed from 0)
         >>> )
         >>> cat.spherical_overdensity_200_crit.total_mass.to(u.Msun)
         cosmo_array([6.72e+12], dtype=float32, units='1.98841586e+30*kg', comoving=False)
     """
 
     soap_file: str
-    halo_index: Union[int, Sized]
+    soap_index: Union[int, Sized]
     centre_type: str
     velocity_centre_type: str
     _swift_dataset: SWIFTDataset
@@ -225,7 +225,7 @@ class SOAP(_HaloCatalogue):
     def __init__(
         self,
         soap_file: Optional[str] = None,
-        halo_index: Optional[Union[int, Sized]] = None,
+        soap_index: Optional[Union[int, Sized]] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "input_halos.halo_centre",
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
@@ -236,19 +236,10 @@ class SOAP(_HaloCatalogue):
         else:
             raise ValueError("Provide a soap_file.")
 
-        if halo_index is not None:
-            self.halo_index = halo_index
+        if soap_index is not None:
+            self.soap_index = soap_index
         else:
-            raise ValueError("Provide a halo_index.")
-        if isinstance(self.halo_index, Sized):
-            self._multi_galaxy = True
-            if not isinstance(halo_index, int):  # placate mypy
-                self._multi_count = len(halo_index)
-        else:
-            self._multi_galaxy = False
-            self._multi_count = 1
-        if self._multi_galaxy:
-            assert extra_mask in (None, "bound_only")
+            raise ValueError("Provide a soap_index.")
         self.centre_type = centre_type
         self.velocity_centre_type = velocity_centre_type
         self._user_spatial_offsets = custom_spatial_offsets
@@ -258,9 +249,9 @@ class SOAP(_HaloCatalogue):
     def _load(self) -> None:
         sm = mask(self.soap_file, spatial_only=not self._multi_galaxy)
         if self._multi_galaxy:
-            sm.constrain_indices(self.halo_index)
+            sm.constrain_indices(self.soap_index)
         else:
-            sm.constrain_index(self.halo_index)
+            sm.constrain_index(self.soap_index)
         self._swift_dataset: SWIFTDataset = SWIFTDataset(
             self.soap_file,
             mask=sm,
@@ -346,7 +337,7 @@ class SOAP(_HaloCatalogue):
             return object.__getattribute__(self, "_swift_dataset")
         obj = getattr(self._swift_dataset, attr)
         if self._multi_galaxy_mask_index is not None:
-            # should find a way to mask self.halo_index too
+            # should find a way to mask self.soap_index too
             return _MaskHelper(obj, self._multi_galaxy_mask_index)
         else:
             return obj
