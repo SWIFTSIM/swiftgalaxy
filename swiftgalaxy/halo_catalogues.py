@@ -86,12 +86,12 @@ class _HaloCatalogue(ABC):
             sm.constrain_spatial(region)
         return sm
 
-    def _get_spatial_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+    def _get_spatial_mask(self, snapshot_filename: str) -> MaskCollection:
         if self._multi_galaxy and self._mask_multi_galaxy is None:
             raise RuntimeError(
                 "Halo catalogue has multiple galaxies and is not currently masked."
             )
-        return self._generate_spatial_mask(SG)
+        return self._generate_spatial_mask(snapshot_filename)
 
     @property
     def count(self) -> int:
