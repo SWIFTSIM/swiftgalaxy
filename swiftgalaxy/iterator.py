@@ -105,7 +105,11 @@ class SWIFTGalaxies:
         )
         target_region_indices = (
             (
-                (target_regions - cell_vertex_origin[np.newaxis, :, np.newaxis])
+                (
+                    target_centres[:, :, np.newaxis]
+                    + target_regions
+                    - cell_vertex_origin[np.newaxis, :, np.newaxis]
+                )
                 // sm.cell_size[np.newaxis, :, np.newaxis]
             )
             .to_value(u.dimensionless)
