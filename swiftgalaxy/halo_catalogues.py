@@ -66,8 +66,8 @@ class _HaloCatalogue(ABC):
         pass
 
     @abstractmethod
-    def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
-        # return _spatial_mask
+    def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
+        # return spatial_mask
         pass
 
     def _get_user_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
@@ -85,6 +85,20 @@ class _HaloCatalogue(ABC):
                 )
             sm.constrain_spatial(region)
         return sm
+
+    def _get_spatial_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
+        if self._multi_galaxy and self._mask_multi_galaxy is None:
+            raise RuntimeError(
+                "Halo catalogue has multiple galaxies and is not currently masked."
+            )
+        return self._generate_spatial_mask(SG)
+
+    @property
+    def count(self) -> int:
+        if self._multi_galaxy and self._multi_galaxy_mask_index is None:
+            return self._multi_count
+        else:
+            return 1
 
     @abstractmethod
     def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
@@ -244,6 +258,7 @@ class SOAP(_HaloCatalogue):
         self.velocity_centre_type = velocity_centre_type
         self._user_spatial_offsets = custom_spatial_offsets
         super().__init__(extra_mask=extra_mask)
+        self._check_multi()  # moves to super() after setting self.extra_mask
         return
 
     def _load(self) -> None:
@@ -256,6 +271,18 @@ class SOAP(_HaloCatalogue):
             self.soap_file,
             mask=sm,
         )
+
+    def _check_multi(self):
+        # generalize (make derived classes specify what attrs to check)
+        # and move to super
+        if isinstance(self.soap_index, Sized):
+            self._multi_galaxy = True
+            if not isinstance(self.soap_index, int):  # placate mypy
+                self._multi_count = len(self.soap_index)
+            self._multi_galaxy = False
+            self._multi_count = 1
+        if self._multi_galaxy:
+            assert self.extra_mask in (None, "bound_only")
 
     @property
     def _region_centre(self) -> cosmo_array:
@@ -277,11 +304,7 @@ class SOAP(_HaloCatalogue):
         else:
             return set()
 
-    def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
-        if self._multi_galaxy and self._mask_multi_galaxy is None:
-            raise RuntimeError(
-                "Halo catalogue has multiple galaxies and is not currently masked."
-            )
+    def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         pos, rmax = self._region_centre, self._region_aperture
         sm = mask(snapshot_filename, spatial_only=True)
         load_region = cosmo_array([pos - rmax, pos + rmax]).T
@@ -322,13 +345,6 @@ class SOAP(_HaloCatalogue):
         if self._multi_galaxy_mask_index is not None:
             return obj[self._multi_galaxy_mask_index]
         return obj.squeeze()
-
-    @property
-    def count(self) -> int:
-        if self._multi_galaxy and self._multi_galaxy_mask_index is None:
-            return self._multi_count
-        else:
-            return 1
 
     def __getattr__(self, attr: str) -> Any:
         # Invoked if attribute not found.
@@ -524,7 +540,7 @@ class Velociraptor(_HaloCatalogue):
         )
         return
 
-    def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
+    def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         from velociraptor.swift.swift import generate_spatial_mask
 
         return generate_spatial_mask(self._particles, snapshot_filename)
@@ -761,7 +777,7 @@ class Caesar(_HaloCatalogue):
         # any non-trivial io/calculation at initialisation time goes here
         pass
 
-    def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
+    def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         sm = mask(snapshot_filename, spatial_only=True)
         if "total_rmax" in self._group.radii.keys():
             # spatial extent information is present, define the mask
@@ -1045,7 +1061,7 @@ class Standalone(_HaloCatalogue):
     def _load(self) -> None:
         pass
 
-    def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
+    def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         # if we're here then the user didn't provide a mask, read the whole box
         sm = mask(snapshot_filename, spatial_only=True)
         boxsize = sm.metadata.boxsize

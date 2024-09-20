@@ -76,7 +76,7 @@ class ToyHF(_HaloCatalogue):
     def _load(self):
         return
 
-    def _get_spatial_mask(self, SG):
+    def _generate_spatial_mask(self, SG):
         import swiftsimio
 
         if self.index == 0:
