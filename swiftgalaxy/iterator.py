@@ -36,7 +36,7 @@ class SWIFTGalaxies:
         self._init_args = dict(
             snapshot_filename=snapshot_filename,
             auto_recentre=auto_recentre,
-            preload=preload,
+            preload=set(preload),
             transforms_like_coordinates=transforms_like_coordinates,
             transforms_like_velocities=transforms_like_velocities,
             id_particle_dataset_name=id_particle_dataset_name,
@@ -83,11 +83,11 @@ class SWIFTGalaxies:
         return np.concatenate(self._solution["region_target_indices"])
 
     def _eval_sparse_optimized_solution(self):
-        target_centres = self.halo_catalogue._bound_centre
+        target_centres = self.halo_catalogue._region_centre
         if self.halo_catalogue._user_spatial_offsets is not None:
             target_regions = self.halo_catalogue._user_spatial_offsets[np.newaxis, ...]
         else:
-            aperture = self.halo_catalogue._bound_aperture
+            aperture = self.halo_catalogue._region_aperture
             target_regions = np.vstack(
                 (-np.repeat(aperture, 3), np.repeat(aperture, 3))
             ).T.reshape((-1, 3, 2))
@@ -140,11 +140,11 @@ class SWIFTGalaxies:
         )
 
     def _eval_dense_optimized_solution(self):
-        target_centres = self.halo_catalogue._bound_centre
+        target_centres = self.halo_catalogue._region_centre
         if self.halo_catalogue._user_spatial_offsets is not None:
             target_sizes = np.diff(self.halo_catalogue._user_spatial_offsets).T
         else:
-            aperture = self.halo_catalogue._bound_aperture
+            aperture = self.halo_catalogue._region_aperture
             target_sizes = np.diff(
                 np.vstack((-np.repeat(aperture, 3), np.repeat(aperture, 3))).T.reshape(
                     (-1, 3, 2)
@@ -300,7 +300,9 @@ class SWIFTGalaxies:
                 _spatial_mask=region_mask,
                 _extra_mask=None,
             )
-            for preload_field in self._init_args["preload"]:
+            for preload_field in self._init_args[
+                "preload"
+            ] | self.halo_catalogue._get_preload_fields(self._server):
                 obj = self._server
                 for attr in preload_field.split("."):
                     obj = getattr(obj, attr)

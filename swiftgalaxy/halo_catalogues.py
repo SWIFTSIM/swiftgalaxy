@@ -19,7 +19,7 @@ from swiftsimio import SWIFTMask, SWIFTDataset, mask
 from swiftgalaxy.masks import MaskCollection
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 
-from typing import Any, Union, Optional, TYPE_CHECKING, List
+from typing import Any, Union, Optional, TYPE_CHECKING, List, Set
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:
@@ -250,22 +250,31 @@ class SOAP(_HaloCatalogue):
         )
 
     @property
-    def _bound_centre(self) -> cosmo_array:
+    def _region_centre(self) -> cosmo_array:
         # should not need to box wrap here but there's a bug upstream
         boxsize = self._swift_dataset.metadata.boxsize
         coords = self.bound_subhalo.centre_of_mass.squeeze()
         return coords % boxsize
 
     @property
-    def _bound_aperture(self) -> cosmo_array:
+    def _region_aperture(self) -> cosmo_array:
         return self.bound_subhalo.enclose_radius.squeeze()
+
+    def _get_preload_fields(self, SG: "SWIFTGalaxy") -> Set[str]:
+        if self.extra_mask == "bound_only":
+            return {
+                f"{group_name}.group_nr_bound"
+                for group_name in SG.metadata.present_group_names
+            }
+        else:
+            return set()
 
     def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         if self._multi_galaxy and self._mask_multi_galaxy is None:
             raise RuntimeError(
                 "Halo catalogue has multiple galaxies and is not currently masked."
             )
-        pos, rmax = self._bound_centre, self._bound_aperture
+        pos, rmax = self._region_centre, self._region_aperture
         sm = mask(snapshot_filename, spatial_only=True)
         load_region = cosmo_array([pos - rmax, pos + rmax]).T
         sm.constrain_spatial(load_region)
