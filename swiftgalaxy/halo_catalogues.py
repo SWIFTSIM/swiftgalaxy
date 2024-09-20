@@ -239,9 +239,8 @@ class SOAP(_HaloCatalogue):
         return
 
     def _load(self) -> None:
-        sm = mask(self.soap_file)  # , spatial_only=not self._multi_galaxy)
+        sm = mask(self.soap_file, spatial_only=not self._multi_galaxy)
         if self._multi_galaxy:
-            # will need spatial_only=False in future:
             sm.constrain_indices(self.halo_index)
         else:
             sm.constrain_index(self.halo_index)
@@ -284,8 +283,9 @@ class SOAP(_HaloCatalogue):
                 for group_name in SG.metadata.present_group_names
             }
         )
-        for group_name in SG.metadata.present_group_names:
-            del getattr(SG, group_name)._particle_dataset.group_nr_bound
+        if not self._multi_galaxy:
+            for group_name in SG.metadata.present_group_names:
+                del getattr(SG, group_name)._particle_dataset.group_nr_bound
         return masks
 
     @property
