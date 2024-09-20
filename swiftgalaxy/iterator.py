@@ -279,10 +279,9 @@ class SWIFTGalaxies:
         )
 
     def __iter__(self):
-        solution = self._dense_optimized_solution
         region_mask = mask(self._init_args["snapshot_filename"])
         for region, target_indices in zip(
-            solution["regions"], solution["region_target_indices"]
+            self._solution["regions"], self._solution["region_target_indices"]
         ):
             region_mask.constrain_spatial(region)
             self._server = SWIFTGalaxy(
