@@ -7,14 +7,16 @@ from toysnap import (
     toysnap_filename,
     toysoap_virtual_snapshot_filename,
     toysoap_membership_filebase,
-    n_g,
+    n_g_1,
     n_g_b,
     n_g_all,
-    n_dm,
+    n_dm_1,
     n_dm_b,
     n_dm_all,
-    n_s,
-    n_bh,
+    n_s_1,
+    n_s_2,
+    n_bh_1,
+    n_bh_2,
     m_g,
     # m_dm,
     m_s,
@@ -67,11 +69,11 @@ class TestHaloCatalogues:
             )
             assert np.array_equal(
                 spatial_mask.stars,
-                np.array([[0, n_s_firstcell], [n_s_firstcell, n_s]]),
+                np.array([[0, n_s_firstcell], [n_s_firstcell, n_s_1 + n_s_2]]),
             )
             assert np.array_equal(
                 spatial_mask.black_holes,
-                np.array([[0, n_bh_firstcell], [n_bh_firstcell, n_bh]]),
+                np.array([[0, n_bh_firstcell], [n_bh_firstcell, n_bh_1 + n_bh_2]]),
             )
 
     def test_get_user_spatial_mask(self, hf, toysnap):
@@ -98,11 +100,11 @@ class TestHaloCatalogues:
         )
         assert np.array_equal(
             generated_spatial_mask.stars,
-            np.array([[0, n_s_firstcell], [n_s_firstcell, n_s]]),
+            np.array([[0, n_s_firstcell], [n_s_firstcell, n_s_1 + n_s_2]]),
         )
         assert np.array_equal(
             generated_spatial_mask.black_holes,
-            np.array([[0, n_bh_firstcell], [n_bh_firstcell, n_bh]]),
+            np.array([[0, n_bh_firstcell], [n_bh_firstcell, n_bh_1 + n_bh_2]]),
         )
 
     def test_get_bound_only_extra_mask(self, hf, toysnap_withfof):
@@ -148,9 +150,9 @@ class TestHaloCatalogues:
                 )
                 assert (
                     getattr(generated_extra_mask, particle_type).sum()
-                    == dict(gas=n_g, dark_matter=n_dm, stars=n_s, black_holes=n_bh)[
-                        particle_type
-                    ]
+                    == dict(
+                        gas=n_g_1, dark_matter=n_dm_1, stars=n_s_1, black_holes=n_bh_1
+                    )[particle_type]
                 )
 
     def test_get_void_extra_mask(self, hf, toysnap):
@@ -170,15 +172,15 @@ class TestHaloCatalogues:
         hf.extra_mask = MaskCollection(
             gas=np.r_[np.ones(100, dtype=bool), np.zeros(n_g_all - 100, dtype=bool)],
             dark_matter=None,
-            stars=np.r_[np.ones(100, dtype=bool), np.zeros(n_s - 100, dtype=bool)],
-            black_holes=np.ones(n_bh, dtype=bool),
+            stars=np.r_[np.ones(100, dtype=bool), np.zeros(n_s_1 - 100, dtype=bool)],
+            black_holes=np.ones(n_bh_1, dtype=bool),
         )
         sg = SWIFTGalaxy(toysnap_filename, hf)
         generated_extra_mask = sg._extra_mask
         for particle_type in present_particle_types.values():
             if getattr(generated_extra_mask, particle_type) is None:
                 assert (
-                    dict(gas=100, dark_matter=None, stars=100, black_holes=n_bh)[
+                    dict(gas=100, dark_matter=None, stars=100, black_holes=n_bh_1)[
                         particle_type
                     ]
                     is None
@@ -186,7 +188,7 @@ class TestHaloCatalogues:
             else:
                 assert (
                     getattr(generated_extra_mask, particle_type).sum()
-                    == dict(gas=100, dark_matter=None, stars=100, black_holes=n_bh)[
+                    == dict(gas=100, dark_matter=None, stars=100, black_holes=n_bh_1)[
                         particle_type
                     ]
                 )
@@ -306,7 +308,7 @@ class TestVelociraptorWithSWIFTGalaxy:
         """
         assert (
             getattr(sg_vr, particle_type).masses.size
-            == dict(gas=10000, dark_matter=10000, stars=10000, black_holes=1)[
+            == dict(gas=n_g_1, dark_matter=n_dm_1, stars=n_s_1, black_holes=n_bh_1)[
                 particle_type
             ]
         )
@@ -373,7 +375,7 @@ class TestCaesar:
         elif hasattr(caesar, "masses"):
             assert_allclose_units(
                 caesar.masses["total"],
-                n_g * m_g + n_s * m_s + n_bh * m_bh,
+                n_g_1 * m_g + n_s_1 * m_s + n_bh_1 * m_bh,
                 rtol=reltol_nd,
                 atol=abstol_m,
             )
@@ -391,10 +393,10 @@ class TestCaesar:
             assert (
                 getattr(sg, particle_type).masses.size
                 == dict(
-                    gas=n_g_b // 2 + n_g,
-                    dark_matter=n_dm_b // 2 + n_dm,
-                    stars=n_s,
-                    black_holes=n_bh,
+                    gas=n_g_b // 2 + n_g_1,
+                    dark_matter=n_dm_b // 2 + n_dm_1,
+                    stars=n_s_1,
+                    black_holes=n_bh_1,
                 )[particle_type]
             )
 
@@ -422,7 +424,7 @@ class TestCaesarWithSWIFTGalaxy:
         elif hasattr(sg_caesar.halo_catalogue, "masses"):
             assert_allclose_units(
                 sg_caesar.halo_catalogue.masses["total"],
-                n_g * m_g + n_s * m_s + n_bh * m_bh,
+                n_g_1 * m_g + n_s_1 * m_s + n_bh_1 * m_bh,
                 rtol=reltol_nd,
                 atol=abstol_m,
             )
@@ -435,12 +437,12 @@ class TestCaesarWithSWIFTGalaxy:
         Check that the bound_only default mask works with the spatial mask,
         giving the expected shapes for arrays.
         """
-        expected_dm = 0 if sg_caesar.halo_catalogue.group_type == "galaxy" else n_dm
+        expected_dm = 0 if sg_caesar.halo_catalogue.group_type == "galaxy" else n_dm_1
         assert (
             getattr(sg_caesar, particle_type).masses.size
-            == dict(gas=n_g, dark_matter=expected_dm, stars=n_s, black_holes=n_bh)[
-                particle_type
-            ]
+            == dict(
+                gas=n_g_1, dark_matter=expected_dm, stars=n_s_1, black_holes=n_bh_1
+            )[particle_type]
         )
 
 
@@ -456,10 +458,10 @@ class TestStandalone:
             assert (
                 getattr(sg, particle_type).masses.size
                 == dict(
-                    gas=n_g_b // 2 + n_g,
-                    dark_matter=n_dm_b // 2 + n_dm,
-                    stars=n_s,
-                    black_holes=n_bh,
+                    gas=n_g_b // 2 + n_g_1,
+                    dark_matter=n_dm_b // 2 + n_dm_1,
+                    stars=n_s_1,
+                    black_holes=n_bh_1,
                 )[particle_type]
             )
 
@@ -570,7 +572,7 @@ class TestSOAPWithSWIFTGalaxy:
         """
         assert (
             getattr(sg_soap, particle_type).masses.size
-            == dict(gas=10000, dark_matter=10000, stars=10000, black_holes=1)[
+            == dict(gas=n_g_1, dark_matter=n_dm_1, stars=n_s_1, black_holes=n_bh_1)[
                 particle_type
             ]
         )
