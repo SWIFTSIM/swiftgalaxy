@@ -12,7 +12,7 @@ abstract
 
 from warnings import warn
 from abc import ABC, abstractmethod
-from collections.abc import Sized
+from collections.abc import Collection
 import numpy as np
 import unyt as u
 from swiftsimio import SWIFTMask, SWIFTDataset, mask
@@ -24,6 +24,8 @@ from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from swiftgalaxy.reader import SWIFTGalaxy
+    from velociraptor.catalogue.catalogue import Catalogue as VelociraptorCatalogue
+    from caesar.loader import Galaxy as CaesarGalaxy, Halo as CaesarHalo
 
 
 class _MaskHelper:
@@ -159,7 +161,7 @@ class _HaloCatalogue(ABC):
             self._multi_count = 1
             return
         index = getattr(self, self._index_attr)
-        if isinstance(index, Sized):
+        if isinstance(index, Collection):
             self._multi_galaxy = True
             if not isinstance(index, int):  # placate mypy
                 self._multi_count = len(index)
@@ -265,7 +267,7 @@ class SOAP(_HaloCatalogue):
     """
 
     soap_file: str
-    soap_index: Union[int, Sized]
+    soap_index: Union[int, Collection]
     centre_type: str
     velocity_centre_type: str
     _catalogue: SWIFTDataset
@@ -274,7 +276,7 @@ class SOAP(_HaloCatalogue):
     def __init__(
         self,
         soap_file: Optional[str] = None,
-        soap_index: Optional[Union[int, Sized]] = None,
+        soap_index: Optional[Union[int, Collection]] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "input_halos.halo_centre",
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
@@ -503,10 +505,10 @@ class Velociraptor(_HaloCatalogue):
 
     velociraptor_filebase: str
     velociraptor_files: Dict[str, str]
-    halo_index: Union[int, Sized]
+    halo_index: Union[int, Collection]
     centre_type: str
     velocity_centre_type: str
-    # _catalogue: Catalogue  # Catalogue not defined here
+    _catalogue: "VelociraptorCatalogue"
     _index_attr = "halo_index"
 
     def __init__(
@@ -547,7 +549,7 @@ class Velociraptor(_HaloCatalogue):
 
     def _load(self) -> None:
         import h5py
-        from velociraptor.catalogue.catalogue import Catalogue
+        from velociraptor.catalogue.catalogue import Catalogue as VelociraptorCatalogue
         from velociraptor import load as load_catalogue
         from velociraptor.particles import load_groups
 
@@ -558,7 +560,7 @@ class Velociraptor(_HaloCatalogue):
                 else 1.0
             )
 
-        self._catalogue: Catalogue = load_catalogue(
+        self._catalogue: "VelociraptorCatalogue" = load_catalogue(
             self.velociraptor_files["properties"], mask=self.halo_index
         )
         groups = load_groups(
@@ -566,9 +568,10 @@ class Velociraptor(_HaloCatalogue):
             catalogue=load_catalogue(self.velociraptor_files["properties"]),
         )
         if self._multi_galaxy:
-            self._particles = [
-                groups.extract_halo(halo_index=hi)[0] for hi in self.halo_index
-            ]
+            if not isinstance(self.halo_index, int):  # placate mypy
+                self._particles = [
+                    groups.extract_halo(halo_index=hi)[0] for hi in self.halo_index
+                ]
         else:
             self._particles, unbound_particles_unused = groups.extract_halo(
                 halo_index=self.halo_index
@@ -776,10 +779,10 @@ class Caesar(_HaloCatalogue):
     """
 
     group_type: str
-    group_index: Union[int, Sized]
+    group_index: Union[int, Collection]
     centre_type: str
     velocity_centre_type: str
-    # _catalogue: Union[caesar.loader.Halo, caesar.loader.Galaxy]  # not imported
+    _catalogue: Union["CaesarHalo", "CaesarGalaxy"]
     _index_attr = "group_index"
 
     def __init__(
