@@ -19,7 +19,7 @@ from swiftsimio import SWIFTMask, SWIFTDataset, mask
 from swiftgalaxy.masks import MaskCollection
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 
-from typing import Any, Union, Optional, TYPE_CHECKING, List, Set
+from typing import Any, Union, Optional, TYPE_CHECKING, List, Set, Dict
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:
@@ -47,11 +47,13 @@ class _HaloCatalogue(ABC):
     _multi_galaxy: bool = False
     _multi_galaxy_mask_index: Optional[int] = None
     _multi_count: int
+    _index_attr: Optional[str]
 
     def __init__(
         self, extra_mask: Optional[Union[str, MaskCollection]] = "bound_only"
     ) -> None:
         self.extra_mask = extra_mask
+        self._check_multi()
         self._load()
         return
 
@@ -149,6 +151,38 @@ class _HaloCatalogue(ABC):
     #     # define fields that need preloading to compute masks
     #     pass
 
+    def _check_multi(self):
+        # generalize (make derived classes specify what attrs to check)
+        # and move to super
+        if self._index_attr is None:
+            self._multi_galaxy = False
+            self._multi_count = 1
+            return
+        index = getattr(self, self._index_attr)
+        if isinstance(index, Sized):
+            self._multi_galaxy = True
+            if not isinstance(index, int):  # placate mypy
+                self._multi_count = len(index)
+            self._multi_galaxy = False
+            self._multi_count = 1
+        if self._multi_galaxy:
+            assert self.extra_mask in (None, "bound_only")
+
+    def __getattr__(self, attr: str) -> Any:
+        # Invoked if attribute not found.
+        # Use to expose the masked catalogue.
+        if attr == "_catalogue":  # guard infinite recursion
+            try:
+                return object.__getattribute__(self, "_catalogue")
+            except AttributeError:
+                return None
+        obj = getattr(self._catalogue, attr)
+        if self._multi_galaxy_mask_index is not None:
+            # should find a way to mask self.soap_index too
+            return _MaskHelper(obj, self._multi_galaxy_mask_index)
+        else:
+            return obj
+
     # In addition, it is recommended to expose the properties computed
     # by the halo catalogue through this object, masked to the values
     # corresponding to the object of interest. It probably makes sense
@@ -234,7 +268,8 @@ class SOAP(_HaloCatalogue):
     soap_index: Union[int, Sized]
     centre_type: str
     velocity_centre_type: str
-    _swift_dataset: SWIFTDataset
+    _catalogue: SWIFTDataset
+    _index_attr = "soap_index"
 
     def __init__(
         self,
@@ -258,7 +293,6 @@ class SOAP(_HaloCatalogue):
         self.velocity_centre_type = velocity_centre_type
         self._user_spatial_offsets = custom_spatial_offsets
         super().__init__(extra_mask=extra_mask)
-        self._check_multi()  # moves to super() after setting self.extra_mask
         return
 
     def _load(self) -> None:
@@ -267,27 +301,15 @@ class SOAP(_HaloCatalogue):
             sm.constrain_indices(self.soap_index)
         else:
             sm.constrain_index(self.soap_index)
-        self._swift_dataset: SWIFTDataset = SWIFTDataset(
+        self._catalogue = SWIFTDataset(
             self.soap_file,
             mask=sm,
         )
 
-    def _check_multi(self):
-        # generalize (make derived classes specify what attrs to check)
-        # and move to super
-        if isinstance(self.soap_index, Sized):
-            self._multi_galaxy = True
-            if not isinstance(self.soap_index, int):  # placate mypy
-                self._multi_count = len(self.soap_index)
-            self._multi_galaxy = False
-            self._multi_count = 1
-        if self._multi_galaxy:
-            assert self.extra_mask in (None, "bound_only")
-
     @property
     def _region_centre(self) -> cosmo_array:
         # should not need to box wrap here but there's a bug upstream
-        boxsize = self._swift_dataset.metadata.boxsize
+        boxsize = self._catalogue.metadata.boxsize
         coords = self.bound_subhalo.centre_of_mass.squeeze()
         return coords % boxsize
 
@@ -330,7 +352,7 @@ class SOAP(_HaloCatalogue):
 
     @property
     def centre(self) -> cosmo_array:
-        obj = self._swift_dataset
+        obj = self._catalogue
         for attr in self.centre_type.split("."):
             obj = getattr(obj, attr)
         if self._multi_galaxy_mask_index is not None:
@@ -339,7 +361,7 @@ class SOAP(_HaloCatalogue):
 
     @property
     def velocity_centre(self) -> cosmo_array:
-        obj = self._swift_dataset
+        obj = self._catalogue
         for attr in self.velocity_centre_type.split("."):
             obj = getattr(obj, attr)
         if self._multi_galaxy_mask_index is not None:
@@ -349,9 +371,9 @@ class SOAP(_HaloCatalogue):
     def __getattr__(self, attr: str) -> Any:
         # Invoked if attribute not found.
         # Use to expose the masked catalogue.
-        if attr == "_swift_dataset":  # guard infinite recursion
-            return object.__getattribute__(self, "_swift_dataset")
-        obj = getattr(self._swift_dataset, attr)
+        if attr == "_catalogue":  # guard infinite recursion
+            return object.__getattribute__(self, "_catalogue")
+        obj = getattr(self._catalogue, attr)
         if self._multi_galaxy_mask_index is not None:
             # should find a way to mask self.soap_index too
             return _MaskHelper(obj, self._multi_galaxy_mask_index)
@@ -360,7 +382,7 @@ class SOAP(_HaloCatalogue):
 
     def __repr__(self) -> str:
         # Expose the catalogue __repr__ for interactive use.
-        return self._swift_dataset.__repr__()
+        return self._catalogue.__repr__()
 
 
 class Velociraptor(_HaloCatalogue):
@@ -479,6 +501,14 @@ class Velociraptor(_HaloCatalogue):
         unyt_array(14.73875777, '10000000000.0*Msun')
     """
 
+    velociraptor_filebase: str
+    velociraptor_files: Dict[str, str]
+    halo_index: Union[int, Sized]
+    centre_type: str
+    velocity_centre_type: str
+    # _catalogue: Catalogue  # Catalogue not defined here
+    _index_attr = "halo_index"
+
     def __init__(
         self,
         velociraptor_filebase: Optional[str] = None,
@@ -535,9 +565,14 @@ class Velociraptor(_HaloCatalogue):
             self.velociraptor_files["catalog_groups"],
             catalogue=load_catalogue(self.velociraptor_files["properties"]),
         )
-        self._particles, unbound_particles = groups.extract_halo(
-            halo_index=self.halo_index
-        )
+        if self._multi_galaxy:
+            self._particles = [
+                groups.extract_halo(halo_index=hi)[0] for hi in self.halo_index
+            ]
+        else:
+            self._particles, unbound_particles_unused = groups.extract_halo(
+                halo_index=self.halo_index
+            )
         return
 
     def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
@@ -621,10 +656,16 @@ class Velociraptor(_HaloCatalogue):
 
     def __getattr__(self, attr: str) -> Any:
         # Invoked if attribute not found.
-        # Use to expose the masked catalogue.
+        # Use to expose the masked catalogue
+        # This implementation essentially shared with soap... merge?
         if attr == "_catalogue":  # guard infinite recursion
             return object.__getattribute__(self, "_catalogue")
-        return getattr(self._catalogue, attr)
+        obj = getattr(self._catalogue, attr)
+        if self._multi_galaxy_mask_index is not None:
+            # should find a way to mask self.halo_index too
+            return _MaskHelper(obj, self._multi_galaxy_mask_index)
+        else:
+            return obj
 
     def __repr__(self) -> str:
         # Expose the catalogue __repr__ for interactive use.
@@ -734,6 +775,13 @@ class Caesar(_HaloCatalogue):
         unyt_quantity(1.46414384e+12, 'Msun')
     """
 
+    group_type: str
+    group_index: Union[int, Sized]
+    centre_type: str
+    velocity_centre_type: str
+    # _catalogue: Union[caesar.loader.Halo, caesar.loader.Galaxy]  # not imported
+    _index_attr = "group_index"
+
     def __init__(
         self,
         caesar_file: Optional[str] = None,
@@ -754,14 +802,14 @@ class Caesar(_HaloCatalogue):
 
         valid_group_types = dict(halo="halos", galaxy="galaxies")
         if group_type in valid_group_types:
-            self._group = getattr(self._caesar, valid_group_types[group_type])[
+            self._catalogue = getattr(self._caesar, valid_group_types[group_type])[
                 group_index
             ]
         else:
             raise ValueError(
                 "group_type required, valid values are 'halo' or 'galaxy'."
             )
-        self.group_type: str = group_type
+        self.group_type = group_type
         if group_index is None:
             raise ValueError("group_index (int) required.")
         else:
@@ -779,15 +827,15 @@ class Caesar(_HaloCatalogue):
 
     def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         sm = mask(snapshot_filename, spatial_only=True)
-        if "total_rmax" in self._group.radii.keys():
+        if "total_rmax" in self._catalogue.radii.keys():
             # spatial extent information is present, define the mask
             pos = cosmo_array(
-                self._group.pos.to(u.kpc),  # maybe comoving, ensure physical
+                self._catalogue.pos.to(u.kpc),  # maybe comoving, ensure physical
                 comoving=False,
                 cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
             ).to_comoving()
             rmax = cosmo_array(
-                self._group.radii["total_rmax"].to(
+                self._catalogue.radii["total_rmax"].to(
                     u.kpc
                 ),  # maybe comoving, ensure physical
                 comoving=False,
@@ -824,8 +872,8 @@ class Caesar(_HaloCatalogue):
             ).any(axis=0)
 
         null_slice = np.s_[:0]  # mask that selects no particles
-        if hasattr(self._group, "glist"):
-            gas_mask = self._group.glist
+        if hasattr(self._catalogue, "glist"):
+            gas_mask = self._catalogue.glist
             gas_mask = gas_mask[in_one_of_ranges(gas_mask, SG.mask.gas)]
             gas_mask = np.isin(
                 np.concatenate([np.arange(start, end) for start, end in SG.mask.gas]),
@@ -834,8 +882,8 @@ class Caesar(_HaloCatalogue):
         else:
             gas_mask = null_slice
         # seems like name could be dmlist or dlist?
-        if hasattr(self._group, "dlist") or hasattr(self._group, "dmlist"):
-            dark_matter_mask = getattr(self._group, "dlist", self._group.dmlist)
+        if hasattr(self._catalogue, "dlist") or hasattr(self._catalogue, "dmlist"):
+            dark_matter_mask = getattr(self._catalogue, "dlist", self._catalogue.dmlist)
             dark_matter_mask = dark_matter_mask[
                 in_one_of_ranges(dark_matter_mask, SG.mask.dark_matter)
             ]
@@ -848,8 +896,8 @@ class Caesar(_HaloCatalogue):
         else:
             dark_matter_mask = null_slice
 
-        if hasattr(self._group, "slist"):
-            stars_mask = self._group.slist
+        if hasattr(self._catalogue, "slist"):
+            stars_mask = self._catalogue.slist
             stars_mask = stars_mask[in_one_of_ranges(stars_mask, SG.mask.stars)]
             stars_mask = np.isin(
                 np.concatenate([np.arange(start, end) for start, end in SG.mask.stars]),
@@ -857,8 +905,8 @@ class Caesar(_HaloCatalogue):
             )
         else:
             stars_mask = null_slice
-        if hasattr(self._group, "bhlist"):
-            black_holes_mask = self._group.bhlist
+        if hasattr(self._catalogue, "bhlist"):
+            black_holes_mask = self._catalogue.bhlist
             black_holes_mask = black_holes_mask[
                 in_one_of_ranges(black_holes_mask, SG.mask.black_holes)
             ]
@@ -889,7 +937,7 @@ class Caesar(_HaloCatalogue):
         """
         centre_attr = {"": "pos", "minpot": "minpotpos"}[self.centre_type]
         return cosmo_array(
-            getattr(self._group, centre_attr).to(
+            getattr(self._catalogue, centre_attr).to(
                 u.kpc
             ),  # maybe comoving, ensure physical
             comoving=False,
@@ -910,7 +958,7 @@ class Caesar(_HaloCatalogue):
 
         vcentre_attr = {"": "vel", "minpot": "minpotvel"}[self.centre_type]
         return cosmo_array(
-            getattr(self._group, vcentre_attr).to(u.km / u.s),
+            getattr(self._catalogue, vcentre_attr).to(u.km / u.s),
             comoving=False,
             cosmo_factor=cosmo_factor(a**0, self._caesar.simulation.scale_factor),
         ).to_comoving()
@@ -918,12 +966,18 @@ class Caesar(_HaloCatalogue):
     def __getattr__(self, attr: str) -> Any:
         # Invoked if attribute not found.
         # Use to expose the masked catalogue.
+        # This implementation basically shared with vr, soap... merge?
         if attr == "_group":  # guard infinite recursion
             return object.__getattribute__(self, "_group")
-        return getattr(self._group, attr)
+        obj = getattr(self._catalogue, attr)
+        if self._multi_galaxy_mask_index is not None:
+            # should find a way to mask self.group_index too
+            return _MaskHelper(obj, self._multi_galaxy_mask_index)
+        else:
+            return obj
 
     def __repr__(self) -> str:
-        return self._group.__repr__()
+        return self._catalogue.__repr__()
 
 
 class Standalone(_HaloCatalogue):
@@ -1029,6 +1083,8 @@ class Standalone(_HaloCatalogue):
         :meth:`~swiftgalaxy.reader.SWIFTGalaxy.mask_particles` approach.
 
     """
+
+    _index_attr = None
 
     def __init__(
         self,

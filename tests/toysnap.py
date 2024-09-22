@@ -67,6 +67,9 @@ age = u.unyt_quantity.from_astropy(
 
 
 class ToyHF(_HaloCatalogue):
+
+    _index_attr = "index"
+
     def __init__(self, snapfile=toysnap_filename, index=0):
         self.snapfile = snapfile
         self.index = index
