@@ -154,8 +154,6 @@ class _HaloCatalogue(ABC):
     #     pass
 
     def _check_multi(self):
-        # generalize (make derived classes specify what attrs to check)
-        # and move to super
         if self._index_attr is None:
             self._multi_galaxy = False
             self._multi_count = 1
@@ -184,13 +182,6 @@ class _HaloCatalogue(ABC):
             return _MaskHelper(obj, self._multi_galaxy_mask_index)
         else:
             return obj
-
-    # In addition, it is recommended to expose the properties computed
-    # by the halo catalogue through this object, masked to the values
-    # corresponding to the object of interest. It probably makes sense
-    # to match the syntax used to the usual syntax for the halo catalogue
-    # in question? See e.g. implementation in __getattr__ in Velociraptor
-    # subclass below.
 
 
 class SOAP(_HaloCatalogue):
@@ -369,18 +360,6 @@ class SOAP(_HaloCatalogue):
         if self._multi_galaxy_mask_index is not None:
             return obj[self._multi_galaxy_mask_index]
         return obj.squeeze()
-
-    def __getattr__(self, attr: str) -> Any:
-        # Invoked if attribute not found.
-        # Use to expose the masked catalogue.
-        if attr == "_catalogue":  # guard infinite recursion
-            return object.__getattribute__(self, "_catalogue")
-        obj = getattr(self._catalogue, attr)
-        if self._multi_galaxy_mask_index is not None:
-            # should find a way to mask self.soap_index too
-            return _MaskHelper(obj, self._multi_galaxy_mask_index)
-        else:
-            return obj
 
     def __repr__(self) -> str:
         # Expose the catalogue __repr__ for interactive use.
@@ -656,19 +635,6 @@ class Velociraptor(_HaloCatalogue):
             comoving=False,
             cosmo_factor=cosmo_factor(a**0, self.scale_factor),
         ).to_comoving()
-
-    def __getattr__(self, attr: str) -> Any:
-        # Invoked if attribute not found.
-        # Use to expose the masked catalogue
-        # This implementation essentially shared with soap... merge?
-        if attr == "_catalogue":  # guard infinite recursion
-            return object.__getattribute__(self, "_catalogue")
-        obj = getattr(self._catalogue, attr)
-        if self._multi_galaxy_mask_index is not None:
-            # should find a way to mask self.halo_index too
-            return _MaskHelper(obj, self._multi_galaxy_mask_index)
-        else:
-            return obj
 
     def __repr__(self) -> str:
         # Expose the catalogue __repr__ for interactive use.
@@ -965,19 +931,6 @@ class Caesar(_HaloCatalogue):
             comoving=False,
             cosmo_factor=cosmo_factor(a**0, self._caesar.simulation.scale_factor),
         ).to_comoving()
-
-    def __getattr__(self, attr: str) -> Any:
-        # Invoked if attribute not found.
-        # Use to expose the masked catalogue.
-        # This implementation basically shared with vr, soap... merge?
-        if attr == "_group":  # guard infinite recursion
-            return object.__getattribute__(self, "_group")
-        obj = getattr(self._catalogue, attr)
-        if self._multi_galaxy_mask_index is not None:
-            # should find a way to mask self.group_index too
-            return _MaskHelper(obj, self._multi_galaxy_mask_index)
-        else:
-            return obj
 
     def __repr__(self) -> str:
         return self._catalogue.__repr__()
