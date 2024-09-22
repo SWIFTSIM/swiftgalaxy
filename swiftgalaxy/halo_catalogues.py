@@ -568,6 +568,50 @@ class Velociraptor(_HaloCatalogue):
         return MaskCollection(**generate_bound_mask(SG, self._particles)._asdict())
 
     @property
+    def _region_centre(self) -> cosmo_array:
+        length_factor = (
+            self._particles[0].groups_instance.catalogue.units.a
+            if not self._particles[0].groups_instance.catalogue.units.comoving
+            else 1.0
+        )
+        return cosmo_array(
+            [
+                [
+                    particles.x / length_factor,
+                    particles.y / length_factor,
+                    particles.z / length_factor,
+                ]
+                for particles in self._particles
+            ],
+            u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, length_factor),
+        ).squeeze()
+
+    @property
+    def _region_aperture(self) -> cosmo_array:
+        length_factor = (
+            self._particles[0].groups_instance.catalogue.units.a
+            if not self._particles[0].groups_instance.catalogue.units.comoving
+            else 1.0
+        )
+        return cosmo_array(
+            [particles.r_size / length_factor for particles in self._particles],
+            u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, length_factor),
+        ).squeeze()
+
+    def _get_preload_fields(self, SG: "SWIFTGalaxy") -> Set[str]:
+        if self.extra_mask == "bound_only":
+            return {
+                f"{group_name}.particle_ids"
+                for group_name in SG.metadata.present_group_names
+            }
+        else:
+            return set()
+
+    @property
     def centre(self) -> cosmo_array:
         """
         Obtain the centre specified by the ``centre_type`` from the halo catalogue.
