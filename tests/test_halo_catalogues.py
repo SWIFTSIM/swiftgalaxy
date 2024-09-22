@@ -472,7 +472,7 @@ class TestSOAP:
         Check that the loading function is doing it's job.
         """
         # _load called during super().__init__
-        assert soap._swift_dataset is not None
+        assert soap._catalogue is not None
 
     @pytest.mark.parametrize(
         "centre_type, expected",

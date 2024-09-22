@@ -1255,7 +1255,7 @@ class SWIFTGalaxy(SWIFTDataset):
             coordinates_dataset_name=self.coordinates_dataset_name,
             velocities_dataset_name=self.velocities_dataset_name,
             _spatial_mask=self._spatial_mask,
-            _extra_mask=self._extra_mask,  # BUG when deepcopied? copied by reference?
+            _extra_mask=self._extra_mask,
             _coordinate_like_transform=self._coordinate_like_transform,
             _velocity_like_transform=self._velocity_like_transform,
         )
@@ -1275,9 +1275,7 @@ class SWIFTGalaxy(SWIFTDataset):
             coordinates_dataset_name=deepcopy(self.coordinates_dataset_name),
             velocities_dataset_name=deepcopy(self.velocities_dataset_name),
             _spatial_mask=self._spatial_mask,
-            _extra_mask=deepcopy(
-                self._extra_mask
-            ),  # BUG when deepcopied? copied by reference?
+            _extra_mask=deepcopy(self._extra_mask),
             _coordinate_like_transform=deepcopy(self._coordinate_like_transform),
             _velocity_like_transform=deepcopy(self._velocity_like_transform),
         )
