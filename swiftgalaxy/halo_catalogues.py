@@ -159,6 +159,7 @@ class _HaloCatalogue(ABC):
             self._multi_galaxy = True
             if not isinstance(index, int):  # placate mypy
                 self._multi_count = len(index)
+        else:
             self._multi_galaxy = False
             self._multi_count = 1
         if self._multi_galaxy:

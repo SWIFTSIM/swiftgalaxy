@@ -4,7 +4,7 @@ import numpy as np
 import unyt as u
 from astropy.cosmology import LambdaCDM
 from astropy import units as U
-from swiftsimio.objects import cosmo_array
+from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from swiftsimio import Writer
 from swiftgalaxy import MaskCollection
 from swiftgalaxy.halo_catalogues import _HaloCatalogue
@@ -82,11 +82,16 @@ class ToyHF(_HaloCatalogue):
     def _generate_spatial_mask(self, SG):
         import swiftsimio
 
-        if self.index == 0:
+        index = (
+            self.index[self._multi_galaxy_mask_index]
+            if self._multi_galaxy_mask_index is not None
+            else self.index
+        )
+        if index == 0:
             spatial_mask = (
                 np.array([[centre_1 - 0.1, centre_1 + 0.1] for ax in range(3)]) * u.Mpc
             )
-        elif self.index == 1:
+        elif index == 1:
             spatial_mask = (
                 np.array([[centre_2 - 0.1, centre_2 + 0.1] for ax in range(3)]) * u.Mpc
             )
@@ -116,26 +121,51 @@ class ToyHF(_HaloCatalogue):
     @property
     def centre(self):
         if self.index == 0:
-            return cosmo_array([centre_1, centre_1, centre_1], u.Mpc)
+            return cosmo_array(
+                [centre_1, centre_1, centre_1],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            )
         elif self.index == 1:
-            return cosmo_array([centre_2, centre_2, centre_2], u.Mpc)
+            return cosmo_array(
+                [centre_2, centre_2, centre_2],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            )
 
     @property
     def velocity_centre(self):
         if self.index == 0:
-            return cosmo_array([vcentre_1, vcentre_1, vcentre_1], u.km / u.s)
+            return cosmo_array(
+                [vcentre_1, vcentre_1, vcentre_1],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            )
         if self.index == 1:
-            return cosmo_array([vcentre_2, vcentre_2, vcentre_2], u.km / u.s)
+            return cosmo_array(
+                [vcentre_2, vcentre_2, vcentre_2],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            )
 
     @property
     def _region_centre(self):
         return cosmo_array(
-            [[centre_1, centre_1, centre_1], [centre_2, centre_2, centre_2]], u.Mpc
+            [[centre_1, centre_1, centre_1], [centre_2, centre_2, centre_2]],
+            u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, 1.0),
         )
 
     @property
     def _region_aperture(self):
-        return cosmo_array([0.5, 0.5], u.Mpc)
+        return cosmo_array(
+            [0.5, 0.5], u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a**1, 1.0)
+        )
 
     def _get_preload_fields(self):
         return set()
