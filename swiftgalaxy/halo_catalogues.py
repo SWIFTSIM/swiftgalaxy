@@ -136,22 +136,22 @@ class _HaloCatalogue(ABC):
         # return halo velocity centre
         pass
 
-    # @property
-    # @abstractmethod
-    # def _region_centre(self) -> cosmo_array:
-    #     # return a centre for the spatial region
-    #     pass
+    @property
+    @abstractmethod
+    def _region_centre(self) -> cosmo_array:
+        # return a centre for the spatial region
+        pass
 
-    # @property
-    # @abstractmethod
-    # def _region_aperture(self) -> cosmo_array:
-    #     # return a size for the spatial region
-    #     pass
+    @property
+    @abstractmethod
+    def _region_aperture(self) -> cosmo_array:
+        # return a size for the spatial region
+        pass
 
-    # @abstractmethod
-    # def _get_preload_fields(self, SG: "SWIFTGalaxy") -> Set[str]:
-    #     # define fields that need preloading to compute masks
-    #     pass
+    @abstractmethod
+    def _get_preload_fields(self, SG: "SWIFTGalaxy") -> Set[str]:
+        # define fields that need preloading to compute masks
+        pass
 
     def _check_multi(self):
         if self._index_attr is None:
@@ -792,7 +792,7 @@ class Caesar(_HaloCatalogue):
     group_index: Union[int, Collection]
     centre_type: str
     velocity_centre_type: str
-    _catalogue: Union["CaesarHalo", "CaesarGalaxy"]
+    _catalogue: Union["CaesarHalo", "CaesarGalaxy", List]
     _index_attr = "group_index"
 
     def __init__(
@@ -815,9 +815,11 @@ class Caesar(_HaloCatalogue):
 
         valid_group_types = dict(halo="halos", galaxy="galaxies")
         if group_type in valid_group_types:
-            self._catalogue = getattr(self._caesar, valid_group_types[group_type])[
-                group_index
-            ]
+            self._catalogue = getattr(self._caesar, valid_group_types[group_type])
+            if self._multi_galaxy:
+                self._catalogue = [self._catalogue[gi] for gi in group_index]
+            else:
+                self._catalogue = self._catalogue[group_index]
         else:
             raise ValueError(
                 "group_type required, valid values are 'halo' or 'galaxy'."
@@ -839,18 +841,17 @@ class Caesar(_HaloCatalogue):
         pass
 
     def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
+        cat = self._mask_catalogue()
         sm = mask(snapshot_filename, spatial_only=True)
-        if "total_rmax" in self._catalogue.radii.keys():
+        if "total_rmax" in cat.radii.keys():
             # spatial extent information is present, define the mask
             pos = cosmo_array(
-                self._catalogue.pos.to(u.kpc),  # maybe comoving, ensure physical
+                cat.pos.to(u.kpc),  # maybe comoving, ensure physical
                 comoving=False,
                 cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
             ).to_comoving()
             rmax = cosmo_array(
-                self._catalogue.radii["total_rmax"].to(
-                    u.kpc
-                ),  # maybe comoving, ensure physical
+                cat.radii["total_rmax"].to(u.kpc),  # maybe comoving, ensure physical
                 comoving=False,
                 cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
             ).to_comoving()
@@ -884,9 +885,10 @@ class Caesar(_HaloCatalogue):
                 ints < int_ranges[:, 1, np.newaxis],
             ).any(axis=0)
 
+        cat = self._mask_catalogue()
         null_slice = np.s_[:0]  # mask that selects no particles
-        if hasattr(self._catalogue, "glist"):
-            gas_mask = self._catalogue.glist
+        if hasattr(cat, "glist"):
+            gas_mask = cat.glist
             gas_mask = gas_mask[in_one_of_ranges(gas_mask, SG.mask.gas)]
             gas_mask = np.isin(
                 np.concatenate([np.arange(start, end) for start, end in SG.mask.gas]),
@@ -895,8 +897,8 @@ class Caesar(_HaloCatalogue):
         else:
             gas_mask = null_slice
         # seems like name could be dmlist or dlist?
-        if hasattr(self._catalogue, "dlist") or hasattr(self._catalogue, "dmlist"):
-            dark_matter_mask = getattr(self._catalogue, "dlist", self._catalogue.dmlist)
+        if hasattr(cat, "dlist") or hasattr(cat, "dmlist"):
+            dark_matter_mask = getattr(cat, "dlist", cat.dmlist)
             dark_matter_mask = dark_matter_mask[
                 in_one_of_ranges(dark_matter_mask, SG.mask.dark_matter)
             ]
@@ -909,8 +911,8 @@ class Caesar(_HaloCatalogue):
         else:
             dark_matter_mask = null_slice
 
-        if hasattr(self._catalogue, "slist"):
-            stars_mask = self._catalogue.slist
+        if hasattr(cat, "slist"):
+            stars_mask = cat.slist
             stars_mask = stars_mask[in_one_of_ranges(stars_mask, SG.mask.stars)]
             stars_mask = np.isin(
                 np.concatenate([np.arange(start, end) for start, end in SG.mask.stars]),
@@ -918,8 +920,8 @@ class Caesar(_HaloCatalogue):
             )
         else:
             stars_mask = null_slice
-        if hasattr(self._catalogue, "bhlist"):
-            black_holes_mask = self._catalogue.bhlist
+        if hasattr(cat, "bhlist"):
+            black_holes_mask = cat.bhlist
             black_holes_mask = black_holes_mask[
                 in_one_of_ranges(black_holes_mask, SG.mask.black_holes)
             ]
@@ -937,6 +939,51 @@ class Caesar(_HaloCatalogue):
             stars=stars_mask,
             black_holes=black_holes_mask,
         )
+
+    @property
+    def _region_centre(self) -> cosmo_array:
+        # return a centre for the spatial region
+        pos = cosmo_array(
+            [
+                cat.pos.to(u.kpc) for cat in self._catalogue
+            ],  # maybe comoving, ensure physical
+            comoving=False,
+            cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+        ).to_comoving()
+        return pos
+
+    @property
+    def _region_aperture(self) -> cosmo_array:
+        # return a size for the spatial region
+        if "total_rmax" in self._catalogue.radii.keys():
+            # spatial extent information is present
+            rmax = cosmo_array(
+                [
+                    cat.radii["total_rmax"].to(u.kpc) for cat in self._catalogue
+                ],  # maybe comoving, ensure physical
+                comoving=False,
+                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+            ).to_comoving()
+            return rmax
+        else:
+            # probably an older caesar output file
+            raise KeyError(
+                "CAESAR catalogue does not contain group extent information, is probably "
+                "an old file. See https://github.com/dnarayanan/caesar/issues/92"
+            )
+
+    def _get_preload_fields(self, SG: "SWIFTGalaxy") -> Set[str]:
+        # define fields that need preloading to compute masks
+        pass
+
+    def _mask_catalogue(self) -> Union["CaesarHalo", "CaesarGalaxy"]:
+        if self._multi_galaxy and self._multi_galaxy_mask_index is not None:
+            cat = self._catalogue[self._multi_galaxy_mask_index]
+        elif self._multi_galaxy and self._multi_galaxy_mask_index is None:
+            raise RuntimeError("Tried to mask catalogue without mask index!")
+        else:
+            cat = self._catalogue
+        return cat
 
     @property
     def centre(self) -> cosmo_array:
@@ -1128,21 +1175,19 @@ class Standalone(_HaloCatalogue):
     def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
         raise NotImplementedError  # guarded in initialisation, should not reach here
 
-    def _get_extra_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
-        if self.extra_mask == "bound_only":
-            # guarded in initialisation, but simplifies testing
-            return self._generate_bound_only_mask(SG)
-        elif self.extra_mask is None:
-            return MaskCollection(**{k: None for k in SG.metadata.present_group_names})
-        else:
-            # Keep user provided mask. If no mask provided for a particle type
-            # use None (no mask).
-            return MaskCollection(
-                **{
-                    name: getattr(self.extra_mask, name, None)
-                    for name in SG.metadata.present_group_names
-                }
-            )
+    @property
+    def _region_centre(self) -> cosmo_array:
+        # return a centre for the spatial region
+        raise NotImplementedError
+
+    @property
+    def _region_aperture(self) -> cosmo_array:
+        # return a size for the spatial region
+        raise NotImplementedError
+
+    def _get_preload_fields(self, SG: "SWIFTGalaxy") -> Set[str]:
+        # define fields that need preloading to compute masks
+        raise NotImplementedError
 
     @property
     def centre(self) -> cosmo_array:
