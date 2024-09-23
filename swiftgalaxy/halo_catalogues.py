@@ -49,7 +49,7 @@ class _HaloCatalogue(ABC):
     _multi_galaxy: bool = False
     _multi_galaxy_mask_index: Optional[int] = None
     _multi_count: int
-    _index_attr: Optional[str]
+    _index_attr: str
 
     def __init__(
         self, extra_mask: Optional[Union[str, MaskCollection]] = "bound_only"
@@ -154,10 +154,6 @@ class _HaloCatalogue(ABC):
         pass
 
     def _check_multi(self):
-        if self._index_attr is None:
-            self._multi_galaxy = False
-            self._multi_count = 1
-            return
         index = getattr(self, self._index_attr)
         if isinstance(index, Collection):
             self._multi_galaxy = True
@@ -996,13 +992,25 @@ class Caesar(_HaloCatalogue):
             The centre provided by the halo catalogue.
         """
         centre_attr = {"": "pos", "minpot": "minpotpos"}[self.centre_type]
-        return cosmo_array(
-            getattr(self._catalogue, centre_attr).to(
-                u.kpc
-            ),  # maybe comoving, ensure physical
+        if self._multi_galaxy_mask_index is not None:
+            return cosmo_array(
+                getattr(self._catalogue[self._multi_galaxy_mask_index], centre_attr).to(
+                    u.kpc
+                ),  # maybe comoving, ensure physical
+                comoving=False,
+                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+            ).to_comoving()
+        cat = [self._catalogue] if not self._multi_galaxy else self._catalogue
+        centre = cosmo_array(
+            [
+                getattr(cat_i, centre_attr).to(u.kpc) for cat_i in cat
+            ],  # maybe comoving, ensure physical
             comoving=False,
             cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
         ).to_comoving()
+        if not self._multi_galaxy:
+            return centre.squeeze()
+        return centre
 
     @property
     def velocity_centre(self) -> cosmo_array:
@@ -1015,13 +1023,24 @@ class Caesar(_HaloCatalogue):
         velocity_centre: :class:`~swiftsimio.objects.cosmo_array`
             The velocity centre provided by the halo catalogue.
         """
-
         vcentre_attr = {"": "vel", "minpot": "minpotvel"}[self.centre_type]
-        return cosmo_array(
-            getattr(self._catalogue, vcentre_attr).to(u.km / u.s),
+        if self._multi_galaxy_mask_index is not None:
+            return cosmo_array(
+                getattr(
+                    self._catalogue[self._multi_galaxy_mask_index], vcentre_attr
+                ).to(u.km / u.s),
+                comoving=False,
+                cosmo_factor=cosmo_factor(a**0, self._caesar.simulation.scale_factor),
+            ).to_comoving()
+        cat = [self._catalogue] if not self._multi_galaxy else self._catalogue
+        vcentre = cosmo_array(
+            [getattr(cat_i, vcentre_attr).to(u.km / u.s) for cat_i in cat],
             comoving=False,
             cosmo_factor=cosmo_factor(a**0, self._caesar.simulation.scale_factor),
         ).to_comoving()
+        if not self._multi_galaxy:
+            return vcentre.squeeze()
+        return vcentre
 
     def __repr__(self) -> str:
         return self._catalogue.__repr__()
@@ -1131,7 +1150,7 @@ class Standalone(_HaloCatalogue):
 
     """
 
-    _index_attr = None
+    _index_attr = "centre"
 
     def __init__(
         self,
@@ -1178,22 +1197,24 @@ class Standalone(_HaloCatalogue):
     @property
     def _region_centre(self) -> cosmo_array:
         # return a centre for the spatial region
-        raise NotImplementedError
+        return self._centre
 
     @property
     def _region_aperture(self) -> cosmo_array:
         # return a size for the spatial region
-        raise NotImplementedError
+        return np.repeat(np.max(np.abs(self._user_spatial_offsets)), len(self._centre))
 
     def _get_preload_fields(self, SG: "SWIFTGalaxy") -> Set[str]:
         # define fields that need preloading to compute masks
-        raise NotImplementedError
+        return set()
 
     @property
     def centre(self) -> cosmo_array:
         """
         Obtain the centre specified at initialisation.
         """
+        if self._multi_galaxy_mask_index is not None:
+            return self._centre[self._multi_galaxy_mask_index]
         return self._centre
 
     @property
@@ -1201,4 +1222,6 @@ class Standalone(_HaloCatalogue):
         """
         Obtain the velocity centre specified at initialisation.
         """
+        if self._multi_galaxy_mask_index is not None:
+            return self._velocity_centre[self._multi_galaxy_mask_index]
         return self._velocity_centre

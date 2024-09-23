@@ -127,6 +127,19 @@ class ToyHF(_HaloCatalogue):
         if self.index == 1:
             return cosmo_array([vcentre_2, vcentre_2, vcentre_2], u.km / u.s)
 
+    @property
+    def _region_centre(self):
+        return cosmo_array(
+            [[centre_1, centre_1, centre_1], [centre_2, centre_2, centre_2]], u.Mpc
+        )
+
+    @property
+    def _region_aperture(self):
+        return cosmo_array([0.5, 0.5], u.Mpc)
+
+    def _get_preload_fields(self):
+        return set()
+
 
 def create_toysnap(
     snapfile=toysnap_filename,
