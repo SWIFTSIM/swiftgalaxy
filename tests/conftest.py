@@ -145,7 +145,7 @@ def sgs_soap():
     create_toysnap(withfof=True)
     create_toysoap(create_virtual_snapshot=True)
 
-    yield SWIFTGalaxy(
+    yield SWIFTGalaxies(
         toysoap_virtual_snapshot_filename,
         SOAP(
             soap_file=toysoap_filename,
@@ -180,7 +180,7 @@ def sgs_vr():
     create_toysnap()
     create_toyvr()
 
-    yield SWIFTGalaxy(
+    yield SWIFTGalaxies(
         toysnap_filename,
         Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[0, 1]),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
@@ -212,7 +212,7 @@ def sgs_caesar(request):
     create_toysnap()
     create_toycaesar()
 
-    yield SWIFTGalaxy(
+    yield SWIFTGalaxies(
         toysnap_filename,
         Caesar(
             caesar_file=toycaesar_filename, group_type=request.param, group_index=[0, 1]

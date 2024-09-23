@@ -91,7 +91,7 @@ class _HaloCatalogue(ABC):
         return sm
 
     def _get_spatial_mask(self, snapshot_filename: str) -> MaskCollection:
-        if self._multi_galaxy and self._mask_multi_galaxy is None:
+        if self._multi_galaxy and self._multi_galaxy_mask_index is None:
             raise RuntimeError(
                 "Halo catalogue has multiple galaxies and is not currently masked."
             )
@@ -317,7 +317,7 @@ class SOAP(_HaloCatalogue):
             return set()
 
     def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
-        pos, rmax = self._region_centre, self._region_aperture
+        pos, rmax = (self._region_centre, self._region_aperture)
         sm = mask(snapshot_filename, spatial_only=True)
         load_region = cosmo_array([pos - rmax, pos + rmax]).T
         sm.constrain_spatial(load_region)
