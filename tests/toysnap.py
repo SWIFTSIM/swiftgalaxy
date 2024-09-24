@@ -683,8 +683,12 @@ def create_toyvr(filebase=toyvr_filebase):
                     data=np.array([centre_1, centre_2], dtype=float) + 0.002,
                 )
             )
-            f.create_dataset(f"{coord}c_gas", data=np.array([0.003], dtype=float))
-            f.create_dataset(f"{coord}c_stars", data=np.array([0.004], dtype=float))
+            f.create_dataset(
+                f"{coord}c_gas", data=np.array([0.003, 0.003], dtype=float)
+            )
+            f.create_dataset(
+                f"{coord}c_stars", data=np.array([0.004, 0.004], dtype=float)
+            )
             f.create_dataset(
                 f"V{coord}c", data=np.array([vcentre_1, vcentre_2], dtype=float)
             )
@@ -700,8 +704,8 @@ def create_toyvr(filebase=toyvr_filebase):
                     data=np.array([vcentre_1, vcentre_2], dtype=float) + 2.0,
                 )
             )
-            f.create_dataset(f"V{coord}c_gas", data=np.array([3.0], dtype=float))
-            f.create_dataset(f"V{coord}c_stars", data=np.array([4.0], dtype=float))
+            f.create_dataset(f"V{coord}c_gas", data=np.array([3.0, 3.0], dtype=float))
+            f.create_dataset(f"V{coord}c_stars", data=np.array([4.0, 4.0], dtype=float))
             for ct in ("c", "cminpot", "cmbp", "c_gas", "c_stars"):
                 f[f"{coord}{ct}"].attrs["Dimension_Length"] = 1.0
                 f[f"{coord}{ct}"].attrs["Dimension_Mass"] = 0.0

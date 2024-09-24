@@ -255,7 +255,7 @@ class SOAP(_HaloCatalogue):
     """
 
     soap_file: str
-    soap_index: Union[int, Collection]
+    soap_index: Union[int, Collection[int]]
     centre_type: str
     velocity_centre_type: str
     _catalogue: SWIFTDataset
@@ -264,7 +264,7 @@ class SOAP(_HaloCatalogue):
     def __init__(
         self,
         soap_file: Optional[str] = None,
-        soap_index: Optional[Union[int, Collection]] = None,
+        soap_index: Optional[Union[int, Collection[int]]] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "input_halos.halo_centre",
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
@@ -481,7 +481,7 @@ class Velociraptor(_HaloCatalogue):
 
     velociraptor_filebase: str
     velociraptor_files: Dict[str, str]
-    halo_index: Union[int, Collection]
+    halo_index: Union[int, Collection[int]]
     centre_type: str
     velocity_centre_type: str
     _catalogue: "VelociraptorCatalogue"
@@ -491,7 +491,7 @@ class Velociraptor(_HaloCatalogue):
         self,
         velociraptor_filebase: Optional[str] = None,
         velociraptor_files: Optional[dict] = None,
-        halo_index: Optional[int] = None,
+        halo_index: Optional[Union[int, Collection[int]]] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "minpot",  # _gas _star mbp minpot
         velociraptor_suffix: str = "",
@@ -574,13 +574,12 @@ class Velociraptor(_HaloCatalogue):
         return cosmo_array(
             [
                 [
-                    particles.x / length_factor,
-                    particles.y / length_factor,
-                    particles.z / length_factor,
+                    particles.x.to(u.kpc) / length_factor,
+                    particles.y.to(u.kpc) / length_factor,
+                    particles.z.to(u.kpc) / length_factor,
                 ]
                 for particles in self._particles
             ],
-            u.Mpc,
             comoving=True,
             cosmo_factor=cosmo_factor(a**1, length_factor),
         ).squeeze()
@@ -786,7 +785,7 @@ class Caesar(_HaloCatalogue):
     """
 
     group_type: str
-    group_index: Union[int, Collection]
+    group_index: Union[int, Collection[int]]
     centre_type: str
     velocity_centre_type: str
     _catalogue: Union["CaesarHalo", "CaesarGalaxy", List]
@@ -796,7 +795,7 @@ class Caesar(_HaloCatalogue):
         self,
         caesar_file: Optional[str] = None,
         group_type: Optional[str] = None,  # halos galaxies
-        group_index: Optional[int] = None,
+        group_index: Optional[Union[int, Collection[int]]] = None,
         centre_type: str = "minpot",  # "" "minpot"
         extra_mask: Union[str, MaskCollection] = "bound_only",
         custom_spatial_offsets: Optional[cosmo_array] = None,
@@ -811,19 +810,13 @@ class Caesar(_HaloCatalogue):
         yt_logger.set_log_level(log_level)  # restore old log level
 
         valid_group_types = dict(halo="halos", galaxy="galaxies")
-        if group_type in valid_group_types:
-            self._catalogue = getattr(self._caesar, valid_group_types[group_type])
-            if self._multi_galaxy:
-                self._catalogue = [self._catalogue[gi] for gi in group_index]
-            else:
-                self._catalogue = self._catalogue[group_index]
-        else:
+        if group_type not in valid_group_types:
             raise ValueError(
                 "group_type required, valid values are 'halo' or 'galaxy'."
             )
         self.group_type = group_type
         if group_index is None:
-            raise ValueError("group_index (int) required.")
+            raise ValueError("group_index (int or list) required.")
         else:
             self.group_index: int = group_index
 
@@ -831,6 +824,11 @@ class Caesar(_HaloCatalogue):
         self._user_spatial_offsets = custom_spatial_offsets
 
         super().__init__(extra_mask=extra_mask)
+        self._catalogue = getattr(self._caesar, valid_group_types[group_type])
+        if self._multi_galaxy:  # set in super().__init__
+            self._catalogue = [self._catalogue[gi] for gi in group_index]
+        else:
+            self._catalogue = self._catalogue[group_index]
         return
 
     def _load(self) -> None:
@@ -940,10 +938,9 @@ class Caesar(_HaloCatalogue):
     @property
     def _region_centre(self) -> cosmo_array:
         # return a centre for the spatial region
+        cats = [self._catalogue] if not self._multi_galaxy else self._catalogue
         pos = cosmo_array(
-            [
-                cat.pos.to(u.kpc) for cat in self._catalogue
-            ],  # maybe comoving, ensure physical
+            [cat.pos.to(u.kpc) for cat in cats],  # maybe comoving, ensure physical
             comoving=False,
             cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
         ).to_comoving()
@@ -951,12 +948,13 @@ class Caesar(_HaloCatalogue):
 
     @property
     def _region_aperture(self) -> cosmo_array:
+        cats = [self._catalogue] if not self._multi_galaxy else self._catalogue
         # return a size for the spatial region
-        if "total_rmax" in self._catalogue.radii.keys():
+        if "total_rmax" in cats[0].radii.keys():
             # spatial extent information is present
             rmax = cosmo_array(
                 [
-                    cat.radii["total_rmax"].to(u.kpc) for cat in self._catalogue
+                    cat.radii["total_rmax"].to(u.kpc) for cat in cats
                 ],  # maybe comoving, ensure physical
                 comoving=False,
                 cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
