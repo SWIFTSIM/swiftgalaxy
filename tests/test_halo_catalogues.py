@@ -236,17 +236,39 @@ class TestHaloCataloguesMulti:
         assert hf_multi.count > 1
         assert hf_multi._region_centre.shape == (hf_multi.count, 3)
         assert hf_multi._region_aperture.shape == (hf_multi.count,)
+        assert hf_multi.centre.shape == (hf_multi.count, 3)
+        assert hf_multi.velocity_centre.shape == (hf_multi.count, 3)
         mask_index = 0
         hf_multi._mask_multi_galaxy(mask_index)
         assert hf_multi._multi_galaxy_mask_index == mask_index
         assert hf_multi.count == 1
         assert hf_multi._region_centre.shape == (3,)
         assert hf_multi._region_aperture.shape == tuple()
+        assert hf_multi.centre.shape == (3,)
+        assert hf_multi.velocity_centre.shape == (3,)
         hf_multi._unmask_multi_galaxy()
         assert hf_multi._multi_galaxy_mask_index is None
         assert hf_multi.count > 1
         assert hf_multi._region_centre.shape == (hf_multi.count, 3)
         assert hf_multi._region_aperture.shape == (hf_multi.count,)
+        assert hf_multi.centre.shape == (hf_multi.count, 3)
+        assert hf_multi.velocity_centre.shape == (hf_multi.count, 3)
+
+    @pytest.mark.skip
+    def test_generate_spatial_mask(self, hf_multi):
+        raise NotImplementedError
+
+    @pytest.mark.skip
+    def test_generate_extra_mask(self, hf_multi):
+        raise NotImplementedError
+
+    @pytest.mark.skip
+    def test_preload_fields(self, hf_multi):
+        raise NotImplementedError
+
+    @pytest.mark.skip
+    def test_masking_catalogue(self, hf_multi):
+        raise NotImplementedError
 
 
 class TestVelociraptor:
