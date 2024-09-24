@@ -657,26 +657,41 @@ class Velociraptor(_HaloCatalogue):
         # According to Velociraptor documentation:
         if self.centre_type in ("_gas", "_stars"):
             # {XYZ}c_gas and {XYZ}c_stars are relative to {XYZ}c
-            relative_to = u.uhstack(
+            relative_to = np.hstack(
                 [getattr(self._catalogue.positions, "{:s}c".format(c)) for c in "xyz"]
-            )
+            ).T
         else:
             # {XYZ}cmbp, {XYZ}cminpot and {XYZ}c are absolute
-            relative_to = cosmo_array([0.0, 0.0, 0.0], u.Mpc)
-        return cosmo_array(
-            relative_to
-            + u.uhstack(
-                [
-                    getattr(
-                        self._catalogue.positions,
-                        "{:s}c{:s}".format(c, self.centre_type),
-                    )
-                    for c in "xyz"
-                ]
-            ),
+            # comoving doesn't matter for origin, arbitrarily set False
+            relative_to = cosmo_array(
+                [0.0, 0.0, 0.0],
+                u.Mpc,
+                comoving=False,
+                cosmo_factor=cosmo_factor(a**1, self.scale_factor),
+            )
+        centre = cosmo_array(
+            (
+                relative_to
+                + np.hstack(
+                    [
+                        getattr(
+                            self._catalogue.positions,
+                            "{:s}c{:s}".format(c, self.centre_type),
+                        )
+                        for c in "xyz"
+                    ]
+                ).T
+            ).to_value(u.Mpc),
+            u.Mpc,
             comoving=False,  # velociraptor gives physical centres!
             cosmo_factor=cosmo_factor(a**1, self.scale_factor),
         ).to_comoving()
+        if self._multi_galaxy and self._multi_galaxy_mask_index is None:
+            return centre
+        elif self._multi_galaxy and self._multi_galaxy_mask_index is not None:
+            return centre[self._multi_galaxy_mask_index]
+        else:
+            return centre.squeeze()
 
     @property
     def velocity_centre(self) -> cosmo_array:
@@ -692,26 +707,40 @@ class Velociraptor(_HaloCatalogue):
         # According to Velociraptor documentation:
         if self.centre_type in ("_gas", "_stars"):
             # V{XYZ}c_gas and V{XYZ}c_stars are relative to {XYZ}c
-            relative_to = u.uhstack(
+            relative_to = np.hstack(
                 [getattr(self._catalogue.velocities, "v{:s}c".format(c)) for c in "xyz"]
-            )
+            ).T
         else:
             # V{XYZ}cmbp, V{XYZ}cminpot and V{XYZ}c are absolute
-            relative_to = cosmo_array([0.0, 0.0, 0.0], u.km / u.s)
-        return cosmo_array(
-            relative_to
-            + u.uhstack(
-                [
-                    getattr(
-                        self._catalogue.velocities,
-                        "v{:s}c{:s}".format(c, self.centre_type),
-                    )
-                    for c in "xyz"
-                ]
-            ),
+            relative_to = cosmo_array(
+                [0.0, 0.0, 0.0],
+                u.km / u.s,
+                comoving=False,
+                cosmo_factor=cosmo_factor(a**0, self.scale_factor),
+            )
+        vcentre = cosmo_array(
+            (
+                relative_to
+                + np.hstack(
+                    [
+                        getattr(
+                            self._catalogue.velocities,
+                            "v{:s}c{:s}".format(c, self.centre_type),
+                        )
+                        for c in "xyz"
+                    ]
+                ).T
+            ).to_value(u.km / u.s),
+            u.km / u.s,
             comoving=False,
             cosmo_factor=cosmo_factor(a**0, self.scale_factor),
         ).to_comoving()
+        if self._multi_galaxy and self._multi_galaxy_mask_index is None:
+            return vcentre
+        elif self._multi_galaxy and self._multi_galaxy_mask_index is not None:
+            return vcentre[self._multi_galaxy_mask_index]
+        else:
+            return vcentre.squeeze()
 
     def __repr__(self) -> str:
         # Expose the catalogue __repr__ for interactive use.
