@@ -254,9 +254,44 @@ class TestHaloCataloguesMulti:
         assert hf_multi.centre.shape == (hf_multi.count, 3)
         assert hf_multi.velocity_centre.shape == (hf_multi.count, 3)
 
-    @pytest.mark.skip
-    def test_generate_spatial_mask(self, hf_multi):
-        raise NotImplementedError
+    def test_get_spatial_mask(self, hf_multi, toysnap):
+        with pytest.raises(RuntimeError, match="not currently masked"):
+            hf_multi._get_spatial_mask(toysnap_filename)
+        hf_multi._mask_multi_galaxy(0)
+        spatial_mask = hf_multi._get_spatial_mask(toysnap_filename)
+        with h5py.File(toysnap_filename, "r") as snap:
+            n_g_firstcell = snap["/Cells/Counts/PartType0"][0]
+            n_dm_firstcell = snap["/Cells/Counts/PartType1"][0]
+            n_s_firstcell = snap["/Cells/Counts/PartType4"][0]
+            n_bh_firstcell = snap["/Cells/Counts/PartType5"][0]
+        if hf_multi._user_spatial_offsets is None:
+            # all hf's except Standalone
+            assert np.array_equal(spatial_mask.gas, np.array([[0, n_g_firstcell]]))
+            assert np.array_equal(
+                spatial_mask.dark_matter, np.array([[0, n_dm_firstcell]])
+            )
+            assert np.array_equal(spatial_mask.stars, np.array([[0, n_s_firstcell]]))
+            assert np.array_equal(
+                spatial_mask.black_holes, np.array([[0, n_bh_firstcell]])
+            )
+        else:
+            # this is Standalone
+            assert np.array_equal(
+                spatial_mask.gas,
+                np.array([[0, n_g_firstcell], [n_g_firstcell, n_g_all]]),
+            )
+            assert np.array_equal(
+                spatial_mask.dark_matter,
+                np.array([[0, n_dm_firstcell], [n_dm_firstcell, n_dm_all]]),
+            )
+            assert np.array_equal(
+                spatial_mask.stars,
+                np.array([[0, n_s_firstcell], [n_s_firstcell, n_s_1 + n_s_2]]),
+            )
+            assert np.array_equal(
+                spatial_mask.black_holes,
+                np.array([[0, n_bh_firstcell], [n_bh_firstcell, n_bh_1 + n_bh_2]]),
+            )
 
     @pytest.mark.skip
     def test_generate_extra_mask(self, hf_multi):

@@ -566,7 +566,14 @@ class Velociraptor(_HaloCatalogue):
     def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         from velociraptor.swift.swift import generate_spatial_mask
 
-        return generate_spatial_mask(self._particles, snapshot_filename)
+        # super()._get_spatial_mask guards getting here in multi-galaxy mode
+        # without a self._multi_galaxy_mask_index
+        particles = (
+            self._particles[self._multi_galaxy_mask_index]
+            if self._multi_galaxy
+            else self._particles
+        )
+        return generate_spatial_mask(particles, snapshot_filename)
 
     def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
         from velociraptor.swift.swift import generate_bound_mask
