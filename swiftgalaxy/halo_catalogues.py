@@ -583,12 +583,13 @@ class Velociraptor(_HaloCatalogue):
         return cosmo_array(
             [
                 [
-                    particles.x.to(u.kpc) / length_factor,
-                    particles.y.to(u.kpc) / length_factor,
-                    particles.z.to(u.kpc) / length_factor,
+                    particles.x.to(u.Mpc) / length_factor,
+                    particles.y.to(u.Mpc) / length_factor,
+                    particles.z.to(u.Mpc) / length_factor,
                 ]
                 for particles in self._particles
             ],
+            u.Mpc,
             comoving=True,
             cosmo_factor=cosmo_factor(a**1, length_factor),
         ).squeeze()
@@ -601,7 +602,10 @@ class Velociraptor(_HaloCatalogue):
             else 1.0
         )
         return cosmo_array(
-            [particles.r_size / length_factor for particles in self._particles],
+            [
+                particles.r_size.to(u.Mpc) / length_factor
+                for particles in self._particles
+            ],
             u.Mpc,
             comoving=True,
             cosmo_factor=cosmo_factor(a**1, length_factor),
