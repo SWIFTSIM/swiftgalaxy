@@ -111,6 +111,10 @@ class _HaloCatalogue(ABC):
 
     def _get_extra_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
         if self.extra_mask == "bound_only":
+            if self._multi_galaxy and self._multi_galaxy_mask_index is None:
+                raise RuntimeError(
+                    "Halo catalogue has multiple galaxies and is not currently masked."
+                )
             return self._generate_bound_only_mask(SG)
         elif self.extra_mask is None:
             return MaskCollection(**{k: None for k in SG.metadata.present_group_names})
@@ -568,17 +572,28 @@ class Velociraptor(_HaloCatalogue):
 
         # super()._get_spatial_mask guards getting here in multi-galaxy mode
         # without a self._multi_galaxy_mask_index
-        particles = (
-            self._particles[self._multi_galaxy_mask_index]
-            if self._multi_galaxy
-            else self._particles
+        return generate_spatial_mask(
+            (
+                self._particles[self._multi_galaxy_mask_index]
+                if self._multi_galaxy
+                else self._particles
+            ),
+            snapshot_filename,
         )
-        return generate_spatial_mask(particles, snapshot_filename)
 
     def _generate_bound_only_mask(self, SG: "SWIFTGalaxy") -> MaskCollection:
         from velociraptor.swift.swift import generate_bound_mask
 
-        return MaskCollection(**generate_bound_mask(SG, self._particles)._asdict())
+        return MaskCollection(
+            **generate_bound_mask(
+                SG,
+                (
+                    self._particles[self._multi_galaxy_mask_index]
+                    if self._multi_galaxy
+                    else self._particles
+                ),
+            )._asdict()
+        )
 
     @property
     def _region_centre(self) -> cosmo_array:

@@ -255,6 +255,9 @@ class TestHaloCataloguesMulti:
         assert hf_multi.velocity_centre.shape == (hf_multi.count, 3)
 
     def test_get_spatial_mask(self, hf_multi, toysnap):
+        """
+        Check that we get spatial masks that we expect.
+        """
         with pytest.raises(RuntimeError, match="not currently masked"):
             hf_multi._get_spatial_mask(toysnap_filename)
         hf_multi._mask_multi_galaxy(0)
@@ -293,9 +296,54 @@ class TestHaloCataloguesMulti:
                 np.array([[0, n_bh_firstcell], [n_bh_firstcell, n_bh_1 + n_bh_2]]),
             )
 
-    @pytest.mark.skip
-    def test_generate_extra_mask(self, hf_multi):
-        raise NotImplementedError
+    def test_generate_extra_mask(self, hf_multi, toysnap_withfof):
+        """
+        Check that bound_only extra mask has the right shape.
+        """
+        hf_multi.extra_mask = "bound_only"
+        hf_multi._mask_multi_galaxy(0)
+        if hasattr(hf_multi, "soap_file"):
+            from toysnap import soap_script
+            import os
+
+            os.system(
+                f"python {soap_script} "
+                f"--absolute-paths "
+                f"'{toysnap_filename}' "
+                f"'{toysoap_membership_filebase}."
+                "{file_nr}.hdf5' "
+                f"'{toysoap_virtual_snapshot_filename}' "
+                "0"
+            )
+            sg = SWIFTGalaxy(toysoap_virtual_snapshot_filename, hf_multi)
+        else:
+            try:
+                sg = SWIFTGalaxy(toysnap_filename, hf_multi)
+            except NotImplementedError:
+                # expected for Standalone
+                return
+        generated_extra_mask = sg._extra_mask
+        expected_shape = dict()
+        for particle_type in present_particle_types.values():
+            with h5py.File(toysnap_filename, "r") as snap:
+                expected_shape[particle_type] = snap[
+                    "Cells/Counts/PartType"
+                    f"{dict(gas=0, dark_matter=1, stars=4, black_holes=5)[particle_type]}"
+                ][0]
+        if hasattr(hf_multi, "_caesar") and hf_multi.group_type == "galaxy":
+            expected_shape["dark_matter"] = None
+        for particle_type in present_particle_types.values():
+            if expected_shape[particle_type] is not None:
+                assert (
+                    getattr(generated_extra_mask, particle_type).shape
+                    == expected_shape[particle_type]
+                )
+                assert (
+                    getattr(generated_extra_mask, particle_type).sum()
+                    == dict(
+                        gas=n_g_1, dark_matter=n_dm_1, stars=n_s_1, black_holes=n_bh_1
+                    )[particle_type]
+                )
 
     @pytest.mark.skip
     def test_preload_fields(self, hf_multi):
