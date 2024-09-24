@@ -8,6 +8,7 @@ from toysnap import (
     toysoap_virtual_snapshot_filename,
     toysoap_membership_filebase,
     n_g_1,
+    n_g_2,
     n_g_b,
     n_g_all,
     n_dm_1,
@@ -21,6 +22,9 @@ from toysnap import (
     # m_dm,
     m_s,
     m_bh,
+    centre_1,
+    centre_2,
+    vcentre_1,
     present_particle_types,
 )
 from swiftgalaxy import SWIFTGalaxy, MaskCollection
@@ -200,7 +204,7 @@ class TestHaloCatalogues:
         # default is minpot == 2.001 Mpc
         assert_allclose_units(
             hf.centre,
-            cosmo_array([2.001, 2.001, 2.001], u.Mpc),
+            cosmo_array([centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001], u.Mpc),
             rtol=reltol_nd,
             atol=abstol_c,
         )
@@ -212,7 +216,9 @@ class TestHaloCatalogues:
         # default is minpot == 201. km/s
         assert_allclose_units(
             hf.velocity_centre,
-            cosmo_array([201.0, 201.0, 201.0], u.km / u.s),
+            cosmo_array(
+                [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0], u.km / u.s
+            ),
             rtol=reltol_nd,
             atol=abstol_v,
         )
@@ -227,6 +233,7 @@ class TestHaloCataloguesMulti:
         assert hf_multi._multi_galaxy
         assert hf_multi._multi_galaxy_mask_index is None
         assert hf_multi._multi_count == 2
+        assert hf_multi.count == 2
 
     def test_mask_multi_galaxy(self, hf_multi):
         """
@@ -345,13 +352,17 @@ class TestHaloCataloguesMulti:
                     )[particle_type]
                 )
 
-    @pytest.mark.skip
-    def test_preload_fields(self, hf_multi):
-        raise NotImplementedError
-
-    @pytest.mark.skip
-    def test_masking_catalogue(self, hf_multi):
-        raise NotImplementedError
+    def test_mask_index_list(self, hf_multi):
+        """
+        Check that we mask the list of indices.
+        """
+        if hf_multi._index_attr is None:
+            # this is Standalone, nothing to do
+            return
+        # strip the leading underscore with [1:] to access the property
+        assert getattr(hf_multi, hf_multi._index_attr[1:]) == [0, 1]
+        hf_multi._mask_multi_galaxy(0)
+        assert getattr(hf_multi, hf_multi._index_attr[1:]) == 0
 
 
 class TestVelociraptor:
@@ -365,11 +376,11 @@ class TestVelociraptor:
     @pytest.mark.parametrize(
         "centre_type, expected",
         (
-            ("", 2.0),
-            ("minpot", 2.001),
-            ("mbp", 2.002),
-            ("_gas", 2.003),
-            ("_stars", 2.004),
+            ("", centre_1),
+            ("minpot", centre_1 + 0.001),
+            ("mbp", centre_1 + 0.002),
+            ("_gas", centre_1 + 0.003),
+            ("_stars", centre_1 + 0.004),
         ),
     )
     def test_centre_types(self, vr, centre_type, expected):
@@ -387,11 +398,11 @@ class TestVelociraptor:
     @pytest.mark.parametrize(
         "centre_type, expected",
         (
-            ("", 200.0),
-            ("minpot", 201.0),
-            ("mbp", 202.0),
-            ("_gas", 203.0),
-            ("_stars", 204.0),
+            ("", vcentre_1),
+            ("minpot", vcentre_1 + 1.0),
+            ("mbp", vcentre_1 + 2.0),
+            ("_gas", vcentre_1 + 3.0),
+            ("_stars", vcentre_1 + 4.0),
         ),
     )
     def test_velocity_centre_types(self, vr, centre_type, expected):
@@ -414,6 +425,20 @@ class TestVelociraptor:
         assert_allclose_units(
             vr.masses.mvir, 1.0e12 * u.Msun, rtol=reltol_nd, atol=abstol_m
         )
+
+    def test_masking_catalogue(self, vr_multi):
+        """
+        Check that we can access unmasked and masked catalogue properties.
+        """
+        # pick one of the default attributes to check
+        assert_allclose_units(
+            vr_multi.masses.mvir,
+            [1.0e12 * u.Msun, 1.1e12 * u.Msun],
+            rtol=reltol_nd,
+            atol=abstol_m,
+        )
+        vr_multi._mask_multi_galaxy(0)
+        self.test_catalogue_exposed(vr_multi)
 
 
 class TestVelociraptorWithSWIFTGalaxy:
@@ -461,8 +486,8 @@ class TestCaesar:
     @pytest.mark.parametrize(
         "centre_type, expected",
         (
-            ("", 2.0),
-            ("minpot", 2.001),
+            ("", centre_1),
+            ("minpot", centre_1 + 0.001),
         ),
     )
     def test_centre_types(self, caesar, centre_type, expected):
@@ -480,8 +505,8 @@ class TestCaesar:
     @pytest.mark.parametrize(
         "centre_type, expected",
         (
-            ("", 200.0),
-            ("minpot", 201.0),
+            ("", vcentre_1),
+            ("minpot", vcentre_1 + 1.0),
         ),
     )
     def test_vcentre_types(self, caesar, centre_type, expected):
@@ -517,6 +542,33 @@ class TestCaesar:
             )
         else:
             raise AttributeError
+
+    def test_masking_catalogue(self, caesar_multi):
+        """
+        Check that we can access unmasked and masked catalogue properties.
+        """
+        # pick one of the default attributes to check
+        if hasattr(caesar_multi, "virial_quantities"):
+            assert_allclose_units(
+                [c["m200c"] for c in caesar_multi.virial_quantities],
+                [1.0e12 * u.Msun, 2.0e12 * u.Msun],
+                rtol=reltol_nd,
+                atol=abstol_m,
+            )
+        elif hasattr(caesar_multi, "masses"):
+            assert_allclose_units(
+                [c["total"] for c in caesar_multi.masses],
+                [
+                    n_g_1 * m_g + n_s_1 * m_s + n_bh_1 * m_bh,
+                    n_g_2 * m_g + n_s_2 * m_s + n_bh_2 * m_bh,
+                ],
+                rtol=reltol_nd,
+                atol=abstol_m,
+            )
+        else:
+            raise AttributeError
+        caesar_multi._mask_multi_galaxy(0)
+        self.test_catalogue_exposed(caesar_multi)
 
     def test_spatial_mask_applied(self, caesar, toysnap):
         """
@@ -613,14 +665,14 @@ class TestSOAP:
     @pytest.mark.parametrize(
         "centre_type, expected",
         (
-            ("bound_subhalo.centre_of_mass", 2.001),
-            ("exclusive_sphere_100kpc.centre_of_mass", 2.003),
-            ("inclusive_sphere_100kpc.centre_of_mass", 2.011),
-            ("input_halos_fof.centres", 2.0),
-            ("input_halos.halo_centre", 2.001),
-            ("projected_aperture_50kpc_projx.centre_of_mass", 2.027),
-            ("spherical_overdensity_200_crit.centre_of_mass", 2.032),
-            ("spherical_overdensity_bn98.centre_of_mass", 2.038),
+            ("bound_subhalo.centre_of_mass", centre_1 + 0.001),
+            ("exclusive_sphere_100kpc.centre_of_mass", centre_1 + 0.003),
+            ("inclusive_sphere_100kpc.centre_of_mass", centre_1 + 0.011),
+            ("input_halos_fof.centres", centre_1),
+            ("input_halos.halo_centre", centre_1 + 0.001),
+            ("projected_aperture_50kpc_projx.centre_of_mass", centre_1 + 0.027),
+            ("spherical_overdensity_200_crit.centre_of_mass", centre_1 + 0.032),
+            ("spherical_overdensity_bn98.centre_of_mass", centre_1 + 0.038),
         ),
     )
     def test_centre_types(self, soap, centre_type, expected):
@@ -638,12 +690,12 @@ class TestSOAP:
     @pytest.mark.parametrize(
         "velocity_centre_type, expected",
         (
-            ("bound_subhalo.centre_of_mass_velocity", 201),
-            ("exclusive_sphere_100kpc.centre_of_mass_velocity", 203),
-            ("inclusive_sphere_100kpc.centre_of_mass_velocity", 211),
-            ("projected_aperture_50kpc_projx.centre_of_mass_velocity", 227),
-            ("spherical_overdensity_200_crit.centre_of_mass_velocity", 232),
-            ("spherical_overdensity_bn98.centre_of_mass_velocity", 238),
+            ("bound_subhalo.centre_of_mass_velocity", vcentre_1 + 1),
+            ("exclusive_sphere_100kpc.centre_of_mass_velocity", vcentre_1 + 3),
+            ("inclusive_sphere_100kpc.centre_of_mass_velocity", vcentre_1 + 11),
+            ("projected_aperture_50kpc_projx.centre_of_mass_velocity", vcentre_1 + 27),
+            ("spherical_overdensity_200_crit.centre_of_mass_velocity", vcentre_1 + 32),
+            ("spherical_overdensity_bn98.centre_of_mass_velocity", vcentre_1 + 38),
         ),
     )
     def test_velocity_centre_types(self, soap, velocity_centre_type, expected):
@@ -669,10 +721,39 @@ class TestSOAP:
         )
         assert_allclose_units(
             soap.bound_subhalo.centre_of_mass,
-            cosmo_array([[2.001, 2.001, 2.001]], u.Mpc, comoving=False),
+            cosmo_array(
+                [[centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001]],
+                u.Mpc,
+                comoving=False,
+            ),
             rtol=reltol_nd,
             atol=abstol_c,
         )
+
+    def test_masking_catalogue(self, soap_multi):
+        """
+        Check that we can access unmasked and masked catalogue properties.
+        """
+        # pick a couple of attributes to check
+        assert_allclose_units(
+            soap_multi.input_halos_hbtplus.host_fofid,
+            cosmo_array([1, 2], comoving=False),
+        )
+        assert_allclose_units(
+            soap_multi.bound_subhalo.centre_of_mass,
+            cosmo_array(
+                [
+                    [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+                    [centre_2 + 0.001, centre_2 + 0.001, centre_2 + 0.001],
+                ],
+                u.Mpc,
+                comoving=False,
+            ),
+            rtol=reltol_nd,
+            atol=abstol_c,
+        )
+        soap_multi._mask_multi_galaxy(0)
+        self.test_catalogue_exposed(soap_multi)
 
 
 class TestSOAPWithSWIFTGalaxy:
@@ -695,7 +776,11 @@ class TestSOAPWithSWIFTGalaxy:
         )
         assert_allclose_units(
             sg_soap.halo_catalogue.bound_subhalo.centre_of_mass,
-            cosmo_array([[2.001, 2.001, 2.001]], u.Mpc, comoving=False),
+            cosmo_array(
+                [[centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001]],
+                u.Mpc,
+                comoving=False,
+            ),
             rtol=reltol_nd,
             atol=abstol_c,
         )

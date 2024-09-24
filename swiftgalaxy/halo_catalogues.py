@@ -157,6 +157,14 @@ class _HaloCatalogue(ABC):
         # define fields that need preloading to compute masks
         pass
 
+    def _mask_index(self):
+        index = getattr(self, self._index_attr)
+        return (
+            index[self._multi_galaxy_mask_index]
+            if self._multi_galaxy_mask_index is not None
+            else index
+        )
+
     def _check_multi(self):
         if self._index_attr is None:
             # for now this means we're in Standalone
@@ -188,7 +196,6 @@ class _HaloCatalogue(ABC):
                 return None
         obj = getattr(self._catalogue, attr)
         if self._multi_galaxy_mask_index is not None:
-            # should find a way to mask self.soap_index too
             return _MaskHelper(obj, self._multi_galaxy_mask_index)
         else:
             return obj
@@ -268,11 +275,11 @@ class SOAP(_HaloCatalogue):
     """
 
     soap_file: str
-    soap_index: Union[int, Collection[int]]
+    _soap_index: Union[int, Collection[int]]
     centre_type: str
     velocity_centre_type: str
     _catalogue: SWIFTDataset
-    _index_attr = "soap_index"
+    _index_attr = "_soap_index"
 
     def __init__(
         self,
@@ -289,7 +296,7 @@ class SOAP(_HaloCatalogue):
             raise ValueError("Provide a soap_file.")
 
         if soap_index is not None:
-            self.soap_index = soap_index
+            self._soap_index = soap_index
         else:
             raise ValueError("Provide a soap_index.")
         self.centre_type = centre_type
@@ -301,13 +308,17 @@ class SOAP(_HaloCatalogue):
     def _load(self) -> None:
         sm = mask(self.soap_file, spatial_only=not self._multi_galaxy)
         if self._multi_galaxy:
-            sm.constrain_indices(self.soap_index)
+            sm.constrain_indices(self._soap_index)
         else:
-            sm.constrain_index(self.soap_index)
+            sm.constrain_index(self._soap_index)
         self._catalogue = SWIFTDataset(
             self.soap_file,
             mask=sm,
         )
+
+    @property
+    def soap_index(self):
+        return self._mask_index()
 
     @property
     def _region_centre(self) -> cosmo_array:
@@ -494,11 +505,11 @@ class Velociraptor(_HaloCatalogue):
 
     velociraptor_filebase: str
     velociraptor_files: Dict[str, str]
-    halo_index: Union[int, Collection[int]]
+    _halo_index: Union[int, Collection[int]]
     centre_type: str
     velocity_centre_type: str
     _catalogue: "VelociraptorCatalogue"
-    _index_attr = "halo_index"
+    _index_attr = "_halo_index"
 
     def __init__(
         self,
@@ -528,7 +539,7 @@ class Velociraptor(_HaloCatalogue):
         if halo_index is None:
             raise ValueError("Provide a halo_index.")
         else:
-            self.halo_index: int = halo_index
+            self._halo_index: int = halo_index
         self.centre_type: str = centre_type
         self._user_spatial_offsets = custom_spatial_offsets
         super().__init__(extra_mask=extra_mask)
@@ -550,20 +561,20 @@ class Velociraptor(_HaloCatalogue):
             )
 
         self._catalogue: "VelociraptorCatalogue" = load_catalogue(
-            self.velociraptor_files["properties"], mask=self.halo_index
+            self.velociraptor_files["properties"], mask=self._halo_index
         )
         groups = load_groups(
             self.velociraptor_files["catalog_groups"],
             catalogue=load_catalogue(self.velociraptor_files["properties"]),
         )
         if self._multi_galaxy:
-            if not isinstance(self.halo_index, int):  # placate mypy
+            if not isinstance(self._halo_index, int):  # placate mypy
                 self._particles = [
-                    groups.extract_halo(halo_index=hi)[0] for hi in self.halo_index
+                    groups.extract_halo(halo_index=hi)[0] for hi in self._halo_index
                 ]
         else:
             self._particles, unbound_particles_unused = groups.extract_halo(
-                halo_index=self.halo_index
+                halo_index=self._halo_index
             )
         return
 
@@ -575,7 +586,7 @@ class Velociraptor(_HaloCatalogue):
         return generate_spatial_mask(
             (
                 self._particles[self._multi_galaxy_mask_index]
-                if self._multi_galaxy
+                if self._multi_galaxy_mask_index is not None
                 else self._particles
             ),
             snapshot_filename,
@@ -589,11 +600,15 @@ class Velociraptor(_HaloCatalogue):
                 SG,
                 (
                     self._particles[self._multi_galaxy_mask_index]
-                    if self._multi_galaxy
+                    if self._multi_galaxy_mask_index is not None
                     else self._particles
                 ),
             )._asdict()
         )
+
+    @property
+    def halo_index(self):
+        return self._mask_index()
 
     @property
     def _region_centre(self) -> cosmo_array:
@@ -873,13 +888,13 @@ class Caesar(_HaloCatalogue):
     """
 
     group_type: str
-    group_index: Union[int, Collection[int]]
+    _group_index: Union[int, Collection[int]]
     centre_type: str
     velocity_centre_type: str
     _catalogue: Union[
         "CaesarHalo", "CaesarGalaxy", List[Union["CaesarHalo", "CaesarGalaxy"]]
     ]
-    _index_attr = "group_index"
+    _index_attr = "_group_index"
 
     def __init__(
         self,
@@ -908,7 +923,7 @@ class Caesar(_HaloCatalogue):
         if group_index is None:
             raise ValueError("group_index (int or list) required.")
         else:
-            self.group_index: int = group_index
+            self._group_index = group_index
 
         self.centre_type = centre_type
         self._user_spatial_offsets = custom_spatial_offsets
@@ -1025,6 +1040,10 @@ class Caesar(_HaloCatalogue):
             stars=stars_mask,
             black_holes=black_holes_mask,
         )
+
+    @property
+    def group_index(self):
+        return self._mask_index()
 
     @property
     def _region_centre(self) -> cosmo_array:
@@ -1153,6 +1172,21 @@ class Caesar(_HaloCatalogue):
         if not self._multi_galaxy:
             return vcentre.squeeze()
         return vcentre
+
+    def __getattr__(self, attr: str) -> Any:
+        # Invoked if attribute not found.
+        # Use to expose the masked catalogue.
+        if attr == "_catalogue":  # guard infinite recursion
+            try:
+                return object.__getattribute__(self, "_catalogue")
+            except AttributeError:
+                return None
+        if self._multi_galaxy_mask_index is not None:
+            return getattr(self._catalogue[self._multi_galaxy_mask_index], attr)
+        elif self._multi_galaxy and self._multi_galaxy_mask_index is None:
+            return [getattr(cat, attr) for cat in self._catalogue]
+        else:
+            return getattr(self._catalogue, attr)
 
     def __repr__(self) -> str:
         return self._catalogue.__repr__()
