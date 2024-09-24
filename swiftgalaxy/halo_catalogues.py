@@ -45,7 +45,7 @@ class _MaskHelper:
 
 
 class _HaloCatalogue(ABC):
-    _user_spatial_offsets: Optional[List] = None
+    _user_spatial_offsets: Optional[cosmo_array] = None
     _multi_galaxy: bool = False
     _multi_galaxy_mask_index: Optional[int] = None
     _multi_count: int
@@ -797,7 +797,9 @@ class Caesar(_HaloCatalogue):
     group_index: Union[int, Collection[int]]
     centre_type: str
     velocity_centre_type: str
-    _catalogue: Union["CaesarHalo", "CaesarGalaxy", List]
+    _catalogue: Union[
+        "CaesarHalo", "CaesarGalaxy", List[Union["CaesarHalo", "CaesarGalaxy"]]
+    ]
     _index_attr = "group_index"
 
     def __init__(
@@ -835,7 +837,8 @@ class Caesar(_HaloCatalogue):
         super().__init__(extra_mask=extra_mask)
         self._catalogue = getattr(self._caesar, valid_group_types[group_type])
         if self._multi_galaxy:  # set in super().__init__
-            self._catalogue = [self._catalogue[gi] for gi in group_index]
+            if not isinstance(group_index, int):  # placate mypy
+                self._catalogue = [self._catalogue[gi] for gi in group_index]
         else:
             self._catalogue = self._catalogue[group_index]
         return
@@ -948,6 +951,7 @@ class Caesar(_HaloCatalogue):
     def _region_centre(self) -> cosmo_array:
         # return a centre for the spatial region
         cats = [self._catalogue] if not self._multi_galaxy else self._catalogue
+        assert isinstance(cats, List)  # placate mypy
         pos = cosmo_array(
             [cat.pos.to(u.kpc) for cat in cats],  # maybe comoving, ensure physical
             comoving=False,
@@ -958,6 +962,7 @@ class Caesar(_HaloCatalogue):
     @property
     def _region_aperture(self) -> cosmo_array:
         cats = [self._catalogue] if not self._multi_galaxy else self._catalogue
+        assert isinstance(cats, List)  # placate mypy
         # return a size for the spatial region
         if "total_rmax" in cats[0].radii.keys():
             # spatial extent information is present
@@ -978,7 +983,7 @@ class Caesar(_HaloCatalogue):
 
     def _get_preload_fields(self, SG: "SWIFTGalaxy") -> Set[str]:
         # define fields that need preloading to compute masks
-        pass
+        return set()
 
     def _mask_catalogue(self) -> Union["CaesarHalo", "CaesarGalaxy"]:
         if self._multi_galaxy and self._multi_galaxy_mask_index is not None:
@@ -1186,6 +1191,11 @@ class Standalone(_HaloCatalogue):
                 "extra_mask='bound_only' is not supported with Standalone."
             )
         super().__init__(extra_mask=extra_mask)
+        if spatial_offsets is None and self._multi_galaxy:
+            raise ValueError(
+                "To use `Standalone` with multiple galaxies you must initialize with a "
+                "`spatial_offsets` argument provided."
+            )
         return
 
     def _load(self) -> None:
@@ -1210,7 +1220,13 @@ class Standalone(_HaloCatalogue):
     @property
     def _region_aperture(self) -> cosmo_array:
         # return a size for the spatial region
-        return np.repeat(np.max(np.abs(self._user_spatial_offsets)), len(self._centre))
+        if self._user_spatial_offsets is not None:
+            return np.repeat(
+                np.max(np.abs(self._user_spatial_offsets)), len(self._centre)
+            )
+        else:
+            # should never reach here (guarded in initialization)
+            raise NotImplementedError
 
     def _get_preload_fields(self, SG: "SWIFTGalaxy") -> Set[str]:
         # define fields that need preloading to compute masks
