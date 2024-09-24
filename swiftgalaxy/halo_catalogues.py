@@ -580,19 +580,34 @@ class Velociraptor(_HaloCatalogue):
             if not self._particles[0].groups_instance.catalogue.units.comoving
             else 1.0
         )
-        return cosmo_array(
-            [
+        if self._multi_galaxy_mask_index is None:
+            return cosmo_array(
                 [
-                    particles.x.to(u.Mpc) / length_factor,
-                    particles.y.to(u.Mpc) / length_factor,
-                    particles.z.to(u.Mpc) / length_factor,
-                ]
-                for particles in self._particles
-            ],
-            u.Mpc,
-            comoving=True,
-            cosmo_factor=cosmo_factor(a**1, length_factor),
-        ).squeeze()
+                    [
+                        particles.x.to(u.Mpc) / length_factor,
+                        particles.y.to(u.Mpc) / length_factor,
+                        particles.z.to(u.Mpc) / length_factor,
+                    ]
+                    for particles in self._particles
+                ],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, length_factor),
+            ).squeeze()
+        else:
+            return cosmo_array(
+                [
+                    self._particles[self._multi_galaxy_mask_index].x.to_value(u.Mpc)
+                    / length_factor,
+                    self._particles[self._multi_galaxy_mask_index].y.to_value(u.Mpc)
+                    / length_factor,
+                    self._particles[self._multi_galaxy_mask_index].z.to_value(u.Mpc)
+                    / length_factor,
+                ],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, length_factor),
+            )
 
     @property
     def _region_aperture(self) -> cosmo_array:
@@ -601,15 +616,24 @@ class Velociraptor(_HaloCatalogue):
             if not self._particles[0].groups_instance.catalogue.units.comoving
             else 1.0
         )
-        return cosmo_array(
-            [
-                particles.r_size.to(u.Mpc) / length_factor
-                for particles in self._particles
-            ],
-            u.Mpc,
-            comoving=True,
-            cosmo_factor=cosmo_factor(a**1, length_factor),
-        ).squeeze()
+        if self._multi_galaxy_mask_index is None:
+            return cosmo_array(
+                [
+                    particles.r_size.to_value(u.Mpc) / length_factor
+                    for particles in self._particles
+                ],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, length_factor),
+            ).squeeze()
+        else:
+            return cosmo_array(
+                self._particles[self._multi_galaxy_mask_index].r_size.to_value(u.Mpc)
+                / length_factor,
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, length_factor),
+            )
 
     def _get_preload_fields(self, SG: "SWIFTGalaxy") -> Set[str]:
         if self.extra_mask == "bound_only":
@@ -956,12 +980,20 @@ class Caesar(_HaloCatalogue):
         # return a centre for the spatial region
         cats = [self._catalogue] if not self._multi_galaxy else self._catalogue
         assert isinstance(cats, List)  # placate mypy
-        pos = cosmo_array(
-            [cat.pos.to(u.kpc) for cat in cats],  # maybe comoving, ensure physical
-            comoving=False,
-            cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
-        ).to_comoving()
-        return pos
+        if self._multi_galaxy_mask_index is None:
+            return cosmo_array(
+                [cat.pos.to(u.kpc) for cat in cats],  # maybe comoving, ensure physical
+                comoving=False,
+                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+            ).to_comoving()
+        else:
+            return cosmo_array(
+                cats[self._multi_galaxy_mask_index].pos.to(
+                    u.kpc
+                ),  # maybe comoving, ensure physical
+                comoving=False,
+                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+            ).to_comoving()
 
     @property
     def _region_aperture(self) -> cosmo_array:
@@ -970,14 +1002,26 @@ class Caesar(_HaloCatalogue):
         # return a size for the spatial region
         if "total_rmax" in cats[0].radii.keys():
             # spatial extent information is present
-            rmax = cosmo_array(
-                [
-                    cat.radii["total_rmax"].to(u.kpc) for cat in cats
-                ],  # maybe comoving, ensure physical
-                comoving=False,
-                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
-            ).to_comoving()
-            return rmax
+            if self._multi_galaxy_mask_index is None:
+                return cosmo_array(
+                    [
+                        cat.radii["total_rmax"].to(u.kpc) for cat in cats
+                    ],  # maybe comoving, ensure physical
+                    comoving=False,
+                    cosmo_factor=cosmo_factor(
+                        a**1, self._caesar.simulation.scale_factor
+                    ),
+                ).to_comoving()
+            else:
+                return cosmo_array(
+                    cats[self._multi_galaxy_mask_index]
+                    .radii["total_rmax"]
+                    .to(u.kpc),  # maybe comoving, ensure physical
+                    comoving=False,
+                    cosmo_factor=cosmo_factor(
+                        a**1, self._caesar.simulation.scale_factor
+                    ),
+                ).to_comoving()
         else:
             # probably an older caesar output file
             raise KeyError(
@@ -1219,15 +1263,21 @@ class Standalone(_HaloCatalogue):
     @property
     def _region_centre(self) -> cosmo_array:
         # return a centre for the spatial region
-        return self._centre
+        if self._multi_galaxy_mask_index is None:
+            return self._centre
+        else:
+            return self._centre[self._multi_galaxy_mask_index]
 
     @property
     def _region_aperture(self) -> cosmo_array:
         # return a size for the spatial region
         if self._user_spatial_offsets is not None:
-            return np.repeat(
-                np.max(np.abs(self._user_spatial_offsets)), len(self._centre)
-            )
+            if self._multi_galaxy_mask_index is None:
+                return np.repeat(
+                    np.max(np.abs(self._user_spatial_offsets)), len(self._centre)
+                )
+            else:
+                return np.max(np.abs(self._user_spatial_offsets))
         else:
             # should never reach here (guarded in initialization)
             raise NotImplementedError

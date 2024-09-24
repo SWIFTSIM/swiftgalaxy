@@ -542,3 +542,60 @@ def hf(request):
                 cosmo_factor=cosmo_factor(a**1, 1.0),
             ),
         )
+
+
+@pytest.fixture(scope="function", params=hfs)
+def hf_multi(request):
+    if request.param in {"caesar_halo", "caesar_galaxy"}:
+        create_toycaesar()
+
+        yield Caesar(
+            caesar_file=toycaesar_filename,
+            group_type=request.param.split("_")[-1],
+            group_index=[0, 1],
+        )
+
+        remove_toycaesar()
+    elif request.param == "soap":
+        create_toysoap()
+
+        yield SOAP(
+            soap_file=toysoap_filename,
+            soap_index=[0, 1],
+        )
+
+        remove_toysoap()
+    elif request.param == "vr":
+        create_toyvr()
+
+        yield Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[0, 1])
+
+        remove_toyvr()
+    elif request.param == "sa":
+        yield Standalone(
+            extra_mask=None,
+            centre=cosmo_array(
+                [
+                    [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+                    [centre_2 + 0.001, centre_2 + 0.001, centre_2 + 0.001],
+                ],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
+            velocity_centre=cosmo_array(
+                [
+                    [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                    [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                ],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**0, 1.0),
+            ),
+            spatial_offsets=cosmo_array(
+                [[-1, 1], [-1, 1], [-1, 1]],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
+        )

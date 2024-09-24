@@ -218,6 +218,37 @@ class TestHaloCatalogues:
         )
 
 
+class TestHaloCataloguesMulti:
+
+    def test_multi_flags(self, hf_multi):
+        """
+        Check that the multi-target nature of the cataloue is recognized.
+        """
+        assert hf_multi._multi_galaxy
+        assert hf_multi._multi_galaxy_mask_index is None
+        assert hf_multi._multi_count == 2
+
+    def test_mask_multi_galaxy(self, hf_multi):
+        """
+        Check that we can mask the catalogue to focus on one object, and unmask.
+        """
+        assert hf_multi._multi_galaxy_mask_index is None
+        assert hf_multi.count > 1
+        assert hf_multi._region_centre.shape == (hf_multi.count, 3)
+        assert hf_multi._region_aperture.shape == (hf_multi.count,)
+        mask_index = 0
+        hf_multi._mask_multi_galaxy(mask_index)
+        assert hf_multi._multi_galaxy_mask_index == mask_index
+        assert hf_multi.count == 1
+        assert hf_multi._region_centre.shape == (3,)
+        assert hf_multi._region_aperture.shape == tuple()
+        hf_multi._unmask_multi_galaxy()
+        assert hf_multi._multi_galaxy_mask_index is None
+        assert hf_multi.count > 1
+        assert hf_multi._region_centre.shape == (hf_multi.count, 3)
+        assert hf_multi._region_aperture.shape == (hf_multi.count,)
+
+
 class TestVelociraptor:
     def test_load(self, vr):
         """
