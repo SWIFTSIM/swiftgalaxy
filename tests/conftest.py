@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import unyt as u
-from swiftsimio.objects import cosmo_array
+from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from swiftgalaxy import (
     SWIFTGalaxy,
     SWIFTGalaxies,
@@ -299,30 +299,38 @@ def sa():
             black_holes=None,
         ),
         centre=cosmo_array(
-            [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001], u.Mpc
+            [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+            u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, 1.0),
         ),
         velocity_centre=cosmo_array(
-            [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0], u.km / u.s
+            [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+            u.km / u.s,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**0, 1.0),
         ),
-        spatial_offsets=cosmo_array([[-1, 1], [-1, 1], [-1, 1]], u.Mpc),
+        spatial_offsets=cosmo_array(
+            [[-1, 1], [-1, 1], [-1, 1]],
+            u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, 1.0),
+        ),
     )
 
 
 @pytest.fixture(scope="function")
 def sa_multi():
     yield Standalone(
-        extra_mask=MaskCollection(
-            gas=np.s_[n_g_b // 2 :],
-            dark_matter=np.s_[n_dm_b // 2 :],
-            stars=None,
-            black_holes=None,
-        ),
+        extra_mask=None,
         centre=cosmo_array(
             [
                 [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
                 [centre_2 + 0.001, centre_2 + 0.001, centre_2 + 0.001],
             ],
             u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, 1.0),
         ),
         velocity_centre=cosmo_array(
             [
@@ -330,8 +338,15 @@ def sa_multi():
                 [vcentre_2 + 1.0, vcentre_2 + 1.0, vcentre_2 + 1.0],
             ],
             u.km / u.s,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**0, 1.0),
         ),
-        spatial_offsets=cosmo_array([[-1, 1], [-1, 1], [-1, 1]], u.Mpc),
+        spatial_offsets=cosmo_array(
+            [[-1, 1], [-1, 1], [-1, 1]],
+            u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, 1.0),
+        ),
     )
 
 
@@ -347,9 +362,60 @@ def sg_sa():
                 stars=None,
                 black_holes=None,
             ),
-            centre=cosmo_array([2.001, 2.001, 2.001], u.Mpc),
-            velocity_centre=cosmo_array([201.0, 201.0, 201.0], u.km / u.s),
-            spatial_offsets=cosmo_array([[-1, 1], [-1, 1], [-1, 1]], u.Mpc),
+            centre=cosmo_array(
+                [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
+            velocity_centre=cosmo_array(
+                [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**0, 1.0),
+            ),
+            spatial_offsets=cosmo_array(
+                [[-1, 1], [-1, 1], [-1, 1]],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
+        ),
+    )
+    remove_toysnap()
+
+
+@pytest.fixture(scope="function")
+def sgs_sa():
+    create_toysnap()
+    yield SWIFTGalaxies(
+        toysnap_filename,
+        Standalone(
+            extra_mask=None,
+            centre=cosmo_array(
+                [
+                    [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+                    [centre_2 + 0.001, centre_2 + 0.001, centre_2 + 0.001],
+                ],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
+            velocity_centre=cosmo_array(
+                [
+                    [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                    [vcentre_2 + 1.0, vcentre_2 + 1.0, vcentre_2 + 1.0],
+                ],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**0, 1.0),
+            ),
+            spatial_offsets=cosmo_array(
+                [[-1, 1], [-1, 1], [-1, 1]],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
         ),
     )
     remove_toysnap()
@@ -400,9 +466,24 @@ def sg_hf(request):
                 stars=None,
                 black_holes=None,
             ),
-            centre=cosmo_array([2.001, 2.001, 2.001], u.Mpc),
-            velocity_centre=cosmo_array([201.0, 201.0, 201.0], u.km / u.s),
-            spatial_offsets=cosmo_array([[-1, 1], [-1, 1], [-1, 1]], u.Mpc),
+            centre=cosmo_array(
+                [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
+            velocity_centre=cosmo_array(
+                [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**0, 1.0),
+            ),
+            spatial_offsets=cosmo_array(
+                [[-1, 1], [-1, 1], [-1, 1]],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
         )
     remove_toysnap()
 
@@ -442,7 +523,22 @@ def hf(request):
                 stars=None,
                 black_holes=None,
             ),
-            centre=cosmo_array([2.001, 2.001, 2.001], u.Mpc),
-            velocity_centre=cosmo_array([201.0, 201.0, 201.0], u.km / u.s),
-            spatial_offsets=cosmo_array([[-1, 1], [-1, 1], [-1, 1]], u.Mpc),
+            centre=cosmo_array(
+                [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
+            velocity_centre=cosmo_array(
+                [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**0, 1.0),
+            ),
+            spatial_offsets=cosmo_array(
+                [[-1, 1], [-1, 1], [-1, 1]],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
         )

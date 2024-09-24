@@ -49,7 +49,7 @@ class _HaloCatalogue(ABC):
     _multi_galaxy: bool = False
     _multi_galaxy_mask_index: Optional[int] = None
     _multi_count: int
-    _index_attr: str
+    _index_attr: Optional[str]
 
     def __init__(
         self, extra_mask: Optional[Union[str, MaskCollection]] = "bound_only"
@@ -154,14 +154,23 @@ class _HaloCatalogue(ABC):
         pass
 
     def _check_multi(self):
-        index = getattr(self, self._index_attr)
-        if isinstance(index, Collection):
-            self._multi_galaxy = True
-            if not isinstance(index, int):  # placate mypy
-                self._multi_count = len(index)
+        if self._index_attr is None:
+            # for now this means we're in Standalone
+            if self._centre.ndim > 1:
+                self._multi_galaxy = True
+                self._multi_count = len(self._centre)
+            else:
+                self._multi_galaxy = False
+                self._multi_count = 1
         else:
-            self._multi_galaxy = False
-            self._multi_count = 1
+            index = getattr(self, self._index_attr)
+            if isinstance(index, Collection):
+                self._multi_galaxy = True
+                if not isinstance(index, int):  # placate mypy
+                    self._multi_count = len(index)
+            else:
+                self._multi_galaxy = False
+                self._multi_count = 1
         if self._multi_galaxy:
             assert self.extra_mask in (None, "bound_only")
 
@@ -1149,7 +1158,7 @@ class Standalone(_HaloCatalogue):
 
     """
 
-    _index_attr = "centre"
+    _index_attr = None
 
     def __init__(
         self,
