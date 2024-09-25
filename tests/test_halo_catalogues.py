@@ -28,6 +28,7 @@ from toysnap import (
     present_particle_types,
 )
 from swiftgalaxy import SWIFTGalaxy, MaskCollection
+from swiftgalaxy.halo_catalogues import Velociraptor, Caesar, SOAP
 from swiftsimio.objects import cosmo_array
 
 abstol_c = 1 * u.pc  # less than this is ~0
@@ -474,6 +475,21 @@ class TestVelociraptorWithSWIFTGalaxy:
             ]
         )
 
+    def test_with_swiftgalaxies(self, sgs_vr):
+        for sg_from_sgs in sgs_vr:
+            sg = SWIFTGalaxy(
+                sg_from_sgs.snapshot_filename,
+                Velociraptor(
+                    velociraptor_files=sg_from_sgs.halo_catalogue.velociraptor_files,
+                    halo_index=sg_from_sgs.halo_catalogue.halo_index,
+                ),
+            )
+            for ptype in present_particle_types.values():
+                assert all(
+                    getattr(sg_from_sgs._extra_mask, ptype)
+                    == getattr(sg._extra_mask, ptype)
+                )
+
 
 class TestCaesar:
     def test_load(self, caesar):
@@ -632,6 +648,27 @@ class TestCaesarWithSWIFTGalaxy:
                 gas=n_g_1, dark_matter=expected_dm, stars=n_s_1, black_holes=n_bh_1
             )[particle_type]
         )
+
+    def test_with_swiftgalaxies(self, sgs_caesar):
+        for sg_from_sgs in sgs_caesar:
+            sg = SWIFTGalaxy(
+                sg_from_sgs.snapshot_filename,
+                Caesar(
+                    caesar_file=sg_from_sgs.halo_catalogue.caesar_file,
+                    group_type=sg_from_sgs.halo_catalogue.group_type,
+                    group_index=sg_from_sgs.halo_catalogue.group_index,
+                ),
+            )
+            for ptype in present_particle_types.values():
+                if isinstance(getattr(sg_from_sgs._extra_mask, ptype), slice):
+                    assert getattr(sg_from_sgs._extra_mask, ptype) == getattr(
+                        sg._extra_mask, ptype
+                    )
+                else:
+                    assert all(
+                        getattr(sg_from_sgs._extra_mask, ptype)
+                        == getattr(sg._extra_mask, ptype)
+                    )
 
 
 class TestStandalone:
@@ -797,3 +834,18 @@ class TestSOAPWithSWIFTGalaxy:
                 particle_type
             ]
         )
+
+    def test_with_swiftgalaxies(self, sgs_soap):
+        for sg_from_sgs in sgs_soap:
+            sg = SWIFTGalaxy(
+                sg_from_sgs.snapshot_filename,
+                SOAP(
+                    soap_file=sg_from_sgs.halo_catalogue.soap_file,
+                    soap_index=sg_from_sgs.halo_catalogue.soap_index,
+                ),
+            )
+            for ptype in present_particle_types.values():
+                assert all(
+                    getattr(sg_from_sgs._extra_mask, ptype)
+                    == getattr(sg._extra_mask, ptype)
+                )

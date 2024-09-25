@@ -887,6 +887,7 @@ class Caesar(_HaloCatalogue):
         unyt_quantity(1.46414384e+12, 'Msun')
     """
 
+    caesar_file: str
     group_type: str
     _group_index: Union[int, Collection[int]]
     centre_type: str
@@ -911,6 +912,7 @@ class Caesar(_HaloCatalogue):
 
         log_level = logging.getLogger("yt").level  # cache the log level before we start
         yt_logger.set_log_level("warning")  # disable INFO log messages
+        self.caesar_file = caesar_file
         self._caesar = caesar.load(caesar_file)
         yt_logger.set_log_level(log_level)  # restore old log level
 
