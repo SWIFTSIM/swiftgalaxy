@@ -887,7 +887,7 @@ class Caesar(_HaloCatalogue):
         unyt_quantity(1.46414384e+12, 'Msun')
     """
 
-    caesar_file: str
+    caesar_file: Optional[str]
     group_type: str
     _group_index: Union[int, Collection[int]]
     centre_type: str
