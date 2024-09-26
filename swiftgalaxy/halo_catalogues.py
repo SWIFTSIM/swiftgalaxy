@@ -212,25 +212,27 @@ class SOAP(_HaloCatalogue):
 
     Parameters
     ----------
-    soap_file : ``Optional[str]``, default: ``None``
+    soap_file : :obj:`str`, default: ``None``
         The filename of a SOAP catalogue file, possibly including the path.
-    soap_index : ``Optional[int]``, default: ``None``
+    soap_index : :obj:`int`, default: ``None``
         The position (row) in the SOAP catalogue corresponding to the object of interest.
-    extra_mask : ``Union[str, MaskCollection]``, default: ``"bound_only"``
+    extra_mask : :obj:`str` or :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
+    default: ``"bound_only"``
         Mask to apply to particles after spatial masking. If ``"bound_only"``,
         then the galaxy is masked to include only the gravitationally bound
         particles as determined by ``SOAP``. A user-defined mask can also be provided
         as an an object (such as a :class:`swiftgalaxy.masks.MaskCollection`) that has
         attributes with names corresponding to present particle names (e.g. gas,
         dark_matter, etc.), each containing a mask.
-    centre_type : ``str``, default: ``"input_halos.halo_centre"``
+    centre_type : :obj:`str` (optional), default: ``"input_halos.halo_centre"``
         Type of centre, chosen from those provided by ``SOAP``. This should be
         expressed as a string analogous to what would be written in
         :mod:`swiftsimio` code (or :mod:`swiftgalaxy`) to access that property in the
         SOAP catalogue. The default takes the ``"input_halos.halo_centre"`` (usually
         the centre of potential, e.g. the HBT+ halo finder defines it in this way;
         another option amongst many more is ``"bound_subhalo.centre_of_mass"``.
-    velocity_centre_type : ``str``, default: ``"bound_subhalo.centre_of_mass_velocity"``
+    velocity_centre_type : :obj:`str` (optional), \
+    default: ``"bound_subhalo.centre_of_mass_velocity"``
         Type of velocity centre, chosen from those provided by ``SOAP``. This should be
         expressed as a string analogous to what would be written in
         :mod:`swiftsimio` code (or :mod:`swiftgalaxy`) to access that property in the
@@ -239,7 +241,8 @@ class SOAP(_HaloCatalogue):
         (``"input_halos.halo_centre_velocity"`` is not defined). Another useful option
         could be ``"exclusive_sphere_1kpc.centre_of_mass_velocity"`` to choose the
         velocity of bound particles in the central 1 kpc.
-    custom_spatial_offsets : ``Optional[cosmo_array]``, default: ``None``
+    custom_spatial_offsets : :class`~swiftsimio.objects.cosmo_array` (optional), \
+    default: ``None``
         A region to override the automatically-determined region enclosing
         group member particles. May be used in conjunction with ``extra_mask``,
         for example to select all simulation particles in an aperture around
@@ -402,23 +405,24 @@ class Velociraptor(_HaloCatalogue):
     Parameters
     ----------
 
-    velociraptor_filebase : ``str``
+    velociraptor_filebase : :obj:`str`
         The initial part of the velociraptor filenames (possibly including
         path), e.g. if there is a :file:`{halos}.properties` file, pass
         ``halos`` as this argument. Provide this or `velociraptor_files`,
         not both.
 
-    velociraptor_files : ``dict[str]``
+    velociraptor_files : :obj:`dict`
         A dictionary containing the names of the velociraptor files (possibly
         including paths). There should be two entries, with keys `properties`
         and `catalog_groups` containing locations of the `{halos}.properties`
         and `{halos}.catalog_groups` files, respectively. Provide this or
         `velociraptor_filebase`, not both.
 
-    halo_index : ``int``
+    halo_index : :obj:`int`
         Position of the object of interest in the catalogue arrays.
 
-    extra_mask : ``Union[str, MaskCollection]``, default: ``"bound_only"``
+    extra_mask : :obj:`str` or :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
+    default: ``"bound_only"``
         Mask to apply to particles after spatial masking. If ``"bound_only"``,
         then the galaxy is masked to include only the gravitationally bound
         particles as determined by :mod:`velociraptor`. A user-defined mask
@@ -427,13 +431,14 @@ class Velociraptor(_HaloCatalogue):
         names corresponding to present particle names (e.g. gas, dark_matter,
         etc.), each containing a mask.
 
-    centre_type : ``str``, default: ``"minpot"``
+    centre_type : :obj:`str` (optional), default: ``"minpot"``
         Type of centre, chosen from those provided by :mod:`velociraptor`.
         Default is the position of the particle with the minimum potential,
         ``"minpot"``; other possibilities may include ``""``, ``"_gas"``,
         ``"_star"``, ``"mbp"`` (most bound particle).
 
-    custom_spatial_offsets : ``Optional[cosmo_array]``, default: ``None``
+    custom_spatial_offsets : `~swiftsimio.objects.cosmo_array` (optional), \
+    default: ``None``
         A region to override the automatically-determined region enclosing
         group member particles. May be used in conjunction with ``extra_mask``,
         for example to select all simulation particles in an aperture around
@@ -798,21 +803,22 @@ class Caesar(_HaloCatalogue):
     Parameters
     ----------
 
-    caesar_file : ``str``
+    caesar_file : :obj:`str`
         The catalogue file (hdf5 format) output by caesar.
 
-    group_type : ``str``
+    group_type : :obj:`str`
         The category of the object of interest, either ``"halo"`` or ``"galaxy"``.
 
-    group_index : ``int``
+    group_index : :obj:`int`
         Position of the object of interest in the catalogue arrays.
 
-    centre_type : ``str``, default: ``"minpot"``
+    centre_type : :obj:`str` (optional), default: ``"minpot"``
         Type of centre, chosen from those provided by :mod:`caesar`.
         Default is the position of the particle with the minimum potential,
         ``"minpot"``, alternatively ``""`` can be used for the centre of mass.
 
-    extra_mask : ``Union[str, MaskCollection]``, default: ``"bound_only"``
+    extra_mask : :obj:`str` or :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
+    default: ``"bound_only"``
         Mask to apply to particles after spatial masking. If ``"bound_only"``,
         then the galaxy is masked to include only the gravitationally bound
         particles as provided by :mod:`caesar`. A user-defined mask can also be
@@ -820,7 +826,8 @@ class Caesar(_HaloCatalogue):
         attributes with names corresponding to present particle names (e.g. gas,
         dark_matter, etc.), each containing a mask.
 
-    custom_spatial_offsets : ``Optional[cosmo_array]``, default: ``None``
+    custom_spatial_offsets : :class:`~swiftsimio.objects.cosmo_array` (optional), \
+    default: ``None``
         A region to override the automatically-determined region enclosing
         group member particles. May be used in conjunction with ``extra_mask``,
         for example to select all simulation particles in an aperture around
@@ -1219,21 +1226,21 @@ class Standalone(_HaloCatalogue):
     Parameters
     ----------
 
-    centre : ``Optional[cosmo_array]``, default: ``None``
+    centre : :class:`~swiftsimio.objects.cosmo_array`, default: ``None``
         A value for this parameter is required, and must have units of length.
         Specifies the geometric centre in simulation coordinates. Particle
         coordinates will be shifted such that this position is located at (0, 0, 0)
         and if the boundary is periodic it will be wrapped to place the origin at
         the centre.
 
-    velocity_centre : ``Optional[cosmo_array]``, default: ``None``
+    velocity_centre : :class:`~swiftsimio.objects.cosmo_array`, default: ``None``
         A value for this parameter is required, and must have units of speed.
         Specifies the reference velocity relative to the simulation frame. Particle
         velocities will be shifted such that a particle with the specified velocity
         in the simulation frame will have zero velocity in the
         :class:`~swiftgalaxy.reader.SWIFTGalaxy` frame.
 
-    spatial_offsets : ``Optional[cosmo_array]``, default: ``None``
+    spatial_offsets : :class:`~swiftsimio.objects.cosmo_array`, default: ``None``
         Offsets along each axis to select a spatial region around the ``centre``.
         May be used in conjunction with ``extra_mask``, for example to select all
         simulation particles in an aperture around the object of interest (see
@@ -1242,7 +1249,8 @@ class Standalone(_HaloCatalogue):
         for example for a cube extending +/- 1 Mpc from the centre:
         ``cosmo_array([[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]], u.Mpc)``.
 
-    extra_mask : ``Optional[Union[str, MaskCollection]]``, default: ``None``
+    extra_mask : :obj:`str` or :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
+    default: ``None``
         Mask to apply to particles after spatial masking. A user-defined mask
         can be provided as an an object (such as a
         :class:`swiftgalaxy.masks.MaskCollection`) that has attributes with

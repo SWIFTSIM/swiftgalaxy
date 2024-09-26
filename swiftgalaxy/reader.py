@@ -9,9 +9,9 @@ transformations while keeping all particles in a consistent frame of reference,
 providing spherical and cylindrical coordinates, and more.
 
 Additional wrappers are provided for
-:class:`swiftsimio.reader.__SWIFTParticleDataset` and
+:class:`swiftsimio.reader.__SWIFTGroupDataset` and
 :class:`swiftsimio.reader.__SWIFTNamedColumnDataset`:
-:class:`_SWIFTParticleDatasetHelper` and
+:class:`_SWIFTGroupDatasetHelper` and
 :class:`_SWIFTNamedColumnDatasetHelper`, respectively. In general objects of
 these types should not be created directly by users, but rather by an object of
 the :class:`SWIFTGalaxy` class.
@@ -110,7 +110,7 @@ class _CoordinateHelper(object):
 
     Parameters
     ----------
-    coordinates : Union[:obj:`dict`, :class:`~swiftsimio.objects.cosmo_array`]
+    coordinates : :obj:`dict` or :class:`~swiftsimio.objects.cosmo_array`
         The coordinate array(s) to be stored.
 
     masks : :class:`dict`
@@ -147,7 +147,7 @@ class _SWIFTNamedColumnDatasetHelper(object):
     internally and forwarding any attribute lookups that it does not handle
     itself to its internal named column dataset.
 
-    Like :class:`_SWIFTParticleDatasetHelper`, this class handles the
+    Like :class:`_SWIFTGroupDatasetHelper`, this class handles the
     transformation and masking of data from calls to :class:`SWIFTGalaxy`
     routines.
 
@@ -167,14 +167,14 @@ class _SWIFTNamedColumnDatasetHelper(object):
     named_column_dataset : :class:`swiftsimio.reader.__SWIFTNamedColumnDataset`
         The named column dataset to be wrapped.
 
-    particle_dataset_helper : :class:`_SWIFTParticleDatasetHelper`
+    particle_dataset_helper : :class:`_SWIFTGroupDatasetHelper`
         Used to store a reference to the parent
-        :class:`_SWIFTParticleDatasetHelper` object.
+        :class:`_SWIFTGroupDatasetHelper` object.
 
     See Also
     --------
     :class:`SWIFTGalaxy`
-    :class:`_SWIFTParticleDatasetHelper`
+    :class:`_SWIFTGroupDatasetHelper`
     """
 
     def __init__(
@@ -214,7 +214,7 @@ class _SWIFTNamedColumnDatasetHelper(object):
                 # just return the data
                 pass
         try:
-            # beware collisions with SWIFTParticleDataset namespace
+            # beware collisions with SWIFTGroupDataset namespace
             return object.__getattribute__(self, attr)
         except AttributeError:
             # exposes everything else in __dict__
@@ -974,10 +974,10 @@ class SWIFTGalaxy(SWIFTDataset):
     functionality of such a dataset is also available for a
     :class:`SWIFTGalaxy`. The :class:`swiftsimio.reader.__SWIFTGroupDatasets`
     objects familiar to :mod:`swiftsimio` users (e.g. a ``GasDataset``) are
-    wrapped by a :class:`_SWIFTGroupDatasetHelper` class that exposes their
-    usual functionality and extends it with new features.
+    wrapped by a :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper` class that exposes
+    their usual functionality and extends it with new features.
     :class:`swiftsimio.reader.__SWIFTNamedColumnDataset` instances are also
-    wrapped, using a :class:`_SWIFTNamedColumnDatasetHelper` class.
+    wrapped, using a :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper` class.
 
     For an overview of available features see the examples below, and the
     narrative documentation pages.
@@ -995,7 +995,7 @@ class SWIFTGalaxy(SWIFTDataset):
         If ``True``, the coordinate system will be automatically recentred on
         the position *and* velocity centres defined by the ``halo_catalogue``.
 
-    transforms_like_coordinates : :obj:`set` [:obj:`str`], \
+    transforms_like_coordinates : :obj:`set` containing :obj:`str`s, \
     default: ``set()``
         Names of fields that behave as spatial coordinates. It is assumed that
         these exist for all present particle types. When the coordinate system
@@ -1004,7 +1004,7 @@ class SWIFTGalaxy(SWIFTDataset):
         in the ``coordinates_dataset_name`` parameter) is implicitly assumed to
         behave as spatial coordinates.
 
-    transforms_like_velocities : :obj:`set` [:obj:`str`], \
+    transforms_like_velocities : :obj:`set` containing :obj:`str`s, \
     default: ``set()``
         Names of fields that behave as velocities. It is assumed that these
         exist for all present particle types. When the coordinate system is
