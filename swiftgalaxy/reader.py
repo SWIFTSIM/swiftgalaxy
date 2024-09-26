@@ -110,10 +110,10 @@ class _CoordinateHelper(object):
 
     Parameters
     ----------
-    coordinates: Union[:obj:`dict`, :class:`~swiftsimio.objects.cosmo_array`]
+    coordinates : Union[:obj:`dict`, :class:`~swiftsimio.objects.cosmo_array`]
         The coordinate array(s) to be stored.
 
-    masks: :class:`dict`
+    masks : :class:`dict`
         Available coordinate names and their aliases with corresponding masks
         (or keys) into the coordinate array or dictionary for each.
     """
@@ -164,10 +164,10 @@ class _SWIFTNamedColumnDatasetHelper(object):
 
     Parameters
     ----------
-    named_column_dataset: :class:`swiftsimio.reader.__SWIFTNamedColumnDataset`
+    named_column_dataset : :class:`swiftsimio.reader.__SWIFTNamedColumnDataset`
         The named column dataset to be wrapped.
 
-    particle_dataset_helper: :class:`_SWIFTParticleDatasetHelper`
+    particle_dataset_helper : :class:`_SWIFTParticleDatasetHelper`
         Used to store a reference to the parent
         :class:`_SWIFTParticleDatasetHelper` object.
 
@@ -287,10 +287,10 @@ class _SWIFTGroupDatasetHelper(object):
 
     Parameters
     ----------
-    particle_dataset: :class:`swiftsimio.reader.__SWIFTGroupDatasets`
+    particle_dataset : :class:`swiftsimio.reader.__SWIFTGroupDatasets`
         The particle dataset to be wrapped.
 
-    swiftgalaxy: :class:`SWIFTGalaxy`
+    swiftgalaxy : :class:`SWIFTGalaxy`
         Used to store a reference to the parent :class:`SWIFTGalaxy`.
 
     See Also
@@ -324,7 +324,6 @@ class _SWIFTGroupDatasetHelper(object):
         mygalaxy.gas.cylindrical_velocities.rho
         mygalaxy.gas.cylindrical_velocities.phi
         mygalaxy.gas.cylindrical_velocities.z
-
     """
 
     def __init__(
@@ -557,7 +556,7 @@ class _SWIFTGroupDatasetHelper(object):
 
         Returns
         -------
-        coordinate_helper: :class:`_CoordinateHelper`
+        coordinate_helper : :class:`_CoordinateHelper`
             Container providing particle cartesian coordinates as attributes.
         """
         return _CoordinateHelper(
@@ -591,7 +590,7 @@ class _SWIFTGroupDatasetHelper(object):
 
         Returns
         -------
-        coordinate_helper: :class:`_CoordinateHelper`
+        coordinate_helper : :class:`_CoordinateHelper`
             Container providing particle cartesian velocities as attributes.
         """
         return _CoordinateHelper(
@@ -641,7 +640,7 @@ class _SWIFTGroupDatasetHelper(object):
 
         Returns
         -------
-        coordinate_helper: :class:`_CoordinateHelper`
+        coordinate_helper : :class:`_CoordinateHelper`
             Container providing particle spherical coordinates as attributes.
         """
         if self._spherical_coordinates is None:
@@ -729,7 +728,7 @@ class _SWIFTGroupDatasetHelper(object):
 
         Returns
         -------
-        coordinate_helper: :class:`_CoordinateHelper`
+        coordinate_helper : :class:`_CoordinateHelper`
             Container providing particle velocities in spherical coordinates as
             attributes.
         """
@@ -810,7 +809,7 @@ class _SWIFTGroupDatasetHelper(object):
 
         Returns
         -------
-        coordinate_helper: :class:`_CoordinateHelper`
+        coordinate_helper : :class:`_CoordinateHelper`
             Container providing particle cylindrical coordinates as attributes.
         """
         if self._cylindrical_coordinates is None:
@@ -894,7 +893,7 @@ class _SWIFTGroupDatasetHelper(object):
 
         Returns
         -------
-        coordinate_helper: :class:`_CoordinateHelper`
+        coordinate_helper : :class:`_CoordinateHelper`
             Container providing particle velocities in cylindrical coordinates
             as attributes.
         """
@@ -985,18 +984,18 @@ class SWIFTGalaxy(SWIFTDataset):
 
     Parameters
     ----------
-    snapshot_filename: :obj:`str`
+    snapshot_filename : :obj:`str`
         Name of file containing snapshot.
 
-    halo_catalogue: :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+    halo_catalogue : :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
         A halo_catalogue instance from :mod:`swiftgalaxy.halo_catalogues`, e.g. a
         :class:`swiftgalaxy.halo_catalogues.SOAP` instance.
 
-    auto_recentre: :obj:`bool`, default: ``True``
+    auto_recentre : :obj:`bool`, default: ``True``
         If ``True``, the coordinate system will be automatically recentred on
         the position *and* velocity centres defined by the ``halo_catalogue``.
 
-    transforms_like_coordinates: :obj:`set` [:obj:`str`], \
+    transforms_like_coordinates : :obj:`set` [:obj:`str`], \
     default: ``set()``
         Names of fields that behave as spatial coordinates. It is assumed that
         these exist for all present particle types. When the coordinate system
@@ -1005,7 +1004,7 @@ class SWIFTGalaxy(SWIFTDataset):
         in the ``coordinates_dataset_name`` parameter) is implicitly assumed to
         behave as spatial coordinates.
 
-    transforms_like_velocities: :obj:`set` [:obj:`str`], \
+    transforms_like_velocities : :obj:`set` [:obj:`str`], \
     default: ``set()``
         Names of fields that behave as velocities. It is assumed that these
         exist for all present particle types. When the coordinate system is
@@ -1014,15 +1013,15 @@ class SWIFTGalaxy(SWIFTDataset):
         in the ``velocities_dataset_name`` parameter) is implicitly assumed to
         behave as velocities.
 
-    id_particle_dataset_name: :obj:`str`, default: ``'particle_ids'``
+    id_particle_dataset_name : :obj:`str`, default: ``'particle_ids'``
         Name of the dataset containing the particle IDs, assumed to be the same
         for all present particle types.
 
-    coordinates_dataset_name: :obj:`str`, default: ``'velocities'``
+    coordinates_dataset_name : :obj:`str`, default: ``'velocities'``
         Name of the dataset containing the particle spatial coordinates,
         assumed to be the same for all present particle types.
 
-    velocities_dataset_name: :obj:`str`, default: ``'velocities'``
+    velocities_dataset_name : :obj:`str`, default: ``'velocities'``
         Name of the dataset containing the particle velocities, assumed to be
         the same for all present particle types.
 
@@ -1376,11 +1375,10 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Parameters
         ----------
-        rotation: :class:`scipy.spatial.transform.Rotation`
+        rotation : :class:`scipy.spatial.transform.Rotation`
             The rotation to be applied.
             :class:`~scipy.spatial.transform.Rotation` supports several input
             formats, including axis-angle, rotation matrices, and others.
-
         """
         rotation_matrix = rotation.as_matrix()
         rotatable = self.transforms_like_coordinates | self.transforms_like_velocities
@@ -1507,7 +1505,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Parameters
         ----------
-        translation: :class:`~swiftsimio.objects.cosmo_array`
+        translation : :class:`~swiftsimio.objects.cosmo_array`
             The vector to translate by.
 
         See Also
@@ -1530,7 +1528,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Parameters
         ----------
-        boost: :class:`~swiftsimio.objects.cosmo_array`
+        boost : :class:`~swiftsimio.objects.cosmo_array`
             The velocity to boost by.
 
         See Also
@@ -1555,7 +1553,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Parameters
         ----------
-        new_centre: :class:`~swiftsimio.objects.cosmo_array`
+        new_centre : :class:`~swiftsimio.objects.cosmo_array`
             The new centre for the (spatial) coordinate system.
 
         See Also
@@ -1580,10 +1578,10 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Parameters
         ----------
-        new_centre: :class:`~swiftsimio.objects.cosmo_array`
+        new_centre : :class:`~swiftsimio.objects.cosmo_array`
             The new centre for the velocity coordinate system.
 
-        See also
+        See Also
         --------
         :meth:`boost`
         """
@@ -1635,7 +1633,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Parameters
         ----------
-        mask_collection: :class:`swiftgalaxy.masks.MaskCollection`
+        mask_collection : :class:`swiftgalaxy.masks.MaskCollection`
             Set of masks to be applied to each particle type. Particle types
             may be omitted by setting their mask to None, or simply omitting
             them from the :class:`swiftgalaxy.masks.MaskCollection`.
