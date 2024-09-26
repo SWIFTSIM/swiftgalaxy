@@ -174,8 +174,8 @@ class TestSWIFTGalaxies:
         # force dense solution
         sgs._solution = sgs._dense_optimized_solution
         assert np.allclose(
-            sgs.iteration_order
-            == np.concatenate(sgs._dense_optimized_solution["region_target_indices"]),
+            sgs.iteration_order,
+            np.concatenate(sgs._dense_optimized_solution["region_target_indices"]),
             atol=0,
         )
         # force sparse solution
