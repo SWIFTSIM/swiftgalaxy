@@ -517,7 +517,6 @@ class Velociraptor(_HaloCatalogue):
         halo_index: Optional[Union[int, Collection[int]]] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "minpot",  # _gas _star mbp minpot
-        velociraptor_suffix: str = "",
         custom_spatial_offsets: Optional[cosmo_array] = None,
     ) -> None:
         if velociraptor_filebase is not None and velociraptor_files is not None:
@@ -977,10 +976,26 @@ class Caesar(_HaloCatalogue):
             int_ranges: NDArray[np.int_],
         ) -> NDArray[np.bool_]:
             """
-            Produces a boolean mask corresponding to `ints`. For each element in `ints`,
-            the mask is `True` if the value is between (at least) one of the pairs of
-            integers in `int_ranges`. This is potentially memory intensive with a
-            footprint proportional to ints.size * int_ranges.size.
+            Produces a boolean mask corresponding to `ints`.
+
+            For each element in `ints`, the mask is `True` if the value is between (at
+            least) one of the pairs of integers in `int_ranges`. This is potentially
+            memory intensive with a footprint proportional to
+            `ints.size * int_ranges.size`.
+
+            Parameters
+            ----------
+            ints : :class:`~numpy.ndarray`
+                Array of integers for which to check membership in the ranges.
+            int_ranges : :class:`~numpy.ndarray`
+                2D array with shape (N, 2) of half-open ranges `[min, max[` in
+                which to check membership.
+
+            Returns
+            -------
+            out : :class:`~numpy.ndarray`
+                Boolean array with same shape as `ints`, `True` if the integer is in
+                at least one of the ranges, `False` otherwise.
             """
             return np.logical_and(
                 ints >= int_ranges[:, 0, np.newaxis],

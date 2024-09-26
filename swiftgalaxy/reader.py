@@ -1025,6 +1025,25 @@ class SWIFTGalaxy(SWIFTDataset):
         Name of the dataset containing the particle velocities, assumed to be
         the same for all present particle types.
 
+    coordinate_frame_from : :class:`~swiftgalaxy.reader.SWIFTGalaxy` (optional), \
+    default: ``None``
+        Another :class:`~swiftgalaxy.reader.SWIFTGalaxy` to copy the coordinate frame
+        (centre and rotation) and velocity coordinate frame (boost and rotation) from.
+
+    _spatial_mask : :class:`~swiftsimio.masks.SWIFTMask` (optional), default: ``None``
+        Directly set the spatial mask (intended for internal use only).
+
+    _extra_mask : :class:`~swiftgalaxy.masks.MaskCollection` (optional), default: ``None``
+        Directly set the extra mask (intended for internal use only).
+
+    _coordinate_like_transform : :class:`~numpy.ndarray` (optional), default: ``None``
+        Directly set the internal representation of the coordinate frame translations
+        and rotations (intended for internal use only).
+
+    _velocity_like_transform : :class:`~numpy.ndarray` (optional), default: ``None``
+        Directly set the internal representation of the velocity frame boosts and
+        rotations (intended for internal use only).
+
     See Also
     --------
     :class:`_SWIFTGroupDatasetHelper`
