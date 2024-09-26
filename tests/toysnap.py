@@ -68,30 +68,29 @@ age = u.unyt_quantity.from_astropy(
 
 class ToyHF(_HaloCatalogue):
 
-    _index_attr = "index"
+    _index_attr = "_index"
 
     def __init__(self, snapfile=toysnap_filename, index=0):
         self.snapfile = snapfile
-        self.index = index
+        self._index = index
         super().__init__()
         return
 
     def _load(self):
         return
 
+    @property
+    def index(self):
+        return self._mask_index()
+
     def _generate_spatial_mask(self, SG):
         import swiftsimio
 
-        index = (
-            self.index[self._multi_galaxy_mask_index]
-            if self._multi_galaxy_mask_index is not None
-            else self.index
-        )
-        if index == 0:
+        if self.index == 0:
             spatial_mask = (
                 np.array([[centre_1 - 0.1, centre_1 + 0.1] for ax in range(3)]) * u.Mpc
             )
-        elif index == 1:
+        elif self.index == 1:
             spatial_mask = (
                 np.array([[centre_2 - 0.1, centre_2 + 0.1] for ax in range(3)]) * u.Mpc
             )
@@ -167,7 +166,7 @@ class ToyHF(_HaloCatalogue):
             [0.5, 0.5], u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a**1, 1.0)
         )
 
-    def _get_preload_fields(self):
+    def _get_preload_fields(self, server):
         return set()
 
 

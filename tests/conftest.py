@@ -1,4 +1,5 @@
 import pytest
+import os
 import numpy as np
 import unyt as u
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
@@ -557,7 +558,7 @@ def hf_multi(request):
 
         remove_toycaesar()
     elif request.param == "soap":
-        create_toysoap()
+        create_toysoap(create_virtual_snapshot=os.path.isfile(toysnap_filename))
 
         yield SOAP(
             soap_file=toysoap_filename,

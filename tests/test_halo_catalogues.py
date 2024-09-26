@@ -485,7 +485,7 @@ class TestVelociraptorWithSWIFTGalaxy:
                 ),
             )
             for ptype in present_particle_types.values():
-                assert all(
+                assert np.all(
                     getattr(sg_from_sgs._extra_mask, ptype)
                     == getattr(sg._extra_mask, ptype)
                 )
@@ -665,7 +665,7 @@ class TestCaesarWithSWIFTGalaxy:
                         sg._extra_mask, ptype
                     )
                 else:
-                    assert all(
+                    assert np.all(
                         getattr(sg_from_sgs._extra_mask, ptype)
                         == getattr(sg._extra_mask, ptype)
                     )
@@ -845,7 +845,7 @@ class TestSOAPWithSWIFTGalaxy:
                 ),
             )
             for ptype in present_particle_types.values():
-                assert all(
+                assert np.all(
                     getattr(sg_from_sgs._extra_mask, ptype)
                     == getattr(sg._extra_mask, ptype)
                 )

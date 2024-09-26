@@ -252,8 +252,8 @@ class SWIFTGalaxies:
         ).transpose((0, 2, 3, 4, 1))[tuple(unique_grid_regions.T)]
         unique_regions = cosmo_array(
             (
-                unique_region_centres - 0.5 * grid_element_dim * sm.cell_size,
-                unique_region_centres + 0.5 * grid_element_dim * sm.cell_size,
+                unique_region_centres - 0.499 * grid_element_dim * sm.cell_size,
+                unique_region_centres + 0.499 * grid_element_dim * sm.cell_size,
             )
         ).transpose((1, 2, 0))
         # in the following dict
@@ -282,34 +282,36 @@ class SWIFTGalaxies:
             ),
         )
 
+    def _start_server(self, region_mask):
+        self._server = SWIFTGalaxy(
+            snapshot_filename=self._init_args["snapshot_filename"],
+            halo_catalogue=None,
+            auto_recentre=False,
+            transforms_like_coordinates=self._init_args["transforms_like_coordinates"],
+            transforms_like_velocities=self._init_args["transforms_like_velocities"],
+            id_particle_dataset_name=self._init_args["id_particle_dataset_name"],
+            coordinates_dataset_name=self._init_args["coordinates_dataset_name"],
+            velocities_dataset_name=self._init_args["velocities_dataset_name"],
+            _spatial_mask=region_mask,
+            _extra_mask=None,
+        )
+
+    def _preload(self):
+        for preload_field in self._init_args[
+            "preload"
+        ] | self.halo_catalogue._get_preload_fields(self._server):
+            obj = self._server
+            for attr in preload_field.split("."):
+                obj = getattr(obj, attr)
+
     def __iter__(self):
         region_mask = mask(self._init_args["snapshot_filename"])
         for region, target_indices in zip(
             self._solution["regions"], self._solution["region_target_indices"]
         ):
             region_mask.constrain_spatial(region)
-            self._server = SWIFTGalaxy(
-                snapshot_filename=self._init_args["snapshot_filename"],
-                halo_catalogue=None,
-                auto_recentre=False,
-                transforms_like_coordinates=self._init_args[
-                    "transforms_like_coordinates"
-                ],
-                transforms_like_velocities=self._init_args[
-                    "transforms_like_velocities"
-                ],
-                id_particle_dataset_name=self._init_args["id_particle_dataset_name"],
-                coordinates_dataset_name=self._init_args["coordinates_dataset_name"],
-                velocities_dataset_name=self._init_args["velocities_dataset_name"],
-                _spatial_mask=region_mask,
-                _extra_mask=None,
-            )
-            for preload_field in self._init_args[
-                "preload"
-            ] | self.halo_catalogue._get_preload_fields(self._server):
-                obj = self._server
-                for attr in preload_field.split("."):
-                    obj = getattr(obj, attr)
+            self._start_server(region_mask)
+            self._preload()
             for igalaxy in target_indices:
                 self.halo_catalogue._mask_multi_galaxy(igalaxy)
                 swift_galaxy = self._server[
