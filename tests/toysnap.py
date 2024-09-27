@@ -11,9 +11,9 @@ from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftsimio.units import cosmo_units
 
 
-cosma_soap_script_path = "/cosma/home/durham/dc-oman1/code/SOAP/"
-if os.path.exists(cosma_soap_script_path):
-    soap_script_path = cosma_soap_script_path
+my_soap_script_path = os.path.expanduser("~/code/SOAP/")
+if os.path.exists(my_soap_script_path):
+    soap_script_path = my_soap_script_path
 try:
     soap_script_path = os.path.join(os.environ["GITHUB_WORKSPACE"], "SOAP")
 except KeyError:

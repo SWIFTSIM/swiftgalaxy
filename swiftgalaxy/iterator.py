@@ -283,7 +283,7 @@ class SWIFTGalaxies:
         )
 
     def _start_server(self, region_mask):
-        self._server = SWIFTGalaxy(
+        self._server = SWIFTGalaxy._copyinit(
             snapshot_filename=self._init_args["snapshot_filename"],
             halo_catalogue=None,
             auto_recentre=False,
