@@ -1140,111 +1140,6 @@ class SWIFTGalaxy(SWIFTDataset):
     _spatial_mask: SWIFTMask
     _extra_mask: Optional[MaskCollection]
 
-    @classmethod
-    def _copyinit(
-        cls,
-        snapshot_filename: str,
-        halo_catalogue: _HaloCatalogue,
-        auto_recentre: bool = True,
-        transforms_like_coordinates: Set[str] = set(),
-        transforms_like_velocities: Set[str] = set(),
-        id_particle_dataset_name: str = "particle_ids",
-        coordinates_dataset_name: str = "coordinates",
-        velocities_dataset_name: str = "velocities",
-        coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
-        _spatial_mask: Optional[SWIFTMask] = None,
-        _extra_mask: Optional[MaskCollection] = None,
-        _coordinate_like_transform: Optional[np.ndarray] = None,
-        _velocity_like_transform: Optional[np.ndarray] = None,
-    ):
-        """
-        For internal use in copying a :class:`SWIFTGalaxy`.
-
-        An init method with some extra parameters to facilitate copying.
-
-        Parameters
-        ----------
-        snapshot_filename : :obj:`str`
-            Name of file containing snapshot.
-
-        halo_catalogue : :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
-            A halo_catalogue instance from :mod:`swiftgalaxy.halo_catalogues`, e.g. a
-            :class:`swiftgalaxy.halo_catalogues.SOAP` instance.
-
-        auto_recentre : :obj:`bool`, default: ``True``
-            If ``True``, the coordinate system will be automatically recentred on
-            the position *and* velocity centres defined by the ``halo_catalogue``.
-
-        transforms_like_coordinates : :obj:`set` containing :obj:`str`s, \
-        default: ``set()``
-            Names of fields that behave as spatial coordinates. It is assumed that
-            these exist for all present particle types. When the coordinate system
-            is rotated or translated, the associated arrays will be transformed
-            accordingly. The ``coordinates`` dataset (or its alternative name given
-            in the ``coordinates_dataset_name`` parameter) is implicitly assumed to
-            behave as spatial coordinates.
-
-        transforms_like_velocities : :obj:`set` containing :obj:`str`s, \
-        default: ``set()``
-            Names of fields that behave as velocities. It is assumed that these
-            exist for all present particle types. When the coordinate system is
-            rotated or boosted, the associated arrays will be transformed
-            accordingly. The ``velocities`` dataset (or its alternative name given
-            in the ``velocities_dataset_name`` parameter) is implicitly assumed to
-            behave as velocities.
-
-        id_particle_dataset_name : :obj:`str`, default: ``'particle_ids'``
-            Name of the dataset containing the particle IDs, assumed to be the same
-            for all present particle types.
-
-        coordinates_dataset_name : :obj:`str`, default: ``'velocities'``
-            Name of the dataset containing the particle spatial coordinates,
-            assumed to be the same for all present particle types.
-
-        velocities_dataset_name : :obj:`str`, default: ``'velocities'``
-            Name of the dataset containing the particle velocities, assumed to be
-            the same for all present particle types.
-
-        coordinate_frame_from : :class:`~swiftgalaxy.reader.SWIFTGalaxy` (optional), \
-        default: ``None``
-            Another :class:`~swiftgalaxy.reader.SWIFTGalaxy` to copy the coordinate frame
-            (centre and rotation) and velocity coordinate frame (boost and rotation) from.
-
-        _spatial_mask : :class:`~swiftsimio.masks.SWIFTMask` (optional), default: ``None``
-            Directly set the spatial mask (intended for internal use only).
-
-        _extra_mask : :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
-        default: ``None``
-            Directly set the extra mask (intended for internal use only).
-
-        _coordinate_like_transform : :class:`~numpy.ndarray` (optional), default: ``None``
-            Directly set the internal representation of the coordinate frame translations
-            and rotations (intended for internal use only).
-
-        _velocity_like_transform : :class:`~numpy.ndarray` (optional), default: ``None``
-            Directly set the internal representation of the velocity frame boosts and
-            rotations (intended for internal use only).
-        """
-        sg = cls.__new__(cls)
-        sg._spatial_mask = _spatial_mask
-        sg._extra_mask = _extra_mask
-        if _coordinate_like_transform is not None:
-            sg._coordinate_like_transform = _coordinate_like_transform
-        if _velocity_like_transform is not None:
-            sg._velocity_like_transform = _velocity_like_transform
-        sg.__init__(
-            snapshot_filename,
-            halo_catalogue,
-            auto_recentre=auto_recentre,
-            transforms_like_coordinates=transforms_like_coordinates,
-            transforms_like_velocities=transforms_like_velocities,
-            id_particle_dataset_name=id_particle_dataset_name,
-            coordinates_dataset_name=coordinates_dataset_name,
-            velocities_dataset_name=velocities_dataset_name,
-            coordinate_frame_from=coordinate_frame_from,
-        )
-        return sg
-
     def __init__(
         self,
         snapshot_filename: str,
@@ -1370,6 +1265,112 @@ class SWIFTGalaxy(SWIFTDataset):
         self._initialised: bool = True
 
         return
+
+    @classmethod
+    def _copyinit(
+        cls,
+        snapshot_filename: str,
+        halo_catalogue: _HaloCatalogue,
+        auto_recentre: bool = True,
+        transforms_like_coordinates: Set[str] = set(),
+        transforms_like_velocities: Set[str] = set(),
+        id_particle_dataset_name: str = "particle_ids",
+        coordinates_dataset_name: str = "coordinates",
+        velocities_dataset_name: str = "velocities",
+        coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
+        _spatial_mask: Optional[SWIFTMask] = None,
+        _extra_mask: Optional[MaskCollection] = None,
+        _coordinate_like_transform: Optional[np.ndarray] = None,
+        _velocity_like_transform: Optional[np.ndarray] = None,
+    ):
+        """
+        For internal use in copying a :class:`SWIFTGalaxy`.
+
+        An init method with some extra parameters to facilitate copying.
+
+        Parameters
+        ----------
+        snapshot_filename : :obj:`str`
+            Name of file containing snapshot.
+
+        halo_catalogue : :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+            A halo_catalogue instance from :mod:`swiftgalaxy.halo_catalogues`, e.g. a
+            :class:`swiftgalaxy.halo_catalogues.SOAP` instance.
+
+        auto_recentre : :obj:`bool`, default: ``True``
+            If ``True``, the coordinate system will be automatically recentred on
+            the position *and* velocity centres defined by the ``halo_catalogue``.
+
+        transforms_like_coordinates : :obj:`set` containing :obj:`str`s, \
+        default: ``set()``
+            Names of fields that behave as spatial coordinates. It is assumed that
+            these exist for all present particle types. When the coordinate system
+            is rotated or translated, the associated arrays will be transformed
+            accordingly. The ``coordinates`` dataset (or its alternative name given
+            in the ``coordinates_dataset_name`` parameter) is implicitly assumed to
+            behave as spatial coordinates.
+
+        transforms_like_velocities : :obj:`set` containing :obj:`str`s, \
+        default: ``set()``
+            Names of fields that behave as velocities. It is assumed that these
+            exist for all present particle types. When the coordinate system is
+            rotated or boosted, the associated arrays will be transformed
+            accordingly. The ``velocities`` dataset (or its alternative name given
+            in the ``velocities_dataset_name`` parameter) is implicitly assumed to
+            behave as velocities.
+
+        id_particle_dataset_name : :obj:`str`, default: ``'particle_ids'``
+            Name of the dataset containing the particle IDs, assumed to be the same
+            for all present particle types.
+
+        coordinates_dataset_name : :obj:`str`, default: ``'velocities'``
+            Name of the dataset containing the particle spatial coordinates,
+            assumed to be the same for all present particle types.
+
+        velocities_dataset_name : :obj:`str`, default: ``'velocities'``
+            Name of the dataset containing the particle velocities, assumed to be
+            the same for all present particle types.
+
+        coordinate_frame_from : :class:`~swiftgalaxy.reader.SWIFTGalaxy` (optional), \
+        default: ``None``
+            Another :class:`~swiftgalaxy.reader.SWIFTGalaxy` to copy the coordinate frame
+            (centre and rotation) and velocity coordinate frame (boost and rotation) from.
+
+        _spatial_mask : :class:`~swiftsimio.masks.SWIFTMask` (optional), default: ``None``
+            Directly set the spatial mask (intended for internal use only).
+
+        _extra_mask : :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
+        default: ``None``
+            Directly set the extra mask (intended for internal use only).
+
+        _coordinate_like_transform : :class:`~numpy.ndarray` (optional), default: ``None``
+            Directly set the internal representation of the coordinate frame translations
+            and rotations (intended for internal use only).
+
+        _velocity_like_transform : :class:`~numpy.ndarray` (optional), default: ``None``
+            Directly set the internal representation of the velocity frame boosts and
+            rotations (intended for internal use only).
+        """
+        sg = cls.__new__(cls)
+        sg._spatial_mask = _spatial_mask
+        sg._extra_mask = _extra_mask
+        if _coordinate_like_transform is not None:
+            sg._coordinate_like_transform = _coordinate_like_transform
+        if _velocity_like_transform is not None:
+            sg._velocity_like_transform = _velocity_like_transform
+        SWIFTGalaxy.__init__(
+            sg,
+            snapshot_filename,
+            halo_catalogue,
+            auto_recentre=auto_recentre,
+            transforms_like_coordinates=transforms_like_coordinates,
+            transforms_like_velocities=transforms_like_velocities,
+            id_particle_dataset_name=id_particle_dataset_name,
+            coordinates_dataset_name=coordinates_dataset_name,
+            velocities_dataset_name=velocities_dataset_name,
+            coordinate_frame_from=coordinate_frame_from,
+        )
+        return sg
 
     def __str__(self) -> str:
         return f"SWIFTGalaxy at {self.snapshot_filename}."
