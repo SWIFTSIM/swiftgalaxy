@@ -71,6 +71,23 @@ def _apply_box_wrap(coords: cosmo_array, boxsize: Optional[cosmo_array]) -> cosm
 
 
 def _apply_translation(coords: cosmo_array, offset: cosmo_array) -> cosmo_array:
+    """
+    Apply a translation to a coordinate array.
+
+    Also warns the user of ambiguity in physical/comoving coordinates.
+
+    Parameters
+    ----------
+    coords : :class:`~swiftsimio.objects.cosmo_array`
+        The coordinate array to be translated.
+    offset : :class:`~swiftsimio.objects.cosmo_array`
+        The translation vector.
+
+    Returns
+    -------
+    out : :class:`~swiftsimio.objects.cosmo_array`
+        The coordinate array with the translation applied.
+    """
     if hasattr(offset, "comoving") and coords.comoving:
         offset = offset.to_comoving()
     elif hasattr(offset, "comoving") and not coords.comoving:
@@ -86,6 +103,24 @@ def _apply_translation(coords: cosmo_array, offset: cosmo_array) -> cosmo_array:
 
 
 def _apply_rotmat(coords: cosmo_array, rotation_matrix: np.ndarray) -> cosmo_array:
+    """
+    Apply a rotation matrix to a coordinate array.
+
+    Applies a rotation in-place using a view through a :class:`numpy.ndarray`, then
+    restores units and metadata of the :class:`~swiftsimio.objects.cosmo_array`.
+
+    Parameters
+    ----------
+    coords : :class:`~swiftsimio.objects.cosmo_array`
+        The coordinate array to be rotated.
+    rotation_matrix : :class:`~numpy.ndarray`
+        The rotation matrix (3x3).
+
+    Returns
+    -------
+    out : :class:`~swiftsimio.objects.cosmo_array`
+        The coordinate array with rotation applied.
+    """
     return cosmo_array(
         coords.view(np.ndarray).dot(rotation_matrix),
         units=coords.units,
@@ -95,11 +130,31 @@ def _apply_rotmat(coords: cosmo_array, rotation_matrix: np.ndarray) -> cosmo_arr
 
 
 def _apply_4transform(
-    coords: cosmo_array, transform: cosmo_array, transform_units: unyt.unyt_quantity
+    coords: cosmo_array, transform: np.ndarray, transform_units: unyt.unyt_quantity
 ) -> cosmo_array:
-    # A 4x4 transformation matrix has mixed units, so need to assume a consistent unit
-    # for all transformations and work with bare arrays. Also always assume comoving
-    # coordinates.
+    """
+    Apply an arbitary coordinate transformation (translation mixed with rotation) to a
+    coordinate array.
+
+    An arbitrary coordinate transformation mixing translations and rotations can be
+    expressed as a 4x4 matrix. However, such a matrix has mixed units, so we need to
+    assume a consistent unit for all transformations and work with bare arrays. We also
+    always assume comoving coordinates.
+
+    Parameters
+    ----------
+    coords : :class:`~swiftsimio.objects.cosmo_array`
+        The coordinate array to be transformed.
+    transform : :class:`~numpy.ndarray`
+        The 4x4 transformation matrix.
+    transform_units : :class:`unyt.unyt_quantity`
+        The units assumed in the translation portion of the transformation matrix.
+
+    Returns
+    -------
+    out : :class:`~swiftsimio.objects.cosmo_array`
+        The coordinate array with transformation applied.
+    """
     retval = cosmo_array(
         np.hstack(
             (
@@ -142,13 +197,46 @@ class _CoordinateHelper(object):
         return
 
     def __getattr__(self, attr: str) -> cosmo_array:
+        """
+        Get a coordinate array using attribute (dot) syntax.
+
+        Looks up the requested attribute in the internal register of coordinate
+        array names and their aliases to retrieve the array corresponding to the
+        request.
+
+        Parameters
+        ----------
+        attr : :obj:`str`
+            The name (possibly an alias) of the coordinate array to retrieve.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The requested coordinate array.
+        """
         return self._coordinates[self._masks[attr]]
 
     def __str__(self) -> str:
+        """
+        Get a string representation of the available coordinate array names.
+
+        Returns
+        -------
+        out : :obj:`str`
+            The string representation.
+        """
         keys = ", ".join(self._masks.keys())
         return f"Available coordinates: {keys}."
 
     def __repr__(self) -> str:
+        """
+        Get a string representation of the available coordinate array names.
+
+        Returns
+        -------
+        out : :obj:`str`
+            The string representation.
+        """
         return self.__str__()
 
 
@@ -208,12 +296,49 @@ class _SWIFTNamedColumnDatasetHelper(object):
         return
 
     def __str__(self) -> str:
+        """
+        Get a string representation of the object.
+
+        Delegated to the underlying :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset`.
+
+        Returns
+        -------
+        out : :obj:`str`
+            The string representation.
+        """
         return str(self._named_column_dataset)
 
     def __repr__(self) -> str:
+        """
+        Get a string representation of the object.
+
+        Delegated to the underlying :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset`.
+
+        Returns
+        -------
+        out : :obj:`str`
+            The string representation.
+        """
         return self.__str__()
 
     def __getattribute__(self, attr: str) -> Any:
+        """
+        Get an attribute of the object.
+
+        Redirects requests for datasets to the underlying
+        :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset` and then handles
+        any transformations and masking when new data are read.
+
+        Parameters
+        ----------
+        attr : :obj:`str`
+            The name of the attribute.
+
+        Returns
+        -------
+        out : :obj:`object`
+            The value of the attribute.
+        """
         named_column_dataset = object.__getattribute__(self, "_named_column_dataset")
         particle_dataset_helper = object.__getattribute__(
             self, "_particle_dataset_helper"
@@ -239,6 +364,19 @@ class _SWIFTNamedColumnDatasetHelper(object):
             return getattr(named_column_dataset, attr)
 
     def __setattr__(self, attr: str, value: Any) -> None:
+        """
+        Set an attribute of the object.
+
+        Redirects setting attributes to the underlying
+        :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset` objects when relevant.
+
+        Parameters
+        ----------
+        attr : :obj:`str`
+            Name of the attribute.
+        value : :obj:`object`
+            The value to assign to the attribute.
+        """
         # pass particle data through to actual SWIFTNamedColumnDataset
         if not hasattr(self, "_initialised"):
             # guard during initialisation
@@ -255,19 +393,73 @@ class _SWIFTNamedColumnDatasetHelper(object):
             return
 
     def __getitem__(self, mask: slice) -> "_SWIFTNamedColumnDatasetHelper":
+        """
+        Apply a mask to the :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
+        with square-bracket notation.
+
+        To ensure internal consistency this requires producing a full ("deep") copy of
+        the parent :class:`~swiftgalaxy.reader.SWIFTGalaxy` object and all of its contents
+        (but data is masked at copy time to avoid unnecessary memory overhead).
+
+        Parameters
+        ----------
+        mask : :obj:`slice`
+            The mask to apply to the named column data arrays (and all other data arrays
+            for particles of the same type).
+        """
         return self._data_copy(mask=mask)
 
     def __copy__(self) -> "_SWIFTNamedColumnDatasetHelper":
+        """
+        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
+        without copying data (a "shallow" copy).
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
+            The copy of the :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
+            object.
+        """
         return getattr(self._particle_dataset_helper.__copy__(), self.name)
 
     def __deepcopy__(
         self, memo: Optional[dict] = None
     ) -> "_SWIFTNamedColumnDatasetHelper":
+        """
+        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
+        including copying data (a "deep" copy).
+
+        Parameters
+        ----------
+        memo : :obj:`dict` (optional), default: ``None``
+            For the copy operation to keep a record of already copied objects.
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
+            The copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object.
+        """
+
         return self._data_copy()
 
     def _data_copy(
         self, mask: Optional[slice] = None
     ) -> "_SWIFTNamedColumnDatasetHelper":
+        """
+        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
+        including copying data (a "deep" copy).
+
+        Parameters
+        ----------
+        mask : :obj:`slice` (optional), default: ``None``
+            Copy only the subset of the data corresponding to the ``mask``.
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
+            A (possibly masked) copy of the
+            :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper` object.
+        """
         return getattr(self._particle_dataset_helper._data_copy(mask=mask), self.name)
 
 
@@ -385,12 +577,49 @@ class _SWIFTGroupDatasetHelper(object):
         return
 
     def __str__(self) -> str:
+        """
+        Get a string representation of the object.
+
+        Delegated to the underlying :class:`~swiftsimio.reader.__SWIFTGroupDataset`.
+
+        Returns
+        -------
+        out : :obj:`str`
+            The string representation.
+        """
         return str(self._particle_dataset)
 
     def __repr__(self) -> str:
+        """
+        Get a string representation of the object.
+
+        Delegated to the underlying :class:`~swiftsimio.reader.__SWIFTGroupDataset`.
+
+        Returns
+        -------
+        out : :obj:`str`
+            The string representation.
+        """
         return self.__str__()
 
     def __getattribute__(self, attr: str) -> Any:
+        """
+        Get an attribute of the object.
+
+        Redirects requests for datasets to the underlying
+        :class:`~swiftsimio.reader.__SWIFTGroupDataset` and then handles
+        any transformations and masking when new data are read.
+
+        Parameters
+        ----------
+        attr : :obj:`str`
+            The name of the attribute.
+
+        Returns
+        -------
+        out : :obj:`object`
+            The value of the attribute.
+        """
         particle_name = object.__getattribute__(self, "_particle_dataset").group_name
         metadata = object.__getattribute__(self, "_particle_dataset").metadata
         particle_metadata = getattr(metadata, f"{particle_name}_properties")
@@ -419,6 +648,19 @@ class _SWIFTGroupDatasetHelper(object):
             return getattr(particle_dataset, attr)
 
     def __setattr__(self, attr: str, value: Any) -> None:
+        """
+        Set an attribute of the object.
+
+        Redirects setting attributes to the underlying
+        :class:`~swiftsimio.reader.__SWIFTGroupDataset` objects when relevant.
+
+        Parameters
+        ----------
+        attr : :obj:`str`
+            Name of the attribute.
+        value : :obj:`object`
+            The value to assign to the attribute.
+        """
         # pass particle data through to actual SWIFTDataset
         if not hasattr(self, "_initialised"):
             # guard during initialisation
@@ -441,15 +683,66 @@ class _SWIFTGroupDatasetHelper(object):
             return
 
     def __getitem__(self, mask: slice) -> "_SWIFTGroupDatasetHelper":
+        """
+        Apply a mask to the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
+        with square-bracket notation.
+
+        To ensure internal consistency this requires producing a full ("deep") copy of
+        the parent :class:`~swiftgalaxy.reader.SWIFTGalaxy` object and all of its contents
+        (but data is masked at copy time to avoid unnecessary memory overhead).
+
+        Parameters
+        ----------
+        mask : :obj:`slice`
+            The mask to apply to the particle data arrays.
+        """
         return self._data_copy(mask=mask)
 
     def __copy__(self) -> "_SWIFTGroupDatasetHelper":
+        """
+        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
+        without copying data (a "shallow" copy).
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
+            The copy of the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper` object.
+        """
         return getattr(self._swiftgalaxy.__copy__(), self.particle_name)
 
     def __deepcopy__(self, memo: Optional[dict] = None) -> "_SWIFTGroupDatasetHelper":
+        """
+        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
+        including copying data (a "deep" copy).
+
+        Parameters
+        ----------
+        memo : :obj:`dict` (optional), default: ``None``
+            For the copy operation to keep a record of already copied objects.
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
+            The copy of the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper` object.
+        """
         return self._data_copy()
 
     def _data_copy(self, mask: Optional[slice] = None) -> "_SWIFTGroupDatasetHelper":
+        """
+        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
+        including copying data (a "deep" copy).
+
+        Parameters
+        ----------
+        mask : :obj:`slice` (optional), default: ``None``
+            Copy only the subset of the data corresponding to the ``mask``.
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
+            A (possibly masked) copy of the
+            :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper` object.
+        """
         mask_collection = MaskCollection(
             **{
                 k: None if k != self.group_name else mask
@@ -462,6 +755,19 @@ class _SWIFTGroupDatasetHelper(object):
         )
 
     def _is_namedcolumns(self, field_name: str) -> bool:
+        """
+        Checks a string against the metadata to determine if it describes a named column.
+
+        Parameters
+        ----------
+        field_name : :obj:`str`
+            The name of the field to check against the list of named column datasets.
+
+        Returns
+        -------
+        out : :obj:`bool`
+            ``True`` if ``field_name`` describes a named column, else ``False``.
+        """
         particle_name = self._particle_dataset.group_name
         particle_metadata = getattr(
             self._particle_dataset.metadata, f"{particle_name}_properties"
@@ -472,6 +778,19 @@ class _SWIFTGroupDatasetHelper(object):
         return particle_metadata.named_columns[field_path] is not None
 
     def _apply_data_mask(self, data: cosmo_array) -> cosmo_array:
+        """
+        Used internally to apply existing masks on reading new data.
+
+        Parameters
+        ----------
+        data : :class:`~swiftsimio.objects.cosmo_array`
+            The data to mask.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The data with any masks applied.
+        """
         if self._swiftgalaxy._extra_mask is not None:
             mask = getattr(
                 self._swiftgalaxy._extra_mask, self._particle_dataset.group_name
@@ -481,6 +800,17 @@ class _SWIFTGroupDatasetHelper(object):
         return data
 
     def _mask_dataset(self, mask: slice) -> None:
+        """
+        Apply a mask to this data set.
+
+        Intended for internal use.
+
+        Parameters
+        ----------
+        mask : :obj:`slice`
+            The mask to apply to all data arrays managed by this
+            :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`.
+        """
         # Users are cautioned against calling this function directly!
         # Use SWIFTGalaxy.mask_particles instead.
         particle_name = self._particle_dataset.group_name
@@ -530,6 +860,25 @@ class _SWIFTGroupDatasetHelper(object):
         return
 
     def _apply_transforms(self, data: cosmo_array, dataset_name: str) -> cosmo_array:
+        """
+        Used internally to apply existing coordinate transforms on reading new data.
+
+        Checks whether the input dataset_name is in the list of datasets that need
+        to have coordinate transformation (either coordinate-like or velocity-like)
+        and applies the transformations as needed.
+
+        Parameters
+        ----------
+        data : :class:`~swiftsimio.objects.cosmo_array`
+            The data to (potentially) transform.
+        dataset_name : :obj:`str`
+            The name of the dataset contained in ``data``.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The data with any required transformations applied.
+        """
         if dataset_name in self._swiftgalaxy.transforms_like_coordinates:
             transform_units = self._swiftgalaxy.metadata.units.length
             transform = self._swiftgalaxy._coordinate_like_transform
@@ -950,6 +1299,18 @@ class _SWIFTGroupDatasetHelper(object):
         )
 
     def _mask_derived_coordinates(self, mask: slice) -> None:
+        """
+        Apply a mask to the internally maintained derived coordinates.
+
+        Intended for internal use. If the user applies a mask we don't need to
+        re-evaluate the derived coordinates but just apply the mask.
+
+        Parameters
+        ----------
+        mask : :obj:`slice`
+            Mask to apply to the derived coordinates maintained by this
+            :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`.
+        """
         if self._spherical_coordinates is not None:
             for coord in ("r", "theta", "phi"):
                 self._spherical_coordinates[f"_{coord}"] = self._spherical_coordinates[
@@ -973,6 +1334,10 @@ class _SWIFTGroupDatasetHelper(object):
         return
 
     def _void_derived_coordinates(self) -> None:
+        """
+        Reset internal references to spherical/cylindrical coordinates to None (e.g.
+        because they are no longer valid).
+        """
         self._spherical_coordinates = None
         self._cylindrical_coordinates = None
         self._spherical_velocities = None
@@ -1047,20 +1412,6 @@ class SWIFTGalaxy(SWIFTDataset):
     default: ``None``
         Another :class:`~swiftgalaxy.reader.SWIFTGalaxy` to copy the coordinate frame
         (centre and rotation) and velocity coordinate frame (boost and rotation) from.
-
-    _spatial_mask : :class:`~swiftsimio.masks.SWIFTMask` (optional), default: ``None``
-        Directly set the spatial mask (intended for internal use only).
-
-    _extra_mask : :class:`~swiftgalaxy.masks.MaskCollection` (optional), default: ``None``
-        Directly set the extra mask (intended for internal use only).
-
-    _coordinate_like_transform : :class:`~numpy.ndarray` (optional), default: ``None``
-        Directly set the internal representation of the coordinate frame translations
-        and rotations (intended for internal use only).
-
-    _velocity_like_transform : :class:`~numpy.ndarray` (optional), default: ``None``
-        Directly set the internal representation of the velocity frame boosts and
-        rotations (intended for internal use only).
 
     See Also
     --------
@@ -1373,15 +1724,53 @@ class SWIFTGalaxy(SWIFTDataset):
         return sg
 
     def __str__(self) -> str:
+        """
+        Get a string representation of the object (noting location of the snapshot file).
+
+        Returns
+        -------
+        out : :obj:`str`
+            The string representation.
+        """
         return f"SWIFTGalaxy at {self.snapshot_filename}."
 
     def __repr__(self) -> str:
+        """
+        Get a string representation of the object (noting location of the snapshot file).
+
+        Returns
+        -------
+        out : :obj:`str`
+            The string representation.
+        """
         return self.__str__()
 
     def __getitem__(self, mask_collection: MaskCollection) -> "SWIFTGalaxy":
+        """
+        Apply a mask to the :class:`~swiftgalaxy.reader.SWIFTGalaxy` with square-bracket
+        notation.
+
+        To ensure internal consistency this requires producing a full ("deep") copy of
+        the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object and all of its contents (but
+        data is masked at copy time to avoid unnecessary memory overhead).
+
+        Parameters
+        ----------
+        mask_collection : :class:`swiftgalaxy.masks.MaskCollection`
+            The mask to apply to the :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+        """
         return self._data_copy(mask_collection=mask_collection)
 
     def __copy__(self) -> "SWIFTGalaxy":
+        """
+        Create a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` without copying
+        data (a "shallow" copy).
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object.
+        """
         sg = self._copyinit(
             self.snapshot_filename,
             self.halo_catalogue,
@@ -1399,9 +1788,41 @@ class SWIFTGalaxy(SWIFTDataset):
         return sg
 
     def __deepcopy__(self, memo: Optional[dict] = None) -> "SWIFTGalaxy":
+        """
+        Create a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` including copying
+        data (a "deep" copy).
+
+        Parameters
+        ----------
+        memo : :obj:`dict` (optional), default: ``None``
+            For the copy operation to keep a record of already copied objects.
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object.
+        """
         return self._data_copy()
 
-    def _data_copy(self, mask_collection: Optional[MaskCollection] = None):
+    def _data_copy(
+        self, mask_collection: Optional[MaskCollection] = None
+    ) -> "SWIFTGalaxy":
+        """
+        Create a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` including copying
+        data (a "deep" copy).
+
+        Parameters
+        ----------
+        mask_collection : :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
+        default: ``None``
+            Copy only the subset of the data corresponding to the ``mask_collection``.
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            A (possibly masked) copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            object.
+        """
         sg = self._copyinit(
             deepcopy(self.snapshot_filename),
             self.halo_catalogue,
@@ -1474,6 +1895,22 @@ class SWIFTGalaxy(SWIFTDataset):
         return sg
 
     def __getattribute__(self, attr: str) -> Any:
+        """
+        Get an attribute of the object.
+
+        Redirects requests for datasets to the corresponding :mod:`swiftgalaxy` helper
+        classes.
+
+        Parameters
+        ----------
+        attr : :obj:`str`
+            The name of the attribute.
+
+        Returns
+        -------
+        out : :obj:`object`
+            The value of the attribute.
+        """
         # __getattr__ is only checked if the attribute is not found
         # __getattribute__ is checked promptly
         # Note always use super().__getattribute__(...)
@@ -1492,6 +1929,18 @@ class SWIFTGalaxy(SWIFTDataset):
                 return super().__getattribute__(attr)
 
     def __setattr__(self, attr: str, value: Any) -> None:
+        """
+        Set an attribute of the object.
+
+        Redirects setting attributes to the helper objects when relevant.
+
+        Parameters
+        ----------
+        attr : :obj:`str`
+            Name of the attribute.
+        value : :obj:`object`
+            The value to assign to the attribute.
+        """
         if (not hasattr(self, "_initialised")) or (
             attr not in self.metadata.present_group_names
         ):
@@ -1535,6 +1984,20 @@ class SWIFTGalaxy(SWIFTDataset):
         return
 
     def _transform(self, transform4: cosmo_array, boost: bool = False) -> None:
+        """
+        Apply a 4x4 transformation matrix to either the spatial or velocity coordinates.
+
+        For internal use, users should use :meth:`translate`, :meth:`boost` or
+        :meth:`rotate` methods as approprirate instead.
+
+        Parameters
+        ----------
+        transform4 : :class:`~numpy.ndarray`
+            The transformation to be applied.
+        boost : :obj:`bool`
+            If ``True``, translate the velocity coordinates, else translate the spatial
+            coordinates.
+        """
         # assumes that the input transformation has compatible implicit units, so not
         # intended for users
         transformable = (
@@ -1559,6 +2022,20 @@ class SWIFTGalaxy(SWIFTDataset):
             self.wrap_box()
 
     def _translate(self, translation: cosmo_array, boost: bool = False) -> None:
+        """
+        Apply a translation to either the spatial or velocity coordinates.
+
+        For internal use, users should use :meth:`translate` or :meth:`boost` as
+        approprirate instead.
+
+        Parameters
+        ----------
+        translation : :class:`~swiftsimio.objects.cosmo_array`
+            The translation to be applied.
+        boost : :obj:`bool`
+            If ``True``, translate the velocity coordinates, else translate the spatial
+            coordinates.
+        """
         translatable = (
             self.transforms_like_velocities
             if boost
@@ -1594,6 +2071,15 @@ class SWIFTGalaxy(SWIFTDataset):
 
     @property
     def centre(self) -> cosmo_array:
+        """
+        The current origin of the coordinate reference frame with respect to the native
+        simulation coordinate reference frame.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The origin of the coordinate reference frame.
+        """
         transform_units = self.metadata.units.length
         transform = np.linalg.inv(self._coordinate_like_transform)
         return _apply_4transform(
@@ -1611,6 +2097,15 @@ class SWIFTGalaxy(SWIFTDataset):
 
     @property
     def velocity_centre(self) -> cosmo_array:
+        """
+        The current origin of the velocity reference frame with respect to the native
+        simulation velocity reference frame.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The origin of the velocity reference frame.
+        """
         transform_units = self.metadata.units.length / self.metadata.units.time
         transform = np.linalg.inv(self._velocity_like_transform)
         return _apply_4transform(
@@ -1628,6 +2123,14 @@ class SWIFTGalaxy(SWIFTDataset):
 
     @property
     def rotation(self) -> Rotation:
+        """
+        The current rotation of the coordinate frame.
+
+        Returns
+        -------
+        out : :class:`scipy.spatial.transform.Rotation`
+            The current rotation.
+        """
         return Rotation.from_matrix(self._coordinate_like_transform[:3, :3])
 
     def translate(self, translation: cosmo_array) -> None:
@@ -1783,16 +2286,46 @@ class SWIFTGalaxy(SWIFTDataset):
         return
 
     def _append_to_coordinate_like_transform(self, transform: np.ndarray) -> None:
+        """
+        Add a new transformation to the sequence of transformations for the spatial-like
+        coordinates.
+
+        The cumulative transformation is stored as a single 4x4 transformation matrix,
+        so we update the current transformation using a dot product. This voids any
+        derived (spherical/cylindrical) coordinates.
+
+        Parameters
+        ----------
+        transform : :class:`~numpy.ndarray`
+            The transform to add to the cumulative coordinate transformation.
+        """
         self._coordinate_like_transform = self._coordinate_like_transform.dot(transform)
         self._void_derived_coordinates()
         return
 
     def _append_to_velocity_like_transform(self, transform: np.ndarray) -> None:
+        """
+        Add a new transformation to the sequence of transformations for the velocity-like
+        coordinates.
+
+        The cumulative transformation is stored as a single 4x4 transformation matrix,
+        so we update the current transformation using a dot product. This voids any
+        derived (spherical/cylindrical) coordinates.
+
+        Parameters
+        ----------
+        transform : :class:`~numpy.ndarray`
+            The transform to add to the cumulative velocity transformation.
+        """
         self._velocity_like_transform = self._velocity_like_transform.dot(transform)
         self._void_derived_coordinates()
         return
 
     def _void_derived_coordinates(self) -> None:
+        """
+        Reset internal references to spherical/cylindrical coordinates to None (e.g.
+        because they are no longer valid).
+        """
         # Transforming implies conversion back to cartesian, it's therefore
         # cheaper to just delete any non-cartesian coordinates when a
         # transform occurs and lazily re-calculate them as needed.
