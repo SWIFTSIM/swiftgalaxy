@@ -284,6 +284,12 @@ class _HaloCatalogue(ABC):
             )
 
     def _check_multi(self) -> None:
+        """
+        Determine whether the catalogue interface is in multi-galaxy mode.
+
+        Checks whether there is more than one object of interest and set state
+        variables accordingly during initialization.
+        """
         if self._index_attr is None:
             # for now this means we're in Standalone
             if self._centre.ndim > 1:
@@ -738,6 +744,26 @@ class SOAP(_HaloCatalogue):
         return sm
 
     def _generate_bound_only_mask(self, sg: "SWIFTGalaxy") -> MaskCollection:
+        """
+        Evaluate the mask for spatially selected particles to gravitationally bound
+        particles.
+
+        SOAP stores the halo catalogue index (e.g. from HBT+) that each particle
+        is associated with. Check what halo catalogue index the object of interest
+        is and use this to define the mask.
+
+        Parameters
+        ----------
+        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
+            interface is associated to.
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.masks.MaskCollection`
+            The mask object that selects bound particles from the spatially-masked
+            set of particles.
+        """
         # The halo_catalogue_index is the index into the full (HBT+ not SOAP) catalogue;
         # this is what group_nr_bound matches against.
         masks = MaskCollection(
@@ -1030,6 +1056,27 @@ class Velociraptor(_HaloCatalogue):
         )
 
     def _generate_bound_only_mask(self, sg: "SWIFTGalaxy") -> MaskCollection:
+        """
+        Evaluate the mask for spatially selected particles to gravitationally bound
+        particles.
+
+        Velociraptor stores a list of particle IDs that belong to each bound object.
+        The :mod:`velociraptor` package provides tools to read these and evaluate the
+        mask for us, so we just call the relevant function from that package for each
+        particle type.
+
+        Parameters
+        ----------
+        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
+            interface is associated to.
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.masks.MaskCollection`
+            The mask object that selects bound particles from the spatially-masked
+            set of particles.
+        """
         from velociraptor.swift.swift import generate_bound_mask
 
         return MaskCollection(
@@ -1054,6 +1101,18 @@ class Velociraptor(_HaloCatalogue):
 
     @property
     def _region_centre(self) -> cosmo_array:
+        """
+        Centre(s) of the bounding box regions for spatial masking.
+
+        Velociraptor stores the "default" centre coordinates in the ``x``, ``y`` and
+        ``z`` attributes of the ``self._particles``, retrieve these for the object(s)
+        of interest.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The coordinates of the centres of the spatial mask regions.
+        """
         length_factor = (
             self._particles[0].groups_instance.catalogue.units.a
             if not self._particles[0].groups_instance.catalogue.units.comoving
@@ -1090,6 +1149,19 @@ class Velociraptor(_HaloCatalogue):
 
     @property
     def _region_aperture(self) -> cosmo_array:
+        """
+        Half-length(s) of the bounding box regions for spatial masking.
+
+        Velociraptor stores the maximum radius of any bound particle with respect to the
+        ``x``, ``y`` and ``z`` centre as the ``r_size``. Use this to define the bounding
+        box for spatial masking.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The half-length of the bounding box to use to construct the spatial mask
+            regions.
+        """
         length_factor = (
             self._particles[0].groups_instance.catalogue.units.a
             if not self._particles[0].groups_instance.catalogue.units.comoving
@@ -1461,6 +1533,28 @@ class Caesar(_HaloCatalogue):
         return sm
 
     def _generate_bound_only_mask(self, sg: "SWIFTGalaxy") -> MaskCollection:
+        """
+        Evaluate the mask for spatially selected particles to gravitationally bound
+        particles.
+
+        Caesar stores the starts and ends of ranges containing the particles belonging
+        to each object. We define a function that can efficiently (CPU efficient, at
+        the cost of memory efficiency) check which particles are in any of the specified
+        ranges and use it to evaluate the masks.
+
+        Parameters
+        ----------
+        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
+            interface is associated to.
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.masks.MaskCollection`
+            The mask object that selects bound particles from the spatially-masked
+            set of particles.
+        """
+
         def in_one_of_ranges(
             ints: NDArray[np.int_],
             int_ranges: NDArray[np.int_],
@@ -1558,6 +1652,17 @@ class Caesar(_HaloCatalogue):
 
     @property
     def _region_centre(self) -> cosmo_array:
+        """
+        Centre(s) of the bounding box regions for spatial masking.
+
+        Caesar stores the "default" centre coordinates in the ``pos`` attribute of
+        the catalogue, retrieve this for the object(s) of interest.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The coordinates of the centres of the spatial mask regions.
+        """
         # return a centre for the spatial region
         cats = [self._catalogue] if not self._multi_galaxy else self._catalogue
         assert isinstance(cats, List)  # placate mypy
@@ -1578,6 +1683,21 @@ class Caesar(_HaloCatalogue):
 
     @property
     def _region_aperture(self) -> cosmo_array:
+        """
+        Half-length(s) of the bounding box regions for spatial masking.
+
+        Caesar stores the maximum radius of any particle from the ``pos`` centre in
+        the ``radii.total_rmax`` attribute of the catalogue, retrieve this for the
+        object(s) of interest. In older versions of Caesar this field may not be
+        present, in this case warn the user before resorting to reading the entire
+        snapshot volume.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The half-length of the bounding box to use to construct the spatial mask
+            regions.
+        """
         cats = [self._catalogue] if not self._multi_galaxy else self._catalogue
         assert isinstance(cats, List)  # placate mypy
         # return a size for the spatial region
@@ -1893,10 +2013,36 @@ class Standalone(_HaloCatalogue):
         return sm
 
     def _generate_bound_only_mask(self, sg: "SWIFTGalaxy") -> MaskCollection:
+        """
+        The :class:`~swiftgalaxy.halo_catalogues.Standalone` class has no intrinsic
+        notion of a bound object, so this function is implemented only to be able to
+        instantiate an object of this class. It just raises an exception if called.
+
+        Parameters
+        ----------
+        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
+            interface is associated to.
+
+        Raises
+        ------
+        NotImplementedError : always raised if this function is called.
+        """
         raise NotImplementedError  # guarded in initialization, should not reach here
 
     @property
     def _region_centre(self) -> cosmo_array:
+        """
+        Centre(s) of the bounding box regions for spatial masking.
+
+        The :class:`~swiftgalaxy.halo_catalogues.Standalone` class requires the user
+        to define a centre (or centres) at initialization, return these.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The coordinates of the centres of the spatial mask regions.
+        """
         # return a centre for the spatial region
         if self._multi_galaxy_mask_index is None:
             return self._centre
@@ -1905,6 +2051,19 @@ class Standalone(_HaloCatalogue):
 
     @property
     def _region_aperture(self) -> cosmo_array:
+        """
+        Half-length(s) of the bounding box regions for spatial masking.
+
+        The :class:`~swiftgalaxy.halo_catalogues.Standalone` class expects the user to
+        define a region of interest at initialization, retrieve this to define the
+        spatial masking region if they did (else read the whole snapshot volume).
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The half-length of the bounding box to use to construct the spatial mask
+            regions.
+        """
         # return a size for the spatial region
         if self._user_spatial_offsets is not None:
             if self._multi_galaxy_mask_index is None:
