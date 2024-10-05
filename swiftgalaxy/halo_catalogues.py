@@ -330,8 +330,6 @@ class _HaloCatalogue(ABC):
         out : :obj:`object`
             The requested attribute.
         """
-        # Invoked if attribute not found.
-        # Use to expose the masked catalogue.
         if attr == "_catalogue":  # guard infinite recursion
             try:
                 return object.__getattribute__(self, "_catalogue")
@@ -764,8 +762,6 @@ class SOAP(_HaloCatalogue):
             The mask object that selects bound particles from the spatially-masked
             set of particles.
         """
-        # The halo_catalogue_index is the index into the full (HBT+ not SOAP) catalogue;
-        # this is what group_nr_bound matches against.
         masks = MaskCollection(
             **{
                 group_name: getattr(
@@ -822,7 +818,17 @@ class SOAP(_HaloCatalogue):
         return obj.squeeze()
 
     def __repr__(self) -> str:
-        # Expose the catalogue __repr__ for interactive use.
+        """
+        Expose the catalogue ``__repr__`` for interactive use.
+
+        Delegates creating a string representation to the internal
+        :class:`~swiftsimio.reader.SWIFTDataset` holding the SOAP data.
+
+        Returns
+        -------
+        out : :obj:`str`
+            The string representation of the catalogue.
+        """
         return self._catalogue.__repr__()
 
 
@@ -1092,6 +1098,16 @@ class Velociraptor(_HaloCatalogue):
 
     @property
     def halo_index(self) -> Union[List[int], int]:
+        """
+        The index (or indices in multi-galaxy mode when no mask is active) of the
+        objects of interest in the halo catalogue. This is just the position in the
+        arrays stored in the Velociraptor catalogue files.
+
+        Returns
+        -------
+        out : :obj:`int` or :obj:`list`
+            The index or indices of the object(s) of interest in the halo catalogue.
+        """
         # a bit of logic to placate mypy
         index = self._mask_index()
         if index is not None:
@@ -1318,7 +1334,18 @@ class Velociraptor(_HaloCatalogue):
             return vcentre.squeeze()
 
     def __repr__(self) -> str:
-        # Expose the catalogue __repr__ for interactive use.
+        """
+        Expose the catalogue ``__repr__`` for interactive use.
+
+        Delegates creating a string representation to the internal
+        :class:`~velociraptor.catalogue.catalogue.Catalogue` holding the Velociraptor
+        data.
+
+        Returns
+        -------
+        out : :obj:`str`
+            The string representation of the catalogue.
+        """
         return self._catalogue.__repr__()
 
 
@@ -1643,6 +1670,17 @@ class Caesar(_HaloCatalogue):
 
     @property
     def group_index(self) -> Union[List[int], int]:
+        """
+        The index (or indices in multi-galaxy mode when no mask is active) of the
+        objects of interest in the halo catalogue. This is just the position in the
+        arrays stored in the Caesar halo or galaxy lists (according to the ``group_type``
+        given at initialization).
+
+        Returns
+        -------
+        out : :obj:`int` or :obj:`list`
+            The index or indices of the object(s) of interest in the halo catalogue.
+        """
         # a bit of logic to placate mypy
         index = self._mask_index()
         if index is not None:
@@ -1663,7 +1701,6 @@ class Caesar(_HaloCatalogue):
         out : :class:`~swiftsimio.objects.cosmo_array`
             The coordinates of the centres of the spatial mask regions.
         """
-        # return a centre for the spatial region
         cats = [self._catalogue] if not self._multi_galaxy else self._catalogue
         assert isinstance(cats, List)  # placate mypy
         if self._multi_galaxy_mask_index is None:
@@ -1700,7 +1737,6 @@ class Caesar(_HaloCatalogue):
         """
         cats = [self._catalogue] if not self._multi_galaxy else self._catalogue
         assert isinstance(cats, List)  # placate mypy
-        # return a size for the spatial region
         if "total_rmax" in cats[0].radii.keys():
             # spatial extent information is present
             if self._multi_galaxy_mask_index is None:
@@ -1750,6 +1786,16 @@ class Caesar(_HaloCatalogue):
         return set()
 
     def _mask_catalogue(self) -> Union["CaesarHalo", "CaesarGalaxy"]:
+        """
+        Helper to select an item from the Caesar lists.
+
+        If in multi-galaxy mode and not currently masked this is an error.
+
+        Returns
+        -------
+        out : :class:`~caesar.loader.Halo` or :class:`~caesar.loader.Galaxy`
+            The item from the caesar list selected by the mask.
+        """
         if self._multi_galaxy and self._multi_galaxy_mask_index is not None:
             cat = self._catalogue[self._multi_galaxy_mask_index]
         elif self._multi_galaxy and self._multi_galaxy_mask_index is None:
@@ -1823,8 +1869,27 @@ class Caesar(_HaloCatalogue):
         return vcentre
 
     def __getattr__(self, attr: str) -> Any:
-        # Invoked if attribute not found.
-        # Use to expose the masked catalogue.
+        """
+        Exposes the masked halo catalogue.
+
+        Invoked only if the attribute is not found on the interface class (it is then
+        assumed to be a request for a halo catalogue property and delegated). If in
+        multi-galaxy mode and not currently masked, use a comprehension to return the
+        list of properties, Caesar-style.
+
+        Note that :class:`~swiftgalaxy.reader.Caesar`'s ``__getattr__`` overrides
+        the ``__getattr__`` from :class:`~swiftgalaxy.reader._HaloCatalogue`.
+
+        Parameters
+        ----------
+        attr : :obj:`str`
+            The name of the requested attribute.
+
+        Returns
+        -------
+        out : :obj:`object`
+            The requested attribute.
+        """
         if attr == "_catalogue":  # guard infinite recursion
             try:
                 return object.__getattribute__(self, "_catalogue")
@@ -1838,6 +1903,17 @@ class Caesar(_HaloCatalogue):
             return getattr(self._catalogue, attr)
 
     def __repr__(self) -> str:
+        """
+        Expose the catalogue ``__repr__`` for interactive use.
+
+        Delegates creating a string repreesntation to the internal
+        :class:`~caesar.loader.CAESAR` holding the Caesar data.
+
+        Returns
+        -------
+        out : :obj:`str`
+            The string representation of the catalogue.
+        """
         return self._catalogue.__repr__()
 
 
@@ -2043,7 +2119,6 @@ class Standalone(_HaloCatalogue):
         out : :class:`~swiftsimio.objects.cosmo_array`
             The coordinates of the centres of the spatial mask regions.
         """
-        # return a centre for the spatial region
         if self._multi_galaxy_mask_index is None:
             return self._centre
         else:
@@ -2064,7 +2139,6 @@ class Standalone(_HaloCatalogue):
             The half-length of the bounding box to use to construct the spatial mask
             regions.
         """
-        # return a size for the spatial region
         if self._user_spatial_offsets is not None:
             if self._multi_galaxy_mask_index is None:
                 return np.repeat(
