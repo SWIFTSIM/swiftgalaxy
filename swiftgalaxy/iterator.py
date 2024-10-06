@@ -120,17 +120,58 @@ class SWIFTGalaxies:
     catalogue is initialized with multiple target objects, (ii) the data to be used needs
     to be specified with the ``preload`` argument and (iii) the
     :class:`~swiftgalaxy.iterator.SWIFTGalaxies` class provides an iteration method
-    (``__iter__``). For example:
+    (``__iter__``), and determines its own iteration order. For example:
 
     ::
 
-        ...
+        from swiftgalaxy import SWIFTGalaxies, SOAP
+        sgs = SWIFTGalaxies(
+            "snapshot.hdf5",
+            SOAP(
+                "soap.hdf5",
+                soap_index=[0, 123, 456],  # multiple target indices
+            ),
+            preload={
+                        "gas.element_abundances.carbon",
+                        "dark_matter.coordinates",
+                        "stars.velocities",
+                    },
+        )
+        iteration_order = sgs.iteration_order  # be aware of the order of iteration
+        for sg in sgs:
+            # some analysis involving the pre-loaded data fields goes here:
+            sg.element_abundances.carbon
+            sg.dark_matter.coordinates
+            sg.stars.velocities
 
     Alternatively the ``map`` method can be used to apply a function to all of the
     :class:`~swiftgalaxy.reader.SWIFTGalaxy`'s created by this class. For example:
 
     ::
-        ...
+        from swiftgalaxy import SWIFTGalaxies, SOAP
+        sgs = SWIFTGalaxies(
+            "snapshot.hdf5",
+            SOAP(
+                "soap.hdf5",
+                soap_index=[0, 123, 456],  # multiple target indices
+            ),
+            preload={
+                        "gas.element_abundances.carbon",
+                        "dark_matter.coordinates",
+                        "stars.velocities",
+                    },
+        )
+
+        def analysis(sg):
+            # this function can also have additional args & kwargs, if needed
+            # it should only access the pre-loaded data fields
+            sg.element_abundances.carbon
+            sg.dark_matter.coordinates
+            sg.stars.velocities
+            return sg.element_abundances.carbon.mean()
+
+        # map accepts arguments `args` and `kwargs`, passed through to function, if needed
+        result = sgs.map(analysis)
     """
 
     count: int
