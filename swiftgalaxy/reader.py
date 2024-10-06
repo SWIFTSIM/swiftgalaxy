@@ -1370,16 +1370,16 @@ class SWIFTGalaxy(SWIFTDataset):
     snapshot_filename : :obj:`str`
         Name of file containing snapshot.
 
-    halo_catalogue : :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
-        A halo_catalogue instance from :mod:`swiftgalaxy.halo_catalogues`, e.g. a
+    halo_catalogue : :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue` (optional), \
+    default: ``None``
+        A halo catalogue instance from :mod:`swiftgalaxy.halo_catalogues`, e.g. a
         :class:`swiftgalaxy.halo_catalogues.SOAP` instance.
 
-    auto_recentre : :obj:`bool`, default: ``True``
+    auto_recentre : :obj:`bool` (optional), default: ``True``
         If ``True``, the coordinate system will be automatically recentred on
-        the position *and* velocity centres defined by the ``halo_catalogue``.
+        the position and velocity centres defined by the ``halo_catalogue``.
 
-    transforms_like_coordinates : :obj:`set` containing :obj:`str`s, \
-    default: ``set()``
+    transforms_like_coordinates : :obj:`set` (optional), default: ``set()``
         Names of fields that behave as spatial coordinates. It is assumed that
         these exist for all present particle types. When the coordinate system
         is rotated or translated, the associated arrays will be transformed
@@ -1387,8 +1387,7 @@ class SWIFTGalaxy(SWIFTDataset):
         in the ``coordinates_dataset_name`` parameter) is implicitly assumed to
         behave as spatial coordinates.
 
-    transforms_like_velocities : :obj:`set` containing :obj:`str`s, \
-    default: ``set()``
+    transforms_like_velocities : :obj:`set` (optional), default: ``set()``
         Names of fields that behave as velocities. It is assumed that these
         exist for all present particle types. When the coordinate system is
         rotated or boosted, the associated arrays will be transformed
@@ -1396,15 +1395,15 @@ class SWIFTGalaxy(SWIFTDataset):
         in the ``velocities_dataset_name`` parameter) is implicitly assumed to
         behave as velocities.
 
-    id_particle_dataset_name : :obj:`str`, default: ``'particle_ids'``
+    id_particle_dataset_name : :obj:`str` (optional), default: ``"particle_ids"``
         Name of the dataset containing the particle IDs, assumed to be the same
         for all present particle types.
 
-    coordinates_dataset_name : :obj:`str`, default: ``'velocities'``
+    coordinates_dataset_name : :obj:`str` (optional), default: ``"velocities"``
         Name of the dataset containing the particle spatial coordinates,
         assumed to be the same for all present particle types.
 
-    velocities_dataset_name : :obj:`str`, default: ``'velocities'``
+    velocities_dataset_name : :obj:`str` (optional), default: ``"velocities"``
         Name of the dataset containing the particle velocities, assumed to be
         the same for all present particle types.
 
@@ -1482,7 +1481,7 @@ class SWIFTGalaxy(SWIFTDataset):
     """
 
     snapshot_filename: str
-    halo_catalogue: _HaloCatalogue
+    halo_catalogue: Optional[_HaloCatalogue]
     transforms_like_coordinates: Set[str]
     transforms_like_velocities: Set[str]
     id_particle_dataset_name: str
@@ -1494,7 +1493,7 @@ class SWIFTGalaxy(SWIFTDataset):
     def __init__(
         self,
         snapshot_filename: str,
-        halo_catalogue: _HaloCatalogue,
+        halo_catalogue: Optional[_HaloCatalogue],
         auto_recentre: bool = True,
         transforms_like_coordinates: Set[str] = set(),
         transforms_like_velocities: Set[str] = set(),
@@ -1505,11 +1504,11 @@ class SWIFTGalaxy(SWIFTDataset):
     ):
         self._particle_dataset_helpers = dict()
         self.snapshot_filename = snapshot_filename
-        self.halo_catalogue: _HaloCatalogue = halo_catalogue
-        self.transforms_like_coordinates: Set[str] = {coordinates_dataset_name}.union(
+        self.halo_catalogue = halo_catalogue
+        self.transforms_like_coordinates = {coordinates_dataset_name}.union(
             transforms_like_coordinates
         )
-        self.transforms_like_velocities: Set[str] = {velocities_dataset_name}.union(
+        self.transforms_like_velocities = {velocities_dataset_name}.union(
             transforms_like_velocities
         )
         self.id_particle_dataset_name = id_particle_dataset_name
@@ -1609,7 +1608,7 @@ class SWIFTGalaxy(SWIFTDataset):
                 **{k: None for k in self.metadata.present_group_names}
             )
 
-        if auto_recentre:
+        if auto_recentre and self.halo_catalogue is not None:
             self.recentre(self.halo_catalogue.centre)
             self.recentre_velocity(self.halo_catalogue.velocity_centre)
 
@@ -1621,7 +1620,7 @@ class SWIFTGalaxy(SWIFTDataset):
     def _copyinit(
         cls,
         snapshot_filename: str,
-        halo_catalogue: _HaloCatalogue,
+        halo_catalogue: Optional[_HaloCatalogue],
         auto_recentre: bool = True,
         transforms_like_coordinates: Set[str] = set(),
         transforms_like_velocities: Set[str] = set(),
@@ -1644,7 +1643,8 @@ class SWIFTGalaxy(SWIFTDataset):
         snapshot_filename : :obj:`str`
             Name of file containing snapshot.
 
-        halo_catalogue : :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+        halo_catalogue : :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue` \
+        (optional), default: ``None``
             A halo_catalogue instance from :mod:`swiftgalaxy.halo_catalogues`, e.g. a
             :class:`swiftgalaxy.halo_catalogues.SOAP` instance.
 
@@ -1825,7 +1825,7 @@ class SWIFTGalaxy(SWIFTDataset):
         """
         sg = self._copyinit(
             deepcopy(self.snapshot_filename),
-            self.halo_catalogue,
+            deepcopy(self.halo_catalogue),
             auto_recentre=False,  # transforms overwritten below
             transforms_like_coordinates=deepcopy(self.transforms_like_coordinates),
             transforms_like_velocities=deepcopy(self.transforms_like_velocities),
