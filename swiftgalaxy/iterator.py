@@ -31,6 +31,7 @@ class SWIFTGalaxies:
     occupy common top-level cells and only reading the data once.
 
     There are two important consequences to be aware of:
+
      - The iteration order is not controlled by the user because it must be chosen to
        group objects in the same top-level cell(s) together. The iteration order is
        available as the :attr:`iteration_order` attribute of a
@@ -148,6 +149,7 @@ class SWIFTGalaxies:
     :class:`~swiftgalaxy.reader.SWIFTGalaxy`'s created by this class. For example:
 
     ::
+
         from swiftgalaxy import SWIFTGalaxies, SOAP
         sgs = SWIFTGalaxies(
             "snapshot.hdf5",

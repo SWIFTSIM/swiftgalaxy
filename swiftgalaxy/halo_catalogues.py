@@ -1403,7 +1403,7 @@ class Caesar(_HaloCatalogue):
     -----
 
     .. note::
-        :mod:`loader.CAESAR` only supports index access to catalogue lists, not
+        :class:`~loader.CAESAR` only supports index access to catalogue lists, not
         identifier access. This means that the ``group_index`` is simply the
         position of the object of interest in the catalogue list.
 
@@ -1793,7 +1793,7 @@ class Caesar(_HaloCatalogue):
 
         Returns
         -------
-        out : :class:`~caesar.loader.Halo` or :class:`~caesar.loader.Galaxy`
+        out : :class:`~loader.Halo` or :class:`~loader.Galaxy`
             The item from the caesar list selected by the mask.
         """
         if self._multi_galaxy and self._multi_galaxy_mask_index is not None:
@@ -1907,7 +1907,7 @@ class Caesar(_HaloCatalogue):
         Expose the catalogue ``__repr__`` for interactive use.
 
         Delegates creating a string repreesntation to the internal
-        :class:`~caesar.loader.CAESAR` holding the Caesar data.
+        :class:`~loader.CAESAR` holding the Caesar data.
 
         Returns
         -------

@@ -16,3 +16,4 @@ Submodules
    swiftgalaxy.halo_catalogues
    swiftgalaxy.masks
    swiftgalaxy.reader
+   swiftgalaxy.iterator
