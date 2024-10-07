@@ -347,6 +347,13 @@ class _SWIFTNamedColumnDatasetHelper(object):
             # we're dealing with one of the named columns
             if getattr(named_column_dataset, f"_{attr}") is None:
                 # going to read from file: apply masks, transforms
+                if particle_dataset_helper._swiftgalaxy._warn_on_read:
+                    warn(
+                        f"Reading {attr} from snapshot file, this may be unintended "
+                        "(should it be preloaded if using SWIFTGalaxies to iterate over "
+                        "objects of interest?",
+                        UserWarning,
+                    )
                 data = getattr(named_column_dataset, attr)  # raw data loaded
                 data = particle_dataset_helper._apply_data_mask(data)
                 data = particle_dataset_helper._apply_transforms(
@@ -632,6 +639,13 @@ class _SWIFTGroupDatasetHelper(object):
                 ]
             # otherwise we're dealing with a particle data table
             if getattr(particle_dataset, f"_{attr}") is None:
+                if object.__getattribute__(self, "_swiftgalaxy")._warn_on_read:
+                    warn(
+                        f"Reading {attr} from snapshot file, this may be unintended "
+                        "(should it be preloaded if using SWIFTGalaxies to iterate over "
+                        "objects of interest?",
+                        UserWarning,
+                    )
                 # going to read from file: apply masks, transforms
                 data = getattr(particle_dataset, attr)  # raw data loaded
                 data = object.__getattribute__(self, "_apply_data_mask")(data)
@@ -1487,8 +1501,10 @@ class SWIFTGalaxy(SWIFTDataset):
     id_particle_dataset_name: str
     coordinates_dataset_name: str
     velocities_dataset_name: str
+    _initialized: bool
     _spatial_mask: SWIFTMask
     _extra_mask: Optional[MaskCollection]
+    _warn_on_read: bool
 
     def __init__(
         self,
@@ -1612,7 +1628,8 @@ class SWIFTGalaxy(SWIFTDataset):
             self.recentre(self.halo_catalogue.centre)
             self.recentre_velocity(self.halo_catalogue.velocity_centre)
 
-        self._initialised: bool = True
+        self._warn_on_read = False
+        self._initialised = True
 
         return
 
@@ -1632,6 +1649,7 @@ class SWIFTGalaxy(SWIFTDataset):
         _extra_mask: Optional[MaskCollection] = None,
         _coordinate_like_transform: Optional[np.ndarray] = None,
         _velocity_like_transform: Optional[np.ndarray] = None,
+        _warn_on_read: bool = False,
     ):
         """
         For internal use in copying a :class:`SWIFTGalaxy`.
@@ -1701,6 +1719,10 @@ class SWIFTGalaxy(SWIFTDataset):
         _velocity_like_transform : :class:`~numpy.ndarray` (optional), default: ``None``
             Directly set the internal representation of the velocity frame boosts and
             rotations (intended for internal use only).
+
+        _warn_on_read : :obj:`bool` (optional), default: ``False``
+            If ``True``, warn the user when data is read from disk (e.g. should have been
+            included in ``preload`` when using ``SWIFTGalaxies``.
         """
         sg = cls.__new__(cls)
         sg._spatial_mask = _spatial_mask
@@ -1709,6 +1731,7 @@ class SWIFTGalaxy(SWIFTDataset):
             sg._coordinate_like_transform = _coordinate_like_transform
         if _velocity_like_transform is not None:
             sg._velocity_like_transform = _velocity_like_transform
+        sg._warn_on_read = _warn_on_read
         SWIFTGalaxy.__init__(
             sg,
             snapshot_filename,
@@ -1721,6 +1744,7 @@ class SWIFTGalaxy(SWIFTDataset):
             velocities_dataset_name=velocities_dataset_name,
             coordinate_frame_from=coordinate_frame_from,
         )
+        sg._warn_on_read = _warn_on_read  # was set False in __init__ so do this after
         return sg
 
     def __str__(self) -> str:
@@ -1784,6 +1808,7 @@ class SWIFTGalaxy(SWIFTDataset):
             _extra_mask=self._extra_mask,
             _coordinate_like_transform=self._coordinate_like_transform,
             _velocity_like_transform=self._velocity_like_transform,
+            _warn_on_read=self._warn_on_read,
         )
         return sg
 
@@ -1836,6 +1861,7 @@ class SWIFTGalaxy(SWIFTDataset):
             _extra_mask=deepcopy(self._extra_mask),
             _coordinate_like_transform=deepcopy(self._coordinate_like_transform),
             _velocity_like_transform=deepcopy(self._velocity_like_transform),
+            _warn_on_read=deepcopy(self._warn_on_read),
         )
         for particle_name in sg.metadata.present_group_names:
             particle_metadata = getattr(sg.metadata, f"{particle_name}_properties")

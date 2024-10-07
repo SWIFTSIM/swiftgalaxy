@@ -11,6 +11,7 @@ import unyt as u
 from swiftsimio import mask, cosmo_array
 from .reader import SWIFTGalaxy
 from .halo_catalogues import _HaloCatalogue
+from warnings import warn
 
 from typing import Optional, Set, Any, List, Callable, Dict, Tuple, Generator
 from swiftsimio.masks import SWIFTMask
@@ -198,6 +199,12 @@ class SWIFTGalaxies:
                 "halo_catalogue target list is not iterable, create halo_catalogue with "
                 "an iterable list of targets even if there is only one (or use "
                 "SWIFTGalaxy instead of SWIFTGalaxies)."
+            )
+        if len(preload) == 0:
+            warn(
+                "No data specified to preload, this probably defeats the purpose of using"
+                " SWIFTGalaxies for iteration!",
+                UserWarning,
             )
         self.halo_catalogue = halo_catalogue
         self.snapshot_filename = snapshot_filename
@@ -513,6 +520,7 @@ class SWIFTGalaxies:
             velocities_dataset_name=self.velocities_dataset_name,
             _spatial_mask=region_mask,
             _extra_mask=None,
+            _warn_on_read=True,
         )
         return
 
