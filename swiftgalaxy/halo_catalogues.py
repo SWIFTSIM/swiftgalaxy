@@ -12,7 +12,7 @@ abstract
 
 from warnings import warn
 from abc import ABC, abstractmethod
-from collections.abc import Collection
+from collections.abc import Sequence
 import numpy as np
 import unyt as u
 from swiftsimio import SWIFTMask, SWIFTDataset, mask
@@ -126,6 +126,10 @@ class _HaloCatalogue(ABC):
     ) -> None:
         self.extra_mask = extra_mask
         self._check_multi()
+        if self._index_attr is not None and self._multi_galaxy:
+            catalogue_indices = getattr(self, self._index_attr)
+            if len(set(catalogue_indices)) < len(catalogue_indices):
+                raise ValueError(f"{self._index_attr[1:]} must not contain duplicates.")
         self._load()
         return
 
@@ -300,7 +304,7 @@ class _HaloCatalogue(ABC):
                 self._multi_count = 1
         else:
             index = getattr(self, self._index_attr)
-            if isinstance(index, Collection):
+            if isinstance(index, Sequence):
                 self._multi_galaxy = True
                 if not isinstance(index, int):  # placate mypy
                     self._multi_count = len(index)
@@ -527,8 +531,9 @@ class SOAP(_HaloCatalogue):
     ----------
     soap_file : :obj:`str`, default: ``None``
         The filename of a SOAP catalogue file, possibly including the path.
-    soap_index : :obj:`int`, default: ``None``
+    soap_index : :obj:`int` or :obj:`list`, default: ``None``
         The position (row) in the SOAP catalogue corresponding to the object of interest.
+        Duplicate entries are not allowed.
     extra_mask : :obj:`str` or :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
     default: ``"bound_only"``
         Mask to apply to particles after spatial masking. If ``"bound_only"``,
@@ -590,7 +595,7 @@ class SOAP(_HaloCatalogue):
     """
 
     soap_file: str
-    _soap_index: Union[int, Collection[int]]
+    _soap_index: Union[int, Sequence[int]]
     centre_type: str
     velocity_centre_type: str
     _catalogue: SWIFTDataset
@@ -599,7 +604,7 @@ class SOAP(_HaloCatalogue):
     def __init__(
         self,
         soap_file: Optional[str] = None,
-        soap_index: Optional[Union[int, Collection[int]]] = None,
+        soap_index: Optional[Union[int, Sequence[int]]] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "input_halos.halo_centre",
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
@@ -654,6 +659,30 @@ class SOAP(_HaloCatalogue):
             return index
         else:
             raise ValueError("SOAP definition of _index_attr unset!")
+
+    def _mask_multi_galaxy(self, index) -> None:
+        """
+        Switch on restricting the catalogue to a single row.
+
+        Used when the halo catalogue interface is in multi-galaxy mode (when
+        iterating over many :class:`~swiftgalaxy.reader.SWIFTGalaxy`'s) to
+        restrict the catalogue to a single row, for use during one such iteration.
+
+        Because :mod:`swiftsimio`'s masking used to mask the SOAP catalogue does not
+        respect the ordering of selected items, :class:`~swiftgalaxy.halo_catalogues.SOAP`
+        needs its own implementation of this function to mask the correct row.
+
+        Parameters
+        ----------
+        index : :obj:`int`
+            The position in the input list of selected catalogue objects to mask down to.
+
+        See Also
+        --------
+        swiftgalaxy.halo_catalogues._HaloCatalogue._unmask_multi_galaxy
+        """
+        self._multi_galaxy_mask_index = np.argsort(self._soap_index)[index]
+        return
 
     @property
     def _region_centre(self) -> cosmo_array:
@@ -861,8 +890,9 @@ class Velociraptor(_HaloCatalogue):
         and `{halos}.catalog_groups` files, respectively. Provide this or
         `velociraptor_filebase`, not both.
 
-    halo_index : :obj:`int`
-        Position of the object of interest in the catalogue arrays.
+    halo_index : :obj:`int` or :obj:`list`
+        Position(s) of the object(s) of interest in the catalogue arrays. In the case
+        of multiple objects, duplicate entries are not allowed.
 
     extra_mask : :obj:`str` or :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
     default: ``"bound_only"``
@@ -952,7 +982,7 @@ class Velociraptor(_HaloCatalogue):
 
     velociraptor_filebase: str
     velociraptor_files: Dict[str, str]
-    _halo_index: Union[int, Collection[int]]
+    _halo_index: Union[int, Sequence[int]]
     centre_type: str
     velocity_centre_type: str
     _catalogue: "VelociraptorCatalogue"
@@ -962,7 +992,7 @@ class Velociraptor(_HaloCatalogue):
         self,
         velociraptor_filebase: Optional[str] = None,
         velociraptor_files: Optional[dict] = None,
-        halo_index: Optional[Union[int, Collection[int]]] = None,
+        halo_index: Optional[Union[int, Sequence[int]]] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "minpot",  # _gas _star mbp minpot
         custom_spatial_offsets: Optional[cosmo_array] = None,
@@ -1014,7 +1044,7 @@ class Velociraptor(_HaloCatalogue):
             )
 
         self._catalogue: "VelociraptorCatalogue" = load_catalogue(
-            self.velociraptor_files["properties"], mask=self._halo_index
+            self.velociraptor_files["properties"], mask=np.array(self._halo_index)
         )
         groups = load_groups(
             self.velociraptor_files["catalog_groups"],
@@ -1372,7 +1402,8 @@ class Caesar(_HaloCatalogue):
         The category of the object of interest, either ``"halo"`` or ``"galaxy"``.
 
     group_index : :obj:`int`
-        Position of the object of interest in the catalogue arrays.
+        Position(s) of the object(s) of interest in the catalogue arrays. In the case
+        of multiple objects, duplicate entries are not allowed.
 
     centre_type : :obj:`str` (optional), default: ``"minpot"``
         Type of centre, chosen from those provided by :mod:`caesar`.
@@ -1456,7 +1487,7 @@ class Caesar(_HaloCatalogue):
 
     caesar_file: Optional[str]
     group_type: str
-    _group_index: Union[int, Collection[int]]
+    _group_index: Union[int, Sequence[int]]
     centre_type: str
     velocity_centre_type: str
     _catalogue: Union[
@@ -1468,7 +1499,7 @@ class Caesar(_HaloCatalogue):
         self,
         caesar_file: Optional[str] = None,
         group_type: Optional[str] = None,  # halos galaxies
-        group_index: Optional[Union[int, Collection[int]]] = None,
+        group_index: Optional[Union[int, Sequence[int]]] = None,
         centre_type: str = "minpot",  # "" "minpot"
         extra_mask: Union[str, MaskCollection] = "bound_only",
         custom_spatial_offsets: Optional[cosmo_array] = None,

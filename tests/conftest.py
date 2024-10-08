@@ -587,7 +587,7 @@ def hf_multi(request):
             velocity_centre=cosmo_array(
                 [
                     [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
-                    [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                    [vcentre_2 + 1.0, vcentre_2 + 1.0, vcentre_2 + 1.0],
                 ],
                 u.km / u.s,
                 comoving=True,

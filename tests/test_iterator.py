@@ -224,3 +224,42 @@ class TestSWIFTGalaxies:
                 getattr(getattr(sgs._server, ptype)._particle_dataset, f"_{field}")
                 is not None
             )
+
+    def test_map(self, toysnap_withfof, hf_multi):
+        sgs = SWIFTGalaxies(
+            (
+                toysoap_virtual_snapshot_filename
+                if isinstance(hf_multi, SOAP)
+                else toysnap_filename
+            ),
+            hf_multi,
+        )
+
+        def f(sg):
+            if isinstance(hf_multi, Standalone):
+                return int(
+                    np.argwhere(
+                        np.all(
+                            sg.halo_catalogue.centre == sg.halo_catalogue._centre,
+                            axis=1,
+                        )
+                    ).squeeze()
+                )
+            # _index_attr has leading underscore, access through property with [1:]
+            return getattr(sg.halo_catalogue, sg.halo_catalogue._index_attr[1:])
+
+        if (np.diff(sgs.iteration_order) == 1).all():
+            # if we iterate in order success is trivial, ensure that we don't:
+            sgs._solution["regions"] = sgs._solution["regions"][::-1]
+            sgs._solution["region_target_indices"] = sgs._solution[
+                "region_target_indices"
+            ][::-1]
+        # double-check that success won't be trivial:
+        assert not (np.diff(sgs.iteration_order) == 1).all()
+        # check that map returns results ordered in input order
+        if isinstance(hf_multi, Standalone):
+            assert sgs.map(f) == [0, 1]
+            return
+        assert sgs.map(f) == getattr(
+            sgs.halo_catalogue, sgs.halo_catalogue._index_attr[1:]
+        )

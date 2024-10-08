@@ -647,8 +647,7 @@ class SWIFTGalaxies:
             of interest, in the same order as the objects of interest were passed to the
             halo finder interface.
         """
-        result = list()
-        for sg in self:
-            result.append(func(sg, *args, **kwargs))
-        result[:] = [result[i] for i in self.iteration_order]
+        result = [None] * len(self.iteration_order)  # empty list for results
+        for i, sg in enumerate(self):
+            result[self.iteration_order[i]] = func(sg, *args, **kwargs)
         return result

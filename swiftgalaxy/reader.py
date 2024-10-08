@@ -292,7 +292,7 @@ class _SWIFTNamedColumnDatasetHelper(object):
         self._particle_dataset_helper: "_SWIFTGroupDatasetHelper" = (
             particle_dataset_helper
         )
-        self._initialised: bool = True
+        self._initialised = True
         return
 
     def __str__(self) -> str:
@@ -347,7 +347,10 @@ class _SWIFTNamedColumnDatasetHelper(object):
             # we're dealing with one of the named columns
             if getattr(named_column_dataset, f"_{attr}") is None:
                 # going to read from file: apply masks, transforms
-                if particle_dataset_helper._swiftgalaxy._warn_on_read:
+                if (
+                    hasattr(particle_dataset_helper._swiftgalaxy, "_initialised")
+                    and particle_dataset_helper._swiftgalaxy._warn_on_read
+                ):
                     warn(
                         f"Reading {attr} from snapshot file, this may be unintended "
                         "(should it be preloaded if using SWIFTGalaxies to iterate over "
@@ -580,7 +583,7 @@ class _SWIFTGroupDatasetHelper(object):
         self._cylindrical_coordinates: Optional[dict] = None
         self._spherical_velocities: Optional[dict] = None
         self._cylindrical_velocities: Optional[dict] = None
-        self._initialised: bool = True
+        self._initialised = True
         return
 
     def __str__(self) -> str:
@@ -639,7 +642,12 @@ class _SWIFTGroupDatasetHelper(object):
                 ]
             # otherwise we're dealing with a particle data table
             if getattr(particle_dataset, f"_{attr}") is None:
-                if object.__getattribute__(self, "_swiftgalaxy")._warn_on_read:
+                if (
+                    hasattr(
+                        object.__getattribute__(self, "_swiftgalaxy"), "_initialised"
+                    )
+                    and object.__getattribute__(self, "_swiftgalaxy")._warn_on_read
+                ):
                     warn(
                         f"Reading {attr} from snapshot file, this may be unintended "
                         "(should it be preloaded if using SWIFTGalaxies to iterate over "
@@ -1629,6 +1637,8 @@ class SWIFTGalaxy(SWIFTDataset):
             self.recentre_velocity(self.halo_catalogue.velocity_centre)
 
         self._warn_on_read = False
+        # probably better to set False above and True here, then check value rather
+        # than existence elsewhere:
         self._initialised = True
 
         return
