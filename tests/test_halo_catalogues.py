@@ -232,7 +232,7 @@ class TestHaloCataloguesMulti:
         Check that the multi-target nature of the cataloue is recognized.
         """
         assert hf_multi._multi_galaxy
-        assert hf_multi._multi_galaxy_mask_index is None
+        assert hf_multi._multi_galaxy_catalogue_mask is None
         assert hf_multi._multi_count == 2
         assert hf_multi.count == 2
 
@@ -240,7 +240,7 @@ class TestHaloCataloguesMulti:
         """
         Check that we can mask the catalogue to focus on one object, and unmask.
         """
-        assert hf_multi._multi_galaxy_mask_index is None
+        assert hf_multi._multi_galaxy_catalogue_mask is None
         assert hf_multi.count > 1
         assert hf_multi._region_centre.shape == (hf_multi.count, 3)
         assert hf_multi._region_aperture.shape == (hf_multi.count,)
@@ -248,14 +248,14 @@ class TestHaloCataloguesMulti:
         assert hf_multi.velocity_centre.shape == (hf_multi.count, 3)
         mask_index = 0
         hf_multi._mask_multi_galaxy(mask_index)
-        assert hf_multi._multi_galaxy_mask_index == mask_index
+        assert hf_multi._multi_galaxy_catalogue_mask == mask_index
         assert hf_multi.count == 1
         assert hf_multi._region_centre.shape == (3,)
         assert hf_multi._region_aperture.shape == tuple()
         assert hf_multi.centre.shape == (3,)
         assert hf_multi.velocity_centre.shape == (3,)
         hf_multi._unmask_multi_galaxy()
-        assert hf_multi._multi_galaxy_mask_index is None
+        assert hf_multi._multi_galaxy_catalogue_mask is None
         assert hf_multi.count > 1
         assert hf_multi._region_centre.shape == (hf_multi.count, 3)
         assert hf_multi._region_aperture.shape == (hf_multi.count,)

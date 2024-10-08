@@ -18,6 +18,10 @@ from swiftsimio import mask
 class TestSWIFTGalaxies:
 
     def test_eval_sparse_optimized_solution(self, toysnap):
+        """
+        Check that the sparse solution is chosen when optimal and matches expectations
+        for a case that we can work out by hand.
+        """
         # place a single target in the centre of each cell
         # this should make sparse iteration optimal
         # at a cost of 2 cell reads
@@ -86,6 +90,10 @@ class TestSWIFTGalaxies:
                 )
 
     def test_eval_dense_optimized_solution(self, toysnap):
+        """
+        Check that the dense solution is chosen when optimal and matches expectations
+        for a case that we can work out by hand.
+        """
         # Place a single target in the centre of each cell
         # and ones straddling many faces, vertices and corners
         # this should make dense iteration optimal
@@ -183,6 +191,10 @@ class TestSWIFTGalaxies:
                 )
 
     def test_iteration_order(self, sgs):
+        """
+        Check that the iteration order agrees with that computed in the two iteration
+        optimizations.
+        """
         # force dense solution
         sgs._solution = sgs._dense_optimized_solution
         assert np.allclose(
@@ -199,6 +211,10 @@ class TestSWIFTGalaxies:
         )
 
     def test_iterate(self, sgs):
+        """
+        Check that we iterate over the right number of SWIFTGalaxy objects and that
+        they behave like a SWIFTGalaxy created on its own for each target.
+        """
         count = 0
         for sg_from_sgs in sgs:
             sg = SWIFTGalaxy(
@@ -217,6 +233,9 @@ class TestSWIFTGalaxies:
 
     @pytest.mark.parametrize("extra_mask", ["bound_only", None])
     def test_preload(self, toysnap_withfof, hf_multi, extra_mask):
+        """
+        Make sure that data that we ask to have pre-loaded is actually pre-loaded.
+        """
         hf_multi.extra_mask = extra_mask
         sgs = SWIFTGalaxies(
             (
@@ -225,7 +244,7 @@ class TestSWIFTGalaxies:
                 else toysnap_filename
             ),
             hf_multi,
-            preload={  # just to keep warnings quiet
+            preload={
                 "gas.particle_ids",
                 "dark_matter.particle_ids",
                 "stars.particle_ids",
@@ -243,7 +262,45 @@ class TestSWIFTGalaxies:
                 is not None
             )
 
+    def test_warn_on_no_preload(self, toysnap):
+        """
+        Check that we warn users if they don't specify anything to pre-load since this
+        probably indicates that they're using the SWIFTGalaxies class inefficiently.
+        """
+        with pytest.warns(RuntimeWarning, match="No data specified to preload"):
+            SWIFTGalaxies(
+                toysnap_filename,
+                ToyHF(index=[0, 1]),
+            )
+
+    def test_warn_on_read_not_preloaded(self, sgs):
+        """
+        Check that we warn users when data is loaded while iterating over a SWIFTGalaxies
+        since this probably indicates that they're using the class inefficiently.
+        """
+        assert "gas.coordinates" not in sgs.preload
+        for sg in sgs:
+            with pytest.warns(RuntimeWarning, match="should it be preloaded"):
+                sg.gas.coordinates
+
+    def test_exception_on_repeated_targets(self, toysnap):
+        """
+        Due to especially swiftsimio's masking behaviour having duplicate targets in the
+        list for a SWIFTGalaxies causes all kinds of problems, so make sure we raise an
+        exception if a user tries to do this.
+        """
+        with pytest.raises(ValueError, match="must not contain duplicates"):
+            SWIFTGalaxies(
+                toysnap_filename,
+                ToyHF(index=[0, 0]),
+            )
+
     def test_map(self, toysnap_withfof, hf_multi):
+        """
+        Check that the map method returns results in the same order as the input target
+        list. We're careful in this test to make sure that the iteration order is
+        different from the input list order.
+        """
         sgs = SWIFTGalaxies(
             (
                 toysoap_virtual_snapshot_filename
@@ -287,3 +344,71 @@ class TestSWIFTGalaxies:
         assert sgs.map(f) == getattr(
             sgs.halo_catalogue, sgs.halo_catalogue._index_attr[1:]
         )
+
+    def test_arbitrary_index_ordering(self, toysnap_withfof, hf_multi):
+        """
+        Check that SWIFTGalaxies gives consistent results for any order of target objects.
+
+        Especially important for velociraptor where some logic had to be added to avoid
+        hdf5 complaining about an unsorted list of indices to read from file.
+        """
+
+        def f(sg):
+            if isinstance(hf_multi, Standalone):
+                return int(
+                    np.argwhere(
+                        np.all(
+                            sg.halo_catalogue.centre == sg.halo_catalogue._centre,
+                            axis=1,
+                        )
+                    ).squeeze()
+                )
+            # _index_attr has leading underscore, access through property with [1:]
+            return getattr(sg.halo_catalogue, sg.halo_catalogue._index_attr[1:])
+
+        sgs_forwards = SWIFTGalaxies(
+            (
+                toysoap_virtual_snapshot_filename
+                if isinstance(hf_multi, SOAP)
+                else toysnap_filename
+            ),
+            hf_multi,
+            preload={  # just to keep warnings quiet
+                "gas.particle_ids",
+                "dark_matter.particle_ids",
+                "stars.particle_ids",
+                "black_holes.particle_ids",
+            },
+        )
+        map_forwards = sgs_forwards.map(f)
+        if isinstance(hf_multi, Standalone):
+            hf_multi._centre = hf_multi._centre[::-1]
+            hf_multi._velocity_centre = hf_multi._velocity_centre[::-1]
+        else:
+            setattr(
+                hf_multi,
+                hf_multi._index_attr,
+                getattr(hf_multi, hf_multi._index_attr)[::-1],
+            )
+        sgs_backwards = SWIFTGalaxies(
+            (
+                toysoap_virtual_snapshot_filename
+                if isinstance(hf_multi, SOAP)
+                else toysnap_filename
+            ),
+            hf_multi,
+            preload={  # just to keep warnings quiet
+                "gas.particle_ids",
+                "dark_matter.particle_ids",
+                "stars.particle_ids",
+                "black_holes.particle_ids",
+            },
+        )
+        map_backwards = sgs_backwards.map(f)
+        if isinstance(hf_multi, Standalone):
+            # because the reversed catalogue compares to the reversed catalogue in f,
+            # we get the reverse-of-the-reverse in map_backwards, which should match
+            # map_forwards
+            assert map_forwards == map_backwards
+            return
+        assert map_forwards == map_backwards[::-1]
