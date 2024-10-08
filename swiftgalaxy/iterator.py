@@ -146,8 +146,9 @@ class SWIFTGalaxies:
             sg.dark_matter.coordinates
             sg.stars.velocities
 
-    Alternatively the ``map`` method can be used to apply a function to all of the
-    :class:`~swiftgalaxy.reader.SWIFTGalaxy`'s created by this class. For example:
+    Alternatively the :meth:`~swiftgalaxy.iterator.SWIFTGalaxies.map` method can be used
+    to apply a function to all of the :class:`~swiftgalaxy.reader.SWIFTGalaxy`'s created
+    by this class. For example:
 
     ::
 
@@ -628,7 +629,8 @@ class SWIFTGalaxies:
         The function to be evaluated should expect a
         :class:`~swiftgalaxy.reader.SWIFTGalaxy` (from those to be iterated over) as its
         first argument. It may accept additional arguments and/or keyword arguments
-        that can be passed
+        that can be passed to map as a :obj:`tuple` of arguments and a :obj:`dict`
+        of keyword arguments
 
         Currently this function only executes serially but adding a parallel execution
         option, and further support for parallelization in analysis, is a high priority.
@@ -637,11 +639,16 @@ class SWIFTGalaxies:
         ----------
         func : callable
             The function to be evaluated.
-        args : :obj:`tuple`
+        args : :obj:`tuple` (optional), default: ``tuple()``
             Additional arguments to the function to be evaluated (the first argument is
             always the current :class:`~swiftgalaxy.reader.SWIFTGalaxy` in the iteration).
-        kwargs : :obj:`dict`
-            Keyword arguments to pass to the function to be evaluated.
+            Even a single argument should be packaged in a :obj:`tuple`, for example
+            ``args=(my_argument, )``, or for multiple arguments
+            ``args=(first_arg, second_arg)``.
+        kwargs : :obj:`dict` (optional), default: ``dict()``
+            Keyword arguments to pass to the function to be evaluated. Dictionary keys are
+            the names of the keyword arguments and the corresponding dictionary values are
+            the values of the keyword arguments. For example ``kwargs=dict(my_kwarg=0)``.
 
         Returns
         -------
