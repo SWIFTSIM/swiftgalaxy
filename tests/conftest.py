@@ -78,6 +78,12 @@ def sgs(request):
         ToyHF(index=[0, 1]),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
+        preload={  # just to keep warnings quiet
+            "gas.particle_ids",
+            "dark_matter.particle_ids",
+            "stars.particle_ids",
+            "black_holes.particle_ids",
+        },
     )
     remove_toysnap()
 
@@ -154,6 +160,12 @@ def sgs_soap():
         ),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
+        preload={  # just to keep warnings quiet
+            "gas.particle_ids",
+            "dark_matter.particle_ids",
+            "stars.particle_ids",
+            "black_holes.particle_ids",
+        },
     )
 
     remove_toysnap()
@@ -186,6 +198,12 @@ def sgs_vr():
         Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[0, 1]),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
+        preload={  # just to keep warnings quiet
+            "gas.particle_ids",
+            "dark_matter.particle_ids",
+            "stars.particle_ids",
+            "black_holes.particle_ids",
+        },
     )
 
     remove_toysnap()
@@ -220,6 +238,12 @@ def sgs_caesar(request):
         ),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
+        preload={  # just to keep warnings quiet
+            "gas.particle_ids",
+            "dark_matter.particle_ids",
+            "stars.particle_ids",
+            "black_holes.particle_ids",
+        },
     )
 
     remove_toysnap()
@@ -418,6 +442,12 @@ def sgs_sa():
                 cosmo_factor=cosmo_factor(a**1, 1.0),
             ),
         ),
+        preload={  # just to keep warnings quiet
+            "gas.particle_ids",
+            "dark_matter.particle_ids",
+            "stars.particle_ids",
+            "black_holes.particle_ids",
+        },
     )
     remove_toysnap()
 

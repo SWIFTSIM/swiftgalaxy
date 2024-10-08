@@ -98,7 +98,7 @@ def _apply_translation(coords: cosmo_array, offset: cosmo_array) -> cosmo_array:
             if coords.comoving
             else "Translation assumed to be in physical (not comoving) coordinates."
         )
-        warn(msg, category=UserWarning)
+        warn(msg, category=RuntimeWarning)
     return coords + offset
 
 
@@ -355,7 +355,7 @@ class _SWIFTNamedColumnDatasetHelper(object):
                         f"Reading {attr} from snapshot file, this may be unintended "
                         "(should it be preloaded if using SWIFTGalaxies to iterate over "
                         "objects of interest?",
-                        UserWarning,
+                        RuntimeWarning,
                     )
                 data = getattr(named_column_dataset, attr)  # raw data loaded
                 data = particle_dataset_helper._apply_data_mask(data)
@@ -652,7 +652,7 @@ class _SWIFTGroupDatasetHelper(object):
                         f"Reading {attr} from snapshot file, this may be unintended "
                         "(should it be preloaded if using SWIFTGalaxies to iterate over "
                         "objects of interest?",
-                        UserWarning,
+                        RuntimeWarning,
                     )
                 # going to read from file: apply masks, transforms
                 data = getattr(particle_dataset, attr)  # raw data loaded
@@ -2095,7 +2095,7 @@ class SWIFTGalaxy(SWIFTDataset):
             transform4[3, :3] = translation.to_value(transform_units)
             warn(
                 "Translation assumed to be in comoving (not physical) coordinates.",
-                category=UserWarning,
+                category=RuntimeWarning,
             )
         if boost:
             self._append_to_velocity_like_transform(transform4)

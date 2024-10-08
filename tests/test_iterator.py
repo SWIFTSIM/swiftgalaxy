@@ -43,6 +43,12 @@ class TestSWIFTGalaxies:
                     cosmo_factor=cosmo_factor(a**1, 1.0),
                 ),
             ),
+            preload={  # just to keep warnings quiet
+                "gas.particle_ids",
+                "dark_matter.particle_ids",
+                "stars.particle_ids",
+                "black_holes.particle_ids",
+            },
         )
         sparse_solution = sgs._sparse_optimized_solution
         assert_allclose_units(
@@ -125,6 +131,12 @@ class TestSWIFTGalaxies:
                     cosmo_factor=cosmo_factor(a**1, 1.0),
                 ),
             ),
+            preload={  # just to keep warnings quiet
+                "gas.particle_ids",
+                "dark_matter.particle_ids",
+                "stars.particle_ids",
+                "black_holes.particle_ids",
+            },
         )
         dense_solution = sgs._dense_optimized_solution
         assert_allclose_units(
@@ -213,6 +225,12 @@ class TestSWIFTGalaxies:
                 else toysnap_filename
             ),
             hf_multi,
+            preload={  # just to keep warnings quiet
+                "gas.particle_ids",
+                "dark_matter.particle_ids",
+                "stars.particle_ids",
+                "black_holes.particle_ids",
+            },
         )
         region_mask = mask(toysnap_filename)
         region_mask.constrain_spatial(sgs._solution["regions"][0])
@@ -233,6 +251,12 @@ class TestSWIFTGalaxies:
                 else toysnap_filename
             ),
             hf_multi,
+            preload={  # just to keep warnings quiet
+                "gas.particle_ids",
+                "dark_matter.particle_ids",
+                "stars.particle_ids",
+                "black_holes.particle_ids",
+            },
         )
 
         def f(sg):

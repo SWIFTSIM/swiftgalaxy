@@ -204,7 +204,7 @@ class SWIFTGalaxies:
             warn(
                 "No data specified to preload, this probably defeats the purpose of using"
                 " SWIFTGalaxies for iteration!",
-                UserWarning,
+                RuntimeWarning,
             )
         self.halo_catalogue = halo_catalogue
         self.snapshot_filename = snapshot_filename
@@ -535,9 +535,12 @@ class SWIFTGalaxies:
         for preload_field in self.preload | self.halo_catalogue._get_preload_fields(
             self._server
         ):
+            warning_state = self._server._warn_on_read
+            self._server._warn_on_read = False
             obj = self._server
             for attr in preload_field.split("."):
                 obj = getattr(obj, attr)
+            self._server._warn_on_read = warning_state
         return
 
     def __iter__(self) -> Generator:
