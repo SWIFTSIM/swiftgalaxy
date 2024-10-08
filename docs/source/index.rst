@@ -18,6 +18,7 @@ Documentation contents
    additional_coordinates/index
    halo_catalogues/index
    masking/index
+   iterating/index
    modules/index
 
 Citing SWIFTGalaxy

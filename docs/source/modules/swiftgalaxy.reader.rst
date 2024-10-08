@@ -5,4 +5,4 @@ swiftgalaxy.reader module
    :members:
    :show-inheritance:
    :inherited-members:
-   :private-members: _SWIFTParticleDatasetHelper, _SWIFTNamedColumnDatasetHelper, _CoordinateHelper
+   :private-members: _SWIFTGroupDatasetHelper, _SWIFTNamedColumnDatasetHelper, _CoordinateHelper
