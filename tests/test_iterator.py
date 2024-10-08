@@ -412,3 +412,15 @@ class TestSWIFTGalaxies:
             assert map_forwards == map_backwards
             return
         assert map_forwards == map_backwards[::-1]
+
+    def test_args_kwargs_to_map(self, sgs):
+        """
+        Make sure that we can pass extra args & kwargs to a function given to map.
+        """
+        extra_arg, extra_kwarg = "foo", "bar"
+
+        def f(sg, extra_arg, extra_kwarg=None):
+            return extra_arg, extra_kwarg
+
+        result = sgs.map(f, (extra_arg,), dict(extra_kwarg=extra_kwarg))
+        assert result == [(extra_arg, extra_kwarg)] * sgs.halo_catalogue.count
