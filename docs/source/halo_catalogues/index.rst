@@ -16,11 +16,6 @@ The `SOAP`_ catalogue format is the preferred catalogue format of the `SWIFT com
 
 .. _SWIFT community: https://github.com/SWIFTSIM
 .. _SOAP: https://github.com/SWIFTSIM/SOAP
-.. _load_fof_catalogues: https://github.com/SWIFTSIM/swiftsimio/tree/load_fof_catalogues
-
-.. warning ::
-
-   At the time of writing :mod:`swiftsimio` support for reading SOAP catalogues is functional but still under active development. The ``master`` branch of the :mod:`swiftsimio` repository does not yet allow reading SOAP catalogues. To use :mod:`swiftgalaxy` with SOAP catalogues currently requires installing the `load_fof_catalogues`_ branch of :mod:`swiftsimio`. One way to do this is ``pip install git+https://github.com/SWIFTSIM/swiftsimio.git@load_fof_catalogues``.
 
 Setting up an instance of the helper class is straightforward. We'll assume a SOAP catalogue called :file:`halo_properties_0123.hdf5`, and suppose that we're interested in the first object in the catalogue (row ``0``):
 
