@@ -1,5 +1,5 @@
 pytest
 black[jupyter]
 wily
-velociraptor-python.git
+velociraptor-python
 git+https://github.com/dnarayanan/caesar.git
