@@ -452,8 +452,20 @@ class TestSWIFTGalaxies:
             preload={"black_holes.masses"},  # just keep warnings quiet
         )
         for i, sg in enumerate(sgs):
-            sg_individual = sgs_individual[sgs.iteration_order[i]]
+            sg_single = sgs_individual[sgs.iteration_order[i]]
             assert_allclose_units(
-                sg_individual.halo_catalogue._region_centre,
+                sg_single.halo_catalogue._region_centre,
                 sg.halo_catalogue._region_centre,
+            )
+            assert_allclose_units(
+                sg_single.halo_catalogue.centre,
+                sg.halo_catalogue.centre,
+            )
+            assert_allclose_units(
+                sg_single.halo_catalogue.velocity_centre,
+                sg.halo_catalogue.velocity_centre,
+            )
+            assert_allclose_units(
+                sg_single.halo_catalogue.spherical_overdensity_200_crit.centre_of_mass,
+                sg.halo_catalogue.spherical_overdensity_200_crit.centre_of_mass,
             )
