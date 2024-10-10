@@ -57,6 +57,15 @@ def toysnap_withfof():
 
 
 @pytest.fixture(scope="function")
+def toysoap_with_virtual_snapshot():
+    create_toysoap(create_virtual_snapshot=True)
+
+    yield
+
+    remove_toysoap()
+
+
+@pytest.fixture(scope="function")
 def sg(request):
     create_toysnap()
 

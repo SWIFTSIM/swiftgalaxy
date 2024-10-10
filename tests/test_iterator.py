@@ -7,6 +7,7 @@ from toysnap import (
     ToyHF,
     present_particle_types,
     toysoap_virtual_snapshot_filename,
+    toysoap_filename,
 )
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from swiftgalaxy.reader import SWIFTGalaxy
@@ -424,3 +425,35 @@ class TestSWIFTGalaxies:
 
         result = sgs.map(f, (extra_arg,), dict(extra_kwarg=extra_kwarg))
         assert result == [(extra_arg, extra_kwarg)] * sgs.halo_catalogue.count
+
+    def test_soap_target_order_consistency(
+        self, toysnap_withfof, toysoap_with_virtual_snapshot
+    ):
+        """
+        SOAP implicitly sorts the target mask (when getting things from the catalogue
+        we get them masked in the order that they appear in the catalogue, rather
+        than the order that they appear in the mask - say we ask for items [1, 0]
+        as a mask, we get back those two items in order [0, 1]). This test checks
+        that we get a SWIFTGalaxy from a SWIFTGalaxies that matches the one
+        constructed directly when the targets given to the SWIFTGalaxies are not
+        in the order that they appear in the catalogue.
+        """
+        soaps = [
+            SOAP(soap_file=toysoap_filename, soap_index=0),
+            SOAP(soap_file=toysoap_filename, soap_index=1),
+        ]
+        soap_both = SOAP(soap_file=toysoap_filename, soap_index=[1, 0])
+        sgs_individual = [
+            SWIFTGalaxy(toysoap_virtual_snapshot_filename, soap) for soap in soaps
+        ]
+        sgs = SWIFTGalaxies(
+            toysoap_virtual_snapshot_filename,
+            soap_both,
+            preload={"black_holes.masses"},  # just keep warnings quiet
+        )
+        for i, sg in enumerate(sgs):
+            sg_individual = sgs_individual[sgs.iteration_order[i]]
+            assert_allclose_units(
+                sg_individual.halo_catalogue._region_centre,
+                sg.halo_catalogue._region_centre,
+            )
