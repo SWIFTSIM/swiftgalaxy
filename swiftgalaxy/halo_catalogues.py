@@ -350,8 +350,8 @@ class _HaloCatalogue(ABC):
             except AttributeError:
                 return None
         obj = getattr(self._catalogue, attr)
-        if self._multi_galaxy_catalogue_mask is not None:
-            return _MaskHelper(obj, self._multi_galaxy_catalogue_mask)
+        if self._multi_galaxy_index_mask is not None:
+            return _MaskHelper(obj, self._multi_galaxy_index_mask)
         else:
             return obj
 
@@ -834,8 +834,8 @@ class SOAP(_HaloCatalogue):
         obj = self._catalogue
         for attr in self.centre_type.split("."):
             obj = getattr(obj, attr)
-        if self._multi_galaxy_catalogue_mask is not None:
-            return obj[self._multi_galaxy_catalogue_mask]
+        if self._multi_galaxy_index_mask is not None:
+            return obj[self._multi_galaxy_index_mask]
         return obj.squeeze()
 
     @property
@@ -855,8 +855,8 @@ class SOAP(_HaloCatalogue):
         obj = self._catalogue
         for attr in self.velocity_centre_type.split("."):
             obj = getattr(obj, attr)
-        if self._multi_galaxy_catalogue_mask is not None:
-            return obj[self._multi_galaxy_catalogue_mask]
+        if self._multi_galaxy_index_mask is not None:
+            return obj[self._multi_galaxy_index_mask]
         return obj.squeeze()
 
     def __repr__(self) -> str:
