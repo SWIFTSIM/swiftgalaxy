@@ -292,8 +292,8 @@ class _HaloCatalogue(ABC):
         else:
             index = getattr(self, self._index_attr)
             return (
-                index[self._multi_galaxy_index_mask]
-                if self._multi_galaxy_index_mask is not None
+                index[self._multi_galaxy_catalogue_mask]
+                if self._multi_galaxy_catalogue_mask is not None
                 else index
             )
 
