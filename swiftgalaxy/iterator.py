@@ -658,6 +658,8 @@ class SWIFTGalaxies:
             halo finder interface.
         """
         result = [None] * len(self.iteration_order)  # empty list for results
-        for i, sg in enumerate(self):
-            result[self.iteration_order[i]] = func(sg, *args, **kwargs)
+        for sg in self:
+            result[sg.halo_catalogue._multi_galaxy_catalogue_mask] = func(
+                sg, *args, **kwargs
+            )
         return result
