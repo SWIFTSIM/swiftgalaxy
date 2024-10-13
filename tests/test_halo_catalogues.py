@@ -28,7 +28,7 @@ from toysnap import (
     present_particle_types,
 )
 from swiftgalaxy import SWIFTGalaxy, MaskCollection
-from swiftgalaxy.halo_catalogues import Velociraptor, Caesar, SOAP
+from swiftgalaxy.halo_catalogues import Velociraptor, Caesar, SOAP, Standalone
 from swiftsimio.objects import cosmo_array
 
 abstol_c = 1 * u.pc  # less than this is ~0
@@ -233,6 +233,7 @@ class TestHaloCataloguesMulti:
         """
         assert hf_multi._multi_galaxy
         assert hf_multi._multi_galaxy_catalogue_mask is None
+        assert hf_multi._multi_galaxy_index_mask is None
         assert hf_multi._multi_count == 2
         assert hf_multi.count == 2
 
@@ -241,6 +242,7 @@ class TestHaloCataloguesMulti:
         Check that we can mask the catalogue to focus on one object, and unmask.
         """
         assert hf_multi._multi_galaxy_catalogue_mask is None
+        assert hf_multi._multi_galaxy_index_mask is None
         assert hf_multi.count > 1
         assert hf_multi._region_centre.shape == (hf_multi.count, 3)
         assert hf_multi._region_aperture.shape == (hf_multi.count,)
@@ -248,7 +250,13 @@ class TestHaloCataloguesMulti:
         assert hf_multi.velocity_centre.shape == (hf_multi.count, 3)
         mask_index = 0
         hf_multi._mask_multi_galaxy(mask_index)
-        assert hf_multi._multi_galaxy_catalogue_mask == mask_index
+        assert hf_multi._multi_galaxy_index_mask == mask_index
+        assert (
+            hf_multi._multi_galaxy_catalogue_mask
+            == np.argsort(np.argsort(getattr(hf_multi, hf_multi._index_attr)))[
+                mask_index
+            ]
+        )
         assert hf_multi.count == 1
         assert hf_multi._region_centre.shape == (3,)
         assert hf_multi._region_aperture.shape == tuple()
@@ -256,6 +264,7 @@ class TestHaloCataloguesMulti:
         assert hf_multi.velocity_centre.shape == (3,)
         hf_multi._unmask_multi_galaxy()
         assert hf_multi._multi_galaxy_catalogue_mask is None
+        assert hf_multi._multi_galaxy_index_mask is None
         assert hf_multi.count > 1
         assert hf_multi._region_centre.shape == (hf_multi.count, 3)
         assert hf_multi._region_aperture.shape == (hf_multi.count,)
@@ -364,6 +373,54 @@ class TestHaloCataloguesMulti:
         assert getattr(hf_multi, hf_multi._index_attr[1:]) == [0, 1]
         hf_multi._mask_multi_galaxy(0)
         assert getattr(hf_multi, hf_multi._index_attr[1:]) == 0
+
+    def test_masked_catalogue_matches(self, hf_multi):
+        mask_index = 0
+        init_args = {
+            "extra_mask": hf_multi.extra_mask,
+        }
+        if hf_multi.__class__ != Standalone:
+            init_args[hf_multi._index_attr[1:]] = getattr(
+                hf_multi, hf_multi._index_attr
+            )[mask_index]
+        else:
+            init_args["centre"] = hf_multi._centre
+            init_args["velocity_centre"] = hf_multi._velocity_centre
+        if hasattr(hf_multi, "centre_type"):
+            init_args["centre_type"] = hf_multi.centre_type
+        if hasattr(hf_multi, "velocity_centre_type"):
+            init_args["velocity_centre_type"] = hf_multi.velocity_centre_type
+        if hf_multi.__class__ == Caesar:
+            init_args["group_type"] = hf_multi.group_type
+        init_args[
+            ("custom_" if hf_multi.__class__ != Standalone else "") + "spatial_offsets"
+        ] = hf_multi._user_spatial_offsets
+        if hf_multi.__class__ == SOAP:
+            init_args["soap_file"] = hf_multi.soap_file
+        elif hf_multi.__class__ == Velociraptor:
+            init_args["velociraptor_files"] = hf_multi.velociraptor_files
+        elif hf_multi.__class__ == Caesar:
+            init_args["caesar_file"] = hf_multi.caesar_file
+        hf = hf_multi.__class__(**init_args)
+        hf_multi._mask_multi_galaxy(mask_index)
+        if hf_multi.__class__ == SOAP:
+            assert (
+                hf.bound_subhalo.enclose_radius == hf_multi.bound_subhalo.enclose_radius
+            )
+            assert (
+                hf.bound_subhalo.enclose_radius.shape
+                == hf_multi.bound_subhalo.enclose_radius.shape
+            )
+        elif hf_multi.__class__ == Velociraptor:
+            assert hf_multi.masses.mass_200crit == hf.masses.mass_200crit
+            assert hf_multi.masses.mass_200crit.shape == hf.masses.mass_200crit.shape
+        elif hf_multi.__class__ == Caesar:
+            assert hf_multi.masses["total"] == hf.masses["total"]
+            assert hf_multi.masses["total"].shape == hf.masses["total"].shape
+        elif hf_multi.__class__ == Standalone:
+            pass  # has no catalogue to check
+        else:
+            raise NotImplementedError  # a new class we're not checking
 
 
 class TestVelociraptor:
