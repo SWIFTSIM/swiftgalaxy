@@ -352,9 +352,10 @@ class _SWIFTNamedColumnDatasetHelper(object):
                     and particle_dataset_helper._swiftgalaxy._warn_on_read
                 ):
                     warn(
-                        f"Reading {attr} from snapshot file, this may be unintended "
-                        "(should it be preloaded if using SWIFTGalaxies to iterate over "
-                        "objects of interest?",
+                        f"Reading {particle_dataset_helper.group_name}."
+                        f"{named_column_dataset.name}.{attr} from snapshot file, "
+                        "this may be unintended (should it be preloaded if using "
+                        "SWIFTGalaxies to iterate over objects of interest?)",
                         RuntimeWarning,
                     )
                 data = getattr(named_column_dataset, attr)  # raw data loaded
@@ -649,9 +650,9 @@ class _SWIFTGroupDatasetHelper(object):
                     and object.__getattribute__(self, "_swiftgalaxy")._warn_on_read
                 ):
                     warn(
-                        f"Reading {attr} from snapshot file, this may be unintended "
-                        "(should it be preloaded if using SWIFTGalaxies to iterate over "
-                        "objects of interest?",
+                        f"Reading {particle_name}.{attr} from snapshot file, this may be "
+                        "unintended (should it be preloaded if using SWIFTGalaxies to "
+                        "iterate over objects of interest?)",
                         RuntimeWarning,
                     )
                 # going to read from file: apply masks, transforms
