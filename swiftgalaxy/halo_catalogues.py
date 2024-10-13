@@ -38,11 +38,11 @@ class _MaskHelper:
     data : :obj:`object`
         The halo catalogue data to be masked.
 
-    mask : :obj:`int`
-        The row or index to select from the data.
+    mask : :obj:`int` or :obj:`slice`
+        The row, index or slice to select from the data.
     """
 
-    def __init__(self, data: u.unyt_array, mask: int):
+    def __init__(self, data: u.unyt_array, mask: Union[int, slice]):
         self._mask_helper_data = data
         self._mask_helper_mask = mask
 
@@ -118,7 +118,7 @@ class _HaloCatalogue(ABC):
     _user_spatial_offsets: Optional[cosmo_array] = None
     _multi_galaxy: bool = False
     _multi_galaxy_catalogue_mask: Optional[int] = None
-    _multi_galaxy_index_mask: Optional[int] = None
+    _multi_galaxy_index_mask: Optional[Union[int, slice]] = None
     _multi_count: int
     _index_attr: Optional[str]
 
@@ -694,7 +694,7 @@ class SOAP(_HaloCatalogue):
         self._multi_galaxy_catalogue_mask = np.argsort(np.argsort(self._soap_index))[
             index
         ]
-        self._multi_galaxy_index_mask = index
+        self._multi_galaxy_index_mask = np.s_[index : index + 1]
         return
 
     @property
