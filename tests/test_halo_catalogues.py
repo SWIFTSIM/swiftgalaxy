@@ -250,18 +250,28 @@ class TestHaloCataloguesMulti:
         assert hf_multi.velocity_centre.shape == (hf_multi.count, 3)
         mask_index = 0
         hf_multi._mask_multi_galaxy(mask_index)
-        assert hf_multi._multi_galaxy_index_mask == mask_index
-        assert (
-            hf_multi._multi_galaxy_catalogue_mask
-            == np.argsort(np.argsort(getattr(hf_multi, hf_multi._index_attr)))[
-                mask_index
-            ]
-        )
+        if isinstance(hf_multi._multi_galaxy_index_mask, int):
+            assert hf_multi._multi_galaxy_index_mask == mask_index
+        elif isinstance(hf_multi._multi_galaxy_index_mask, slice):
+            assert (
+                hf_multi._multi_galaxy_index_mask == np.s_[mask_index : mask_index + 1]
+            )
+        if hf_multi._index_attr is not None:  # skip for Standalone
+            assert (
+                hf_multi._multi_galaxy_catalogue_mask
+                == np.argsort(np.argsort(getattr(hf_multi, hf_multi._index_attr)))[
+                    mask_index
+                ]
+            )
         assert hf_multi.count == 1
         assert hf_multi._region_centre.shape == (3,)
+        if isinstance(hf_multi._multi_galaxy_index_mask, int):
+            assert hf_multi.centre.shape == (3,)
+            assert hf_multi.velocity_centre.shape == (3,)
+        elif isinstance(hf_multi._multi_galaxy_index_mask, slice):
+            assert hf_multi.centre.shape == (1, 3)
+            assert hf_multi.velocity_centre.shape == (1, 3)
         assert hf_multi._region_aperture.shape == tuple()
-        assert hf_multi.centre.shape == (3,)
-        assert hf_multi.velocity_centre.shape == (3,)
         hf_multi._unmask_multi_galaxy()
         assert hf_multi._multi_galaxy_catalogue_mask is None
         assert hf_multi._multi_galaxy_index_mask is None
