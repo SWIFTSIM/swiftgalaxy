@@ -127,10 +127,20 @@ class _HaloCatalogue(ABC):
     ) -> None:
         self.extra_mask = extra_mask
         self._check_multi()
-        if self._index_attr is not None and self._multi_galaxy:
-            catalogue_indices = getattr(self, self._index_attr)
-            if len(set(catalogue_indices)) < len(catalogue_indices):
-                raise ValueError(f"{self._index_attr[1:]} must not contain duplicates.")
+        if self._index_attr is not None:
+            if isinstance(getattr(self, self._index_attr), u.unyt_array):
+                setattr(
+                    self,
+                    self._index_attr,
+                    getattr(self, self._index_attr).to_value(u.dimensionless),
+                )
+            if self._multi_galaxy:
+                if len(set(getattr(self, self._index_attr))) < len(
+                    getattr(self, self._index_attr)
+                ):
+                    raise ValueError(
+                        f"{self._index_attr[1:]} must not contain duplicates."
+                    )
         self._load()
         return
 
@@ -314,7 +324,7 @@ class _HaloCatalogue(ABC):
                 self._multi_count = 1
         else:
             index = getattr(self, self._index_attr)
-            if isinstance(index, Sequence):
+            if isinstance(index, (Sequence, np.ndarray)):
                 self._multi_galaxy = True
                 if not isinstance(index, int):  # placate mypy
                     self._multi_count = len(index)

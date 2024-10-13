@@ -8,11 +8,22 @@ from toysnap import (
     present_particle_types,
     toysoap_virtual_snapshot_filename,
     toysoap_filename,
+    toyvr_filebase,
+    toycaesar_filename,
+    create_toysnap,
+    create_toysoap,
+    create_toyvr,
+    create_toycaesar,
+    remove_toysnap,
+    remove_toysoap,
+    remove_toyvr,
+    remove_toycaesar,
 )
+from conftest import hfs
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from swiftgalaxy.reader import SWIFTGalaxy
 from swiftgalaxy.iterator import SWIFTGalaxies
-from swiftgalaxy.halo_catalogues import Standalone, SOAP
+from swiftgalaxy.halo_catalogues import Standalone, SOAP, Velociraptor, Caesar
 from swiftsimio import mask
 
 
@@ -469,3 +480,59 @@ class TestSWIFTGalaxies:
                 sg_single.halo_catalogue.spherical_overdensity_200_crit.centre_of_mass,
                 sg.halo_catalogue.spherical_overdensity_200_crit.centre_of_mass,
             )
+
+    @pytest.mark.parametrize("hf_type", hfs)
+    def test_halo_catalogue_with_non_list_indices(self, hf_type, toysnap_withfof):
+        """
+        Check if we can initialize a halo_catalogue in multi-galaxy mode with
+        ordered containers that are not a list.
+        """
+        for init_indices in (np.array([0, 1]), u.unyt_array([0, 1], u.dimensionless)):
+            if hf_type == "soap":
+                create_toysoap(create_virtual_snapshot=True)
+                sgs = SWIFTGalaxies(
+                    toysoap_virtual_snapshot_filename,
+                    SOAP(toysoap_filename, soap_index=init_indices),
+                    preload={"gas.masses"},  # just to keep warnings quiet
+                )
+            elif hf_type == "vr":
+                create_toyvr()
+                sgs = SWIFTGalaxies(
+                    toysnap_filename,
+                    Velociraptor(
+                        velociraptor_filebase=toyvr_filebase, halo_index=init_indices
+                    ),
+                    preload={"gas.masses"},
+                )
+            elif hf_type == "caesar_galaxy":
+                create_toycaesar()
+                sgs = SWIFTGalaxies(
+                    toysnap_filename,
+                    Caesar(
+                        toycaesar_filename,
+                        group_type="galaxy",
+                        group_index=init_indices,
+                    ),
+                    preload={"gas.masses"},
+                )
+            elif hf_type == "caesar_halo":
+                create_toycaesar
+                sgs = SWIFTGalaxies(
+                    toysnap_filename,
+                    Caesar(
+                        toycaesar_filename, group_type="halo", group_index=init_indices
+                    ),
+                    preload={"gas.masses"},
+                )
+            elif hf_type == "sa":
+                pass  # doesn't take an index list
+            else:
+                raise NotImplementedError  # a new halo_catalogue that we're not testing
+            for sg in sgs:
+                pass  # just go through the iteration
+            if hf_type == "soap":
+                remove_toysoap()
+            elif hf_type == "vr":
+                remove_toyvr()
+            elif "caesar" in hf_type:
+                remove_toycaesar()
