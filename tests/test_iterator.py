@@ -487,16 +487,27 @@ class TestSWIFTGalaxies:
         Check if we can initialize a halo_catalogue in multi-galaxy mode with
         ordered containers that are not a list.
         """
-        for init_indices in (np.array([0, 1]), u.unyt_array([0, 1], u.dimensionless)):
+        if hf_type == "soap":
+            create_toysoap(create_virtual_snapshot=True)
+        elif hf_type == "vr":
+            create_toyvr()
+        elif "caesar" in hf_type:
+            create_toycaesar()
+        elif hf_type == "sa":
+            return  # doesn't take an index list, nothing to test
+        else:
+            raise NotImplementedError  # a new halo_catalogue that we're not testing
+        for init_indices in (
+            np.array([0, 1], dtype=int),
+            u.unyt_array([0, 1], u.dimensionless, dtype=int),
+        ):
             if hf_type == "soap":
-                create_toysoap(create_virtual_snapshot=True)
                 sgs = SWIFTGalaxies(
                     toysoap_virtual_snapshot_filename,
                     SOAP(toysoap_filename, soap_index=init_indices),
                     preload={"gas.masses"},  # just to keep warnings quiet
                 )
             elif hf_type == "vr":
-                create_toyvr()
                 sgs = SWIFTGalaxies(
                     toysnap_filename,
                     Velociraptor(
@@ -505,7 +516,6 @@ class TestSWIFTGalaxies:
                     preload={"gas.masses"},
                 )
             elif hf_type == "caesar_galaxy":
-                create_toycaesar()
                 sgs = SWIFTGalaxies(
                     toysnap_filename,
                     Caesar(
@@ -516,7 +526,6 @@ class TestSWIFTGalaxies:
                     preload={"gas.masses"},
                 )
             elif hf_type == "caesar_halo":
-                create_toycaesar
                 sgs = SWIFTGalaxies(
                     toysnap_filename,
                     Caesar(
@@ -524,15 +533,11 @@ class TestSWIFTGalaxies:
                     ),
                     preload={"gas.masses"},
                 )
-            elif hf_type == "sa":
-                pass  # doesn't take an index list
-            else:
-                raise NotImplementedError  # a new halo_catalogue that we're not testing
             for sg in sgs:
                 pass  # just go through the iteration
-            if hf_type == "soap":
-                remove_toysoap()
-            elif hf_type == "vr":
-                remove_toyvr()
-            elif "caesar" in hf_type:
-                remove_toycaesar()
+        if hf_type == "soap":
+            remove_toysoap()
+        elif hf_type == "vr":
+            remove_toyvr()
+        elif "caesar" in hf_type:
+            remove_toycaesar()

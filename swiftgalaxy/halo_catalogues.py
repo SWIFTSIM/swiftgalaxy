@@ -132,7 +132,9 @@ class _HaloCatalogue(ABC):
                 setattr(
                     self,
                     self._index_attr,
-                    getattr(self, self._index_attr).to_value(u.dimensionless),
+                    getattr(self, self._index_attr)
+                    .to_value(u.dimensionless)
+                    .astype(int),
                 )
             if self._multi_galaxy:
                 if len(set(getattr(self, self._index_attr))) < len(
