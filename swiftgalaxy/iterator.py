@@ -616,8 +616,8 @@ class SWIFTGalaxies:
     def map(
         self,
         func: Callable,
-        args: Optional[List[Tuple]] = None,
-        kwargs: Optional[List[Dict]] = None,
+        args: Optional[List[Tuple] | Generator[Tuple, None, None]] = None,
+        kwargs: Optional[List[Dict] | Generator[Dict, None, None]] = None,
     ) -> List[Any]:
         """
         Apply a function to each object of interest and return a list of results.
@@ -643,21 +643,21 @@ class SWIFTGalaxies:
         ----------
         func : callable
             The function to be evaluated.
-        args : :obj:`list` (optional), default: ``None``
+        args : :obj:`list` or generator (optional), default: ``None``
             List of additional arguments to the function to be evaluated (the first
             argument is always the current :class:`~swiftgalaxy.reader.SWIFTGalaxy` in the
             iteration). Each item in the list should be a :obj:`tuple` of arguments, with
             one :obj:`tuple` for each galaxy being iterated over. See examples section for
             further details. Generator expressions can also be used to avoid constructing
             the entire list in memory.
-        kwargs : :obj:`list` (optional), default: ``None``
+        kwargs : :obj:`list` or generator (optional), default: ``None``
             List of additional keyword arguments to pass to the function to be evaluated.
             Each item in the list should be a :obj:`dict` of keyword arguments, with one
             :obj:`dict` for each galaxy being iterated over. Dictionary keys are
             the names of the keyword arguments and the corresponding dictionary values are
             the values of the keyword arguments. See examples section for further details.
             Generator expressions can also be used to avoid constructing the entire list
-            in memory
+            in memory.
 
         Returns
         -------
