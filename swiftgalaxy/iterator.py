@@ -668,10 +668,11 @@ class SWIFTGalaxies:
 
         Examples
         --------
-        A simple example that applies a function `dm_median_position` to each galaxy in
-        a list of targets `[11, 22, 33]`:
+        A simple example that applies a function ``dm_median_position`` to each galaxy in
+        a list of targets ``[11, 22, 33]``:
 
         ::
+
             from swiftgalaxy import SWIFTGalaxies, SOAP
 
             # define the function that we will apply to each SWIFTGalaxy object:
@@ -688,14 +689,15 @@ class SWIFTGalaxies:
             )
             my_result = sgs.map(dm_median_position)
 
-        The result stored in `my_result` contains the result of the function for the
-        galaxies at index `11`, `22` and `33`, in the same order as they are given in the
-        `soap_index` list.
+        The result stored in ``my_result`` contains the result of the function for the
+        galaxies at index ``11``, ``22`` and ``33``, in the same order as they are given
+        in the ``soap_index`` list.
 
         This second example shows how to pass extra arguments and/or keyword arguments to
-        the function given to `map`:
+        the function given to ``map``:
 
         ::
+
             from swiftgalaxy import SWIFTGalaxies, SOAP
 
             # define the function that we will apply to each SWIFTGalaxy object:
@@ -742,6 +744,7 @@ class SWIFTGalaxies:
         a tuple, for instance:
 
         ::
+
             args=[
                 (my_extra_arg_for_galaxy_11, ),
                 (my_extra_arg_for_galaxy_22, ),
