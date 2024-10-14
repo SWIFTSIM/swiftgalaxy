@@ -755,10 +755,10 @@ class SWIFTGalaxies:
             args = [tuple()] * len(self.iteration_order)
         if kwargs is None:
             kwargs = [dict()] * len(self.iteration_order)
-        for sg in self:
+        for sg, iteration_location in zip(self, self.iteration_order):
             result[sg.halo_catalogue._multi_galaxy_catalogue_mask] = func(
                 sg,
-                args[sg.halo_catalogue._multi_galaxy_catalogue_mask],
-                kwargs[sg.halo_catalogue._multi_galaxy_catalogue_mask],
+                *args[iteration_location],
+                **kwargs[iteration_location],
             )
         return result
