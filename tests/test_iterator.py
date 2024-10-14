@@ -427,13 +427,14 @@ class TestSWIFTGalaxies:
         """
         Make sure that we can pass extra args & kwargs to a function given to map.
         """
-        extra_arg, extra_kwarg = "foo", "bar"
+        extra_arg = [("foo",), ("bar",)]
+        extra_kwarg = [dict(extra_kwarg="spam"), dict(extra_kwarg="eggs")]
 
         def f(sg, extra_arg, extra_kwarg=None):
             return extra_arg, extra_kwarg
 
-        result = sgs.map(f, (extra_arg,), dict(extra_kwarg=extra_kwarg))
-        assert result == [(extra_arg, extra_kwarg)] * sgs.halo_catalogue.count
+        result = sgs.map(f, args=extra_arg, kwargs=extra_kwarg)
+        assert result == [("foo", "spam"), ("bar", "eggs")]
 
     def test_soap_target_order_consistency(
         self, toysnap_withfof, toysoap_with_virtual_snapshot

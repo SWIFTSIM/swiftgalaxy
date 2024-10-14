@@ -614,7 +614,10 @@ class SWIFTGalaxies:
                 self.halo_catalogue._unmask_multi_galaxy()
 
     def map(
-        self, func: Callable, args: Tuple = tuple(), kwargs: Dict = dict()
+        self,
+        func: Callable,
+        args: Optional[List[Tuple]] = None,
+        kwargs: Optional[List[Dict]] = None,
     ) -> List[Any]:
         """
         Apply a function to each object of interest and return a list of results.
@@ -628,9 +631,10 @@ class SWIFTGalaxies:
 
         The function to be evaluated should expect a
         :class:`~swiftgalaxy.reader.SWIFTGalaxy` (from those to be iterated over) as its
-        first argument. It may accept additional arguments and/or keyword arguments
-        that can be passed to map as a :obj:`tuple` of arguments and a :obj:`dict`
-        of keyword arguments
+        first argument. It may accept lists of additional arguments and/or keyword
+        arguments (with each element corresponding to one entry in the list of target
+        objects) that can be passed to map as a :obj:`tuple` of arguments and a
+        :obj:`dict` of keyword arguments.
 
         Currently this function only executes serially but adding a parallel execution
         option, and further support for parallelization in analysis, is a high priority.
@@ -639,16 +643,21 @@ class SWIFTGalaxies:
         ----------
         func : callable
             The function to be evaluated.
-        args : :obj:`tuple` (optional), default: ``tuple()``
-            Additional arguments to the function to be evaluated (the first argument is
-            always the current :class:`~swiftgalaxy.reader.SWIFTGalaxy` in the iteration).
-            Even a single argument should be packaged in a :obj:`tuple`, for example
-            ``args=(my_argument, )``, or for multiple arguments
-            ``args=(first_arg, second_arg)``.
-        kwargs : :obj:`dict` (optional), default: ``dict()``
-            Keyword arguments to pass to the function to be evaluated. Dictionary keys are
+        args : :obj:`list` (optional), default: ``None``
+            List of additional arguments to the function to be evaluated (the first
+            argument is always the current :class:`~swiftgalaxy.reader.SWIFTGalaxy` in the
+            iteration). Each item in the list should be a :obj:`tuple` of arguments, with
+            one :obj:`tuple` for each galaxy being iterated over. See examples section for
+            further details. Generator expressions can also be used to avoid constructing
+            the entire list in memory.
+        kwargs : :obj:`list` (optional), default: ``None``
+            List of additional keyword arguments to pass to the function to be evaluated.
+            Each item in the list should be a :obj:`dict` of keyword arguments, with one
+            :obj:`dict` for each galaxy being iterated over. Dictionary keys are
             the names of the keyword arguments and the corresponding dictionary values are
-            the values of the keyword arguments. For example ``kwargs=dict(my_kwarg=0)``.
+            the values of the keyword arguments. See examples section for further details.
+            Generator expressions can also be used to avoid constructing the entire list
+            in memory
 
         Returns
         -------
@@ -656,10 +665,98 @@ class SWIFTGalaxies:
             A list containing the return value(s) of the function applied to each object
             of interest, in the same order as the objects of interest were passed to the
             halo finder interface.
+
+        Examples
+        --------
+        A simple example that applies a function `dm_median_position` to each galaxy in
+        a list of targets `[11, 22, 33]`:
+
+        ::
+            from swiftgalaxy import SWIFTGalaxies, SOAP
+
+            # define the function that we will apply to each SWIFTGalaxy object:
+            def dm_median_position(sg):
+                return np.median(sg.dark_matter.coordinates, axis=0)
+
+            sgs = SWIFTGalaxies(
+                "my_snapshot.hdf5",
+                SOAP(
+                    "my_soap.hdf5",
+                    soap_index=[11, 22, 33],
+                    preload={"dark_matter.coordinates"},
+                ),
+            )
+            my_result = sgs.map(dm_median_position)
+
+        The result stored in `my_result` contains the result of the function for the
+        galaxies at index `11`, `22` and `33`, in the same order as they are given in the
+        `soap_index` list.
+
+        This second example shows how to pass extra arguments and/or keyword arguments to
+        the function given to `map`:
+
+        ::
+            from swiftgalaxy import SWIFTGalaxies, SOAP
+
+            # define the function that we will apply to each SWIFTGalaxy object:
+            def dm_median_position(
+                sg,  # the first argument is always a SWIFTGalaxy from the iteration
+                extra_argument_1,
+                extra_argument_2,
+                extra_kwarg_1=None,
+                extra_kwarg_2=None,
+            ):
+                # presumably make use of the extra arguments and/or kwargs here...
+                return np.median(sg.dark_matter.coordinates, axis=0)
+
+            sgs = SWIFTGalaxies(
+                "my_snapshot.hdf5",
+                SOAP("my_soap.hdf5",
+                soap_index=[11, 22, 33]),
+                preload={"dark_matter.coordinates"},
+            )
+            my_result = sg.map(
+                dm_median_position,
+                args=[
+                    (my_extra_arg_1_for_galaxy_11, my_extra_arg_2_for_galaxy_11),
+                    (my_extra_arg_1_for_galaxy_22, my_extra_arg_2_for_galaxy_22),
+                    (my_extra_arg_1_for_galaxy_33, my_extra_arg_2_for_galaxy_33),
+                ],
+                kwargs=[
+                    dict(
+                        extra_kwarg_1=my_extra_kwarg_1_for_galaxy_11,
+                        extra_kwarg_2=my_extra_kwarg_2_for_galaxy_11,
+                    ),
+                    dict(
+                        extra_kwarg_1=my_extra_kwarg_1_for_galaxy_22,
+                        extra_kwarg_2=my_extra_kwarg_2_for_galaxy_22,
+                    ),
+                    dict(
+                        extra_kwarg_1=my_extra_kwarg_1_for_galaxy_33,
+                        extra_kwarg_2=my_extra_kwarg_2_for_galaxy_33,
+                    ),
+                ]
+            )
+
+        Note that if you have only a single extra argument it must still be packaged as
+        a tuple, for instance:
+
+        ::
+            args=[
+                (my_extra_arg_for_galaxy_11, ),
+                (my_extra_arg_for_galaxy_22, ),
+                (my_extra_arg_for_galaxy_33, ),
+            ]
+
+        The commas inside the parentheses are not optional!
         """
         result = [None] * len(self.iteration_order)  # empty list for results
-        for sg in self:
+        if args is None:
+            args = (tuple() for _ in self.iteration_order)
+        if kwargs is None:
+            kwargs = (dict() for _ in self.iteration_order)
+        for sg, _args, _kwargs in zip(self, args, kwargs):
             result[sg.halo_catalogue._multi_galaxy_catalogue_mask] = func(
-                sg, *args, **kwargs
+                sg, *_args, **_kwargs
             )
         return result
