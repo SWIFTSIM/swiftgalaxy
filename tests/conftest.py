@@ -1,9 +1,11 @@
 import pytest
+import os
 import numpy as np
 import unyt as u
-from swiftsimio.objects import cosmo_array
+from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from swiftgalaxy import (
     SWIFTGalaxy,
+    SWIFTGalaxies,
     SOAP,
     Velociraptor,
     Caesar,
@@ -27,6 +29,10 @@ from toysnap import (
     toycaesar_filename,
     n_g_b,
     n_dm_b,
+    centre_1,
+    centre_2,
+    vcentre_1,
+    vcentre_2,
 )
 
 hfs = ("vr", "caesar_halo", "caesar_galaxy", "sa", "soap")
@@ -51,7 +57,16 @@ def toysnap_withfof():
 
 
 @pytest.fixture(scope="function")
-def sg():
+def toysoap_with_virtual_snapshot():
+    create_toysoap(create_virtual_snapshot=True)
+
+    yield
+
+    remove_toysoap()
+
+
+@pytest.fixture(scope="function")
+def sg(request):
     create_toysnap()
 
     yield SWIFTGalaxy(
@@ -61,6 +76,24 @@ def sg():
         transforms_like_velocities={"velocities", "extra_velocities"},
     )
 
+    remove_toysnap()
+
+
+@pytest.fixture(scope="function")
+def sgs(request):
+    create_toysnap()
+    yield SWIFTGalaxies(
+        toysnap_filename,
+        ToyHF(index=[0, 1]),
+        transforms_like_coordinates={"coordinates", "extra_coordinates"},
+        transforms_like_velocities={"velocities", "extra_velocities"},
+        preload={  # just to keep warnings quiet
+            "gas.particle_ids",
+            "dark_matter.particle_ids",
+            "stars.particle_ids",
+            "black_holes.particle_ids",
+        },
+    )
     remove_toysnap()
 
 
@@ -113,10 +146,35 @@ def sg_soap():
         toysoap_virtual_snapshot_filename,
         SOAP(
             soap_file=toysoap_filename,
-            halo_index=0,
+            soap_index=0,
         ),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
+    )
+
+    remove_toysnap()
+    remove_toysoap()
+
+
+@pytest.fixture(scope="function")
+def sgs_soap():
+    create_toysnap(withfof=True)
+    create_toysoap(create_virtual_snapshot=True)
+
+    yield SWIFTGalaxies(
+        toysoap_virtual_snapshot_filename,
+        SOAP(
+            soap_file=toysoap_filename,
+            soap_index=[0, 1],
+        ),
+        transforms_like_coordinates={"coordinates", "extra_coordinates"},
+        transforms_like_velocities={"velocities", "extra_velocities"},
+        preload={  # just to keep warnings quiet
+            "gas.particle_ids",
+            "dark_matter.particle_ids",
+            "stars.particle_ids",
+            "black_holes.particle_ids",
+        },
     )
 
     remove_toysnap()
@@ -139,6 +197,28 @@ def sg_vr():
     remove_toyvr()
 
 
+@pytest.fixture(scope="function")
+def sgs_vr():
+    create_toysnap()
+    create_toyvr()
+
+    yield SWIFTGalaxies(
+        toysnap_filename,
+        Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[0, 1]),
+        transforms_like_coordinates={"coordinates", "extra_coordinates"},
+        transforms_like_velocities={"velocities", "extra_velocities"},
+        preload={  # just to keep warnings quiet
+            "gas.particle_ids",
+            "dark_matter.particle_ids",
+            "stars.particle_ids",
+            "black_holes.particle_ids",
+        },
+    )
+
+    remove_toysnap()
+    remove_toyvr()
+
+
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
 def sg_caesar(request):
     create_toysnap()
@@ -155,13 +235,49 @@ def sg_caesar(request):
     remove_toycaesar()
 
 
+@pytest.fixture(scope="function", params=["halo", "galaxy"])
+def sgs_caesar(request):
+    create_toysnap()
+    create_toycaesar()
+
+    yield SWIFTGalaxies(
+        toysnap_filename,
+        Caesar(
+            caesar_file=toycaesar_filename, group_type=request.param, group_index=[0, 1]
+        ),
+        transforms_like_coordinates={"coordinates", "extra_coordinates"},
+        transforms_like_velocities={"velocities", "extra_velocities"},
+        preload={  # just to keep warnings quiet
+            "gas.particle_ids",
+            "dark_matter.particle_ids",
+            "stars.particle_ids",
+            "black_holes.particle_ids",
+        },
+    )
+
+    remove_toysnap()
+    remove_toycaesar()
+
+
 @pytest.fixture(scope="function")
 def soap():
     create_toysoap()
 
     yield SOAP(
         soap_file=toysoap_filename,
-        halo_index=0,
+        soap_index=0,
+    )
+
+    remove_toysoap()
+
+
+@pytest.fixture(scope="function")
+def soap_multi():
+    create_toysoap()
+
+    yield SOAP(
+        soap_file=toysoap_filename,
+        soap_index=[0, 1],
     )
 
     remove_toysoap()
@@ -172,6 +288,15 @@ def vr():
     create_toyvr()
 
     yield Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=0)
+
+    remove_toyvr()
+
+
+@pytest.fixture(scope="function")
+def vr_multi():
+    create_toyvr()
+
+    yield Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[0, 1])
 
     remove_toyvr()
 
@@ -187,6 +312,17 @@ def caesar(request):
     remove_toycaesar()
 
 
+@pytest.fixture(scope="function", params=["halo", "galaxy"])
+def caesar_multi(request):
+    create_toycaesar()
+
+    yield Caesar(
+        caesar_file=toycaesar_filename, group_type=request.param, group_index=[0, 1]
+    )
+
+    remove_toycaesar()
+
+
 @pytest.fixture(scope="function")
 def sa():
     yield Standalone(
@@ -196,9 +332,55 @@ def sa():
             stars=None,
             black_holes=None,
         ),
-        centre=cosmo_array([2.001, 2.001, 2.001], u.Mpc),
-        velocity_centre=cosmo_array([201.0, 201.0, 201.0], u.km / u.s),
-        spatial_offsets=cosmo_array([[-1, 1], [-1, 1], [-1, 1]], u.Mpc),
+        centre=cosmo_array(
+            [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+            u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, 1.0),
+        ),
+        velocity_centre=cosmo_array(
+            [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+            u.km / u.s,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**0, 1.0),
+        ),
+        spatial_offsets=cosmo_array(
+            [[-1, 1], [-1, 1], [-1, 1]],
+            u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, 1.0),
+        ),
+    )
+
+
+@pytest.fixture(scope="function")
+def sa_multi():
+    yield Standalone(
+        extra_mask=None,
+        centre=cosmo_array(
+            [
+                [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+                [centre_2 + 0.001, centre_2 + 0.001, centre_2 + 0.001],
+            ],
+            u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, 1.0),
+        ),
+        velocity_centre=cosmo_array(
+            [
+                [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                [vcentre_2 + 1.0, vcentre_2 + 1.0, vcentre_2 + 1.0],
+            ],
+            u.km / u.s,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**0, 1.0),
+        ),
+        spatial_offsets=cosmo_array(
+            [[-1, 1], [-1, 1], [-1, 1]],
+            u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, 1.0),
+        ),
     )
 
 
@@ -214,10 +396,67 @@ def sg_sa():
                 stars=None,
                 black_holes=None,
             ),
-            centre=cosmo_array([2.001, 2.001, 2.001], u.Mpc),
-            velocity_centre=cosmo_array([201.0, 201.0, 201.0], u.km / u.s),
-            spatial_offsets=cosmo_array([[-1, 1], [-1, 1], [-1, 1]], u.Mpc),
+            centre=cosmo_array(
+                [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
+            velocity_centre=cosmo_array(
+                [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**0, 1.0),
+            ),
+            spatial_offsets=cosmo_array(
+                [[-1, 1], [-1, 1], [-1, 1]],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
         ),
+    )
+    remove_toysnap()
+
+
+@pytest.fixture(scope="function")
+def sgs_sa():
+    create_toysnap()
+    yield SWIFTGalaxies(
+        toysnap_filename,
+        Standalone(
+            extra_mask=None,
+            centre=cosmo_array(
+                [
+                    [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+                    [centre_2 + 0.001, centre_2 + 0.001, centre_2 + 0.001],
+                ],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
+            velocity_centre=cosmo_array(
+                [
+                    [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                    [vcentre_2 + 1.0, vcentre_2 + 1.0, vcentre_2 + 1.0],
+                ],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**0, 1.0),
+            ),
+            spatial_offsets=cosmo_array(
+                [[-1, 1], [-1, 1], [-1, 1]],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
+        ),
+        preload={  # just to keep warnings quiet
+            "gas.particle_ids",
+            "dark_matter.particle_ids",
+            "stars.particle_ids",
+            "black_holes.particle_ids",
+        },
     )
     remove_toysnap()
 
@@ -244,7 +483,7 @@ def sg_hf(request):
             toysoap_virtual_snapshot_filename,
             SOAP(
                 soap_file=toysoap_filename,
-                halo_index=0,
+                soap_index=0,
             ),
             transforms_like_coordinates={"coordinates", "extra_coordinates"},
             transforms_like_velocities={"velocities", "extra_velocities"},
@@ -267,9 +506,24 @@ def sg_hf(request):
                 stars=None,
                 black_holes=None,
             ),
-            centre=cosmo_array([2.001, 2.001, 2.001], u.Mpc),
-            velocity_centre=cosmo_array([201.0, 201.0, 201.0], u.km / u.s),
-            spatial_offsets=cosmo_array([[-1, 1], [-1, 1], [-1, 1]], u.Mpc),
+            centre=cosmo_array(
+                [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
+            velocity_centre=cosmo_array(
+                [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**0, 1.0),
+            ),
+            spatial_offsets=cosmo_array(
+                [[-1, 1], [-1, 1], [-1, 1]],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
         )
     remove_toysnap()
 
@@ -291,7 +545,7 @@ def hf(request):
 
         yield SOAP(
             soap_file=toysoap_filename,
-            halo_index=0,
+            soap_index=0,
         )
 
         remove_toysoap()
@@ -309,7 +563,79 @@ def hf(request):
                 stars=None,
                 black_holes=None,
             ),
-            centre=cosmo_array([2.001, 2.001, 2.001], u.Mpc),
-            velocity_centre=cosmo_array([201.0, 201.0, 201.0], u.km / u.s),
-            spatial_offsets=cosmo_array([[-1, 1], [-1, 1], [-1, 1]], u.Mpc),
+            centre=cosmo_array(
+                [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
+            velocity_centre=cosmo_array(
+                [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**0, 1.0),
+            ),
+            spatial_offsets=cosmo_array(
+                [[-1, 1], [-1, 1], [-1, 1]],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
+        )
+
+
+@pytest.fixture(scope="function", params=hfs)
+def hf_multi(request):
+    if request.param in {"caesar_halo", "caesar_galaxy"}:
+        create_toycaesar()
+
+        yield Caesar(
+            caesar_file=toycaesar_filename,
+            group_type=request.param.split("_")[-1],
+            group_index=[0, 1],
+        )
+
+        remove_toycaesar()
+    elif request.param == "soap":
+        create_toysoap(create_virtual_snapshot=os.path.isfile(toysnap_filename))
+
+        yield SOAP(
+            soap_file=toysoap_filename,
+            soap_index=[0, 1],
+        )
+
+        remove_toysoap()
+    elif request.param == "vr":
+        create_toyvr()
+
+        yield Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[0, 1])
+
+        remove_toyvr()
+    elif request.param == "sa":
+        yield Standalone(
+            extra_mask=None,
+            centre=cosmo_array(
+                [
+                    [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+                    [centre_2 + 0.001, centre_2 + 0.001, centre_2 + 0.001],
+                ],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
+            velocity_centre=cosmo_array(
+                [
+                    [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                    [vcentre_2 + 1.0, vcentre_2 + 1.0, vcentre_2 + 1.0],
+                ],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**0, 1.0),
+            ),
+            spatial_offsets=cosmo_array(
+                [[-1, 1], [-1, 1], [-1, 1]],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
         )

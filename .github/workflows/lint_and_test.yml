@@ -17,6 +17,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run Black
         uses: psf/black@stable
+        with:
+          options: "--check --verbose"
+          jupyter: true
       - name: Set up Python environment
         uses: actions/setup-python@v5
         with:
@@ -29,9 +32,12 @@ jobs:
         run: mypy --install-types --non-interactive
       - name: Run mypy
         run: mypy
-      
+      - name: Install numpydoc
+        run: pip install numpydoc
+      - name: Run docstring validation
+        run: ./run_validate_docstrings      
 
-  build:
+  tests:
     needs: lint
     runs-on: ubuntu-latest
     strategy:

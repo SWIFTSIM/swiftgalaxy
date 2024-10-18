@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "swiftgalaxy"
-version="1.1.0"
+version="1.2.0"
 authors = [
     { name="Kyle Oman", email="kyle.a.oman@durham.ac.uk" },
 ]
@@ -31,3 +31,36 @@ dependencies = [
 
 [project.optional-dependencies]
 velociraptor = ["velociraptor"]
+
+[tool.numpydoc_validation]
+checks = [
+       "GL01",
+       "GL02",
+       "GL03",
+       "GL05",
+       "GL06",
+       "GL07",
+       "GL08",
+       "GL10",
+       "SS01",
+       "SS02",
+       "SS03",
+       "SS04",
+       "PR01",
+       "PR02",
+       "PR03",
+       "PR04",
+       "PR05",
+       "PR06",
+       "PR07",
+       "PR08",
+       "PR10",
+       "RT03",
+       "RT04",
+       "RT05",
+]
+exclude = [
+	'\.__init__$',
+	"__init__",
+	"__version__",
+]
