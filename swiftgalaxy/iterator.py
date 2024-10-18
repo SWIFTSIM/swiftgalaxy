@@ -210,7 +210,7 @@ class SWIFTGalaxies:
         self.halo_catalogue = halo_catalogue
         self.snapshot_filename = snapshot_filename
         self.auto_recentre = auto_recentre
-        self.preload = preload
+        self.preload = set(preload)
         self.transforms_like_coordinates = transforms_like_coordinates
         self.transforms_like_velocities = transforms_like_velocities
         self.id_particle_dataset_name = id_particle_dataset_name
