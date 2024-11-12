@@ -453,13 +453,13 @@ class SWIFTGalaxies:
             np.array(
                 np.meshgrid(*[np.arange(gdi) + 0.5 for gdi in grid_dim], indexing="ij")
             )
-            * sm.cell_size[:, np.newaxis, np.newaxis, np.newaxis]
+            * (sm.cell_size * grid_element_dim)[:, np.newaxis, np.newaxis, np.newaxis]
         )
         centres_offset = (
             np.array(
                 np.meshgrid(*[np.arange(gdi) + 1.0 for gdi in grid_dim], indexing="ij")
             )
-            * sm.cell_size[:, np.newaxis, np.newaxis, np.newaxis]
+            * (sm.cell_size * grid_element_dim)[:, np.newaxis, np.newaxis, np.newaxis]
         )
         unique_region_centres = cosmo_array(
             (centres_aligned, centres_offset)
