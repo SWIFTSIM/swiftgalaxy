@@ -17,7 +17,7 @@ these types should not be created directly by users, but rather by an object of
 the :class:`SWIFTGalaxy` class.
 """
 
-from warnings import warn, catch_warnings, filterwarnings
+from warnings import warn
 from copy import deepcopy
 import numpy as np
 from scipy.spatial.transform import Rotation
