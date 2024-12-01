@@ -884,7 +884,11 @@ class TestSOAP:
 
         Just check a couple, don't need to be exhaustive.
         """
-        for prop in ("exclusive_sphere_100kpc", "input_halos", "metadata"):
+        for prop in (
+            "exclusive_sphere_100kpc",
+            "input_halos",
+            "spherical_overdensity_bn98",
+        ):
             assert prop in dir(soap)
 
 

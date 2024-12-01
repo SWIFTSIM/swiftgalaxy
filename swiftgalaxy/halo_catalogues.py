@@ -916,7 +916,7 @@ class SOAP(_HaloCatalogue):
         out : list
             The list of catalogue attribute names.
         """
-        return list(self._catalogue.group_metadata.field_names)
+        return list(self._catalogue.metadata.present_group_names)
 
 
 class Velociraptor(_HaloCatalogue):
