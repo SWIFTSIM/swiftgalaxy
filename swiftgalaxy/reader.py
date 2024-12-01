@@ -196,6 +196,22 @@ class _CoordinateHelper(object):
         self._masks: dict = masks
         return
 
+    def __dir__(self) -> list[str]:
+        """
+        Supply a list of attributes of the :class:`~swiftgalaxy.reader._CoordinateHelper`.
+
+        The regular ``dir`` behaviour doesn't index the names of the coordinates
+        because these are stored in a ``dict`` held by the class, so we customize
+        the ``__dir__`` method to list the coordinate names. They will then appear in
+        tab completion, for example.
+
+        Returns
+        -------
+        out : list
+            List of coordinate name strings.
+        """
+        return list(self._masks.keys())
+
     def __getattr__(self, attr: str) -> cosmo_array:
         """
         Get a coordinate array using attribute (dot) syntax.
@@ -320,6 +336,24 @@ class _SWIFTNamedColumnDatasetHelper(object):
             The string representation.
         """
         return self.__str__()
+
+    def __dir__(self) -> list[str]:
+        """
+        Supply a list of attributes of the
+        :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`.
+
+        The regular ``dir`` behaviour doesn't index the names of the named columns
+        because these are stored in the
+        :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset` held by the class, so we
+        customize the ``__dir__`` method to list the named column names. They will then
+        appear in tab completion, for example.
+
+        Returns
+        -------
+        out : list
+            List of named column name strings.
+        """
+        return dir(self._named_column_dataset)
 
     def __getattribute__(self, attr: str) -> Any:
         """
@@ -546,6 +580,24 @@ class _SWIFTGroupDatasetHelper(object):
         mygalaxy.gas.cylindrical_velocities.phi
         mygalaxy.gas.cylindrical_velocities.z
     """
+
+    def __dir__(self) -> list[str]:
+        """
+        Supply a list of attributes of the
+        :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`.
+
+        The regular ``dir`` behaviour doesn't index the names of the particle datasets
+        because these are stored in the
+        :class:`~swiftsimio.reader.__SWIFTGroupDataset` held by the class, so we
+        customize the ``__dir__`` method to list the particle dataset names. They will
+        then appear in tab completion, for example.
+
+        Returns
+        -------
+        out : list
+            List of named column name strings.
+        """
+        return dir(self._particle_dataset)
 
     def __init__(
         self, particle_dataset: "__SWIFTGroupDataset", swiftgalaxy: "SWIFTGalaxy"
