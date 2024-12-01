@@ -1,30 +1,67 @@
 class TestSWIFTGalaxyCreation:
     def test_sg_creation(self, sg):
+        """
+        Make sure we can create a SWIFTGalaxy without error.
+        """
         pass  # fixture created SWIFTGalaxy
 
     def test_soap_creation(self, soap):
+        """
+        Make sure we can create a SOAP without error.
+        """
         pass  # fixture created SOAP interface
 
     def test_vr_creation(self, vr):
+        """
+        Make sure we can create a Velociraptor without error.
+        """
         pass  # fixture created Velociraptor interface
 
     def test_caesar_creation(self, caesar):
+        """
+        Make sure we can create a Caesar without error.
+        """
         pass  # fixture created Caesar interface
 
     def test_sa_creation(self, sa):
+        """
+        Make sure we can create a Standalone without error.
+        """
         pass  # fixture created Standalone interface
 
     def test_sg_soap_creation(self, sg_soap):
+        """
+        Make sure we can create a SWIFTGalaxy with SOAP without error.
+        """
         pass  # fixture created SWIFTGalaxy with SOAP interface
 
     def test_sg_vr_creation(self, sg_vr):
+        """
+        Make sure we can create a SWIFTGalaxy with velociraptor without error.
+        """
         pass  # fixture created SWIFTGalaxy with Velociraptor interface
 
     def test_sg_caesar_creation(self, sg_caesar):
+        """
+        Make sure we can create a SWIFTGalaxy with Caesar without error.
+        """
         pass  # fixture created SWIFTGalaxy with Caesar interface
 
     def test_sg_sa_creation(self, sg_sa):
+        """
+        Make sure we can create a SWIFTGalaxy with Standalone without error.
+        """
         pass  # fixture created SWIFTGalaxy with Standalone interface
+
+    def test_dir_for_tab_completion(self, sg):
+        """
+        Check that particle dataset names and named column names get injected into
+        the namespace for tab completion by the __dir__ methods of the relevant classes.
+        """
+        for prop in ("coordinates", "masses", "hydrogen_ionization_fractions"):
+            assert prop in dir(sg.gas)
+        for prop in ("neutral", "ionized"):
+            assert prop in dir(sg.gas.hydrogen_ionization_fractions)
 
 
 class TestSWIFTGalaxiesCreation:

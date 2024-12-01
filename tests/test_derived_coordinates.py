@@ -596,3 +596,15 @@ class TestInteractionWithMasking:
             ).shape
             is not tuple()
         )
+
+    def test_dir_for_tab_completion(self, sg):
+        """
+        Check that we can see coordinate names when using dir on the helper class.
+        We don't test for an exhaustive list, as long as some appear all will.
+        """
+        for coord in ("x", "xyz"):
+            assert coord in dir(sg.gas.cartesian_coordinates)
+        for coord in ("r", "lon", "radius"):
+            assert coord in dir(sg.gas.spherical_coordinates)
+        for coord in ("rho", "z", "azimuth"):
+            assert coord in dir(sg.gas.cylindrical_coordinates)
