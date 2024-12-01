@@ -902,6 +902,22 @@ class SOAP(_HaloCatalogue):
         """
         return self._catalogue.__repr__()
 
+    def __dir__(self) -> list[str]:
+        """
+        Supply a list of attributes of the halo catalogue.
+
+        The regular ``dir`` behaviour doesn't index the names of catalogue attributes
+        because they're attached to the internally maintained ``_catalogue`` attribute,
+        so we custimize the ``__dir__`` method to list the attribute names. They will
+        then appear in tab completion, for example.
+
+        Returns
+        -------
+        out : list
+            The list of catalogue attribute names.
+        """
+        return list(self._catalogue.group_metadata.field_names)
+
 
 class Velociraptor(_HaloCatalogue):
     """

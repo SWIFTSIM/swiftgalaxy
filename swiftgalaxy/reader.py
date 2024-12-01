@@ -353,7 +353,7 @@ class _SWIFTNamedColumnDatasetHelper(object):
         out : list
             List of named column name strings.
         """
-        return dir(self._named_column_dataset)
+        return self._named_column_dataset.named_columns
 
     def __getattribute__(self, attr: str) -> Any:
         """
@@ -597,7 +597,7 @@ class _SWIFTGroupDatasetHelper(object):
         out : list
             List of named column name strings.
         """
-        return dir(self._particle_dataset)
+        return self._particle_dataset.group_metadata.field_names
 
     def __init__(
         self, particle_dataset: "__SWIFTGroupDataset", swiftgalaxy: "SWIFTGalaxy"
