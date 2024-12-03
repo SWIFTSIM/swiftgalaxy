@@ -9,6 +9,7 @@ Parallelization is not yet implemented but is prioritized for future release.
 import numpy as np
 import unyt as u
 from swiftsimio import mask, cosmo_array
+from swiftsimio.objects import a, cosmo_factor  # FOR MONKEY PATCH
 from .reader import SWIFTGalaxy
 from .halo_catalogues import _HaloCatalogue
 from warnings import warn
@@ -608,7 +609,22 @@ class SWIFTGalaxies:
                     )
                 elif self.auto_recentre:
                     swift_galaxy.recentre(self.halo_catalogue.centre)
-                    swift_galaxy.recentre_velocity(self.halo_catalogue.velocity_centre)
+                    # MONKEY PATCH DUE TO BUG IN SOAP
+                    self.halo_catalogue.velocity_centre  # make sure it's loaded
+                    scale_factor = (
+                        self.halo_catalogue.velocity_centre.cosmo_factor.scale_factor
+                    )
+                    cf = cosmo_factor(
+                        a**0,
+                        scale_factor=scale_factor,
+                    )
+                    values = self.halo_catalogue.velocity_centre.to_value(u.km / u.s)
+                    vcentre = cosmo_array(
+                        values, u.km / u.s, cosmo_factor=cf, comoving=True
+                    )
+                    swift_galaxy.recentre_velocity(vcentre)
+                    # END MONKEY PATCH
+                    # swift_galaxy.recentre_velocity(self.halo_catalogue.velocity_centre)
                 swift_galaxy._initialised = True
                 yield swift_galaxy
                 self.halo_catalogue._unmask_multi_galaxy()
