@@ -1,7 +1,6 @@
 import pytest
 import numpy as np
 import unyt as u
-from warnings import warn
 from unyt.testing import assert_allclose_units
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from scipy.spatial.transform import Rotation
@@ -378,21 +377,8 @@ class TestManualCoordinateTransformations:
         """
         Check that translating by two box lengths wraps back to previous state.
         """
-        if hasattr(sg.metadata.boxsize, "comoving"):
-            # if this warning produced, remove cast to cosmo_array below
-            # and this warning block
-            warn(
-                "SWIFTSimIO is now giving boxsize as comso_array, update this test.",
-                category=RuntimeWarning,
-            )
-        else:
-            boxsize = cosmo_array(
-                sg.metadata.boxsize,
-                comoving=True,
-                cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
-            )
         xyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
-        sg.translate(-2 * boxsize)  # -2x box size
+        sg.translate(-2 * sg.metadata.boxsize)  # -2x box size
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         assert_allclose_units(xyz_before, xyz, rtol=1.0e-4, atol=abstol_c)
 
@@ -544,14 +530,3 @@ class TestCopyingTransformations:
         assert_allclose_units(
             sg.gas.velocities, sg2.gas.velocities, rtol=1.0e-4, atol=abstol_v
         )
-
-
-@pytest.mark.xfail
-class TestBoxsizeIsCosmoArray:
-    def test_boxsize_is_cosmo_array(self, sg):
-        # When swiftsimio issue #128 is resolved:
-        #   - This test will unexpectedly pass.
-        #   - Remove this test.
-        #   - Remove catch_warnings and filterwarnings from _apply_box_wrap in reader.py
-        #   - Remove explicit attribute copying in _apply_box_wrap in reader.py
-        assert hasattr(sg.metadata.boxsize, "comoving")

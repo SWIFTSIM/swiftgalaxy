@@ -17,7 +17,7 @@ these types should not be created directly by users, but rather by an object of
 the :class:`SWIFTGalaxy` class.
 """
 
-from warnings import warn, catch_warnings, filterwarnings
+from warnings import warn
 from copy import deepcopy
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -57,16 +57,7 @@ def _apply_box_wrap(coords: cosmo_array, boxsize: Optional[cosmo_array]) -> cosm
     """
     if boxsize is None:
         return coords
-    # Would like to ensure comoving coordinates here, but metadata gives boxsize as a
-    # unyt_array instead of a cosmo_array. Pending swiftsimio issue #128. When
-    # implementing, remove cast(s) to cosmo_array in test_coordinate_transformations.
-    with catch_warnings():
-        filterwarnings(
-            "ignore", category=RuntimeWarning, message="Mixing ufunc arguments"
-        )
-        retval = (coords + boxsize / 2.0) % boxsize - boxsize / 2.0
-    retval.comoving = coords.comoving
-    retval.cosmo_factor = coords.cosmo_factor
+    retval = (coords + boxsize / 2.0) % boxsize - boxsize / 2.0
     return retval
 
 
