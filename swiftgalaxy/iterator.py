@@ -373,12 +373,10 @@ class SWIFTGalaxies:
         # grid should be at least 1 cell in size so that we efficiently group targets
         # in the same grid location
         grid_element_dim = (
-            np.max(
-                target_sizes // sm.cell_size[np.newaxis] + 1,
-                axis=0,
-            )
+            np.max(target_sizes // sm.cell_size[np.newaxis], axis=0)
             .to_value(u.dimensionless)
             .astype(int)
+            + 1
         )
         # Cells are not guaranteed to have a vertex at box coordinate (0, 0, 0)
         # but usually are. At least one of our grids is misaligned with the cells
@@ -393,16 +391,18 @@ class SWIFTGalaxies:
             cells_dim % grid_element_dim > 0
         ).astype(int)
         target_grid_offsets_aligned, target_grid_indices_aligned = np.modf(
-            target_centres / (grid_element_dim * sm.cell_size)
+            (target_centres / (grid_element_dim * sm.cell_size)).to_value(
+                u.dimensionless
+            )
         )
         target_grid_offsets_offset, target_grid_indices_offset = np.modf(
-            (target_centres + 0.5 * grid_element_dim * sm.cell_size)
-            / (grid_element_dim * sm.cell_size)
+            (
+                (target_centres + 0.5 * grid_element_dim * sm.cell_size)
+                / (grid_element_dim * sm.cell_size)
+            ).to_value(u.dimensionless)
             - 1
         )
-        target_grid_indices_aligned = target_grid_indices_aligned.to_value(
-            u.dimensionless
-        ).astype(int)
+        target_grid_indices_aligned = target_grid_indices_aligned.astype(int)
         # need a "box wrap" of targets to the far side of the grid for the offset grid:
         target_grid_indices_offset = np.where(
             np.logical_and(
@@ -411,9 +411,7 @@ class SWIFTGalaxies:
             grid_dim - 1,
             target_grid_indices_offset,
         )  # complains about missing cosmo_array info
-        target_grid_indices_offset = target_grid_indices_offset.to_value(
-            u.dimensionless
-        ).astype(int)
+        target_grid_indices_offset = target_grid_indices_offset.astype(int)
         target_grid_distances_aligned = np.sqrt(
             np.sum(
                 np.power(
@@ -603,8 +601,7 @@ class SWIFTGalaxies:
                         boost=False,
                     )
                     swift_galaxy._transform(
-                        self.coordinate_frame_from._velocity_like_transform,
-                        boost=True,
+                        self.coordinate_frame_from._velocity_like_transform, boost=True
                     )
                 elif self.auto_recentre:
                     swift_galaxy.recentre(self.halo_catalogue.centre)
@@ -757,8 +754,6 @@ class SWIFTGalaxies:
             kwargs = [dict()] * len(self.iteration_order)
         for sg, iteration_location in zip(self, self.iteration_order):
             result[sg.halo_catalogue._multi_galaxy_catalogue_mask] = func(
-                sg,
-                *args[iteration_location],
-                **kwargs[iteration_location],
+                sg, *args[iteration_location], **kwargs[iteration_location]
             )
         return result
