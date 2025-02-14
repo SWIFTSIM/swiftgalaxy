@@ -87,12 +87,18 @@ class ToyHF(_HaloCatalogue):
         import swiftsimio
 
         if self.index == 0:
-            spatial_mask = (
-                np.array([[centre_1 - 0.1, centre_1 + 0.1] for ax in range(3)]) * u.Mpc
+            spatial_mask = cosmo_array(
+                [[centre_1 - 0.1, centre_1 + 0.1] for ax in range(3)],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
             )
         elif self.index == 1:
-            spatial_mask = (
-                np.array([[centre_2 - 0.1, centre_2 + 0.1] for ax in range(3)]) * u.Mpc
+            spatial_mask = cosmo_array(
+                [[centre_2 - 0.1, centre_2 + 0.1] for ax in range(3)],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
             )
         swift_mask = swiftsimio.mask(self.snapfile, spatial_only=True)
         swift_mask.constrain_spatial(spatial_mask)
@@ -348,7 +354,7 @@ def create_toysnap(
                         centre_2 + R_2 * np.sin(phi_2) * 0.005,
                         centre_2
                         + (np.random.rand(n_s_2, 1) * 2 - 1) * 0.0005,  # 500 pc height
-                    ),
+                    )
                 ),
             )
         )
@@ -375,7 +381,7 @@ def create_toysnap(
                         vcentre_2
                         + np.random.rand(n_s_2, 1) * 20
                         - 10,  # 10 km/s vertical motions
-                    ),
+                    )
                 ),
             )
         )
@@ -837,15 +843,10 @@ def create_toyvr(filebase=toyvr_filebase):
             "Number_of_substructures_in_halo", data=np.array([0, 0], dtype=int)
         )
         f.create_dataset(
-            "Offset",
-            data=np.array(
-                [0, n_g_1 + n_dm_1 + n_s_1 + n_bh_1],
-                dtype=int,
-            ),
+            "Offset", data=np.array([0, n_g_1 + n_dm_1 + n_s_1 + n_bh_1], dtype=int)
         )
         f.create_dataset(
-            "Offset_unbound",
-            data=np.array([0, n_g_b // 2 + n_dm_b // 2], dtype=int),
+            "Offset_unbound", data=np.array([0, n_g_b // 2 + n_dm_b // 2], dtype=int)
         )
         f.create_dataset("Parent_halo_ID", data=np.array([-1, -1], dtype=int))
         f.create_dataset("Total_num_of_groups", data=np.array([2], dtype=int))
@@ -855,10 +856,7 @@ def create_toyvr(filebase=toyvr_filebase):
         f.create_dataset(
             "Num_of_particles_in_groups",
             data=np.array(
-                [
-                    n_g_1 + n_dm_1 + n_s_1 + n_bh_1,
-                    n_g_2 + n_dm_2 + n_s_2 + n_bh_2,
-                ],
+                [n_g_1 + n_dm_1 + n_s_1 + n_bh_1, n_g_2 + n_dm_2 + n_s_2 + n_bh_2],
                 dtype=int,
             ),
         )
@@ -913,12 +911,7 @@ def create_toyvr(filebase=toyvr_filebase):
         f.create_dataset("Num_of_files", data=np.array([1], dtype=int))
         f.create_dataset(
             "Num_of_particles_in_groups",
-            data=np.array(
-                [
-                    n_g_b // 2 + n_dm_b // 2,
-                    n_g_b // 2 + n_dm_b // 2,
-                ],
-            ),
+            data=np.array([n_g_b // 2 + n_dm_b // 2, n_g_b // 2 + n_dm_b // 2]),
         )
         f.create_dataset(
             "Particle_IDs",
@@ -945,10 +938,7 @@ def create_toyvr(filebase=toyvr_filebase):
         f.create_dataset(
             "Num_of_particles_in_groups",
             data=np.array(
-                [
-                    n_g_1 + n_dm_1 + n_s_1 + n_bh_1,
-                    n_g_2 + n_dm_2 + n_s_2 + n_bh_2,
-                ],
+                [n_g_1 + n_dm_1 + n_s_1 + n_bh_1, n_g_2 + n_dm_2 + n_s_2 + n_bh_2],
                 dtype=int,
             ),
         )
@@ -1139,10 +1129,7 @@ def create_toycaesar(filename=toycaesar_filename):
         f.create_group("global_lists")
         f["/global_lists"].create_dataset(
             "galaxy_bhlist",
-            data=np.r_[
-                np.zeros(n_bh_1, dtype=int),
-                np.ones(n_bh_2, dtype=int),
-            ],
+            data=np.r_[np.zeros(n_bh_1, dtype=int), np.ones(n_bh_2, dtype=int)],
         )
         f["/global_lists"].create_dataset(
             "galaxy_glist",
@@ -1760,9 +1747,7 @@ def create_toysoap(
         f["SO/BN98"].attrs["Masked"] = True
         f.create_group("SOAP")
         soap_hhi = f["SOAP"].create_dataset(
-            "HostHaloIndex",
-            data=np.array([-1, -1]),
-            dtype=int,
+            "HostHaloIndex", data=np.array([-1, -1]), dtype=int
         )
         soap_hhi.attrs[
             "Conversion factor to CGS " "(not including cosmological corrections)"
@@ -1887,9 +1872,7 @@ def create_toysoap(
             comv_ds.attrs["a-scale exponent"] = np.array([1])
             comv_ds.attrs["h-scale exponent"] = np.array([0.0])
         er = f["BoundSubhalo"].create_dataset(
-            "EncloseRadius",
-            data=np.array([0.1, 0.1]),
-            dtype=float,
+            "EncloseRadius", data=np.array([0.1, 0.1]), dtype=float
         )
         er.attrs[
             "Conversion factor to CGS " "(not including cosmological corrections)"
@@ -1914,11 +1897,7 @@ def create_toysoap(
             "Centres", data=np.array([[2.5, 5, 5], [7.5, 5, 5]], dtype=float)
         )
         f["Cells"].create_group("Counts")
-        f["Cells/Counts"].create_dataset(
-            "Subhalos",
-            data=np.array([1, 1]),
-            dtype=int,
-        )
+        f["Cells/Counts"].create_dataset("Subhalos", data=np.array([1, 1]), dtype=int)
         f["Cells"].create_group("Files")
         f["Cells/Files"].create_dataset("Subhalos", data=np.array([0, 0], dtype=int))
         f["Cells"].create_group("Meta-data")
@@ -1934,11 +1913,7 @@ def create_toysoap(
         )
         f["Cells"].create_group("OffsetsInFile")
         f["Cells/OffsetsInFile"].create_dataset(
-            "Subhalos",
-            data=np.array(
-                [0, 1],
-            ),
-            dtype=int,
+            "Subhalos", data=np.array([0, 1]), dtype=int
         )
         fof_c = f["InputHalos/FOF"].create_dataset(
             "Centres",
@@ -2008,10 +1983,7 @@ def create_toysoap(
         fof_s = f["InputHalos/FOF"].create_dataset(
             "Sizes",
             data=np.array(
-                [
-                    n_g_1 + n_dm_1 + n_s_1 + n_bh_1,
-                    n_g_2 + n_dm_2 + n_s_2 + n_bh_2,
-                ]
+                [n_g_1 + n_dm_1 + n_s_1 + n_bh_1, n_g_2 + n_dm_2 + n_s_2 + n_bh_2]
             ),
             dtype=int,
         )
@@ -2038,9 +2010,7 @@ def create_toysoap(
         fof_s.attrs["a-scale exponent"] = np.array([0.0])
         fof_s.attrs["h-scale exponent"] = np.array([0.0])
         hbt_hostfof = f["InputHalos/HBTplus"].create_dataset(
-            "HostFOFId",
-            data=np.array([1, 2]),
-            dtype=int,
+            "HostFOFId", data=np.array([1, 2]), dtype=int
         )
         hbt_hostfof.attrs[
             "Conversion factor to CGS " "(not including cosmological corrections)"
@@ -2124,9 +2094,7 @@ def create_toysoap(
         hcentre.attrs["a-scale exponent"] = np.array([1])
         hcentre.attrs["h-scale exponent"] = np.array([0.0])
         iscent = f["InputHalos"].create_dataset(
-            "IsCentral",
-            data=np.array([1, 1]),
-            dtype=int,
+            "IsCentral", data=np.array([1, 1]), dtype=int
         )
         iscent.attrs[
             "Conversion factor to CGS " "(not including cosmological corrections)"
@@ -2197,16 +2165,10 @@ def create_toysoap(
                     )
                 ),
                 4: np.concatenate(
-                    (
-                        np.ones(n_s_1, dtype=int),
-                        np.ones(n_s_2, dtype=int) * 2,
-                    )
+                    (np.ones(n_s_1, dtype=int), np.ones(n_s_2, dtype=int) * 2)
                 ),
                 5: np.concatenate(
-                    (
-                        np.ones(n_bh_1, dtype=int),
-                        np.ones(n_bh_2, dtype=int) * 2,
-                    )
+                    (np.ones(n_bh_1, dtype=int), np.ones(n_bh_2, dtype=int) * 2)
                 ),
             }
             grnrs = {
@@ -2227,10 +2189,7 @@ def create_toysoap(
                     )
                 ),
                 4: np.concatenate(
-                    (
-                        np.ones(n_s_1, dtype=int) * 1111,
-                        np.ones(n_s_2, dtype=int) * 2222,
-                    )
+                    (np.ones(n_s_1, dtype=int) * 1111, np.ones(n_s_2, dtype=int) * 2222)
                 ),
                 5: np.concatenate(
                     (
@@ -2257,16 +2216,10 @@ def create_toysoap(
                     )
                 ),
                 4: np.concatenate(
-                    (
-                        np.arange(n_s_1, dtype=int),
-                        np.arange(n_s_2, dtype=int),
-                    )
+                    (np.arange(n_s_1, dtype=int), np.arange(n_s_2, dtype=int))
                 ),
                 5: np.concatenate(
-                    (
-                        np.arange(n_bh_1, dtype=int),
-                        np.arange(n_bh_2, dtype=int),
-                    )
+                    (np.arange(n_bh_1, dtype=int), np.arange(n_bh_2, dtype=int))
                 ),
             }
             for ptype in (0, 1, 4, 5):
