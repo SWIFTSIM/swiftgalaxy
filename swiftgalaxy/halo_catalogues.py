@@ -19,7 +19,7 @@ from swiftsimio import SWIFTMask, SWIFTDataset, mask
 from swiftgalaxy.masks import MaskCollection
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 
-from typing import Any, Union, Optional, TYPE_CHECKING, List, Set, Dict
+from typing import Any, Union, Optional, TYPE_CHECKING, List, Set, Dict, Tuple
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:
@@ -123,9 +123,12 @@ class _HaloCatalogue(ABC):
     _index_attr: Optional[str]
 
     def __init__(
-        self, extra_mask: Optional[Union[str, MaskCollection]] = "bound_only"
+        self,
+        extra_mask: Optional[Union[str, MaskCollection]] = "bound_only",
+        skip_masks: Tuple[str] = (),
     ) -> None:
         self.extra_mask = extra_mask
+        self.skip_masks = skip_masks
         self._check_multi()
         if self._index_attr is not None:
             if isinstance(getattr(self, self._index_attr), u.unyt_array):
@@ -631,6 +634,7 @@ class SOAP(_HaloCatalogue):
         centre_type: str = "input_halos.halo_centre",
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
         custom_spatial_offsets: Optional[cosmo_array] = None,
+        skip_masks: Tuple[str] = (),
     ) -> None:
         if soap_file is not None:
             self.soap_file = soap_file
@@ -644,7 +648,7 @@ class SOAP(_HaloCatalogue):
         self.centre_type = centre_type
         self.velocity_centre_type = velocity_centre_type
         self._user_spatial_offsets = custom_spatial_offsets
-        super().__init__(extra_mask=extra_mask)
+        super().__init__(extra_mask=extra_mask, skip_masks=skip_masks)
         return
 
     def _load(self) -> None:
@@ -818,10 +822,14 @@ class SOAP(_HaloCatalogue):
         """
         masks = MaskCollection(
             **{
-                group_name: getattr(
-                    sg, group_name
-                )._particle_dataset.group_nr_bound.to_value(u.dimensionless)
-                == self.input_halos.halo_catalogue_index.to_value(u.dimensionless)
+                group_name: (
+                    getattr(sg, group_name)._particle_dataset.group_nr_bound.to_value(
+                        u.dimensionless
+                    )
+                    == self.input_halos.halo_catalogue_index.to_value(u.dimensionless)
+                    if group_name not in self.skip_masks
+                    else None
+                )
                 for group_name in sg.metadata.present_group_names
             }
         )
