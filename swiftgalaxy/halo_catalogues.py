@@ -113,6 +113,10 @@ class _HaloCatalogue(ABC):
         The "extra" mask to apply to data when it is read (extra in the sense of in
         addition to the spatial mask applied by the
         :class:`~swiftgalaxy.reader.SWIFTGalaxy`).
+    skip_masks : :obj:`tuple`
+        A tuple containing the particle types for which masks should not be created,
+        for example `("dark_matter", "stars"). This is a rough prototype implementation
+        for testing and should not be released...
     """
 
     _user_spatial_offsets: Optional[cosmo_array] = None
@@ -125,7 +129,7 @@ class _HaloCatalogue(ABC):
     def __init__(
         self,
         extra_mask: Optional[Union[str, MaskCollection]] = "bound_only",
-        skip_masks: Tuple[str] = (),
+        skip_masks: Tuple = (),
     ) -> None:
         self.extra_mask = extra_mask
         self.skip_masks = skip_masks
@@ -594,6 +598,10 @@ class SOAP(_HaloCatalogue):
         along each axis to define the region, for example for a cube extending
         +/- 1 Mpc from the centre:
         ``cosmo_array([[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]], u.Mpc)``.
+    skip_masks : :obj:`tuple`
+        A tuple containing the particle types for which masks should not be created,
+        for example `("dark_matter", "stars"). This is a rough prototype implementation
+        for testing and should not be released...
 
     Notes
     -----
@@ -634,7 +642,7 @@ class SOAP(_HaloCatalogue):
         centre_type: str = "input_halos.halo_centre",
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
         custom_spatial_offsets: Optional[cosmo_array] = None,
-        skip_masks: Tuple[str] = (),
+        skip_masks: Tuple = (),
     ) -> None:
         if soap_file is not None:
             self.soap_file = soap_file
