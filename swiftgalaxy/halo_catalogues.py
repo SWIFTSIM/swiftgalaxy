@@ -780,6 +780,7 @@ class SOAP(_HaloCatalogue):
             return {
                 f"{group_name}.group_nr_bound"
                 for group_name in sg.metadata.present_group_names
+                if group_name not in self.skip_masks
             }
         else:
             return set()
