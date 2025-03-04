@@ -43,15 +43,15 @@ Automatic recentering
 
 By default, a :class:`~swiftgalaxy.reader.SWIFTGalaxy` is recentered on the centre of the galaxy (as defined by the halo catalogue), and its velocity is shifted to follow the bulk velocity of the galaxy (again as defined by the halo catalogue). This behaviour can be disabled by setting ``SWIFTGalaxy(..., auto_recentre=False)``. Note that this recentering only applies to particles -- no coordinate transformations of any kind are every applied to entries in the halo catalogues, so for instance querying the position of the galaxy in the halo catalogue will always give this in the simulation box frame.
 
-Some halo catalogues define more than one centre and/or bulk velocity. The one used is the one returned by :meth:`swiftgalaxy.halo_catalogues._HaloCatalogue._centre` (for the centre) and :meth:`swiftgalaxy.halo_catalogues._HaloCatalogue._vcentre` (for the bulk velocity). In the case of the :class:`~swiftgalaxy.halo_catalogues.Velociraptor` halo catalogue, the centre used can be manipulated by the ``centre_type`` argument. By default it uses the potential minimum (``minpot``), but this could be exchanged for the most bound particle, for instance:
+Some halo catalogues define more than one centre and/or bulk velocity. The one used is the one returned by :attr:`swiftgalaxy.halo_catalogues._HaloCatalogue.centre` (for the centre) and :attr:`swiftgalaxy.halo_catalogues._HaloCatalogue.velocity_centre` (for the bulk velocity). The centre to be used is configurable if the halo catalogue defines multiple centres. In the case of a :class:`~swiftgalaxy.halo_catalogues.SOAP` halo catalogue, for example, the centre and bulk velocity used can be manipulated by the ``centre_type`` and ``velocity_centre_type`` arguments. By default :class:`~swiftgalaxy.halo_catalogues.SOAP` uses the ``input_halos.halo_centre`` for the position and ``bound_subhalo.centre_of_mass_velocity`` for the bulk velocity. The centre in position could be changed to also use the centre of mass like this:
 
 .. code-block:: python
 
     SWIFTGalaxy(
         ...,
-	Velociraptor(
+	SOAP(
 	    ...,
-	    centre_type='mpb',
+	    centre_type='bound_subhalo.centre_of_mass',
 	),
     )
 
