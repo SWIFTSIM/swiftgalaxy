@@ -2,14 +2,18 @@ import pytest
 import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
-from swiftsimio.objects import cosmo_array, cosmo_factor, a
+from swiftsimio.objects import cosmo_array, cosmo_factor, a, cosmo_quantity
 from scipy.spatial.transform import Rotation
 from toysnap import present_particle_types, toysnap_filename, ToyHF
 from swiftgalaxy import SWIFTGalaxy
 
 reltol = 1.01  # allow some wiggle room for floating point roundoff
-abstol_c = 10 * u.pc  # less than this is ~0
-abstol_v = 10 * u.m / u.s  # less than this is ~0
+abstol_c = cosmo_quantity(
+    10, u.pc, comoving=True, cosmo_factor=cosmo_factor(a**1, 1.0)
+)  # less than this is ~0
+abstol_v = cosmo_quantity(
+    10, u.m / u.s, comoving=True, cosmo_factor=cosmo_factor(a**0, 1.0)
+)  # less than this is ~0
 
 expected_xy = {
     "gas": cosmo_array(
@@ -227,8 +231,24 @@ class TestAutoCoordinateTransformations:
         Positions should still be offcentre.
         """
         xyz = getattr(sg_autorecentre_off, particle_name).coordinates
-        assert (np.abs(xyz[:, :2] - 2 * u.Mpc) <= expected_xy).all()
-        assert (np.abs(xyz[:, 2] - 2 * u.Mpc) <= expected_z).all()
+        assert (
+            np.abs(
+                xyz[:, :2]
+                - cosmo_quantity(
+                    2, u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a**1, 1.0)
+                )
+            )
+            <= expected_xy
+        ).all()
+        assert (
+            np.abs(
+                xyz[:, 2]
+                - cosmo_quantity(
+                    2, u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a**1, 1.0)
+                )
+            )
+            <= expected_z
+        ).all()
 
     @pytest.mark.parametrize(
         "particle_name, expected_vxy, expected_vz",
@@ -241,8 +261,30 @@ class TestAutoCoordinateTransformations:
         Velocities should still be offcentre.
         """
         vxyz = getattr(sg_autorecentre_off, particle_name).velocities
-        assert (np.abs(vxyz[:, :2] - 200 * u.km / u.s) <= expected_vxy).all()
-        assert (np.abs(vxyz[:, 2] - 200 * u.km / u.s) <= expected_vz).all()
+        assert (
+            np.abs(
+                vxyz[:, :2]
+                - cosmo_quantity(
+                    200,
+                    u.km / u.s,
+                    comoving=True,
+                    cosmo_factor=cosmo_factor(a**0, 1.0),
+                )
+            )
+            <= expected_vxy
+        ).all()
+        assert (
+            np.abs(
+                vxyz[:, 2]
+                - cosmo_quantity(
+                    200,
+                    u.km / u.s,
+                    comoving=True,
+                    cosmo_factor=cosmo_factor(a**0, 1.0),
+                )
+            )
+            <= expected_vz
+        ).all()
 
 
 class TestManualCoordinateTransformations:

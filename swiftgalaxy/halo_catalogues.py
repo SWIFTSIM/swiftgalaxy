@@ -215,10 +215,7 @@ class _HaloCatalogue(ABC):
         if region is not None:
             for ax in range(3):
                 region[ax] = (
-                    [
-                        self.centre[ax] + region[ax][0],
-                        self.centre[ax] + region[ax][1],
-                    ]
+                    [self.centre[ax] + region[ax][0], self.centre[ax] + region[ax][1]]
                     if region[ax] is not None
                     else None
                 )
@@ -659,10 +656,7 @@ class SOAP(_HaloCatalogue):
             sm.constrain_indices(self._soap_index)
         else:
             sm.constrain_index(self._soap_index)
-        self._catalogue = SWIFTDataset(
-            self.soap_file,
-            mask=sm,
-        )
+        self._catalogue = SWIFTDataset(self.soap_file, mask=sm)
 
     @property
     def soap_index(self) -> Union[int, List[int]]:
@@ -1303,7 +1297,14 @@ class Velociraptor(_HaloCatalogue):
         if self.centre_type in ("_gas", "_stars"):
             # {XYZ}c_gas and {XYZ}c_stars are relative to {XYZ}c
             relative_to = np.hstack(
-                [getattr(self._catalogue.positions, "{:s}c".format(c)) for c in "xyz"]
+                [
+                    cosmo_array(
+                        getattr(self._catalogue.positions, "{:s}c".format(c)),
+                        comoving=self._catalogue.units.comoving,
+                        cosmo_factor=cosmo_factor(a**1, self._catalogue.units.a),
+                    )
+                    for c in "xyz"
+                ]
             ).T
         else:
             # {XYZ}cmbp, {XYZ}cminpot and {XYZ}c are absolute
@@ -1319,9 +1320,13 @@ class Velociraptor(_HaloCatalogue):
                 relative_to
                 + np.hstack(
                     [
-                        getattr(
-                            self._catalogue.positions,
-                            "{:s}c{:s}".format(c, self.centre_type),
+                        cosmo_array(
+                            getattr(
+                                self._catalogue.positions,
+                                "{:s}c{:s}".format(c, self.centre_type),
+                            ),
+                            comoving=self._catalogue.units.comoving,
+                            cosmo_factor=cosmo_factor(a**1, self._catalogue.units.a),
                         )
                         for c in "xyz"
                     ]
@@ -1356,7 +1361,14 @@ class Velociraptor(_HaloCatalogue):
         if self.centre_type in ("_gas", "_stars"):
             # V{XYZ}c_gas and V{XYZ}c_stars are relative to {XYZ}c
             relative_to = np.hstack(
-                [getattr(self._catalogue.velocities, "v{:s}c".format(c)) for c in "xyz"]
+                [
+                    cosmo_array(
+                        getattr(self._catalogue.velocities, "v{:s}c".format(c)),
+                        comoving=self._catalogue.units.comoving,
+                        cosmo_factor=cosmo_factor(a**0, self._catalogue.units.a),
+                    )
+                    for c in "xyz"
+                ]
             ).T
         else:
             # V{XYZ}cmbp, V{XYZ}cminpot and V{XYZ}c are absolute
@@ -1371,9 +1383,13 @@ class Velociraptor(_HaloCatalogue):
                 relative_to
                 + np.hstack(
                     [
-                        getattr(
-                            self._catalogue.velocities,
-                            "v{:s}c{:s}".format(c, self.centre_type),
+                        cosmo_array(
+                            getattr(
+                                self._catalogue.velocities,
+                                "v{:s}c{:s}".format(c, self.centre_type),
+                            ),
+                            comoving=self._catalogue.units.comoving,
+                            cosmo_factor=cosmo_factor(a**0, self._catalogue.units.a),
                         )
                         for c in "xyz"
                     ]
@@ -1641,8 +1657,7 @@ class Caesar(_HaloCatalogue):
         """
 
         def in_one_of_ranges(
-            ints: NDArray[np.int_],
-            int_ranges: NDArray[np.int_],
+            ints: NDArray[np.int_], int_ranges: NDArray[np.int_]
         ) -> NDArray[np.bool_]:
             """
             Produces a boolean mask corresponding to `ints`.

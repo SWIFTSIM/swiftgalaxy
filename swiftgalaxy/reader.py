@@ -55,10 +55,11 @@ def _apply_box_wrap(coords: cosmo_array, boxsize: Optional[cosmo_array]) -> cosm
     out : :class:`~swiftsimio.objects.cosmo_array`
         The coordinates wrapped to lie within the box dimensions.
     """
-    if boxsize is None:
-        return coords
-    retval = (coords + boxsize / 2.0) % boxsize - boxsize / 2.0
-    return retval
+    return (
+        (coords + boxsize / 2.0) % boxsize - boxsize / 2.0
+        if boxsize is not None
+        else coords
+    )
 
 
 def _apply_translation(coords: cosmo_array, offset: cosmo_array) -> cosmo_array:
@@ -1573,9 +1574,7 @@ class SWIFTGalaxy(SWIFTDataset):
                 getattr(self.metadata, f"{particle_name}_properties").group
             ]
             TypeDatasetHelper = type(
-                f"{nice_name}DatasetHelper",
-                (_SWIFTGroupDatasetHelper, object),
-                dict(),
+                f"{nice_name}DatasetHelper", (_SWIFTGroupDatasetHelper, object), dict()
             )
             self._particle_dataset_helpers[particle_name] = TypeDatasetHelper(
                 super().__getattribute__(particle_name), self
