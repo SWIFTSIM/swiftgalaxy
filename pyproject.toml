@@ -21,7 +21,7 @@ dependencies = [
     "scipy",
     "h5py",
     "unyt",
-    "swiftsimio",
+    "swiftsimio>=10.0.0",
 ]
 
 [project.urls]
