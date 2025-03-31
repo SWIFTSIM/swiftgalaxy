@@ -23,7 +23,7 @@ Setting up an instance of the helper class is straightforward. We'll assume a SO
 
     soap = SOAP(
         soap_file="halo_properties_0123.hdf5",
-	halo_index=0,
+	soap_index=0,
     )
 
 The first argument could also include a path if needed, e.g. :file:`/path/to/halo_properties_0123.hdf5`.
@@ -44,7 +44,7 @@ Usually the :class:`~swiftgalaxy.halo_catalogues.SOAP` object is used to create 
         "snapshot_0123.hdf5",
 	SOAP(
 	    "halo_properties_0123.hdf5",
-	    halo_index=0,
+	    soap_index=0,
 	)
     )
 
@@ -328,9 +328,9 @@ The workflow to select all particles within a given aperture (e.g. 1 Mpc) also w
         "my_snapshot.hdf5",
 	SOAP(
 	    "my_soap_file.hdf5",
-	    halo_index=0,
+	    soap_index=0,
 	    extra_mask=None,  # disable selecting only particles flagged as bound by the halo finder
-	    custom_spatial_offsets=cosmo_arrayy([[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]], u.Mpc),
+	    custom_spatial_offsets=cosmo_array([[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]], u.Mpc),
 	)
     )
     mask_collection = MaskCollection(

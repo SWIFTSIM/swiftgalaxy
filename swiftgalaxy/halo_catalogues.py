@@ -728,7 +728,7 @@ class SOAP(_HaloCatalogue):
         Half-length(s) of the bounding box regions for spatial masking.
 
         SOAP stores the maximum radius of any bound particle with respect to the
-        ``bound_subhalo.centre_of_mass``, as the ``bound_subhalo.enclose_radius``.
+        ``input_halos.halo_centre``, as the ``bound_subhalo.enclose_radius``.
         Use this to define the bounding box for spatial masking.
 
         Returns
