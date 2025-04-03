@@ -13,8 +13,18 @@ from .reader import SWIFTGalaxy
 from .halo_catalogues import _HaloCatalogue
 from warnings import warn
 
-from typing import Optional, Set, Any, List, Callable, Dict, Tuple, Generator
+from typing import Optional, Set, Any, List, Callable, Dict, Tuple, Generator, TypedDict
 from swiftsimio.masks import SWIFTMask
+
+
+class _IterationSolution(TypedDict):
+    """
+    Type hints for dicts containing a proposed SWIFTGalaxies iteration strategy.
+    """
+
+    regions: np.ndarray
+    region_target_indices: list[np.ndarray]
+    cost: int
 
 
 class SWIFTGalaxies:
@@ -221,6 +231,20 @@ class SWIFTGalaxies:
             raise ValueError(
                 "optimize_iteration must be one of 'dense', 'sparse' or 'auto'."
             )
+
+        # before evaluating optimized solutions, if we have 0 targets short-circuit
+        if self.halo_catalogue._index_attr is not None:
+            target_list = getattr(self.halo_catalogue, self.halo_catalogue._index_attr)
+            if len(target_list) == 0:
+                self._solution = _IterationSolution(
+                    regions=np.array([]),
+                    region_target_indices=[np.array([])],
+                    cost=-1,
+                )
+                return
+            if len(target_list) == 1:
+                optimize_iteration = "sparse"  # 1 target is sparse by definition
+
         if optimize_iteration in ("dense", "auto"):
             self._eval_dense_optimized_solution()
         if optimize_iteration in ("sparse", "auto"):
@@ -243,6 +267,7 @@ class SWIFTGalaxies:
             self._solution = self._dense_optimized_solution
         elif optimize_iteration == "sparse":
             self._solution = self._sparse_optimized_solution
+        return
 
     @property
     def iteration_order(self) -> np.ndarray:
@@ -277,7 +302,7 @@ class SWIFTGalaxies:
         interest in each of the regions; ``"cost"`` containing the cost (in top-level cell
         read operations) of this iteration scheme.
         """
-        target_centres = self.halo_catalogue._region_centre
+        target_centres = np.atleast_2d(self.halo_catalogue._region_centre)
         if self.halo_catalogue._user_spatial_offsets is not None:
             target_regions = self.halo_catalogue._user_spatial_offsets[np.newaxis, ...]
         else:
@@ -324,7 +349,7 @@ class SWIFTGalaxies:
         # region_target_indices contains an array of indices into the targets array
         # for each region
         # cost is the integer number of cells that will be read during this iteration
-        self._sparse_optimized_solution = dict(
+        self._sparse_optimized_solution = _IterationSolution(
             regions=unique_regions,
             region_target_indices=np.split(
                 np.arange(inv.size)[sorter],
@@ -358,7 +383,7 @@ class SWIFTGalaxies:
         scheme. The actual cost depends on the size of the grid regions and whether none,
         one or both of the grids are aligned with the top-level cell grid.
         """
-        target_centres = self.halo_catalogue._region_centre
+        target_centres = np.atleast_2d(self.halo_catalogue._region_centre)
         if self.halo_catalogue._user_spatial_offsets is not None:
             target_sizes = np.diff(self.halo_catalogue._user_spatial_offsets).T
         else:
@@ -478,7 +503,7 @@ class SWIFTGalaxies:
         # cost_max is an integer number of cells that will be read during this iteration
         # in the worst case (assuming both grids are mis-aligned with the cell grid)
         sorter = np.argsort(inv)
-        self._dense_optimized_solution = dict(
+        self._dense_optimized_solution = _IterationSolution(
             regions=unique_regions,
             region_target_indices=np.split(
                 np.arange(inv.size)[sorter],

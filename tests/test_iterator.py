@@ -540,3 +540,55 @@ class TestSWIFTGalaxies:
             remove_toyvr()
         elif "caesar" in hf_type:
             remove_toycaesar()
+
+
+class TestSWIFTGalaxiesWithSOAP:
+
+    def test_zero_targets(self, toysnap_withfof, toysoap_with_virtual_snapshot):
+        """
+        Make sure we don't crash with zero targets. Instead iterate over zero elements.
+        """
+        target_list = []
+        sgs = SWIFTGalaxies(
+            toysoap_virtual_snapshot_filename,
+            SOAP(soap_file=toysoap_filename, soap_index=target_list),
+            preload={  # just to keep warnings quiet
+                "gas.particle_ids",
+                "dark_matter.particle_ids",
+                "stars.particle_ids",
+                "black_holes.particle_ids",
+            },
+        )
+        for sg in sgs:  # should not crash by iterating
+            # but should not reach this:
+            raise RuntimeError("Supposed to iterate over 0 elements!")
+
+        def f(sg):
+            # _index_attr has leading underscore, access through property with [1:]
+            return getattr(sg.halo_catalogue, sg.halo_catalogue._index_attr[1:])
+
+        assert sgs.map(f) == target_list
+
+    def test_one_target(self, toysnap_withfof, toysoap_with_virtual_snapshot):
+        """
+        Make sure that we don't crash with a single target. Instead iterate over it.
+        """
+        target_list = [1]
+        sgs = SWIFTGalaxies(
+            toysoap_virtual_snapshot_filename,
+            SOAP(soap_file=toysoap_filename, soap_index=target_list),
+            preload={  # just to keep warnings quiet
+                "gas.particle_ids",
+                "dark_matter.particle_ids",
+                "stars.particle_ids",
+                "black_holes.particle_ids",
+            },
+        )
+        for sg in sgs:  # should iterate over the one target
+            assert sg.halo_catalogue.soap_index == target_list[0]
+
+        def f(sg):
+            # _index_attr has leading underscore, access through property with [1:]
+            return getattr(sg.halo_catalogue, sg.halo_catalogue._index_attr[1:])
+
+        assert sgs.map(f) == target_list
