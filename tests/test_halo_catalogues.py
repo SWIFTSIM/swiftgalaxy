@@ -392,9 +392,11 @@ class TestHaloCataloguesMulti:
             # this is Standalone, nothing to do
             return
         # strip the leading underscore with [1:] to access the property
-        assert getattr(hf_multi, hf_multi._index_attr[1:]) == [0, 1]
+        indices_without_mask = getattr(hf_multi, hf_multi._index_attr[1:])
+        assert indices_without_mask == [0, 1]
         hf_multi._mask_multi_galaxy(0)
-        assert getattr(hf_multi, hf_multi._index_attr[1:]) == 0
+        indices_with_mask = getattr(hf_multi, hf_multi._index_attr[1:])
+        assert indices_with_mask == 0
 
     def test_masked_catalogue_matches(self, hf_multi):
         mask_index = 0
@@ -424,6 +426,7 @@ class TestHaloCataloguesMulti:
         hf = hf_multi.__class__(**init_args)
         hf_multi._mask_multi_galaxy(mask_index)
         if hf_multi.__class__ == SOAP:
+            assert hf.soap_index == hf_multi.soap_index
             assert (
                 hf.bound_subhalo.enclose_radius == hf_multi.bound_subhalo.enclose_radius
             )
