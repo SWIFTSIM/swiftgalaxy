@@ -164,13 +164,13 @@ class ToyHF(_HaloCatalogue):
             u.Mpc,
             comoving=True,
             cosmo_factor=cosmo_factor(a**1, 1.0),
-        )
+        )[(self.index,)]
 
     @property
     def _region_aperture(self):
         return cosmo_array(
             [0.5, 0.5], u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a**1, 1.0)
-        )
+        )[(self.index,)]
 
     def _get_preload_fields(self, server):
         return set()

@@ -355,26 +355,19 @@ class TestSWIFTGalaxies:
             sgs.halo_catalogue, sgs.halo_catalogue._index_attr[1:]
         )
 
-    def test_arbitrary_index_ordering(self, toysnap_withfof, hf_multi):
+    def test_arbitrary_index_ordering(
+        self, toysnap_withfof, hf_multi_forwards_and_backwards
+    ):
         """
         Check that SWIFTGalaxies gives consistent results for any order of target objects.
 
         Especially important for velociraptor where some logic had to be added to avoid
         hdf5 complaining about an unsorted list of indices to read from file.
         """
+        hf_multi, hf_multi_backwards = hf_multi_forwards_and_backwards
 
         def f(sg):
-            if isinstance(hf_multi, Standalone):
-                return int(
-                    np.argwhere(
-                        np.all(
-                            sg.halo_catalogue.centre == sg.halo_catalogue._centre,
-                            axis=1,
-                        )
-                    ).squeeze()
-                )
-            # _index_attr has leading underscore, access through property with [1:]
-            return getattr(sg.halo_catalogue, sg.halo_catalogue._index_attr[1:])
+            return sg.halo_catalogue.centre
 
         sgs_forwards = SWIFTGalaxies(
             (
@@ -391,22 +384,13 @@ class TestSWIFTGalaxies:
             },
         )
         map_forwards = sgs_forwards.map(f)
-        if isinstance(hf_multi, Standalone):
-            hf_multi._centre = hf_multi._centre[::-1]
-            hf_multi._velocity_centre = hf_multi._velocity_centre[::-1]
-        else:
-            setattr(
-                hf_multi,
-                hf_multi._index_attr,
-                getattr(hf_multi, hf_multi._index_attr)[::-1],
-            )
         sgs_backwards = SWIFTGalaxies(
             (
                 toysoap_virtual_snapshot_filename
                 if isinstance(hf_multi, SOAP)
                 else toysnap_filename
             ),
-            hf_multi,
+            hf_multi_backwards,
             preload={  # just to keep warnings quiet
                 "gas.particle_ids",
                 "dark_matter.particle_ids",
@@ -415,13 +399,7 @@ class TestSWIFTGalaxies:
             },
         )
         map_backwards = sgs_backwards.map(f)
-        if isinstance(hf_multi, Standalone):
-            # because the reversed catalogue compares to the reversed catalogue in f,
-            # we get the reverse-of-the-reverse in map_backwards, which should match
-            # map_forwards
-            assert map_forwards == map_backwards
-            return
-        assert map_forwards == map_backwards[::-1]
+        assert np.allclose(map_forwards, map_backwards[::-1])
 
     def test_args_kwargs_to_map(self, sgs):
         """
@@ -541,17 +519,17 @@ class TestSWIFTGalaxies:
         elif "caesar" in hf_type:
             remove_toycaesar()
 
-
-class TestSWIFTGalaxiesWithSOAP:
-
-    def test_zero_targets(self, toysnap_withfof, toysoap_with_virtual_snapshot):
+    def test_zero_targets(self, toysnap_withfof, hf_multi_zerotarget):
         """
         Make sure we don't crash with zero targets. Instead iterate over zero elements.
         """
-        target_list = []
         sgs = SWIFTGalaxies(
-            toysoap_virtual_snapshot_filename,
-            SOAP(soap_file=toysoap_filename, soap_index=target_list),
+            (
+                toysoap_virtual_snapshot_filename
+                if isinstance(hf_multi_zerotarget, SOAP)
+                else toysnap_filename
+            ),
+            hf_multi_zerotarget,
             preload={  # just to keep warnings quiet
                 "gas.particle_ids",
                 "dark_matter.particle_ids",
@@ -564,19 +542,22 @@ class TestSWIFTGalaxiesWithSOAP:
             raise RuntimeError("Supposed to iterate over 0 elements!")
 
         def f(sg):
-            # _index_attr has leading underscore, access through property with [1:]
-            return getattr(sg.halo_catalogue, sg.halo_catalogue._index_attr[1:])
+            raise RuntimeError  # we should never call this
 
-        assert sgs.map(f) == target_list
+        map_result = sgs.map(f)
+        assert len(map_result) == 0
 
-    def test_one_target(self, toysnap_withfof, toysoap_with_virtual_snapshot):
+    def test_one_target(self, toysnap_withfof, hf_multi_onetarget):
         """
         Make sure that we don't crash with a single target. Instead iterate over it.
         """
-        target_list = [1]
         sgs = SWIFTGalaxies(
-            toysoap_virtual_snapshot_filename,
-            SOAP(soap_file=toysoap_filename, soap_index=target_list),
+            (
+                toysoap_virtual_snapshot_filename
+                if isinstance(hf_multi_onetarget, SOAP)
+                else toysnap_filename
+            ),
+            hf_multi_onetarget,
             preload={  # just to keep warnings quiet
                 "gas.particle_ids",
                 "dark_matter.particle_ids",
@@ -584,11 +565,32 @@ class TestSWIFTGalaxiesWithSOAP:
                 "black_holes.particle_ids",
             },
         )
-        for sg in sgs:  # should iterate over the one target
-            assert sg.halo_catalogue.soap_index == target_list[0]
 
         def f(sg):
+            if isinstance(hf_multi_onetarget, Standalone):
+                return int(
+                    np.argwhere(
+                        np.all(
+                            sg.halo_catalogue.centre == sg.halo_catalogue._centre,
+                            axis=1,
+                        )
+                    ).squeeze()
+                )
             # _index_attr has leading underscore, access through property with [1:]
             return getattr(sg.halo_catalogue, sg.halo_catalogue._index_attr[1:])
 
-        assert sgs.map(f) == target_list
+        count = 0
+        for sg in sgs:  # should iterate over the one target
+            count += 1
+            if sg.halo_catalogue._index_attr is not None:
+                assert f(sg) == 1
+            else:
+                assert f(sg) == 0  # standalone gets position in own catalogue: 0
+        assert count == 1
+
+        map_result = sgs.map(f)
+        assert len(map_result) == 1
+        if sg.halo_catalogue._index_attr is not None:
+            assert map_result == [1]
+        else:
+            assert map_result == [0]  # standalone gets position in own catalogue: 0

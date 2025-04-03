@@ -170,8 +170,13 @@ class _HaloCatalogue(ABC):
         --------
         swiftgalaxy.halo_catalogues._HaloCatalogue._unmask_multi_galaxy
         """
+        if self._index_attr is None:
+            self._multi_galaxy_index_mask = index
+        else:
+            self._multi_galaxy_index_mask = int(
+                np.argmax(np.array(getattr(self, self._index_attr)) == index)
+            )
         self._multi_galaxy_catalogue_mask = index
-        self._multi_galaxy_index_mask = index
         return
 
     def _unmask_multi_galaxy(self) -> None:
@@ -301,8 +306,8 @@ class _HaloCatalogue(ABC):
         else:
             index = getattr(self, self._index_attr)
             return (
-                index[self._multi_galaxy_catalogue_mask]
-                if self._multi_galaxy_catalogue_mask is not None
+                index[self._multi_galaxy_index_mask]
+                if self._multi_galaxy_index_mask is not None
                 else index
             )
 
@@ -319,8 +324,12 @@ class _HaloCatalogue(ABC):
                 self._multi_galaxy = True
                 self._multi_count = len(self._centre)
             else:
-                self._multi_galaxy = False
-                self._multi_count = 1
+                if len(self._centre) == 0:
+                    self._multi_galaxy = True
+                    self._multi_count = 0
+                else:
+                    self._multi_galaxy = False
+                    self._multi_count = 1
         else:
             index = getattr(self, self._index_attr)
             if isinstance(index, (Sequence, np.ndarray)):
@@ -663,7 +672,8 @@ class SOAP(_HaloCatalogue):
         """
         The index (or indices in multi-galaxy mode when no mask is active) of the
         objects of interest in the halo catalogue. This is just the position in the
-        arrays stored in the SOAP hdf5 catalogue files.
+        arrays stored in the SOAP :class:`~swiftsimio.reader.SWIFTDataset` (that
+        could have a :class:`~swiftsimio.masks.SWIFTMask`).
 
         Returns
         -------
@@ -672,7 +682,12 @@ class SOAP(_HaloCatalogue):
         """
         index = self._mask_index()
         if index is not None:
-            return index
+            squeezed_index = np.squeeze(index)
+            return (
+                int(squeezed_index)
+                if squeezed_index.ndim == 0
+                else list(squeezed_index)
+            )
         else:
             raise ValueError("SOAP definition of _index_attr unset!")
 

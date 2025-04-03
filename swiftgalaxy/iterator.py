@@ -232,18 +232,25 @@ class SWIFTGalaxies:
                 "optimize_iteration must be one of 'dense', 'sparse' or 'auto'."
             )
 
-        # before evaluating optimized solutions, if we have 0 targets short-circuit
         if self.halo_catalogue._index_attr is not None:
-            target_list = getattr(self.halo_catalogue, self.halo_catalogue._index_attr)
-            if len(target_list) == 0:
-                self._solution = _IterationSolution(
-                    regions=np.array([]),
-                    region_target_indices=[np.array([])],
-                    cost=-1,
-                )
-                return
-            if len(target_list) == 1:
-                optimize_iteration = "sparse"  # 1 target is sparse by definition
+            num_targets = len(
+                getattr(self.halo_catalogue, self.halo_catalogue._index_attr)
+            )
+        else:
+            num_targets = len(self.halo_catalogue._region_centre)
+            print(num_targets)
+        # before evaluating optimized solutions:
+        if num_targets == 0:
+            # if we have 0 targets short-circuit
+            self._solution = _IterationSolution(
+                regions=np.array([]),
+                region_target_indices=[np.array([])],
+                cost=-1,
+            )
+            return
+        if num_targets == 1:
+            # if we have 1 target best strategy is sparse
+            optimize_iteration = "sparse"
 
         if optimize_iteration in ("dense", "auto"):
             self._eval_dense_optimized_solution()
