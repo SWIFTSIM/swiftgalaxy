@@ -164,21 +164,14 @@ def _apply_4transform(
         return retval.to_physical()
 
 
-def _data_read_wrapper(swift_dataset_property):
-    prop = swift_dataset_property.__name__
+def _data_read_wrapper(prop):
 
     def wrapper(self):
         particle_dataset = self._particle_dataset
         particle_name = particle_dataset.group_name
-        # check if we're dealing with a named columns field
-        if self._is_namedcolumns(prop):
-            return getattr(self, prop)
-        # otherwise we're dealing with a particle data table
         if getattr(particle_dataset, f"_{prop}") is None:
             if (
-                hasattr(
-                    self._swiftgalaxy, "_initialised"
-                )
+                hasattr(self._swiftgalaxy, "_initialised")
                 and self._swiftgalaxy._warn_on_read
             ):
                 warn(
@@ -188,6 +181,7 @@ def _data_read_wrapper(swift_dataset_property):
                     RuntimeWarning,
                 )
             # going to read from file: apply masks, transforms
+            print(f"data_wrap raw reading {prop}")
             data = getattr(particle_dataset, prop)  # raw data loaded
             data = self._apply_data_mask(data)
             data = self._apply_transforms(data, prop)
@@ -196,6 +190,35 @@ def _data_read_wrapper(swift_dataset_property):
             # just return the data
             pass
         return getattr(particle_dataset, f"_{prop}")
+
+    return wrapper
+
+
+def _column_read_wrapper(column_name):
+
+    def wrapper(self):
+        named_column_dataset = self._named_column_dataset
+        if getattr(named_column_dataset, f"_{column_name}") is None:
+            if (
+                hasattr(self._particle_dataset_helper._swiftgalaxy, "_initialised")
+                and self._particle_dataset_helper._swiftgalaxy._warn_on_read
+            ):
+                warn(
+                    f"Reading {self._particle_dataset_helper.particle_name}.{column_name}"
+                    " from snapshot file, this may be "
+                    "unintended (should it be preloaded if using SWIFTGalaxies to "
+                    "iterate over objects of interest?)",
+                    RuntimeWarning,
+                )
+            # going to read from file: apply masks, transforms
+            data = getattr(named_column_dataset, column_name)  # raw data loaded
+            data = self._particle_dataset_helper._apply_data_mask(data)
+            data = self._particle_dataset_helper._apply_transforms(data, column_name)
+            setattr(named_column_dataset, f"_{column_name}", data)
+        else:
+            # just return the data
+            pass
+        return getattr(named_column_dataset, f"_{column_name}")
 
     return wrapper
 
@@ -327,8 +350,8 @@ class _SWIFTNamedColumnDatasetHelper(object):
     :class:`_SWIFTGroupDatasetHelper`
     """
 
-    def __init__(self, named_columns_dataset, particle_dataset_helper) -> None:
-        self._named_column_dataset = named_columns_dataset
+    def __init__(self, named_column_dataset, particle_dataset_helper) -> None:
+        self._named_column_dataset = named_column_dataset
         self._particle_dataset_helper = particle_dataset_helper
         self._initialised = True
         return
@@ -396,33 +419,6 @@ class _SWIFTNamedColumnDatasetHelper(object):
             The value of the attribute.
         """
         named_column_dataset = object.__getattribute__(self, "_named_column_dataset")
-        # particle_dataset_helper = object.__getattribute__(
-        #     self, "_particle_dataset_helper"
-        # )
-        # if attr in named_column_dataset.named_columns:
-        #     # we're dealing with one of the named columns
-        #     if getattr(named_column_dataset, f"_{attr}") is None:
-        #         # going to read from file: apply masks, transforms
-        #         if (
-        #             hasattr(particle_dataset_helper._swiftgalaxy, "_initialised")
-        #             and particle_dataset_helper._swiftgalaxy._warn_on_read
-        #         ):
-        #             warn(
-        #                 f"Reading {particle_dataset_helper.group_name}."
-        #                 f"{named_column_dataset.name}.{attr} from snapshot file, "
-        #                 "this may be unintended (should it be preloaded if using "
-        #                 "SWIFTGalaxies to iterate over objects of interest?)",
-        #                 RuntimeWarning,
-        #             )
-        #         data = getattr(named_column_dataset, attr)  # raw data loaded
-        #         data = particle_dataset_helper._apply_data_mask(data)
-        #         data = particle_dataset_helper._apply_transforms(
-        #             data, f"{named_column_dataset.name}.{attr}"
-        #         )
-        #         setattr(named_column_dataset, f"_{attr}", data)
-        #     else:
-        #         # just return the data
-        #         pass
         try:
             # beware collisions with SWIFTGroupDataset namespace
             return object.__getattribute__(self, attr)
@@ -624,36 +620,6 @@ class _SWIFTGroupDatasetHelper(object):
     def __init__(self, particle_dataset, swiftgalaxy) -> None:
         self._particle_dataset = particle_dataset
         self._swiftgalaxy = swiftgalaxy
-        # self._named_column_dataset_helpers: dict[
-        #     str, _SWIFTNamedColumnDatasetHelper
-        # ] = dict()
-        # particle_metadata = getattr(self.metadata, f"{self.group_name}_properties")
-        # named_columns_names = [
-        #     fn
-        #     for (fn, fp) in zip(
-        #         particle_metadata.field_names, particle_metadata.field_paths
-        #     )
-        #     if particle_metadata.named_columns[fp] is not None
-        # ]
-        # for named_columns_name in named_columns_names:
-        #     # This is the named_columns instance to wrap:
-        #     named_columns = getattr(self._particle_dataset, named_columns_name)
-        #     # We'll make a custom type to present a nice name to the user.
-        #     particle_nice_name = swiftsimio_metadata.particle_types.particle_name_class[
-        #         self.group
-        #     ]
-        #     nice_name = (
-        #         f"{particle_nice_name}"
-        #         f"{named_columns.field_path.split('/')[-1]}ColumnsHelper"
-        #     )
-        #     TypeNamedColumnDatasetHelper = type(
-        #         nice_name, (_SWIFTNamedColumnDatasetHelper, object), dict()
-        #     )
-        #     TypeNamedColumnDatasetHelper._named_column_dataset = named_columns
-        #     TypeNamedColumnDatasetHelper._particle_dataset_helper = self
-        #     self._named_column_dataset_helpers[named_columns_name] = (
-        #         TypeNamedColumnDatasetHelper()
-        #     )
         self._spherical_coordinates: Optional[dict] = None
         self._cylindrical_coordinates: Optional[dict] = None
         self._spherical_velocities: Optional[dict] = None
@@ -705,38 +671,7 @@ class _SWIFTGroupDatasetHelper(object):
         out : :obj:`object`
             The value of the attribute.
         """
-        # particle_name = object.__getattribute__(self, "_particle_dataset").group_name
-        # metadata = object.__getattribute__(self, "_particle_dataset").metadata
-        # particle_metadata = getattr(metadata, f"{particle_name}_properties")
         particle_dataset = object.__getattribute__(self, "_particle_dataset")
-        # if attr in particle_metadata.field_names:
-        #     # check if we're dealing with a named columns field
-        #     if object.__getattribute__(self, "_is_namedcolumns")(attr):
-        #         return object.__getattribute__(self, "_named_column_dataset_helpers")[
-        #             attr
-        #         ]
-        #     # otherwise we're dealing with a particle data table
-        #     if getattr(particle_dataset, f"_{attr}") is None:
-        #         if (
-        #             hasattr(
-        #                 object.__getattribute__(self, "_swiftgalaxy"), "_initialised"
-        #             )
-        #             and object.__getattribute__(self, "_swiftgalaxy")._warn_on_read
-        #         ):
-        #             warn(
-        #                 f"Reading {particle_name}.{attr} from snapshot file, this may be "
-        #                 "unintended (should it be preloaded if using SWIFTGalaxies to "
-        #                 "iterate over objects of interest?)",
-        #                 RuntimeWarning,
-        #             )
-        #         # going to read from file: apply masks, transforms
-        #         data = getattr(particle_dataset, attr)  # raw data loaded
-        #         data = object.__getattribute__(self, "_apply_data_mask")(data)
-        #         data = object.__getattribute__(self, "_apply_transforms")(data, attr)
-        #         setattr(particle_dataset, f"_{attr}", data)
-        #     else:
-        #         # just return the data
-        #         pass
         try:
             # beware collisions with SWIFTDataset namespace
             return object.__getattribute__(self, attr)
@@ -767,9 +702,6 @@ class _SWIFTGroupDatasetHelper(object):
             self._particle_dataset.metadata,
             f"{self._particle_dataset.group_name}_properties",
         ).field_names
-        # if (attr in field_names) and self._is_namedcolumns(attr):
-        #     self._named_column_dataset_helpers[attr] = value
-        #     return
         if (attr in field_names) or (
             (attr.startswith("_")) and (attr[1:] in field_names)
         ):
@@ -1666,14 +1598,12 @@ class SWIFTGalaxy(SWIFTDataset):
                 if particle_metadata.named_columns[fp] is not None
             ]
             for prop in set(particle_metadata.field_names) - set(named_columns_names):
-                setattr(
-                    TypeDatasetHelper,
-                    prop,
-                    property(
-                        lambda cls: _data_read_wrapper(getattr(cls._particle_dataset, prop))
-                    )
-                )
-            setattr(self, particle_name, TypeDatasetHelper(super().__getattribute__(particle_name), self))
+                setattr(TypeDatasetHelper, prop, property(_data_read_wrapper(prop)))
+            setattr(
+                self,
+                particle_name,
+                TypeDatasetHelper(super().__getattribute__(particle_name), self),
+            )
             for prop in named_columns_names:
                 # This is the named_columns instance to wrap:
                 named_columns = getattr(super().__getattribute__(particle_name), prop)
@@ -1686,10 +1616,18 @@ class SWIFTGalaxy(SWIFTDataset):
                     (_SWIFTNamedColumnDatasetHelper, object),
                     dict(),
                 )
+                for column_name in named_columns.named_columns:
+                    setattr(
+                        TypeNamedColumnDatasetHelper,
+                        column_name,
+                        property(_column_read_wrapper(column_name)),
+                    )
                 setattr(
                     TypeDatasetHelper,
                     prop,
-                    TypeNamedColumnDatasetHelper(named_columns, getattr(self, particle_name))
+                    TypeNamedColumnDatasetHelper(
+                        named_columns, getattr(self, particle_name)
+                    ),
                 )
         if not hasattr(self, "_extra_mask"):
             self._extra_mask = None
@@ -1707,15 +1645,15 @@ class SWIFTGalaxy(SWIFTDataset):
                 )
                 for field_name in particle_metadata.field_names:
                     if getattr(self, particle_name)._is_namedcolumns(field_name):
-                        named_columns_dataset = getattr(
+                        named_column_dataset = getattr(
                             getattr(self, particle_name), f"{field_name}"
                         )._named_column_dataset
-                        for column in named_columns_dataset.named_columns:
-                            data = getattr(named_columns_dataset, f"_{column}")
+                        for column in named_column_dataset.named_columns:
+                            data = getattr(named_column_dataset, f"_{column}")
                             if data is None:
                                 continue
                             setattr(
-                                named_columns_dataset,
+                                named_column_dataset,
                                 f"_{column}",
                                 data[getattr(self._extra_mask, particle_name)],
                             )
@@ -2031,62 +1969,6 @@ class SWIFTGalaxy(SWIFTDataset):
                         particle_dataset_helper._cylindrical_velocities[c][mask]
                     )
         return sg
-
-    # def __getattribute__(self, attr: str) -> Any:
-    #     """
-    #     Get an attribute of the object.
-
-    #     Redirects requests for datasets to the corresponding :mod:`swiftgalaxy` helper
-    #     classes.
-
-    #     Parameters
-    #     ----------
-    #     attr : :obj:`str`
-    #         The name of the attribute.
-
-    #     Returns
-    #     -------
-    #     out : :obj:`object`
-    #         The value of the attribute.
-    #     """
-    #     # __getattr__ is only checked if the attribute is not found
-    #     # __getattribute__ is checked promptly
-    #     # Note always use super().__getattribute__(...)
-    #     # or object.__getattribute__(self, ...) as appropriate
-    #     # to avoid infinite recursion.
-    #     try:
-    #         metadata = super().__getattribute__("metadata")
-    #     except AttributeError:
-    #         # guard against accessing metadata before it is loaded
-    #         return super().__getattribute__(attr)
-    #     else:
-    #         if attr in metadata.present_group_names:
-    #             # We are entering a <ParticleType>Dataset, return helper.
-    #             return object.__getattribute__(self, "_particle_dataset_helpers")[attr]
-    #         else:
-    #             return super().__getattribute__(attr)
-
-    def __setattr__(self, attr: str, value: Any) -> None:
-        """
-        Set an attribute of the object.
-
-        Redirects setting attributes to the helper objects when relevant.
-
-        Parameters
-        ----------
-        attr : :obj:`str`
-            Name of the attribute.
-        value : :obj:`object`
-            The value to assign to the attribute.
-        """
-        if (not hasattr(self, "_initialised")) or (
-            attr not in self.metadata.present_group_names
-        ):
-            object.__setattr__(self, attr, value)
-        else:
-            # attr in self.metadata.present_group_names
-            setattr(self, attr, value)
-        return
 
     def rotate(self, rotation: Rotation) -> None:
         """
