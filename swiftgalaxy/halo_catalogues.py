@@ -170,8 +170,13 @@ class _HaloCatalogue(ABC):
         --------
         swiftgalaxy.halo_catalogues._HaloCatalogue._unmask_multi_galaxy
         """
+        if self._index_attr is None:
+            self._multi_galaxy_index_mask = index
+        else:
+            self._multi_galaxy_index_mask = int(
+                np.argmax(np.array(getattr(self, self._index_attr)) == index)
+            )
         self._multi_galaxy_catalogue_mask = index
-        self._multi_galaxy_index_mask = index
         return
 
     def _unmask_multi_galaxy(self) -> None:
@@ -215,10 +220,7 @@ class _HaloCatalogue(ABC):
         if region is not None:
             for ax in range(3):
                 region[ax] = (
-                    [
-                        self.centre[ax] + region[ax][0],
-                        self.centre[ax] + region[ax][1],
-                    ]
+                    [self.centre[ax] + region[ax][0], self.centre[ax] + region[ax][1]]
                     if region[ax] is not None
                     else None
                 )
@@ -304,8 +306,8 @@ class _HaloCatalogue(ABC):
         else:
             index = getattr(self, self._index_attr)
             return (
-                index[self._multi_galaxy_catalogue_mask]
-                if self._multi_galaxy_catalogue_mask is not None
+                index[self._multi_galaxy_index_mask]
+                if self._multi_galaxy_index_mask is not None
                 else index
             )
 
@@ -322,8 +324,12 @@ class _HaloCatalogue(ABC):
                 self._multi_galaxy = True
                 self._multi_count = len(self._centre)
             else:
-                self._multi_galaxy = False
-                self._multi_count = 1
+                if len(self._centre) == 0:
+                    self._multi_galaxy = True
+                    self._multi_count = 0
+                else:
+                    self._multi_galaxy = False
+                    self._multi_count = 1
         else:
             index = getattr(self, self._index_attr)
             if isinstance(index, (Sequence, np.ndarray)):
@@ -676,17 +682,15 @@ class SOAP(_HaloCatalogue):
             sm.constrain_indices(self._soap_index)
         else:
             sm.constrain_index(self._soap_index)
-        self._catalogue = SWIFTDataset(
-            self.soap_file,
-            mask=sm,
-        )
+        self._catalogue = SWIFTDataset(self.soap_file, mask=sm)
 
     @property
     def soap_index(self) -> Union[int, List[int]]:
         """
         The index (or indices in multi-galaxy mode when no mask is active) of the
         objects of interest in the halo catalogue. This is just the position in the
-        arrays stored in the SOAP hdf5 catalogue files.
+        arrays stored in the SOAP :class:`~swiftsimio.reader.SWIFTDataset` (that
+        could have a :class:`~swiftsimio.masks.SWIFTMask`).
 
         Returns
         -------
@@ -695,7 +699,12 @@ class SOAP(_HaloCatalogue):
         """
         index = self._mask_index()
         if index is not None:
-            return index
+            squeezed_index = np.squeeze(index)
+            return (
+                int(squeezed_index)
+                if squeezed_index.ndim == 0
+                else list(squeezed_index)
+            )
         else:
             raise ValueError("SOAP definition of _index_attr unset!")
 
@@ -751,7 +760,7 @@ class SOAP(_HaloCatalogue):
         Half-length(s) of the bounding box regions for spatial masking.
 
         SOAP stores the maximum radius of any bound particle with respect to the
-        ``bound_subhalo.centre_of_mass``, as the ``bound_subhalo.enclose_radius``.
+        ``input_halos.halo_centre``, as the ``bound_subhalo.enclose_radius``.
         Use this to define the bounding box for spatial masking.
 
         Returns
@@ -1335,7 +1344,14 @@ class Velociraptor(_HaloCatalogue):
         if self.centre_type in ("_gas", "_stars"):
             # {XYZ}c_gas and {XYZ}c_stars are relative to {XYZ}c
             relative_to = np.hstack(
-                [getattr(self._catalogue.positions, "{:s}c".format(c)) for c in "xyz"]
+                [
+                    cosmo_array(
+                        getattr(self._catalogue.positions, "{:s}c".format(c)),
+                        comoving=self._catalogue.units.comoving,
+                        cosmo_factor=cosmo_factor(a**1, self._catalogue.units.a),
+                    )
+                    for c in "xyz"
+                ]
             ).T
         else:
             # {XYZ}cmbp, {XYZ}cminpot and {XYZ}c are absolute
@@ -1351,9 +1367,13 @@ class Velociraptor(_HaloCatalogue):
                 relative_to
                 + np.hstack(
                     [
-                        getattr(
-                            self._catalogue.positions,
-                            "{:s}c{:s}".format(c, self.centre_type),
+                        cosmo_array(
+                            getattr(
+                                self._catalogue.positions,
+                                "{:s}c{:s}".format(c, self.centre_type),
+                            ),
+                            comoving=self._catalogue.units.comoving,
+                            cosmo_factor=cosmo_factor(a**1, self._catalogue.units.a),
                         )
                         for c in "xyz"
                     ]
@@ -1388,7 +1408,14 @@ class Velociraptor(_HaloCatalogue):
         if self.centre_type in ("_gas", "_stars"):
             # V{XYZ}c_gas and V{XYZ}c_stars are relative to {XYZ}c
             relative_to = np.hstack(
-                [getattr(self._catalogue.velocities, "v{:s}c".format(c)) for c in "xyz"]
+                [
+                    cosmo_array(
+                        getattr(self._catalogue.velocities, "v{:s}c".format(c)),
+                        comoving=self._catalogue.units.comoving,
+                        cosmo_factor=cosmo_factor(a**0, self._catalogue.units.a),
+                    )
+                    for c in "xyz"
+                ]
             ).T
         else:
             # V{XYZ}cmbp, V{XYZ}cminpot and V{XYZ}c are absolute
@@ -1403,9 +1430,13 @@ class Velociraptor(_HaloCatalogue):
                 relative_to
                 + np.hstack(
                     [
-                        getattr(
-                            self._catalogue.velocities,
-                            "v{:s}c{:s}".format(c, self.centre_type),
+                        cosmo_array(
+                            getattr(
+                                self._catalogue.velocities,
+                                "v{:s}c{:s}".format(c, self.centre_type),
+                            ),
+                            comoving=self._catalogue.units.comoving,
+                            cosmo_factor=cosmo_factor(a**0, self._catalogue.units.a),
                         )
                         for c in "xyz"
                     ]
@@ -1673,8 +1704,7 @@ class Caesar(_HaloCatalogue):
         """
 
         def in_one_of_ranges(
-            ints: NDArray[np.int_],
-            int_ranges: NDArray[np.int_],
+            ints: NDArray[np.int_], int_ranges: NDArray[np.int_]
         ) -> NDArray[np.bool_]:
             """
             Produces a boolean mask corresponding to `ints`.

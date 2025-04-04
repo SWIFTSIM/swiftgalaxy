@@ -29,7 +29,7 @@ from toysnap import (
 )
 from swiftgalaxy import SWIFTGalaxy, MaskCollection
 from swiftgalaxy.halo_catalogues import Velociraptor, Caesar, SOAP, Standalone
-from swiftsimio.objects import cosmo_array
+from swiftsimio.objects import cosmo_array, cosmo_factor, a
 
 abstol_c = 1 * u.pc  # less than this is ~0
 abstol_v = 10 * u.m / u.s  # less than this is ~0
@@ -86,7 +86,12 @@ class TestHaloCatalogues:
         Check that a user can override the automatic spatial mask.
         """
         # override to select both cells in the test snapshot
-        hf._user_spatial_offsets = cosmo_array([[-5, 5], [-5, 5], [-5, 5]], u.Mpc)
+        hf._user_spatial_offsets = cosmo_array(
+            [[-5, 5], [-5, 5], [-5, 5]],
+            u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, 1.0),
+        )
         hf.extra_mask = None
         sg = SWIFTGalaxy(toysnap_filename, hf)
         generated_spatial_mask = sg._spatial_mask
@@ -205,7 +210,12 @@ class TestHaloCatalogues:
         # default is minpot == 2.001 Mpc
         assert_allclose_units(
             hf.centre,
-            cosmo_array([centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001], u.Mpc),
+            cosmo_array(
+                [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
             rtol=reltol_nd,
             atol=abstol_c,
         )
@@ -218,7 +228,10 @@ class TestHaloCatalogues:
         assert_allclose_units(
             hf.velocity_centre,
             cosmo_array(
-                [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0], u.km / u.s
+                [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**0, 1.0),
             ),
             rtol=reltol_nd,
             atol=abstol_v,
@@ -226,7 +239,6 @@ class TestHaloCatalogues:
 
 
 class TestHaloCataloguesMulti:
-
     def test_multi_flags(self, hf_multi):
         """
         Check that the multi-target nature of the cataloue is recognized.
@@ -380,15 +392,15 @@ class TestHaloCataloguesMulti:
             # this is Standalone, nothing to do
             return
         # strip the leading underscore with [1:] to access the property
-        assert getattr(hf_multi, hf_multi._index_attr[1:]) == [0, 1]
+        indices_without_mask = getattr(hf_multi, hf_multi._index_attr[1:])
+        assert indices_without_mask == [0, 1]
         hf_multi._mask_multi_galaxy(0)
-        assert getattr(hf_multi, hf_multi._index_attr[1:]) == 0
+        indices_with_mask = getattr(hf_multi, hf_multi._index_attr[1:])
+        assert indices_with_mask == 0
 
     def test_masked_catalogue_matches(self, hf_multi):
         mask_index = 0
-        init_args = {
-            "extra_mask": hf_multi.extra_mask,
-        }
+        init_args = {"extra_mask": hf_multi.extra_mask}
         if hf_multi.__class__ != Standalone:
             init_args[hf_multi._index_attr[1:]] = getattr(
                 hf_multi, hf_multi._index_attr
@@ -414,6 +426,7 @@ class TestHaloCataloguesMulti:
         hf = hf_multi.__class__(**init_args)
         hf_multi._mask_multi_galaxy(mask_index)
         if hf_multi.__class__ == SOAP:
+            assert hf.soap_index == hf_multi.soap_index
             assert (
                 hf.bound_subhalo.enclose_radius == hf_multi.bound_subhalo.enclose_radius
             )
@@ -458,7 +471,12 @@ class TestVelociraptor:
         vr.centre_type = centre_type
         assert_allclose_units(
             vr.centre,
-            cosmo_array([expected, expected, expected], u.Mpc),
+            cosmo_array(
+                [expected, expected, expected],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
             rtol=reltol_nd,
             atol=abstol_c,
         )
@@ -480,7 +498,12 @@ class TestVelociraptor:
         vr.centre_type = centre_type
         assert_allclose_units(
             vr.velocity_centre,
-            cosmo_array([expected, expected, expected], u.km / u.s),
+            cosmo_array(
+                [expected, expected, expected],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**0, 1.0),
+            ),
             rtol=reltol_nd,
             atol=abstol_v,
         )
@@ -576,11 +599,7 @@ class TestCaesar:
         pass  # Caesar has nothing to do in _load
 
     @pytest.mark.parametrize(
-        "centre_type, expected",
-        (
-            ("", centre_1),
-            ("minpot", centre_1 + 0.001),
-        ),
+        "centre_type, expected", (("", centre_1), ("minpot", centre_1 + 0.001))
     )
     def test_centre_types(self, caesar, centre_type, expected):
         """
@@ -589,17 +608,18 @@ class TestCaesar:
         caesar.centre_type = centre_type
         assert_allclose_units(
             caesar.centre,
-            cosmo_array([expected, expected, expected], u.Mpc),
+            cosmo_array(
+                [expected, expected, expected],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
             rtol=reltol_nd,
             atol=abstol_c,
         )
 
     @pytest.mark.parametrize(
-        "centre_type, expected",
-        (
-            ("", vcentre_1),
-            ("minpot", vcentre_1 + 1.0),
-        ),
+        "centre_type, expected", (("", vcentre_1), ("minpot", vcentre_1 + 1.0))
     )
     def test_vcentre_types(self, caesar, centre_type, expected):
         """
@@ -608,7 +628,12 @@ class TestCaesar:
         caesar.centre_type = centre_type
         assert_allclose_units(
             caesar.velocity_centre,
-            cosmo_array([expected, expected, expected], u.km / u.s),
+            cosmo_array(
+                [expected, expected, expected],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**0, 1.0),
+            ),
             rtol=reltol_nd,
             atol=abstol_v,
         )
@@ -805,7 +830,12 @@ class TestSOAP:
         soap.centre_type = centre_type
         assert_allclose_units(
             soap.centre,
-            cosmo_array([expected, expected, expected], u.Mpc),
+            cosmo_array(
+                [expected, expected, expected],
+                u.Mpc,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
+            ),
             rtol=reltol_nd,
             atol=abstol_c,
         )
@@ -828,7 +858,12 @@ class TestSOAP:
         soap.velocity_centre_type = velocity_centre_type
         assert_allclose_units(
             soap.velocity_centre,
-            cosmo_array([expected, expected, expected], u.km / u.s),
+            cosmo_array(
+                [expected, expected, expected],
+                u.km / u.s,
+                comoving=True,
+                cosmo_factor=cosmo_factor(a**0, 1.0),
+            ),
             rtol=reltol_nd,
             atol=abstol_v,
         )
@@ -839,8 +874,7 @@ class TestSOAP:
         """
         # pick a couple of attributes to check
         assert_allclose_units(
-            soap.input_halos_hbtplus.host_fofid,
-            cosmo_array([1], comoving=False),
+            soap.input_halos_hbtplus.host_fofid, cosmo_array([1], comoving=False)
         )
         assert_allclose_units(
             soap.bound_subhalo.centre_of_mass,
@@ -848,6 +882,7 @@ class TestSOAP:
                 [[centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001]],
                 u.Mpc,
                 comoving=False,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -871,6 +906,7 @@ class TestSOAP:
                 ],
                 u.Mpc,
                 comoving=False,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -916,6 +952,7 @@ class TestSOAPWithSWIFTGalaxy:
                 [[centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001]],
                 u.Mpc,
                 comoving=False,
+                cosmo_factor=cosmo_factor(a**1, 1.0),
             ),
             rtol=reltol_nd,
             atol=abstol_c,

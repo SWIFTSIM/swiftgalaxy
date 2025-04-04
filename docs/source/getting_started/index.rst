@@ -34,10 +34,6 @@ Installing
 
 ``pip install swiftgalaxy``
 
-.. note::
-
-   :mod:`swiftgalaxy` is not hosted on PyPI yet, so ``pip install swiftgalaxy`` will fail. Use the instructions below instead.
-
 Note that this will also install required dependencies.
 
 To set up the code for development, first clone the latest master from `github`_:
