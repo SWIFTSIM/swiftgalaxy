@@ -97,8 +97,4 @@ In this case with :class:`~swiftgalaxy.halo_catalogues.Velociraptor`, we can get
    - ``sg.gas.<tab><tab>``
    - ``sg.halo_catalogue.<tab><tab>``
 
-.. warning::
-
-   As currently implemented, using tab completion accesses the attributes of the object that is being searched for attriubtes. This triggers :mod:`swiftsimio`'s lazy-loading functionality. The result is that using tab completion like ``sg.gas.<tab><tab>`` reads *all* gas particle property arrays from the snapshot! This is obviously not desirable behaviour; a better implementation is being sought.
-
 The further features of a :class:`~swiftgalaxy.reader.SWIFTGalaxy` are detailed in the next sections.
