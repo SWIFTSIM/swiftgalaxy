@@ -33,7 +33,7 @@ from swiftsimio.masks import SWIFTMask
 from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftgalaxy.masks import MaskCollection
 
-from typing import Union, Any, Optional, Set
+from typing import Union, Optional, Set, Callable
 
 
 def _apply_box_wrap(coords: cosmo_array, boxsize: Optional[cosmo_array]) -> cosmo_array:
@@ -164,9 +164,32 @@ def _apply_4transform(
         return retval.to_physical()
 
 
-def _data_read_wrapper(prop):
+def _data_read_wrapper(prop: str) -> Callable:
+    """
+    Generator function to wrap :mod:`swiftsimio` data getters.
 
-    def wrapper(self):
+    Parameters
+    ----------
+    prop : :obj:`str`
+        The name of the data property.
+
+    Returns
+    -------
+    out : Callable
+        The wrapper function.
+    """
+
+    def wrapper(self) -> cosmo_array:
+        """
+        Read a :mod:`swiftsimio` dataset and apply our masks & transforms.
+
+        If the data are already read, just return them.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The data with any needed transformations and masks applied.
+        """
         particle_dataset = self._particle_dataset
         particle_name = particle_dataset.group_name
         if getattr(particle_dataset, f"_{prop}") is None:
@@ -194,8 +217,29 @@ def _data_read_wrapper(prop):
 
 
 def _data_write_wrapper(prop):
+    """
+    Generator function to wrap :mod:`swiftsimio` data setters.
+
+    Parameters
+    ----------
+    prop : :obj:`str`
+        The name of the data property.
+
+    Returns
+    -------
+    out : Callable
+        The wrapper function.
+    """
 
     def wrapper(self, value):
+        """
+        Assign to a :mod:`swiftsimio` dataset.
+
+        Parameters
+        ----------
+        value : :class:`~swiftsimio.objects.cosmo_array`
+            The value to assign to the dataset.
+        """
         setattr(self._particle_dataset, f"_{prop}", value)
         return
 
@@ -203,8 +247,24 @@ def _data_write_wrapper(prop):
 
 
 def _data_delete_wrapper(prop):
+    """
+    Generator function to wrap :mod:`swiftsimio` data deleters.
+
+    Parameters
+    ----------
+    prop : :obj:`str`
+        The name of the data property.
+
+    Returns
+    -------
+    out : Callable
+        The wrapper function.
+    """
 
     def wrapper(self):
+        """
+        Delete a :mod:`swiftsimio` dataset by setting it to ``None``.
+        """
         setattr(self._particle_dataset, f"_{prop}", None)
         return
 
@@ -212,8 +272,31 @@ def _data_delete_wrapper(prop):
 
 
 def _column_read_wrapper(column_name):
+    """
+    Generator function to wrap swiftsimio named column getters.
+
+    Parameters
+    ----------
+    column_name : :obj:`str`
+        The name of the column.
+
+    Returns
+    -------
+    out : Callable
+        The wrapper function.
+    """
 
     def wrapper(self):
+        """
+        Read a swiftsimio named column and apply our masks & transforms.
+
+        If the data are already read, just return them.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The column data with any needed transformations and masks applied.
+        """
         named_column_dataset = self._named_column_dataset
         if getattr(named_column_dataset, f"_{column_name}") is None:
             if (
@@ -242,8 +325,29 @@ def _column_read_wrapper(column_name):
 
 
 def _column_write_wrapper(column_name):
+    """
+    Generator function to wrap :mod:`swiftsimio` named column setters.
+
+    Parameters
+    ----------
+    column_name : :obj:`str`
+        The name of the column.
+
+    Returns
+    -------
+    out : Callable
+        The wrapper function.
+    """
 
     def wrapper(self, value):
+        """
+        Assign to a :mod:`swiftsimio` named column.
+
+        Parameters
+        ----------
+        value : :class:`~swiftsimio.objects.cosmo_array`
+            The value to assign to the named column.
+        """
         setattr(self._named_column_dataset, f"_{column_name}", value)
         return
 
@@ -251,8 +355,24 @@ def _column_write_wrapper(column_name):
 
 
 def _column_delete_wrapper(column_name):
+    """
+    Generator function to wrap :mod:`swiftsimio` named column deleters.
+
+    Parameters
+    ----------
+    column_name : :obj:`str`
+        The name of the column.
+
+    Returns
+    -------
+    out : Callable
+        The wrapper function.
+    """
 
     def wrapper(self):
+        """
+        Delete a :mod:`swiftsimio` named column by setting it to ``None``.
+        """
         setattr(self._named_column_dataset, f"_{column_name}", None)
         return
 
