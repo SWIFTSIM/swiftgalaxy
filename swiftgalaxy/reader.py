@@ -221,7 +221,8 @@ def _column_read_wrapper(column_name):
                 and self._particle_dataset_helper._swiftgalaxy._warn_on_read
             ):
                 warn(
-                    f"Reading {self._particle_dataset_helper.particle_name}.{column_name}"
+                    f"Reading {self._particle_dataset_helper.particle_name}."
+                    f"{named_column_dataset.name}.{column_name}"
                     " from snapshot file, this may be "
                     "unintended (should it be preloaded if using SWIFTGalaxies to "
                     "iterate over objects of interest?)",
@@ -387,114 +388,12 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
 
     def __init__(self, named_column_dataset, particle_dataset_helper) -> None:
         self._named_column_dataset = named_column_dataset
-        # self.field_path = property(lambda self: self._named_column_dataset.field_path, lambda self, value: setattr(self._named_column_dataset, "field_path", value), lambda self: del(self._named_column_dataset.field_path))
-        self.field_path = named_column_dataset.field_path
-        self.named_columns = named_column_dataset.named_columns
-        self.name = named_column_dataset.name
+        self.field_path = self._named_column_dataset.field_path
+        self.named_columns = self._named_column_dataset.named_columns
+        self.name = self._named_column_dataset.name
         self._particle_dataset_helper = particle_dataset_helper
         self._initialised = True
         return
-
-    def __str__(self) -> str:
-        """
-        Get a string representation of the object.
-
-        Delegated to the underlying :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset`.
-
-        Returns
-        -------
-        out : :obj:`str`
-            The string representation.
-        """
-        # return str(self._named_column_dataset)
-        return super().__str__()
-
-    def __repr__(self) -> str:
-        """
-        Get a string representation of the object.
-
-        Delegated to the underlying :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset`.
-
-        Returns
-        -------
-        out : :obj:`str`
-            The string representation.
-        """
-        # return self.__str__()
-        return super().__str__()
-
-    # def __dir__(self) -> list[str]:
-    #     """
-    #     Supply a list of attributes of the
-    #     :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`.
-
-    #     The regular ``dir`` behaviour doesn't index the names of the named columns
-    #     because these are stored in the
-    #     :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset` held by the class, so we
-    #     customize the ``__dir__`` method to list the named column names. They will then
-    #     appear in tab completion, for example.
-
-    #     Returns
-    #     -------
-    #     out : list
-    #         List of named column name strings.
-    #     """
-    #     return self._named_column_dataset.named_columns
-
-    # def __getattribute__(self, attr: str) -> Any:
-    #     """
-    #     Get an attribute of the object.
-
-    #     Redirects requests for datasets to the underlying
-    #     :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset` and then handles
-    #     any transformations and masking when new data are read.
-
-    #     Parameters
-    #     ----------
-    #     attr : :obj:`str`
-    #         The name of the attribute.
-
-    #     Returns
-    #     -------
-    #     out : :obj:`object`
-    #         The value of the attribute.
-    #     """
-    #     named_column_dataset = object.__getattribute__(self, "_named_column_dataset")
-    #     try:
-    #         # beware collisions with SWIFTGroupDataset namespace
-    #         return object.__getattribute__(self, attr)
-    #     except AttributeError:
-    #         # exposes everything else in __dict__
-    #         return getattr(named_column_dataset, attr)
-
-    # def __setattr__(self, attr: str, value: Any) -> None:
-    #     """
-    #     Set an attribute of the object.
-
-    #     Redirects setting attributes to the underlying
-    #     :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset` objects when relevant.
-
-    #     Parameters
-    #     ----------
-    #     attr : :obj:`str`
-    #         Name of the attribute.
-    #     value : :obj:`object`
-    #         The value to assign to the attribute.
-    #     """
-    #     # pass particle data through to actual SWIFTNamedColumnDataset
-    #     if not hasattr(self, "_initialised"):
-    #         # guard during initialisation
-    #         object.__setattr__(self, attr, value)
-    #         return
-    #     column_names = self._named_column_dataset.named_columns
-    #     if (attr in column_names) or (
-    #         (attr.startswith("_")) and (attr[1:] in column_names)
-    #     ):
-    #         setattr(self._named_column_dataset, attr, value)
-    #         return
-    #     else:
-    #         object.__setattr__(self, attr, value)
-    #         return
 
     def __getitem__(self, mask: slice) -> "_SWIFTNamedColumnDatasetHelper":
         """
@@ -567,7 +466,7 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
         return getattr(self._particle_dataset_helper._data_copy(mask=mask), self.name)
 
 
-class _SWIFTGroupDatasetHelper(object):
+class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
     """
     A wrapper class to enable :class:`SWIFTGalaxy`
     functionality for a :class:`swiftsimio.reader.__SWIFTGroupDatasets`.
@@ -640,26 +539,16 @@ class _SWIFTGroupDatasetHelper(object):
         mygalaxy.gas.cylindrical_velocities.z
     """
 
-    # def __dir__(self) -> list[str]:
-    #     """
-    #     Supply a list of attributes of the
-    #     :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`.
-
-    #     The regular ``dir`` behaviour doesn't index the names of the particle datasets
-    #     because these are stored in the
-    #     :class:`~swiftsimio.reader.__SWIFTGroupDataset` held by the class, so we
-    #     customize the ``__dir__`` method to list the particle dataset names. They will
-    #     then appear in tab completion, for example.
-
-    #     Returns
-    #     -------
-    #     out : list
-    #         List of named column name strings.
-    #     """
-    #     return self._particle_dataset.group_metadata.field_names
-
     def __init__(self, particle_dataset, swiftgalaxy) -> None:
         self._particle_dataset = particle_dataset
+
+        self.filename = self._particle_dataset.filename
+        self.units = self._particle_dataset.units
+        self.group = self._particle_dataset.group
+        self.group_name = self._particle_dataset.group_name
+        self.group_metadata = self._particle_dataset.group_metadata
+        self.metadata = self._particle_dataset.group_metadata.metadata
+
         self._swiftgalaxy = swiftgalaxy
         self._spherical_coordinates: Optional[dict] = None
         self._cylindrical_coordinates: Optional[dict] = None
@@ -667,90 +556,6 @@ class _SWIFTGroupDatasetHelper(object):
         self._cylindrical_velocities: Optional[dict] = None
         self._initialised = True
         return
-
-    def __str__(self) -> str:
-        """
-        Get a string representation of the object.
-
-        Delegated to the underlying :class:`~swiftsimio.reader.__SWIFTGroupDataset`.
-
-        Returns
-        -------
-        out : :obj:`str`
-            The string representation.
-        """
-        return str(self._particle_dataset)
-
-    def __repr__(self) -> str:
-        """
-        Get a string representation of the object.
-
-        Delegated to the underlying :class:`~swiftsimio.reader.__SWIFTGroupDataset`.
-
-        Returns
-        -------
-        out : :obj:`str`
-            The string representation.
-        """
-        return self.__str__()
-
-    def __getattribute__(self, attr: str) -> Any:
-        """
-        Get an attribute of the object.
-
-        Redirects requests for datasets to the underlying
-        :class:`~swiftsimio.reader.__SWIFTGroupDataset` and then handles
-        any transformations and masking when new data are read.
-
-        Parameters
-        ----------
-        attr : :obj:`str`
-            The name of the attribute.
-
-        Returns
-        -------
-        out : :obj:`object`
-            The value of the attribute.
-        """
-        particle_dataset = object.__getattribute__(self, "_particle_dataset")
-        try:
-            # beware collisions with SWIFTDataset namespace
-            return object.__getattribute__(self, attr)
-        except AttributeError:
-            # exposes everything else in __dict__
-            return getattr(particle_dataset, attr)
-
-    def __setattr__(self, attr: str, value: Any) -> None:
-        """
-        Set an attribute of the object.
-
-        Redirects setting attributes to the underlying
-        :class:`~swiftsimio.reader.__SWIFTGroupDataset` objects when relevant.
-
-        Parameters
-        ----------
-        attr : :obj:`str`
-            Name of the attribute.
-        value : :obj:`object`
-            The value to assign to the attribute.
-        """
-        # pass particle data through to actual SWIFTDataset
-        if not hasattr(self, "_initialised"):
-            # guard during initialisation
-            object.__setattr__(self, attr, value)
-            return
-        field_names = getattr(
-            self._particle_dataset.metadata,
-            f"{self._particle_dataset.group_name}_properties",
-        ).field_names
-        if (attr in field_names) or (
-            (attr.startswith("_")) and (attr[1:] in field_names)
-        ):
-            setattr(self._particle_dataset, attr, value)
-            return
-        else:
-            object.__setattr__(self, attr, value)
-            return
 
     def __getitem__(self, mask: slice) -> "_SWIFTGroupDatasetHelper":
         """
@@ -902,8 +707,8 @@ class _SWIFTGroupDatasetHelper(object):
                             named_column,
                             getattr(getattr(self, field_name), named_column)[mask],
                         )
-            elif getattr(self, f"_{field_name}") is not None:
-                setattr(self, f"_{field_name}", getattr(self, f"_{field_name}")[mask])
+            elif getattr(self._particle_dataset, f"_{field_name}") is not None:
+                setattr(self, field_name, getattr(self, field_name)[mask])
         self._mask_derived_coordinates(mask)
         if getattr(self._swiftgalaxy._extra_mask, particle_name) is None:
             setattr(self._swiftgalaxy._extra_mask, particle_name, mask)
@@ -1640,15 +1445,25 @@ class SWIFTGalaxy(SWIFTDataset):
                 if particle_metadata.named_columns[fp] is not None
             ]
             for prop in set(particle_metadata.field_names) - set(named_columns_names):
-                setattr(TypeDatasetHelper, prop, property(_data_read_wrapper(prop)))
+                setattr(
+                    TypeDatasetHelper,
+                    prop,
+                    property(
+                        _data_read_wrapper(prop),
+                        _data_write_wrapper(prop),
+                        _data_delete_wrapper(prop),
+                    ),
+                )
             setattr(
                 self,
                 particle_name,
-                TypeDatasetHelper(super().__getattribute__(particle_name), self),
+                TypeDatasetHelper(getattr(self, particle_name), self),
             )
             for prop in named_columns_names:
                 # This is the named_columns instance to wrap:
-                named_columns = getattr(super().__getattribute__(particle_name), prop)
+                named_columns = getattr(
+                    getattr(self, particle_name)._particle_dataset, prop
+                )
                 # We'll make a custom type to present a nice name to the user.
                 named_column_nice_name = (
                     f"{nice_name}{named_columns.field_path.split('/')[-1]}ColumnsHelper"
@@ -1704,12 +1519,14 @@ class SWIFTGalaxy(SWIFTDataset):
                                 data[getattr(self._extra_mask, particle_name)],
                             )
                     else:
-                        data = getattr(getattr(self, particle_name), f"_{field_name}")
+                        data = getattr(
+                            getattr(self, particle_name)._particle_dataset,
+                            f"_{field_name}",
+                        )
                         if data is None:
                             continue
                         setattr(
-                            # bypass helper:
-                            super().__getattribute__(particle_name),
+                            getattr(self, particle_name)._particle_dataset,
                             f"_{field_name}",
                             data[getattr(self._extra_mask, particle_name)],
                         )
@@ -1986,11 +1803,11 @@ class SWIFTGalaxy(SWIFTDataset):
                                 new_named_columns_helper, f"_{named_column}", data[mask]
                             )
                 else:
-                    data = getattr(particle_dataset_helper, f"_{field_name}")
+                    data = getattr(
+                        particle_dataset_helper._particle_dataset, f"_{field_name}"
+                    )
                     if data is not None:
-                        setattr(
-                            new_particle_dataset_helper, f"_{field_name}", data[mask]
-                        )
+                        setattr(new_particle_dataset_helper, field_name, data[mask])
             # cartesian_coordinates return a reference to coordinates on-the-fly:
             # no need to initialise here.
             if particle_dataset_helper._spherical_coordinates is not None:
