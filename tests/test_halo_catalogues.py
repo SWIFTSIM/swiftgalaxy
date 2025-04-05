@@ -531,6 +531,15 @@ class TestVelociraptor:
         vr_multi._mask_multi_galaxy(0)
         self.test_catalogue_exposed(vr_multi)
 
+    def test_dir_for_tab_completion(self, vr):
+        """
+        Check that we add catalogue properties to the namespace directory.
+
+        Just check a couple, don't need to be exhaustive.
+        """
+        for prop in ("energies", "metallicity", "temperature"):
+            assert prop in dir(vr)
+
 
 class TestVelociraptorWithSWIFTGalaxy:
     """
@@ -695,6 +704,16 @@ class TestCaesar:
                     black_holes=n_bh_1,
                 )[particle_type]
             )
+
+    def test_dir_for_tab_completion(self, caesar):
+        """
+        Check that we add catalogue properties to the namespace directory.
+
+        Just check a couple, don't need to be exhaustive.
+        """
+        # picked these to be common between halo and galaxy catalogues:
+        for prop in ("glist", "pos", "radii"):
+            assert prop in dir(caesar)
 
 
 class TestCaesarWithSWIFTGalaxy:
@@ -894,6 +913,19 @@ class TestSOAP:
         )
         soap_multi._mask_multi_galaxy(0)
         self.test_catalogue_exposed(soap_multi)
+
+    def test_dir_for_tab_completion(self, soap):
+        """
+        Check that we add catalogue properties to the namespace directory.
+
+        Just check a couple, don't need to be exhaustive.
+        """
+        for prop in (
+            "exclusive_sphere_100kpc",
+            "input_halos",
+            "spherical_overdensity_bn98",
+        ):
+            assert prop in dir(soap)
 
 
 class TestSOAPWithSWIFTGalaxy:
