@@ -468,13 +468,25 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
     A wrapper class to enable :class:`SWIFTGalaxy`
     functionality for a :class:`swiftsimio.reader.__SWIFTNamedColumnDataset`.
 
-    Unlike the :class:`SWIFTGalaxy` class that inherits
-    directly from :class:`~swiftsimio.reader.SWIFTDataset`, for technical
-    reasons this class does *not* inherit
-    :class:`swiftsimio.reader.__SWIFTNamedColumnDataset`. It does, however,
-    expose the functionality of that class by maintaining an instance
-    internally and forwarding any attribute lookups that it does not handle
-    itself to its internal named column dataset.
+    This class both inherits from
+    :class:`swiftsimio.reader.__SWIFTNamedColumnDataset` and maintains an
+    internal :class:`swiftsimio.reader.__SWIFTNamedColumnDataset`. Data read
+    from the snapshot file is always stored on the internal object, but the
+    wrapper function provides an interface and can modify the data when it
+    is read or copied.
+
+    .. note::
+        Previously this class did not inherit from
+        :class:`swiftsimio.reader.__SWIFTNamedColumnDataset`. The current
+        implementation moves closer to purely inheriting, but so far no
+        satisfactory way to wrap the dynamically created getters has been
+        identified. This hybrid solution has resulted in significant cleanup
+        of the internals of :mod:`swiftgalaxy` (particularly, no more need
+        for ``__getattribute__`` and lots of other fragile redirection logic.
+        The hope is to eventually find a way to obviate the need for the internal
+        :class:`swiftsimio.reader.__SWIFTNamedColumnDataset` instance.
+        Currently its metadata-like attributes are copied to the wrapping
+        object on creation, which is not ideal.
 
     Like :class:`_SWIFTGroupDatasetHelper`, this class handles the
     transformation and masking of data from calls to :class:`SWIFTGalaxy`
@@ -589,15 +601,27 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
 class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
     """
     A wrapper class to enable :class:`SWIFTGalaxy`
-    functionality for a :class:`swiftsimio.reader.__SWIFTGroupDatasets`.
+    functionality for a :class:`swiftsimio.reader.__SWIFTGroupDataset`.
 
-    Unlike the :class:`SWIFTGalaxy` class that inherits
-    directly from :class:`~swiftsimio.reader.SWIFTDataset`, for technical
-    reasons this class does *not* inherit
-    :class:`swiftsimio.reader.__SWIFTGroupDatasets`. It does, however,
-    expose the functionality of that class by maintaining an instance
-    internally and forwarding any attribute lookups that it does not handle
-    itself to its internal particle dataset.
+    This class both inherits from
+    :class:`swiftsimio.reader.__SWIFTGroupDataset` and maintains an
+    internal :class:`swiftsimio.reader.__SWIFTGroupDataset`. Data read
+    from the snapshot file is always stored on the internal object, but the
+    wrapper function provides an interface and can modify the data when it
+    is read or copied.
+
+    .. note::
+        Previously this class did not inherit from
+        :class:`swiftsimio.reader.__SWIFTGroupDataset`. The current
+        implementation moves closer to purely inheriting, but so far no
+        satisfactory way to wrap the dynamically created getters has been
+        identified. This hybrid solution has resulted in significant cleanup
+        of the internals of :mod:`swiftgalaxy` (particularly, no more need
+        for ``__getattribute__`` and lots of other fragile redirection logic.
+        The hope is to eventually find a way to obviate the need for the internal
+        :class:`swiftsimio.reader.__SWIFTGroupDataset` instance.
+        Currently its metadata-like attributes are copied to the wrapping
+        object on creation, which is not ideal.
 
     In addition to handling the transformation and masking of data from calls
     to :class:`SWIFTGalaxy` routines, this class provides
@@ -620,7 +644,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     Parameters
     ----------
-    particle_dataset : :class:`swiftsimio.reader.__SWIFTGroupDatasets`
+    particle_dataset : :class:`swiftsimio.reader.__SWIFTGroupDataset`
         The particle dataset to be wrapped.
 
     swiftgalaxy : :class:`SWIFTGalaxy`
@@ -1351,12 +1375,13 @@ class SWIFTGalaxy(SWIFTDataset):
     and to provide integrated properties. The implementation is an extension of
     the :class:`~swiftsimio.reader.SWIFTDataset` class, so all the
     functionality of such a dataset is also available for a
-    :class:`SWIFTGalaxy`. The :class:`swiftsimio.reader.__SWIFTGroupDatasets`
-    objects familiar to :mod:`swiftsimio` users (e.g. a ``GasDataset``) are
-    wrapped by a :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper` class that exposes
-    their usual functionality and extends it with new features.
-    :class:`swiftsimio.reader.__SWIFTNamedColumnDataset` instances are also
-    wrapped, using a :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper` class.
+    :class:`SWIFTGalaxy`. The :class:`swiftsimio.reader.__SWIFTGroupDataset`
+    objects familiar to :mod:`swiftsimio` users (e.g. a ``GasDataset``) have
+    an analogous :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper` class
+    (e.g. ``GasDatasetHelper``) that maintains their usual functionality and
+    extends it with new features. :class:`swiftsimio.reader.__SWIFTNamedColumnDataset`
+    instances are have analogues as
+    :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper` objects.
 
     For an overview of available features see the examples below, and the
     narrative documentation pages.
