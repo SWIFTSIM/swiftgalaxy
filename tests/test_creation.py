@@ -53,10 +53,10 @@ class TestSWIFTGalaxyCreation:
         """
         pass  # fixture created SWIFTGalaxy with Standalone interface
 
-    def test_dir_for_tab_completion(self, sg):
+    def test_tab_completion(self, sg):
         """
-        Check that particle dataset names and named column names get injected into
-        the namespace for tab completion by the __dir__ methods of the relevant classes.
+        Check that particle dataset names and named column names are in
+        the namespace for tab completion via the dir() method.
         """
         for prop in ("coordinates", "masses", "hydrogen_ionization_fractions"):
             assert prop in dir(sg.gas)
