@@ -191,16 +191,13 @@ def _data_read_wrapper(prop: str) -> Callable:
             The data with any needed transformations and masks applied.
         """
         if getattr(self._internal_dataset, f"_{prop}") is None:
-            if (
-                hasattr(self._swiftgalaxy, "_initialised")
-                and self._swiftgalaxy._warn_on_read
-            ):
-                warn(
+            if self._swiftgalaxy._warn_on_read:
+                msg = (
                     f"Reading {self._fullname}.{prop} from snapshot file, this may be "
                     "unintended (should it be preloaded if using SWIFTGalaxies to iterate"
-                    " over objects of interest?)",
-                    RuntimeWarning,
+                    " over objects of interest?)."
                 )
+                warn(msg, RuntimeWarning)
             # going to read from file: apply masks, transforms
             data = getattr(self._internal_dataset, prop)  # raw data loaded
             data = self._apply_data_mask(data)
@@ -411,7 +408,6 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
         self.named_columns = self._named_column_dataset.named_columns
         self.name = self._named_column_dataset.name
         self._particle_dataset_helper = particle_dataset_helper
-        self._initialised = True
         return
 
     @property
@@ -649,7 +645,6 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
         self._cylindrical_coordinates: Optional[dict] = None
         self._spherical_velocities: Optional[dict] = None
         self._cylindrical_velocities: Optional[dict] = None
-        self._initialised = True
         return
 
     @property
@@ -1483,7 +1478,6 @@ class SWIFTGalaxy(SWIFTDataset):
     id_particle_dataset_name: str
     coordinates_dataset_name: str
     velocities_dataset_name: str
-    _initialized: bool
     _spatial_mask: SWIFTMask
     _extra_mask: Optional[MaskCollection]
     _warn_on_read: bool
@@ -1511,6 +1505,7 @@ class SWIFTGalaxy(SWIFTDataset):
         self.id_particle_dataset_name = id_particle_dataset_name
         self.coordinates_dataset_name = coordinates_dataset_name
         self.velocities_dataset_name = velocities_dataset_name
+        self._warn_on_read = False
         if not hasattr(self, "_coordinate_like_transform"):
             self._coordinate_like_transform = np.eye(4)
         if not hasattr(self, "_velocity_like_transform"):
@@ -1658,11 +1653,6 @@ class SWIFTGalaxy(SWIFTDataset):
         if auto_recentre and self.halo_catalogue is not None:
             self.recentre(self.halo_catalogue.centre)
             self.recentre_velocity(self.halo_catalogue.velocity_centre)
-
-        self._warn_on_read = False
-        # probably better to set False above and True here, then check value rather
-        # than existence elsewhere:
-        self._initialised = True
 
         return
 
