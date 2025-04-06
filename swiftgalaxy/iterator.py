@@ -6,6 +6,7 @@ interest within a single simulation snapshot.
 Parallelization is not yet implemented but is prioritized for future release.
 """
 
+import warnings
 import numpy as np
 import unyt as u
 from swiftsimio import mask, cosmo_array
@@ -566,12 +567,15 @@ class SWIFTGalaxies:
         for preload_field in self.preload | self.halo_catalogue._get_preload_fields(
             self._server
         ):
-            warning_state = self._server._warn_on_read
-            self._server._warn_on_read = False
             obj = self._server
             for attr in preload_field.split("."):
-                obj = getattr(obj, attr)
-            self._server._warn_on_read = warning_state
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore",
+                        message="Reading",
+                        category=RuntimeWarning,
+                    )
+                    obj = getattr(obj, attr)
         return
 
     def __iter__(self) -> Generator:
@@ -638,7 +642,6 @@ class SWIFTGalaxies:
                 elif self.auto_recentre:
                     swift_galaxy.recentre(self.halo_catalogue.centre)
                     swift_galaxy.recentre_velocity(self.halo_catalogue.velocity_centre)
-                swift_galaxy._initialised = True
                 yield swift_galaxy
                 self.halo_catalogue._unmask_multi_galaxy()
 
