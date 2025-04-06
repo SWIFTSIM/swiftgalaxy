@@ -190,28 +190,23 @@ def _data_read_wrapper(prop: str) -> Callable:
         out : :class:`~swiftsimio.objects.cosmo_array`
             The data with any needed transformations and masks applied.
         """
-        particle_dataset = self._particle_dataset
-        particle_name = particle_dataset.group_name
-        if getattr(particle_dataset, f"_{prop}") is None:
+        if getattr(self._internal_dataset, f"_{prop}") is None:
             if (
                 hasattr(self._swiftgalaxy, "_initialised")
                 and self._swiftgalaxy._warn_on_read
             ):
                 warn(
-                    f"Reading {particle_name}.{prop} from snapshot file, this may be "
-                    "unintended (should it be preloaded if using SWIFTGalaxies to "
-                    "iterate over objects of interest?)",
+                    f"Reading {self._fullname}.{prop} from snapshot file, this may be "
+                    "unintended (should it be preloaded if using SWIFTGalaxies to iterate"
+                    " over objects of interest?)",
                     RuntimeWarning,
                 )
             # going to read from file: apply masks, transforms
-            data = getattr(particle_dataset, prop)  # raw data loaded
+            data = getattr(self._internal_dataset, prop)  # raw data loaded
             data = self._apply_data_mask(data)
             data = self._apply_transforms(data, prop)
-            setattr(particle_dataset, f"_{prop}", data)
-        else:
-            # just return the data
-            pass
-        return getattr(particle_dataset, f"_{prop}")
+            setattr(self._internal_dataset, f"_{prop}", data)
+        return getattr(self._internal_dataset, f"_{prop}")
 
     return wrapper
 
@@ -240,7 +235,7 @@ def _data_write_wrapper(prop):
         value : :class:`~swiftsimio.objects.cosmo_array`
             The value to assign to the dataset.
         """
-        setattr(self._particle_dataset, f"_{prop}", value)
+        setattr(self._internal_dataset, f"_{prop}", value)
         return
 
     return wrapper
@@ -265,115 +260,7 @@ def _data_delete_wrapper(prop):
         """
         Delete a :mod:`swiftsimio` dataset by setting it to ``None``.
         """
-        setattr(self._particle_dataset, f"_{prop}", None)
-        return
-
-    return wrapper
-
-
-def _column_read_wrapper(column_name):
-    """
-    Generator function to wrap swiftsimio named column getters.
-
-    Parameters
-    ----------
-    column_name : :obj:`str`
-        The name of the column.
-
-    Returns
-    -------
-    out : Callable
-        The wrapper function.
-    """
-
-    def wrapper(self):
-        """
-        Read a swiftsimio named column and apply our masks & transforms.
-
-        If the data are already read, just return them.
-
-        Returns
-        -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
-            The column data with any needed transformations and masks applied.
-        """
-        named_column_dataset = self._named_column_dataset
-        if getattr(named_column_dataset, f"_{column_name}") is None:
-            if (
-                hasattr(self._particle_dataset_helper._swiftgalaxy, "_initialised")
-                and self._particle_dataset_helper._swiftgalaxy._warn_on_read
-            ):
-                warn(
-                    f"Reading {self._particle_dataset_helper.particle_name}."
-                    f"{named_column_dataset.name}.{column_name}"
-                    " from snapshot file, this may be "
-                    "unintended (should it be preloaded if using SWIFTGalaxies to "
-                    "iterate over objects of interest?)",
-                    RuntimeWarning,
-                )
-            # going to read from file: apply masks, transforms
-            data = getattr(named_column_dataset, column_name)  # raw data loaded
-            data = self._particle_dataset_helper._apply_data_mask(data)
-            data = self._particle_dataset_helper._apply_transforms(data, column_name)
-            setattr(named_column_dataset, f"_{column_name}", data)
-        else:
-            # just return the data
-            pass
-        return getattr(named_column_dataset, f"_{column_name}")
-
-    return wrapper
-
-
-def _column_write_wrapper(column_name):
-    """
-    Generator function to wrap :mod:`swiftsimio` named column setters.
-
-    Parameters
-    ----------
-    column_name : :obj:`str`
-        The name of the column.
-
-    Returns
-    -------
-    out : Callable
-        The wrapper function.
-    """
-
-    def wrapper(self, value):
-        """
-        Assign to a :mod:`swiftsimio` named column.
-
-        Parameters
-        ----------
-        value : :class:`~swiftsimio.objects.cosmo_array`
-            The value to assign to the named column.
-        """
-        setattr(self._named_column_dataset, f"_{column_name}", value)
-        return
-
-    return wrapper
-
-
-def _column_delete_wrapper(column_name):
-    """
-    Generator function to wrap :mod:`swiftsimio` named column deleters.
-
-    Parameters
-    ----------
-    column_name : :obj:`str`
-        The name of the column.
-
-    Returns
-    -------
-    out : Callable
-        The wrapper function.
-    """
-
-    def wrapper(self):
-        """
-        Delete a :mod:`swiftsimio` named column by setting it to ``None``.
-        """
-        setattr(self._named_column_dataset, f"_{column_name}", None)
+        setattr(self._internal_dataset, f"_{prop}", None)
         return
 
     return wrapper
@@ -526,6 +413,70 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
         self._particle_dataset_helper = particle_dataset_helper
         self._initialised = True
         return
+
+    @property
+    def _internal_dataset(self) -> "__SWIFTNamedColumnDataset":
+        """
+        Provide an alias for the internally maintained ``_named_column_dataset``.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset`
+            The internal :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset` instance.
+        """
+        return self._named_column_dataset
+
+    @property
+    def _swiftgalaxy(self) -> "SWIFTGalaxy":
+        """
+        Facilitate access to the enclosing :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The enclosing :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+        """
+        return self._particle_dataset_helper._swiftgalaxy
+
+    @property
+    def _fullname(self) -> str:
+        """
+        Get the full name of this named columns instance.
+
+        Returns
+        -------
+        out : :obj:`str`
+            The name prefixed with the enclosing dataset name.
+        """
+        return f"{self._particle_dataset_helper.group_name}.{self.name}"
+
+    @property
+    def _apply_data_mask(self) -> Callable:
+        """
+        Facilitate access to the corresponding method of the enclosing
+        :class:`~swiftsimio.reader.__SWIFTGroupDataset`.
+
+        Returns
+        -------
+        out : Callable
+            The :func:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper._apply_data_mask`
+            method of the enclosing :class:`~swiftsimio.reader.__SWIFTGroupDataset`.
+        """
+        return self._particle_dataset_helper._apply_data_mask
+
+    @property
+    def _apply_transforms(self) -> Callable:
+        """
+        Facilitate access to the corresponding method of the enclosing
+        :class:`~swiftsimio.reader.__SWIFTGroupDataset`.
+
+        Returns
+        -------
+        out : Callable
+            The :func:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper._apply_transforms`
+            method of the enclosing :class:`~swiftsimio.reader.__SWIFTGroupDataset`.
+        """
+        return self._particle_dataset_helper._apply_transforms
 
     def __getitem__(self, mask: slice) -> "_SWIFTNamedColumnDatasetHelper":
         """
@@ -701,6 +652,30 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
         self._initialised = True
         return
 
+    @property
+    def _internal_dataset(self) -> "__SWIFTGroupDataset":
+        """
+        Provide an alias for the internally maintained ``_particle_dataset``.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.reader.__SWIFTGroupDataset`
+            The internal :class:`~swiftsimio.reader.__SWIFTGroupDataset` instance.
+        """
+        return self._particle_dataset
+
+    @property
+    def _fullname(self) -> str:
+        """
+        Provide a homogeneous interface to the full name.
+
+        Returns
+        -------
+        out : :obj:`str`
+            The name.
+        """
+        return f"{self.group_name}"
+
     def __getitem__(self, mask: slice) -> "_SWIFTGroupDatasetHelper":
         """
         Apply a mask to the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
@@ -727,7 +702,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
         out : :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
             The copy of the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper` object.
         """
-        return getattr(self._swiftgalaxy.__copy__(), self.particle_name)
+        return getattr(self._swiftgalaxy.__copy__(), self.group_name)
 
     def __deepcopy__(self, memo: Optional[dict] = None) -> "_SWIFTGroupDatasetHelper":
         """
@@ -1623,9 +1598,9 @@ class SWIFTGalaxy(SWIFTDataset):
                         TypeNamedColumnDatasetHelper,
                         column_name,
                         property(
-                            _column_read_wrapper(column_name),
-                            _column_write_wrapper(column_name),
-                            _column_delete_wrapper(column_name),
+                            _data_read_wrapper(column_name),
+                            _data_write_wrapper(column_name),
+                            _data_delete_wrapper(column_name),
                         ),
                     )
                 setattr(
