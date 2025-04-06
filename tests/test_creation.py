@@ -59,9 +59,13 @@ class TestSWIFTGalaxyCreation:
         the namespace for tab completion via the dir() method.
         """
         for prop in ("coordinates", "masses", "hydrogen_ionization_fractions"):
+            # check some data fields & named column sets
             assert prop in dir(sg.gas)
         for prop in ("neutral", "ionized"):
+            # check named column data fields
             assert prop in dir(sg.gas.hydrogen_ionization_fractions)
+        # and check something that we inherited:
+        assert "generate_empty_properties" in dir(sg.gas)
 
 
 class TestSWIFTGalaxiesCreation:
