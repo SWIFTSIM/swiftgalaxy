@@ -275,6 +275,8 @@ class _HaloCatalogue(ABC):
                     "Halo catalogue has multiple galaxies and is not currently masked."
                 )
             return self._generate_bound_only_mask(sg)
+        elif self.extra_mask == "fof":
+            return self._generate_fof_mask(sg)
         elif self.extra_mask is None:
             return MaskCollection(**{k: None for k in sg.metadata.present_group_names})
         else:
@@ -854,6 +856,36 @@ class SOAP(_HaloCatalogue):
         if not self._multi_galaxy:
             for group_name in sg.metadata.present_group_names:
                 del getattr(sg, group_name)._particle_dataset.group_nr_bound
+        return masks
+
+    def _generate_fof_mask(self, sg: "SWIFTGalaxy") -> MaskCollection:
+        """
+        Will wants to select FOF particles. Let's select FOF particles for him.
+
+        Parameters
+        ----------
+        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
+            interface is associated to.
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.masks.MaskCollection`
+            The mask object that selects FOF particles from the spatially-masked
+            set of particles.
+        """
+        masks = MaskCollection(
+            **{
+                group_name: getattr(
+                    sg, group_name
+                )._particle_dataset.fof_group_ids.to_value(u.dimensionless)
+                == self.input_halos_hbtplus.host_fofid
+                for group_name in sg.metadata.present_group_names
+            }
+        )
+        if not self._multi_galaxy:
+            for group_name in sg.metadata.present_group_names:
+                del getattr(sg, group_name).fof_group_ids
         return masks
 
     @property
