@@ -878,14 +878,14 @@ class SOAP(_HaloCatalogue):
             **{
                 group_name: getattr(
                     sg, group_name
-                )._particle_dataset.fof_group_ids.to_value(u.dimensionless)
-                == self.input_halos_hbtplus.host_fofid
+                )._particle_dataset.fofgroup_ids.to_value(u.dimensionless)
+                == self.input_halos_hbtplus.host_fofid.to_value(u.dimensionless)
                 for group_name in sg.metadata.present_group_names
             }
         )
         if not self._multi_galaxy:
             for group_name in sg.metadata.present_group_names:
-                del getattr(sg, group_name).fof_group_ids
+                del getattr(sg, group_name).fofgroup_ids
         return masks
 
     @property
