@@ -342,7 +342,7 @@ class _HaloCatalogue(ABC):
                 self._multi_galaxy = False
                 self._multi_count = 1
         if self._multi_galaxy:
-            assert self.extra_mask in (None, "bound_only")
+            assert self.extra_mask in (None, "bound_only", "fof")
         return
 
     def __dir__(self) -> list[str]:
