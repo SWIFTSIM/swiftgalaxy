@@ -239,7 +239,6 @@ class SWIFTGalaxies:
             )
         else:
             num_targets = len(self.halo_catalogue._region_centre)
-            print(num_targets)
         # before evaluating optimized solutions:
         if num_targets == 0:
             # if we have 0 targets short-circuit
