@@ -1910,7 +1910,9 @@ class SWIFTGalaxy(SWIFTDataset):
                         )
                         if data is not None:
                             setattr(
-                                new_named_columns_helper, f"_{named_column}", data[mask]
+                                new_named_columns_helper._named_column_dataset,
+                                f"_{named_column}",
+                                data[mask],
                             )
                 else:
                     data = getattr(
