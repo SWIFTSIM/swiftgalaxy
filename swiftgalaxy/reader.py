@@ -36,7 +36,11 @@ from swiftgalaxy.masks import MaskCollection
 from typing import Union, Any, Optional, Set
 
 
-def _apply_box_wrap(coords: cosmo_array, boxsize: Optional[cosmo_array]) -> cosmo_array:
+def _apply_box_wrap(
+    coords: cosmo_array,
+    boxsize: Optional[cosmo_array],
+    symmetric=True,
+) -> cosmo_array:
     """
     Wrap coordinates for periodic box.
 
@@ -50,13 +54,16 @@ def _apply_box_wrap(coords: cosmo_array, boxsize: Optional[cosmo_array]) -> cosm
     boxsize : :class:`~swiftsimio.objects.cosmo_array` or ``None``
         The dimensions of the box to wrap (3 elements).
 
+    symmetric : :obj:`bool`
+        If ``True`` wrap to [-Lbox / 2, Lbox / 2], else wrap to [0, Lbox].
+
     Returns
     -------
     out : :class:`~swiftsimio.objects.cosmo_array`
         The coordinates wrapped to lie within the box dimensions.
     """
     return (
-        (coords + boxsize / 2.0) % boxsize - boxsize / 2.0
+        (coords + boxsize / 2.0) % boxsize - (boxsize / 2.0 if symmetric else 0.0)
         if boxsize is not None
         else coords
     )
@@ -122,7 +129,7 @@ def _apply_rotmat(coords: cosmo_array, rotation_matrix: np.ndarray) -> cosmo_arr
 
 
 def _apply_4transform(
-    coords: cosmo_array, transform: np.ndarray, transform_units: unyt.unyt_quantity
+    coords: cosmo_array, transform: np.ndarray, transform_units: unyt.unit_object.Unit
 ) -> cosmo_array:
     """
     Apply an arbitary coordinate transformation (translation mixed with rotation) to a
@@ -139,7 +146,7 @@ def _apply_4transform(
         The coordinate array to be transformed.
     transform : :class:`~numpy.ndarray`
         The 4x4 transformation matrix.
-    transform_units : :class:`unyt.unyt_quantity`
+    transform_units : :class:`unyt.unit_object.Unit`
         The units assumed in the translation portion of the transformation matrix.
 
     Returns
