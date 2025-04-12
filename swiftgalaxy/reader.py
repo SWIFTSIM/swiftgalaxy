@@ -39,7 +39,6 @@ from typing import Union, Any, Optional, Set
 def _apply_box_wrap(
     coords: cosmo_array,
     boxsize: Optional[cosmo_array],
-    symmetric=True,
 ) -> cosmo_array:
     """
     Wrap coordinates for periodic box.
@@ -54,16 +53,13 @@ def _apply_box_wrap(
     boxsize : :class:`~swiftsimio.objects.cosmo_array` or ``None``
         The dimensions of the box to wrap (3 elements).
 
-    symmetric : :obj:`bool`
-        If ``True`` wrap to [-Lbox / 2, Lbox / 2], else wrap to [0, Lbox].
-
     Returns
     -------
     out : :class:`~swiftsimio.objects.cosmo_array`
         The coordinates wrapped to lie within the box dimensions.
     """
     return (
-        (coords + boxsize / 2.0) % boxsize - (boxsize / 2.0 if symmetric else 0.0)
+        (coords + boxsize / 2.0) % boxsize - boxsize / 2.0
         if boxsize is not None
         else coords
     )
