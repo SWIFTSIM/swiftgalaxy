@@ -343,6 +343,23 @@ class _HaloCatalogue(ABC):
             assert self.extra_mask in (None, "bound_only")
         return
 
+    def __dir__(self) -> list[str]:
+        """
+        Supply a list of attributes of the halo catalogue.
+
+        The regular ``dir`` behaviour doesn't index the names of catalogue attributes
+        because they're attached to the internally maintained ``_catalogue`` attribute,
+        so we customize the ``__dir__`` method to list the attribute names. They will
+        then appear in tab completion, for example.
+
+        Returns
+        -------
+        out : list
+            The list of catalogue attribute names.
+        """
+        # use getattr to default to None, e.g. for Standalone
+        return dir(getattr(self, "_catalogue", None))
+
     def __getattr__(self, attr: str) -> Any:
         """
         Exposes the masked halo catalogue.
@@ -894,6 +911,22 @@ class SOAP(_HaloCatalogue):
         """
         return self._catalogue.__repr__()
 
+    def __dir__(self) -> list[str]:
+        """
+        Supply a list of attributes of the halo catalogue.
+
+        The regular ``dir`` behaviour doesn't index the names of catalogue attributes
+        because they're attached to the internally maintained ``_catalogue`` attribute,
+        so we custimize the ``__dir__`` method to list the attribute names. They will
+        then appear in tab completion, for example.
+
+        Returns
+        -------
+        out : list
+            The list of catalogue attribute names.
+        """
+        return list(self._catalogue.metadata.present_group_names)
+
 
 class Velociraptor(_HaloCatalogue):
     """
@@ -1066,7 +1099,6 @@ class Velociraptor(_HaloCatalogue):
         of interest.
         """
         import h5py
-        from velociraptor.catalogue.catalogue import Catalogue as VelociraptorCatalogue
         from velociraptor import load as load_catalogue
         from velociraptor.particles import load_groups
 
@@ -1077,7 +1109,7 @@ class Velociraptor(_HaloCatalogue):
                 else 1.0
             )
 
-        self._catalogue: "VelociraptorCatalogue" = load_catalogue(
+        self._catalogue = load_catalogue(
             self.velociraptor_files["properties"], mask=np.array(self._halo_index)
         )
         groups = load_groups(
