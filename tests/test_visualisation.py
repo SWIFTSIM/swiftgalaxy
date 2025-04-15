@@ -7,20 +7,21 @@ from swiftsimio.visualisation.slice import slice_gas
 from swiftsimio.visualisation.volume_render import render_gas
 
 
+@pytest.mark.parametrize("periodic", [False, True])
 class TestRecenteredVisualisation:
 
-    @pytest.mark.parametrize("z_slice", [False, True])
-    def test_recentered_projection(self, sg, sg_autorecentre_off, z_slice):
+    @pytest.mark.parametrize("z_cut", [False, True])
+    def test_recentered_projection(self, sg, sg_autorecentre_off, z_cut, periodic):
         """
         We should be able to make the same projections whether we recentered or not.
         """
-        z_limits = [1.9, 2.1] if z_slice else []
-        recentered_z_limits = [-0.1, 0.1] if z_slice else []
+        z_limits = [1.9, 2.1] if z_cut else []
+        recentered_z_limits = [-0.1, 0.1] if z_cut else []
         kwargs = {
             "resolution": 4,
             "project": "masses",
             "parallel": True,
-            "periodic": True,
+            "periodic": periodic,
         }
         ref_img = project_gas(
             sg_autorecentre_off,
@@ -44,9 +45,10 @@ class TestRecenteredVisualisation:
             ),
             **kwargs,
         )
+        assert (ref_img > 0).any()
         assert np.allclose(ref_img, recentered_img)
 
-    def test_recentered_slice(self, sg, sg_autorecentre_off):
+    def test_recentered_slice(self, sg, sg_autorecentre_off, periodic):
         """
         We should be able to make the same slice whether we recentered or not.
         """
@@ -60,7 +62,7 @@ class TestRecenteredVisualisation:
             "resolution": 4,
             "project": "masses",
             "parallel": True,
-            "periodic": True,
+            "periodic": periodic,
         }
         ref_img = slice_gas(
             sg_autorecentre_off,
@@ -86,9 +88,10 @@ class TestRecenteredVisualisation:
             ),
             **kwargs,
         )
+        assert (ref_img > 0).any()
         assert np.allclose(ref_img, recentered_img)
 
-    def test_recentered_volume_render(self, sg, sg_autorecentre_off):
+    def test_recentered_volume_render(self, sg, sg_autorecentre_off, periodic):
         """
         We should be able to make the same rendering whether we recentered or not.
         """
@@ -96,7 +99,7 @@ class TestRecenteredVisualisation:
             "resolution": 4,
             "project": "masses",
             "parallel": True,
-            "periodic": True,
+            "periodic": periodic,
         }
         ref_img = render_gas(
             sg_autorecentre_off,
@@ -120,4 +123,5 @@ class TestRecenteredVisualisation:
             ),
             **kwargs,
         )
+        assert (ref_img > 0).any()
         assert np.allclose(ref_img, recentered_img)
