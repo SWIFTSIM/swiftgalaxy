@@ -376,19 +376,20 @@ class SWIFTGalaxies:
         We assume that targets are densely distributed so that the region to be loaded
         for each one usually overlaps with (possibly several) other regions. We determine
         the minimum size of a region containing the largest target object and conceptually
-        tile the volume with two overlapping grids with cells of this size offset by half
-        a grid spacing along each axis. Each object of interest is assigned to the cell in
-        either of the grids that minimizes the distance between its centre and the cell
-        centre, guaranteeing that it fits in the region. Any grid cells containing no
-        target objects of interest are not included in the iteration.
+        tile the volume with a grid with cells of this size. Each object of interest is
+        assigned to the cell in which its centre lies. This groups targets into spatial
+        associations. For each group of targets, the bounding box containing all of the
+        targets is evaluated, resulting in a set of (probably partially overlapping)
+        regions with targets assigned to each.
 
         The result is stored in ``self._dense_optimized_solution``, a dict with
         keys: ``"regions"`` containing the spatial regions that will define the spatial
         masks; ``"region_target_indices"`` containing the indices of the target objects of
         interest in each of the regions; ``"cost_min"`` and ``"cost_max"`` containing the
         minimum and maximum cost (in top-level cell read operations) of this iteration
-        scheme. The actual cost depends on the size of the grid regions and whether none,
-        one or both of the grids are aligned with the top-level cell grid.
+        scheme. The actual cost depends on how each region aligns with the cell grid. For
+        example if the region has a side lengths of 1.8 cells, this could touch either 2
+        or 3 cells, depending on where in the grid the vertex lands.
         """
         target_centres = np.atleast_2d(self.halo_catalogue._region_centre)
         if self.halo_catalogue._user_spatial_offsets is not None:
@@ -410,105 +411,44 @@ class SWIFTGalaxies:
             .astype(int)
             + 1
         )
-        # Cells are not guaranteed to have a vertex at box coordinate (0, 0, 0)
-        # but usually are. At least one of our grids is misaligned with the cells
-        # anyway, so we'll align one grid to the box. If the cells happen to align
-        # to the box we'll get slightly lower i/o cost "for free".
-        cells_dim = (
-            (sm.metadata.boxsize // sm.cell_size).to_value(u.dimensionless).astype(int)
-        )
         # If the grid doesn't fully cover the box need to add one more grid cell to
         # cover "too much".
-        grid_dim = cells_dim // grid_element_dim + (
-            cells_dim % grid_element_dim > 0
-        ).astype(int)
-        target_grid_offsets_aligned, target_grid_indices_aligned = np.modf(
+        target_grid_offsets, target_grid_indices = np.modf(
             (target_centres / (grid_element_dim * sm.cell_size)).to_value(
                 u.dimensionless
             )
         )
-        target_grid_offsets_offset, target_grid_indices_offset = np.modf(
-            (
-                (target_centres + 0.5 * grid_element_dim * sm.cell_size)
-                / (grid_element_dim * sm.cell_size)
-            ).to_value(u.dimensionless)
-            - 1
-        )
-        target_grid_indices_aligned = target_grid_indices_aligned.astype(int)
-        # need a "box wrap" of targets to the far side of the grid for the offset grid:
-        target_grid_indices_offset = np.where(
-            np.logical_and(
-                target_grid_offsets_offset < 0, target_grid_indices_offset == 0
-            ),
-            grid_dim - 1,
-            target_grid_indices_offset,
-        )  # complains about missing cosmo_array info
-        target_grid_indices_offset = target_grid_indices_offset.astype(int)
-        target_grid_distances_aligned = np.sqrt(
-            np.sum(
-                np.power(
-                    0.5 * np.ones(sm.metadata.dimension) - target_grid_offsets_aligned,
-                    2,
-                ),
-                axis=1,
-            )
-        )
-        target_grid_distances_offset = np.sqrt(
-            np.sum(
-                np.power(
-                    0.5 * np.ones(sm.metadata.dimension) - target_grid_offsets_offset, 2
-                ),
-                axis=1,
-            )
-        )
-        use_offset_grid = target_grid_distances_offset < target_grid_distances_aligned
-        # target_regions columns: (1) flag which grid; (2,3,4) grid i, j, k
-        target_regions = np.concatenate(
-            (
-                use_offset_grid[..., np.newaxis],
-                np.where(
-                    use_offset_grid[..., np.newaxis],
-                    target_grid_indices_offset,
-                    target_grid_indices_aligned,
-                ),
-            ),
-            axis=1,
-        )
+        target_grid_indices = target_grid_indices.astype(int)
         # unique_regions each correspond to a "server" SWIFTGalaxy that will read a region
         unique_grid_regions, inv = np.unique(
-            target_regions, axis=0, return_inverse=True
+            target_grid_indices, axis=0, return_inverse=True
         )
-        # `centres_[aligned|offset]` and `grid_element_dim * sm.cell_size` define regions
-        centres_aligned = (
-            np.array(
-                np.meshgrid(*[np.arange(gdi) + 0.5 for gdi in grid_dim], indexing="ij")
+        unique_regions = list()
+        for unique_region_index in range(unique_grid_regions.shape[0]):
+            umask = unique_region_index == inv
+            masked_target_sizes = (
+                target_sizes[umask]
+                if self.halo_catalogue._user_spatial_offsets is None
+                else target_sizes
             )
-            * (sm.cell_size * grid_element_dim)[:, np.newaxis, np.newaxis, np.newaxis]
-        )
-        centres_offset = (
-            np.array(
-                np.meshgrid(*[np.arange(gdi) + 1.0 for gdi in grid_dim], indexing="ij")
+            unique_regions.append(
+                np.vstack(
+                    (
+                        np.min(target_centres[umask] - masked_target_sizes, axis=0),
+                        np.max(target_centres[umask] + masked_target_sizes, axis=0),
+                    )
+                ).T
             )
-            * (sm.cell_size * grid_element_dim)[:, np.newaxis, np.newaxis, np.newaxis]
-        )
-        unique_region_centres = cosmo_array(
-            (centres_aligned, centres_offset)
-        ).transpose((0, 2, 3, 4, 1))[tuple(unique_grid_regions.T)]
-        unique_regions = cosmo_array(
-            (
-                unique_region_centres - 0.499 * grid_element_dim * sm.cell_size,
-                unique_region_centres + 0.499 * grid_element_dim * sm.cell_size,
-            )
-        ).transpose((1, 2, 0))
+        unique_regions = cosmo_array(unique_regions)
         # in the following dict
         # regions are the bboxes that can be passed directly to spatial mask
         # (each one an entry along the 0th axis)
         # region_target_indices contains an array of indices into the targets array
         # for each region
         # cost_min is an integer number of cells that will be read during this iteration
-        # in the best case (assuming both grids are aligned with the cell grid)
+        # in the best case (assuming the regions are near aligned with the cell grid)
         # cost_max is an integer number of cells that will be read during this iteration
-        # in the worst case (assuming both grids are mis-aligned with the cell grid)
+        # in the worst case (assuming the regions are near mis-aligned with the cell grid)
         sorter = np.argsort(inv)
         self._dense_optimized_solution = _IterationSolution(
             regions=unique_regions,
@@ -516,13 +456,26 @@ class SWIFTGalaxies:
                 np.arange(inv.size)[sorter],
                 np.unique(inv[sorter], return_index=True)[1][1:],
             ),
-            cost_min=(
-                np.prod(grid_element_dim)  # cost per grid element (optimistic)
-                * unique_regions.shape[0]  # number of grid elements
+            cost_min=int(
+                np.sum(
+                    np.prod(
+                        np.ceil(
+                            np.diff(unique_regions, axis=2).squeeze() / sm.cell_size
+                        ).to_value(u.dimensionless),
+                        axis=1,
+                    )
+                )
             ),
-            cost_max=(
-                np.prod(grid_element_dim + 1)  # cost per grid element (pessimistic)
-                * unique_regions.shape[0]  # number of grid elements
+            cost_max=int(
+                np.sum(
+                    np.prod(
+                        np.ceil(
+                            np.diff(unique_regions, axis=2).squeeze() / sm.cell_size
+                        ).to_value(u.dimensionless)
+                        + 1,
+                        axis=1,
+                    )
+                )
             ),
         )
 
