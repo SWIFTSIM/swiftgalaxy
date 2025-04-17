@@ -155,6 +155,9 @@ class TestSWIFTGalaxies:
                 "stars.particle_ids",
                 "black_holes.particle_ids",
             },
+            # force this - with our 2-cell test snapshot we can't contrive for this
+            # approach to be automatically determined to be optimal:
+            optimize_iteration="dense",
         )
         dense_solution = sgs._dense_optimized_solution
         assert_allclose_units(
@@ -162,10 +165,8 @@ class TestSWIFTGalaxies:
             cosmo_array(
                 np.array(
                     [
-                        [[0.005, 4.995], [0.01, 9.99], [0.01, 9.99]],
-                        [[5.005, 9.995], [0.01, 9.99], [0.01, 9.99]],
-                        [[2.505, 7.495], [5.01, 14.99], [5.01, 14.99]],
-                        [[7.505, 12.495], [5.01, 14.99], [5.01, 14.99]],
+                        [[0.5, 4.5], [3.0, 7.0], [3.0, 7.0]],
+                        [[3.0, 11.9], [-2.0, 11.9], [-2.0, 11.9]],
                     ]
                 ),
                 u.Mpc,
@@ -174,21 +175,19 @@ class TestSWIFTGalaxies:
             ),
             atol=0.001 * u.Mpc,
         )
-        assert len(dense_solution["region_target_indices"]) == 4
+        assert len(dense_solution["region_target_indices"]) == 2
         for ds, expected in zip(
             dense_solution["region_target_indices"],
             [
                 np.array([0]),
-                np.array([1, 2, 3, 4, 5, 7, 8]),
-                np.array([6]),
-                np.array([9]),
+                np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
             ],
         ):
             assert np.allclose(ds, expected, atol=0)
-        assert dense_solution["cost_min"] == 4
-        assert dense_solution["cost_max"] == 32
+        assert dense_solution["cost_min"] == 9
+        assert dense_solution["cost_max"] == 35
         for k in sgs._solution.keys():
-            if isinstance(sgs._solution[k], np.integer):
+            if isinstance(sgs._solution[k], int):
                 assert sgs._solution[k] == dense_solution[k]
             elif isinstance(sgs._solution[k], list):
                 for i in range(len(sgs._solution[k])):
@@ -196,6 +195,7 @@ class TestSWIFTGalaxies:
                         sgs._solution[k][i], dense_solution[k][i], atol=0
                     )
             else:
+                print(k, sgs._solution[k], dense_solution[k])
                 assert_allclose_units(
                     sgs._solution[k], dense_solution[k], atol=0.001 * u.Mpc
                 )
