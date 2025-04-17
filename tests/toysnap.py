@@ -186,6 +186,8 @@ def create_toysnap(
     """
     Creates a sample dataset of a toy galaxy.
     """
+    if os.path.isfile(snapfile):
+        return
 
     sd = Writer(cosmo_units, np.ones(3, dtype=float) * boxsize)
 
@@ -663,7 +665,8 @@ def create_toysnap(
 
 
 def remove_toysnap(snapfile=toysnap_filename):
-    os.remove(snapfile)
+    if os.path.isfile(snapfile):
+        os.remove(snapfile)
     return
 
 

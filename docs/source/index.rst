@@ -19,6 +19,7 @@ Documentation contents
    halo_catalogues/index
    masking/index
    iterating/index
+   visualisation/index
    modules/index
 
 Citing SWIFTGalaxy

@@ -36,7 +36,10 @@ from swiftgalaxy.masks import MaskCollection
 from typing import Union, Optional, Set, Callable
 
 
-def _apply_box_wrap(coords: cosmo_array, boxsize: Optional[cosmo_array]) -> cosmo_array:
+def _apply_box_wrap(
+    coords: cosmo_array,
+    boxsize: Optional[cosmo_array],
+) -> cosmo_array:
     """
     Wrap coordinates for periodic box.
 
@@ -122,7 +125,7 @@ def _apply_rotmat(coords: cosmo_array, rotation_matrix: np.ndarray) -> cosmo_arr
 
 
 def _apply_4transform(
-    coords: cosmo_array, transform: np.ndarray, transform_units: unyt.unyt_quantity
+    coords: cosmo_array, transform: np.ndarray, transform_units: unyt.unit_object.Unit
 ) -> cosmo_array:
     """
     Apply an arbitary coordinate transformation (translation mixed with rotation) to a
@@ -139,7 +142,7 @@ def _apply_4transform(
         The coordinate array to be transformed.
     transform : :class:`~numpy.ndarray`
         The 4x4 transformation matrix.
-    transform_units : :class:`unyt.unyt_quantity`
+    transform_units : :class:`unyt.unit_object.Unit`
         The units assumed in the translation portion of the transformation matrix.
 
     Returns
