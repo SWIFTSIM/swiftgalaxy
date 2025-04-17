@@ -36,11 +36,19 @@ from swiftgalaxy.masks import MaskCollection
 from typing import Union, Optional, Set, Callable
 
 
-def _apply_box_wrap(coords: cosmo_array, boxsize: Optional[cosmo_array]) -> cosmo_array:
+def _apply_box_wrap(
+    coords: cosmo_array,
+    boxsize: Optional[cosmo_array],
+    current_transform: Optional[np.ndarray],
+    offset_frac: float = 0.5,
+) -> cosmo_array:
     """
     Wrap coordinates for periodic box.
 
     Given some coordinates, wrap the box size so that they lie within the periodic volume.
+
+    Wrapping must always be done in the unrotated frame, so we reverse any active
+    rotation before wrapping, then re-apply it.
 
     Parameters
     ----------
@@ -50,13 +58,24 @@ def _apply_box_wrap(coords: cosmo_array, boxsize: Optional[cosmo_array]) -> cosm
     boxsize : :class:`~swiftsimio.objects.cosmo_array` or ``None``
         The dimensions of the box to wrap (3 elements).
 
+    current_transform : :class:`~numpy.ndarray`
+        The currently active 4x4 transformation matrix.
+
+    offset_frac : :obj:`float`
+        The fraction of the box to offset by. The default it to wrap to [-Lbox/2, Lbox/2].
+        Setting to 0.0 instead wraps to [0, Lbox]. (Default: 0.5)
+
     Returns
     -------
     out : :class:`~swiftsimio.objects.cosmo_array`
         The coordinates wrapped to lie within the box dimensions.
     """
+    rot = current_transform[:3, :3] if current_transform is not None else np.eye(3)
     return (
-        (coords + boxsize / 2.0) % boxsize - boxsize / 2.0
+        (
+            (coords.dot(rot.T) + offset_frac * boxsize) % boxsize
+            - offset_frac * boxsize
+        ).dot(rot)
         if boxsize is not None
         else coords
     )
@@ -884,7 +903,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
             data = _apply_4transform(data, transform, transform_units)
         boxsize = getattr(self._particle_dataset.metadata, "boxsize", None)
         if dataset_name in self._swiftgalaxy.transforms_like_coordinates:
-            data = _apply_box_wrap(data, boxsize)
+            data = _apply_box_wrap(data, boxsize, transform)
         return data
 
     @property
@@ -2080,18 +2099,23 @@ class SWIFTGalaxy(SWIFTDataset):
         """
         transform_units = self.metadata.units.length
         transform = np.linalg.inv(self._coordinate_like_transform)
-        return _apply_4transform(
-            cosmo_array(
-                np.zeros((1, 3)),
-                units=transform_units,
-                comoving=True,
-                cosmo_factor=cosmo_factor(
-                    a**1, scale_factor=self.metadata.scale_factor
+        return _apply_box_wrap(
+            _apply_4transform(
+                cosmo_array(
+                    np.zeros((1, 3)),
+                    units=transform_units,
+                    comoving=True,
+                    cosmo_factor=cosmo_factor(
+                        a**1, scale_factor=self.metadata.scale_factor
+                    ),
                 ),
-            ),
-            transform,
-            transform_units,
-        ).squeeze()
+                transform,
+                transform_units,
+            ).squeeze(),
+            self.metadata.boxsize,
+            None,  # we are now aligned with the box
+            offset_frac=0,
+        )
 
     @property
     def velocity_centre(self) -> cosmo_array:
@@ -2244,7 +2268,11 @@ class SWIFTGalaxy(SWIFTDataset):
             for field_name in self.transforms_like_coordinates:
                 field_data = getattr(dataset, f"_{field_name}")
                 if field_data is not None:
-                    field_data = _apply_box_wrap(field_data, self.metadata.boxsize)
+                    field_data = _apply_box_wrap(
+                        field_data,
+                        self.metadata.boxsize,
+                        self._coordinate_like_transform,
+                    )
                     setattr(dataset, f"_{field_name}", field_data)
         return
 
