@@ -500,6 +500,32 @@ def create_toysnap(
         fg.create_dataset("PartType1", data=np.array([0, 0], dtype=int))
         fg.create_dataset("PartType4", data=np.array([0, 0], dtype=int))
         fg.create_dataset("PartType5", data=np.array([0, 0], dtype=int))
+        bbming = g.create_group("MinPositions")
+        bbming.create_dataset(
+            "PartType0", data=np.array([[0, 0, 0], [5, 0, 0]], dtype=int)
+        )
+        bbming.create_dataset(
+            "PartType1", data=np.array([[0, 0, 0], [5, 0, 0]], dtype=int)
+        )
+        bbming.create_dataset(
+            "PartType4", data=np.array([[0, 0, 0], [5, 0, 0]], dtype=int)
+        )
+        bbming.create_dataset(
+            "PartType5", data=np.array([[0, 0, 0], [5, 0, 0]], dtype=int)
+        )
+        bbmaxg = g.create_group("MaxPositions")
+        bbmaxg.create_dataset(
+            "PartType0", data=np.array([[5, 10, 10], [10, 10, 10]], dtype=int)
+        )
+        bbmaxg.create_dataset(
+            "PartType1", data=np.array([[5, 10, 10], [10, 10, 10]], dtype=int)
+        )
+        bbmaxg.create_dataset(
+            "PartType4", data=np.array([[5, 10, 10], [10, 10, 10]], dtype=int)
+        )
+        bbmaxg.create_dataset(
+            "PartType5", data=np.array([[5, 10, 10], [10, 10, 10]], dtype=int)
+        )
         mdg = g.create_group("Meta-data")
         mdg.attrs["dimension"] = np.array([[2, 1, 1]], dtype=int)
         mdg.attrs["nr_cells"] = np.array([2], dtype=int)
