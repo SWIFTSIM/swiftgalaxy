@@ -216,14 +216,19 @@ class _HaloCatalogue(ABC):
             The spatial mask to select particles in the region of interest.
         """
         sm = mask(snapshot_filename, spatial_only=True)
-        region = self._user_spatial_offsets
-        if region is not None:
-            for ax in range(3):
-                region[ax] = (
-                    [self.centre[ax] + region[ax][0], self.centre[ax] + region[ax][1]]
-                    if region[ax] is not None
+        user_region = self._user_spatial_offsets
+        if user_region is not None:
+            region = [
+                (
+                    [
+                        self.centre[ax] + user_region[ax][0],
+                        self.centre[ax] + user_region[ax][1],
+                    ]
+                    if user_region[ax] is not None
                     else None
                 )
+                for ax in range(3)
+            ]
             sm.constrain_spatial(region)
         return sm
 
@@ -1657,12 +1662,16 @@ class Caesar(_HaloCatalogue):
         if "total_rmax" in cat.radii.keys():
             # spatial extent information is present, define the mask
             pos = cosmo_array(
-                cat.pos.to(u.kpc),  # maybe comoving, ensure physical
+                cat.pos.to_value(u.kpc),  # maybe comoving, ensure physical
+                u.kpc,
                 comoving=False,
                 cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
             ).to_comoving()
             rmax = cosmo_array(
-                cat.radii["total_rmax"].to(u.kpc),  # maybe comoving, ensure physical
+                cat.radii["total_rmax"].to_value(
+                    u.kpc
+                ),  # maybe comoving, ensure physical
+                u.kpc,
                 comoving=False,
                 cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
             ).to_comoving()
