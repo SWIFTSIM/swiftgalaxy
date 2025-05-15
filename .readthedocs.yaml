@@ -10,7 +10,6 @@ build:
   jobs:
     post_create_environment:
       - python3 -m pip install swiftgalaxy
-      - python3 -m pip install -r optional_requirements.txt
 
 sphinx:
    configuration: docs/source/conf.py
