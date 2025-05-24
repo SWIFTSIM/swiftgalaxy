@@ -114,8 +114,8 @@ jobs:
         pip install -e swiftgalaxy/
     - name: Test with pytest including coverage report
       run: |
-        pytest --cov=swiftgalaxy/ --cov-report=xml swiftgalaxy/tests
+        pytest --cov=swiftgalaxy/ --cov-branch --cov-report=xml swiftgalaxy/tests
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
