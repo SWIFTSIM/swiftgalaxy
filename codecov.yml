@@ -5,7 +5,9 @@ coverage:
         target: 100%
         threshold: 10%
 ignore:
-  - "swiftgalaxy/tests"
-  - "swiftgalaxy/docs"
-  - "swiftgalaxy/examples"
-  - "SOAP"
+  - "^swiftgalaxy/tests"
+  - "^swiftgalaxy/docs"
+  - "^swiftgalaxy/examples"
+  - "^SOAP"
+fixes:
+  - "^swiftgalaxy/::"
