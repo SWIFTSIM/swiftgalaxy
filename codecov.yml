@@ -5,6 +5,6 @@ coverage:
         target: 100%
         threshold: 10%
 ignore:
-  - "tests"
-  - "docs"
-  - "examples"
+  - "swiftgalaxy/tests"
+  - "swiftgalaxy/docs"
+  - "swiftgalaxy/examples"
