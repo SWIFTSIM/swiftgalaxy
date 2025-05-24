@@ -1,7 +1,7 @@
 SWIFTGalaxy
 ===========
 
-|Python version| |PyPI version| |Repostatus| |Build status| |Documentation status|
+|Python version| |PyPI version| |Repostatus| |Build status| |Documentation status| |codecov|
 
 .. |Build status| image:: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml/badge.svg
     :target: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml
@@ -17,6 +17,8 @@ SWIFTGalaxy
 .. |Repostatus| image:: https://www.repostatus.org/badges/latest/active.svg
    :alt: Project Status: Active – The project has reached a stable, usable state and is being actively developed.
    :target: https://www.repostatus.org/#active
+.. |codecov| image:: https://codecov.io/gh/SWIFTSIM/swiftgalaxy/graph/badge.svg?token=YV3YYEK78Z 
+   :target: https://codecov.io/gh/SWIFTSIM/swiftgalaxy
 
 .. INTRO_START_LABEL
 
