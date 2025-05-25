@@ -95,3 +95,15 @@ class TestSWIFTGalaxiesCreation:
 
     def test_sgs_sa_creation(self, sgs_sa):
         pass  # fixture created SWIFTGalaxy with Standalone interface
+
+
+class TestDeletion:
+
+    def test_dataset_deleter(self, sg):
+        """
+        Check that we can delete a dataset's array.
+        """
+        sg.gas.coordinates  # lazy-load some data
+        assert sg.gas._internal_dataset._coordinates is not None
+        del sg.gas.coordinates
+        assert sg.gas._internal_dataset._coordinates is None

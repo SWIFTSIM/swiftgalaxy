@@ -6,6 +6,7 @@ from swiftsimio.objects import cosmo_array, cosmo_factor, a, cosmo_quantity
 from scipy.spatial.transform import Rotation
 from toysnap import present_particle_types, toysnap_filename, ToyHF
 from swiftgalaxy import SWIFTGalaxy
+from swiftgalaxy.reader import _apply_translation, _apply_4transform
 
 reltol = 1.01  # allow some wiggle room for floating point roundoff
 abstol_c = cosmo_quantity(
@@ -572,3 +573,74 @@ class TestCopyingTransformations:
         assert_allclose_units(
             sg.gas.velocities, sg2.gas.velocities, rtol=1.0e-4, atol=abstol_v
         )
+
+
+class TestApplyTranslation:
+
+    @pytest.mark.parametrize("comoving", [True, False])
+    def test_comoving_physical_conversion(self, comoving):
+        """
+        The _apply_translation function should convert the offset to
+        match the coordinates.
+        """
+        coords = cosmo_array(
+            [[1, 2, 3], [4, 5, 6]],
+            units=u.Mpc,
+            comoving=comoving,
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        )
+        offset = cosmo_array(
+            [1, 1, 1],
+            units=u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        )
+        result = _apply_translation(coords, offset)
+        assert result.comoving == comoving
+
+    @pytest.mark.parametrize("comoving", [True, False])
+    def test_warn_comoving_missing(self, comoving):
+        """
+        If the offset does not have comoving information issue a warning.
+        """
+        coords = cosmo_array(
+            [[1, 2, 3], [4, 5, 6]],
+            units=u.Mpc,
+            comoving=comoving,
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        )
+        offset = u.unyt_array(
+            [1, 1, 1],
+            units=u.Mpc,
+        )
+        msg = (
+            "Translation assumed to be in comoving"
+            if comoving
+            else "Translation assumed to be in physical"
+        )
+        with pytest.warns(RuntimeWarning, match=msg):
+            with pytest.warns(
+                RuntimeWarning, match="Mixing arguments with and without"
+            ):
+                result = _apply_translation(coords, offset)
+        assert result.comoving == comoving
+
+
+class TestApply4Transform:
+
+    @pytest.mark.parametrize("comoving", [True, False])
+    def test_comoving_physical_conversion(self, comoving):
+        """
+        The _apply_4transform function should return comoving if input
+        was comoving, physical otherwise.
+        """
+        coords = cosmo_array(
+            [[1, 2, 3], [4, 5, 6]],
+            units=u.Mpc,
+            comoving=comoving,
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        )
+        # identity 4transform:
+        transform = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])
+        result = _apply_4transform(coords, transform, transform_units=u.Mpc)
+        assert result.comoving == comoving
