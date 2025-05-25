@@ -1,3 +1,18 @@
+import pytest
+from swiftgalaxy import SWIFTGalaxy, Standalone
+from toysnap import (
+    create_toysnap,
+    remove_toysnap,
+    toysnap_filename,
+    n_g_all,
+    n_dm_all,
+    n_s_all,
+    n_bh_all,
+)
+from swiftsimio.objects import cosmo_array, cosmo_factor, a
+import unyt as u
+
+
 class TestSWIFTGalaxyCreation:
     def test_sg_creation(self, sg):
         """
@@ -66,6 +81,53 @@ class TestSWIFTGalaxyCreation:
             assert prop in dir(sg.gas.hydrogen_ionization_fractions)
         # and check something that we inherited:
         assert "generate_empty_properties" in dir(sg.gas)
+        # finally, check that we didn't lazy-load everything!
+        assert sg.gas._particle_dataset._coordinates is None
+
+    def test_no_masks(self):
+        """
+        Check that if we have no masks we read everything in the box (and warn about it).
+        """
+        try:
+            create_toysnap()
+            with pytest.warns(UserWarning, match="No spatial_offsets provided."):
+                sa = Standalone(
+                    extra_mask=None,
+                    centre=cosmo_array(
+                        [0, 0, 0],
+                        u.Mpc,
+                        comoving=True,
+                        cosmo_factor=cosmo_factor(a**1, 1.0),
+                    ),
+                    velocity_centre=cosmo_array(
+                        [0, 0, 0],
+                        u.km / u.s,
+                        comoving=True,
+                        cosmo_factor=cosmo_factor(a**0, 1.0),
+                    ),
+                    spatial_offsets=None,
+                )
+            sg = SWIFTGalaxy(
+                toysnap_filename,
+                sa,
+                transforms_like_coordinates={"coordinates", "extra_coordinates"},
+                transforms_like_velocities={"velocities", "extra_velocities"},
+            )
+            # check that extra mask is blank for all particle types:
+            assert sg._extra_mask.gas is None
+            assert sg._extra_mask.dark_matter is None
+            assert sg._extra_mask.stars is None
+            assert sg._extra_mask.black_holes is None
+            # check that cell mask is blank for all particle types:
+            for cell_mask in sg._spatial_mask.cell_mask.values():
+                assert cell_mask.all()
+            # check that we read all the particles:
+            assert sg.gas.masses.size == n_g_all
+            assert sg.dark_matter.masses.size == n_dm_all
+            assert sg.stars.masses.size == n_s_all
+            assert sg.black_holes.masses.size == n_bh_all
+        finally:
+            remove_toysnap()
 
 
 class TestSWIFTGalaxiesCreation:
