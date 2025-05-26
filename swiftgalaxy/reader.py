@@ -103,7 +103,7 @@ def _apply_translation(coords: cosmo_array, offset: cosmo_array) -> cosmo_array:
         offset = offset.to_comoving()
     elif hasattr(offset, "comoving") and not coords.comoving:
         offset = offset.to_physical()
-    elif not hasattr(offset, "comoving"):
+    else:  # not hasattr(offset, "comoving")
         msg = (
             "Translation assumed to be in comoving (not physical) coordinates."
             if coords.comoving
@@ -1125,10 +1125,13 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
                 + _sin_t * _sin_p * self.cartesian_velocities.y
                 - _cos_t * self.cartesian_velocities.z
             )
-            v_p = (
-                -_sin_p * self.cartesian_velocities.x
-                + _cos_p * self.cartesian_velocities.y
-            )
+            if self._cylindrical_velocities is not None:
+                v_p = self.cylindrical_velocities.phi
+            else:
+                v_p = (
+                    -_sin_p * self.cartesian_velocities.x
+                    + _cos_p * self.cartesian_velocities.y
+                )
             self._spherical_velocities = dict(_v_r=v_r, _v_t=v_t, _v_p=v_p)
         return _CoordinateHelper(
             self._spherical_velocities,
@@ -1531,7 +1534,7 @@ class SWIFTGalaxy(SWIFTDataset):
             self._velocity_like_transform = np.eye(4)
         if self.halo_catalogue is None:
             # in server mode we don't have a halo_catalogue yet
-            pass
+            self._spatial_mask = getattr(self, "_spatial_mask", None)
         elif self.halo_catalogue._user_spatial_offsets is not None:
             self._spatial_mask = self.halo_catalogue._get_user_spatial_mask(
                 self.snapshot_filename
@@ -2022,13 +2025,18 @@ class SWIFTGalaxy(SWIFTDataset):
             if boost
             else self.transforms_like_coordinates
         )
+        transform_units = (
+            self.metadata.units.length / self.metadata.units.time
+            if boost
+            else self.metadata.units.length
+        )
         for particle_name in self.metadata.present_group_names:
             dataset = getattr(self, particle_name)._particle_dataset
             for field_name in transformable:
                 field_data = getattr(dataset, f"_{field_name}")
                 if field_data is not None:
                     field_data = _apply_4transform(
-                        field_data, transform4.to_value(), transform4.units
+                        field_data, transform4, transform_units
                     )
                     setattr(dataset, f"_{field_name}", field_data)
         if boost:

@@ -1,4 +1,5 @@
 from copy import copy, deepcopy
+import pytest
 import unyt as u
 from unyt.testing import assert_allclose_units
 
@@ -24,13 +25,19 @@ class TestCopySWIFTGalaxy:
             is None
         )
 
-    def test_deepcopy_sg(self, sg):
+    @pytest.mark.parametrize("derived_coords_initialized", [True, False])
+    def test_deepcopy_sg(self, sg, derived_coords_initialized):
         """
         Test that dataset arrays get copied on deep copy.
         """
         # lazy load a dataset and a named column
         sg.gas.masses
         sg.gas.hydrogen_ionization_fractions.neutral
+        if derived_coords_initialized:
+            sg.gas.spherical_coordinates
+            sg.gas.spherical_velocities
+            sg.gas.cylindrical_coordinates
+            sg.gas.cylindrical_velocities
         sg_copy = deepcopy(sg)
         # check private attribute to not trigger lazy loading
         assert_allclose_units(
@@ -45,6 +52,28 @@ class TestCopySWIFTGalaxy:
             rtol=reltol_nd,
             atol=abstol_nd,
         )
+        if derived_coords_initialized:
+            assert_allclose_units(
+                sg.gas.spherical_coordinates.r,
+                sg_copy.gas._spherical_coordinates["_r"],
+            )
+            assert_allclose_units(
+                sg.gas.spherical_velocities.r,
+                sg_copy.gas._spherical_velocities["_v_r"],
+            )
+            assert_allclose_units(
+                sg.gas.cylindrical_coordinates.rho,
+                sg_copy.gas._cylindrical_coordinates["_rho"],
+            )
+            assert_allclose_units(
+                sg.gas.cylindrical_velocities.rho,
+                sg_copy.gas._cylindrical_velocities["_v_rho"],
+            )
+        else:
+            assert sg_copy.gas._spherical_coordinates is None
+            assert sg_copy.gas._spherical_velocities is None
+            assert sg_copy.gas._cylindrical_coordinates is None
+            assert sg_copy.gas._cylindrical_velocities is None
 
 
 class TestCopyDataset:

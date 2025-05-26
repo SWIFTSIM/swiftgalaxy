@@ -24,3 +24,8 @@ class TestStr:
             sg.gas.hydrogen_ionization_fractions._fullname
             == "gas.hydrogen_ionization_fractions"
         )
+
+    def test_sg_string(self, sg):
+        string = str(sg)
+        assert "SWIFTGalaxy at" in string
+        assert repr(sg) == string

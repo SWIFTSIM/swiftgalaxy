@@ -1,5 +1,4 @@
-import pytest
-from swiftgalaxy import SWIFTGalaxy, Standalone
+from swiftgalaxy import SWIFTGalaxy
 from toysnap import (
     create_toysnap,
     remove_toysnap,
@@ -9,8 +8,6 @@ from toysnap import (
     n_s_all,
     n_bh_all,
 )
-from swiftsimio.objects import cosmo_array, cosmo_factor, a
-import unyt as u
 
 
 class TestSWIFTGalaxyCreation:
@@ -90,26 +87,9 @@ class TestSWIFTGalaxyCreation:
         """
         try:
             create_toysnap()
-            with pytest.warns(UserWarning, match="No spatial_offsets provided."):
-                sa = Standalone(
-                    extra_mask=None,
-                    centre=cosmo_array(
-                        [0, 0, 0],
-                        u.Mpc,
-                        comoving=True,
-                        cosmo_factor=cosmo_factor(a**1, 1.0),
-                    ),
-                    velocity_centre=cosmo_array(
-                        [0, 0, 0],
-                        u.km / u.s,
-                        comoving=True,
-                        cosmo_factor=cosmo_factor(a**0, 1.0),
-                    ),
-                    spatial_offsets=None,
-                )
             sg = SWIFTGalaxy(
                 toysnap_filename,
-                sa,
+                None,  # no halo_catalogue is easiest way to get no mask
                 transforms_like_coordinates={"coordinates", "extra_coordinates"},
                 transforms_like_velocities={"velocities", "extra_velocities"},
             )
@@ -119,8 +99,7 @@ class TestSWIFTGalaxyCreation:
             assert sg._extra_mask.stars is None
             assert sg._extra_mask.black_holes is None
             # check that cell mask is blank for all particle types:
-            for cell_mask in sg._spatial_mask.cell_mask.values():
-                assert cell_mask.all()
+            assert sg._spatial_mask is None
             # check that we read all the particles:
             assert sg.gas.masses.size == n_g_all
             assert sg.dark_matter.masses.size == n_dm_all
