@@ -103,7 +103,7 @@ def _apply_translation(coords: cosmo_array, offset: cosmo_array) -> cosmo_array:
         offset = offset.to_comoving()
     elif hasattr(offset, "comoving") and not coords.comoving:
         offset = offset.to_physical()
-    elif not hasattr(offset, "comoving"):
+    else:  # not hasattr(offset, "comoving")
         msg = (
             "Translation assumed to be in comoving (not physical) coordinates."
             if coords.comoving
@@ -848,9 +848,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
         else:
             if self._swiftgalaxy._spatial_mask is None:
                 # get a count of particles in the box
-                num_part = self._particle_dataset.metadata.num_part[
-                    particle_metadata.particle_type
-                ]
+                num_part = getattr(self.metadata, f"n_{particle_metadata.group_name}")
             else:
                 # get a count of particles in the spatial mask region
                 num_part = np.sum(
@@ -1029,20 +1027,16 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
                     a**0, scale_factor=r.cosmo_factor.scale_factor
                 ),
             )
-            if self.cylindrical_coordinates is not None:
+            if self._cylindrical_coordinates is not None:
                 phi = self.cylindrical_coordinates.phi
             else:
-                phi = cosmo_array(
+                phi = (
                     np.arctan2(
                         self.cartesian_coordinates.y, self.cartesian_coordinates.x
-                    ),
-                    units=unyt.rad,
-                    comoving=r.comoving,
-                    cosmo_factor=cosmo_factor(
-                        a**0, scale_factor=r.cosmo_factor.scale_factor
-                    ),
-                )
-                phi[phi < 0] = phi[phi < 0] + 2 * np.pi * unyt.rad
+                    )
+                    * unyt.rad
+                )  # arctan2 returns dimensionless
+                phi[phi < 0] += 2 * np.pi * np.ones_like(phi)[phi < 0]
             self._spherical_coordinates = dict(_r=r, _theta=theta, _phi=phi)
         return _CoordinateHelper(
             self._spherical_coordinates,
@@ -1125,10 +1119,13 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
                 + _sin_t * _sin_p * self.cartesian_velocities.y
                 - _cos_t * self.cartesian_velocities.z
             )
-            v_p = (
-                -_sin_p * self.cartesian_velocities.x
-                + _cos_p * self.cartesian_velocities.y
-            )
+            if self._cylindrical_velocities is not None:
+                v_p = self.cylindrical_velocities.phi
+            else:
+                v_p = (
+                    -_sin_p * self.cartesian_velocities.x
+                    + _cos_p * self.cartesian_velocities.y
+                )
             self._spherical_velocities = dict(_v_r=v_r, _v_t=v_t, _v_p=v_p)
         return _CoordinateHelper(
             self._spherical_velocities,
@@ -1195,19 +1192,13 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
             if self._spherical_coordinates is not None:
                 phi = self.spherical_coordinates.phi
             else:
-                # np.where returns ndarray
-                phi = np.arctan2(
-                    self.cartesian_coordinates.y, self.cartesian_coordinates.x
-                ).view(np.ndarray)
-                phi = np.where(phi < 0, phi + 2 * np.pi, phi)
-                phi = cosmo_array(
-                    phi,
-                    units=unyt.rad,
-                    comoving=rho.comoving,
-                    cosmo_factor=cosmo_factor(
-                        a**0, scale_factor=rho.cosmo_factor.scale_factor
-                    ),
-                )
+                phi = (
+                    np.arctan2(
+                        self.cartesian_coordinates.y, self.cartesian_coordinates.x
+                    )
+                    * unyt.rad
+                )  # arctan2 returns dimensionless
+                phi[phi < 0] += 2 * np.pi * np.ones_like(phi)[phi < 0]
             z = self.cartesian_coordinates.z
             self._cylindrical_coordinates = dict(_rho=rho, _phi=phi, _z=z)
         return _CoordinateHelper(
@@ -1531,7 +1522,7 @@ class SWIFTGalaxy(SWIFTDataset):
             self._velocity_like_transform = np.eye(4)
         if self.halo_catalogue is None:
             # in server mode we don't have a halo_catalogue yet
-            pass
+            self._spatial_mask = getattr(self, "_spatial_mask", None)
         elif self.halo_catalogue._user_spatial_offsets is not None:
             self._spatial_mask = self.halo_catalogue._get_user_spatial_mask(
                 self.snapshot_filename
@@ -2022,13 +2013,18 @@ class SWIFTGalaxy(SWIFTDataset):
             if boost
             else self.transforms_like_coordinates
         )
+        transform_units = (
+            self.metadata.units.length / self.metadata.units.time
+            if boost
+            else self.metadata.units.length
+        )
         for particle_name in self.metadata.present_group_names:
             dataset = getattr(self, particle_name)._particle_dataset
             for field_name in transformable:
                 field_data = getattr(dataset, f"_{field_name}")
                 if field_data is not None:
                     field_data = _apply_4transform(
-                        field_data, transform4.to_value(), transform4.units
+                        field_data, transform4, transform_units
                     )
                     setattr(dataset, f"_{field_name}", field_data)
         if boost:

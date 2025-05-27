@@ -206,6 +206,17 @@ class TestSphericalCoordinates:
             spherical_v_phi, v_phi_from_cartesian, rtol=1.0e-4, atol=abstol_v
         )
 
+    @pytest.mark.parametrize("ctype", ["coordinates", "velocities"])
+    def test_copy_from_cylindrical(self, sg, ctype):
+        """
+        Check that copying the azimuth from cylindrical if already evaluated works.
+        """
+        getattr(sg.gas, f"cylindrical_{ctype}").phi  # trigger evaluation
+        assert (
+            getattr(sg.gas, f"spherical_{ctype}").phi
+            is getattr(sg.gas, f"cylindrical_{ctype}").phi
+        )
+
 
 class TestCylindricalCoordinates:
     @pytest.mark.parametrize("particle_name", present_particle_types.values())
@@ -327,6 +338,17 @@ class TestCylindricalCoordinates:
         v_z_from_cartesian = vxyz[:, 2]
         assert_allclose_units(
             cylindrical_v_z, v_z_from_cartesian, rtol=1.0e-4, atol=abstol_v
+        )
+
+    @pytest.mark.parametrize("ctype", ["coordinates", "velocities"])
+    def test_copy_from_spherical(self, sg, ctype):
+        """
+        Check that copying the azimuth from spherical if already evaluated works.
+        """
+        getattr(sg.gas, f"spherical_{ctype}").phi  # trigger evaluation
+        assert (
+            getattr(sg.gas, f"cylindrical_{ctype}").phi
+            is getattr(sg.gas, f"spherical_{ctype}").phi
         )
 
 

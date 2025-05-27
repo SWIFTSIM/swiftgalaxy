@@ -4,8 +4,15 @@ import unyt as u
 from unyt.testing import assert_allclose_units
 from swiftsimio.objects import cosmo_array, cosmo_factor, a, cosmo_quantity
 from scipy.spatial.transform import Rotation
-from toysnap import present_particle_types, toysnap_filename, ToyHF
+from toysnap import (
+    present_particle_types,
+    toysnap_filename,
+    ToyHF,
+    create_toysnap,
+    remove_toysnap,
+)
 from swiftgalaxy import SWIFTGalaxy
+from swiftgalaxy.reader import _apply_translation, _apply_4transform
 
 reltol = 1.01  # allow some wiggle room for floating point roundoff
 abstol_c = cosmo_quantity(
@@ -362,6 +369,18 @@ class TestManualCoordinateTransformations:
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         assert_allclose_units(xyz_before + translation, xyz, rtol=1.0e-4, atol=abstol_c)
 
+    def test_translate_warn_comoving_missing(self, sg):
+        """
+        If the translation does not have comoving information issue a warning.
+        """
+        translation = u.unyt_array(
+            [1, 1, 1],
+            units=u.Mpc,
+        )
+        msg = "Translation assumed to be in comoving"
+        with pytest.warns(RuntimeWarning, match=msg):
+            sg.translate(translation)
+
     @pytest.mark.parametrize("velocity_name", ("velocities", "extra_velocities"))
     @pytest.mark.parametrize("particle_name", present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
@@ -423,6 +442,64 @@ class TestManualCoordinateTransformations:
         sg.translate(-2 * sg.metadata.boxsize)  # -2x box size
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         assert_allclose_units(xyz_before, xyz, rtol=1.0e-4, atol=abstol_c)
+
+    @pytest.mark.parametrize("coordinate_name", ("coordinates", "extra_coordinates"))
+    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_transform(self, sg, particle_name, coordinate_name, before_load):
+        """
+        Check that affine transformation works.
+        """
+        xyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
+        if before_load:
+            setattr(
+                getattr(sg, particle_name)._particle_dataset,
+                f"_{coordinate_name}",
+                None,
+            )
+        translation = cosmo_array(
+            [1, 1, 1],
+            units=u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        )
+        transform = np.eye(4)
+        transform[:3, :3] = rot
+        transform[3, :3] = translation.to_comoving_value(u.Mpc)
+        sg._transform(transform)
+        xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
+        assert_allclose_units(
+            xyz_before.dot(rot) + translation, xyz, rtol=1.0e-4, atol=abstol_c
+        )
+
+    @pytest.mark.parametrize("coordinate_name", ("velocities", "extra_velocities"))
+    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_transform_velocity(self, sg, particle_name, coordinate_name, before_load):
+        """
+        Check that affine transformation works.
+        """
+        xyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
+        if before_load:
+            setattr(
+                getattr(sg, particle_name)._particle_dataset,
+                f"_{coordinate_name}",
+                None,
+            )
+        translation = cosmo_array(
+            [100, 100, 100],
+            units=u.km / u.s,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+        )
+        transform = np.eye(4)
+        transform[:3, :3] = rot
+        transform[3, :3] = translation.to_comoving_value(u.km / u.s)
+        sg._transform(transform, boost=True)
+        xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
+        assert_allclose_units(
+            xyz_before.dot(rot) + translation, xyz, rtol=1.0e-4, atol=abstol_v
+        )
 
 
 class TestSequentialTransformations:
@@ -533,6 +610,27 @@ class TestCopyingTransformations:
                 toysnap_filename, ToyHF(), auto_recentre=True, coordinate_frame_from=sg
             )
 
+    def test_invalid_coordinate_frame_from(self, sg):
+        """
+        Check that we get an error if coordinate_frame_from has mismatched internal units.
+        """
+        new_time_unit = u.s
+        assert sg.metadata.units.time != new_time_unit
+        sg.metadata.units.time = new_time_unit
+        try:
+            create_toysnap()
+            with pytest.raises(
+                ValueError, match="Internal units \\(length and time\\) of"
+            ):
+                SWIFTGalaxy(
+                    toysnap_filename,
+                    ToyHF(),
+                    coordinate_frame_from=sg,
+                    auto_recentre=False,
+                )
+        finally:
+            remove_toysnap()
+
     def test_copied_coordinate_transform(self, sg):
         """
         Check that a SWIFTGalaxy initialised to copy the coordinate frame
@@ -572,3 +670,115 @@ class TestCopyingTransformations:
         assert_allclose_units(
             sg.gas.velocities, sg2.gas.velocities, rtol=1.0e-4, atol=abstol_v
         )
+
+
+class TestApplyTranslation:
+
+    @pytest.mark.parametrize("comoving", [True, False])
+    def test_comoving_physical_conversion(self, comoving):
+        """
+        The _apply_translation function should convert the offset to
+        match the coordinates.
+        """
+        coords = cosmo_array(
+            [[1, 2, 3], [4, 5, 6]],
+            units=u.Mpc,
+            comoving=comoving,
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        )
+        offset = cosmo_array(
+            [1, 1, 1],
+            units=u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        )
+        result = _apply_translation(coords, offset)
+        assert result.comoving == comoving
+
+    @pytest.mark.parametrize("comoving", [True, False])
+    def test_warn_comoving_missing(self, comoving):
+        """
+        If the offset does not have comoving information issue a warning.
+        """
+        coords = cosmo_array(
+            [[1, 2, 3], [4, 5, 6]],
+            units=u.Mpc,
+            comoving=comoving,
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        )
+        offset = u.unyt_array(
+            [1, 1, 1],
+            units=u.Mpc,
+        )
+        msg = (
+            "Translation assumed to be in comoving"
+            if comoving
+            else "Translation assumed to be in physical"
+        )
+        with pytest.warns(RuntimeWarning, match=msg):
+            with pytest.warns(
+                RuntimeWarning, match="Mixing arguments with and without"
+            ):
+                result = _apply_translation(coords, offset)
+        assert result.comoving == comoving
+
+
+class TestApply4Transform:
+
+    @pytest.mark.parametrize("comoving", [True, False])
+    def test_comoving_physical_conversion(self, comoving):
+        """
+        The _apply_4transform function should return comoving if input
+        was comoving, physical otherwise.
+        """
+        coords = cosmo_array(
+            [[1, 2, 3], [4, 5, 6]],
+            units=u.Mpc,
+            comoving=comoving,
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        )
+        transform = np.eye(4)  # identity 4transform
+        result = _apply_4transform(coords, transform, transform_units=u.Mpc)
+        assert result.comoving == comoving
+
+
+class TestCoordinateProperties:
+
+    def test_centre(self, sg):
+        """
+        Check the centre attribute.
+        """
+        new_centre = cosmo_array(
+            [1, 2, 3],
+            units=u.Mpc,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        )
+        sg.recentre(new_centre)
+        assert_allclose_units(
+            sg.halo_catalogue.centre + new_centre,
+            sg.centre,
+        )
+
+    def test_velocity_centre(self, sg):
+        """
+        Check the velocity_centre attribute.
+        """
+        new_centre = cosmo_array(
+            [100, 200, 300],
+            units=u.km / u.s,
+            comoving=True,
+            cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+        )
+        sg.recentre_velocity(new_centre)
+        assert_allclose_units(
+            sg.halo_catalogue.velocity_centre + new_centre,
+            sg.velocity_centre,
+        )
+
+    def test_rotation(self, sg):
+        """
+        Check the rotation attribute.
+        """
+        sg.rotate(Rotation.from_matrix(rot))
+        assert np.allclose(sg.rotation.as_matrix(), rot)

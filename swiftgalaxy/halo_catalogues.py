@@ -420,7 +420,6 @@ class _HaloCatalogue(ABC):
         Derived classes shoud put any non-trivial i/o operations needed at
         initialization here. Method will be called during ``__init__``.
         """
-        pass
 
     @abstractmethod
     def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
@@ -441,7 +440,6 @@ class _HaloCatalogue(ABC):
         out : :class:`~swiftsimio.masks.SWIFTMask`
             The spatial mask to select particles in the region of interest.
         """
-        pass
 
     @abstractmethod
     def _generate_bound_only_mask(self, sg: "SWIFTGalaxy") -> MaskCollection:
@@ -467,7 +465,6 @@ class _HaloCatalogue(ABC):
             The mask object that selects bound particles from the spatially-masked
             set of particles.
         """
-        pass
 
     @abstractmethod
     def _get_preload_fields(self, sg: "SWIFTGalaxy") -> Set[str]:
@@ -493,7 +490,6 @@ class _HaloCatalogue(ABC):
             A set specifying the data that need to be read as strings, such as
             ``{"gas.particle_ids", ...}``.
         """
-        pass
 
     @property
     @abstractmethod
@@ -511,7 +507,6 @@ class _HaloCatalogue(ABC):
         out : :class:`~swiftsimio.objects.cosmo_array`
             The coordinate centre(s) of the object(s) of interest.
         """
-        pass
 
     @property
     @abstractmethod
@@ -529,7 +524,6 @@ class _HaloCatalogue(ABC):
         out : :class:`~swiftsimio.objects.cosmo_array`
             The velocity centre(s) of the object(s) of interest.
         """
-        pass
 
     @property
     @abstractmethod
@@ -546,7 +540,6 @@ class _HaloCatalogue(ABC):
         out : :class:`~swiftsimio.objects.cosmo_array`
             The coordinates of the centres of the spatial mask regions.
         """
-        pass
 
     @property
     @abstractmethod
@@ -565,7 +558,6 @@ class _HaloCatalogue(ABC):
             The half-length of the bounding box to use to construct the spatial mask
             regions.
         """
-        pass
 
 
 class SOAP(_HaloCatalogue):
