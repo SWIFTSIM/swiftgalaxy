@@ -1,7 +1,7 @@
 SWIFTGalaxy
 ===========
 
-|Python version| |PyPI version| |Repostatus| |Zenodo| |Build status| |Documentation status| |codecov|
+|Python version| |PyPI version| |ASCL| |Repostatus| |Zenodo| |Build status| |Documentation status| |codecov|
 
 
 .. |Build status| image:: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml/badge.svg
@@ -22,6 +22,9 @@ SWIFTGalaxy
    :target: https://codecov.io/gh/SWIFTSIM/swiftgalaxy
 .. |Zenodo| image:: https://zenodo.org/badge/488271795.svg
    :target: https://doi.org/10.5281/zenodo.15502355
+.. |ASCL| image:: https://img.shields.io/badge/ascl-2505.002-blue.svg?colorB=262255
+   :alt: ascl:2505.002
+   :target: https://ascl.net/2505.002
 
 .. INTRO_START_LABEL
 
