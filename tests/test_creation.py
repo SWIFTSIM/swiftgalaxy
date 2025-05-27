@@ -1,13 +1,10 @@
+"""
+Tests checking that we can create objects, if these fail something
+fundamental has gone wrong.
+"""
+
 from swiftgalaxy import SWIFTGalaxy
-from toysnap import (
-    create_toysnap,
-    remove_toysnap,
-    toysnap_filename,
-    n_g_all,
-    n_dm_all,
-    n_s_all,
-    n_bh_all,
-)
+from toysnap import create_toysnap, remove_toysnap, toysnap_filename, n_g_1
 
 
 class TestSWIFTGalaxyCreation:
@@ -81,30 +78,36 @@ class TestSWIFTGalaxyCreation:
         # finally, check that we didn't lazy-load everything!
         assert sg.gas._particle_dataset._coordinates is None
 
-    def test_no_masks(self):
+    def test_mask_preloaded_namedcolumn(self):
         """
-        Check that if we have no masks we read everything in the box (and warn about it).
+        If namedcolumn data was loaded during evaluation of a mask, it needs to be masked
+        during initialization.
         """
+        from toysnap import ToyHF
+
+        def load_namedcolumn(method):
+
+            def wrapper(self, sg):
+                sg.gas.hydrogen_ionization_fractions.neutral
+                return method(self, sg)
+
+            return wrapper
+
+        # decorate the mask evaluation to load an (unused) namedcolumn
+        ToyHF._generate_bound_only_mask = load_namedcolumn(
+            ToyHF._generate_bound_only_mask
+        )
+
         try:
             create_toysnap()
-            sg = SWIFTGalaxy(
-                toysnap_filename,
-                None,  # no halo_catalogue is easiest way to get no mask
-                transforms_like_coordinates={"coordinates", "extra_coordinates"},
-                transforms_like_velocities={"velocities", "extra_velocities"},
+            sg = SWIFTGalaxy(toysnap_filename, ToyHF())
+            # confirm that we loaded a namedcolumn during initialization:
+            assert (
+                sg.gas.hydrogen_ionization_fractions._internal_dataset._neutral
+                is not None
             )
-            # check that extra mask is blank for all particle types:
-            assert sg._extra_mask.gas is None
-            assert sg._extra_mask.dark_matter is None
-            assert sg._extra_mask.stars is None
-            assert sg._extra_mask.black_holes is None
-            # check that cell mask is blank for all particle types:
-            assert sg._spatial_mask is None
-            # check that we read all the particles:
-            assert sg.gas.masses.size == n_g_all
-            assert sg.dark_matter.masses.size == n_dm_all
-            assert sg.stars.masses.size == n_s_all
-            assert sg.black_holes.masses.size == n_bh_all
+            # confirm that it got masked:
+            assert sg.gas.hydrogen_ionization_fractions.neutral.size == n_g_1
         finally:
             remove_toysnap()
 

@@ -848,9 +848,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
         else:
             if self._swiftgalaxy._spatial_mask is None:
                 # get a count of particles in the box
-                num_part = self._particle_dataset.metadata.num_part[
-                    particle_metadata.particle_type
-                ]
+                num_part = getattr(self.metadata, f"n_{particle_metadata.group_name}")
             else:
                 # get a count of particles in the spatial mask region
                 num_part = np.sum(
@@ -1029,20 +1027,16 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
                     a**0, scale_factor=r.cosmo_factor.scale_factor
                 ),
             )
-            if self.cylindrical_coordinates is not None:
+            if self._cylindrical_coordinates is not None:
                 phi = self.cylindrical_coordinates.phi
             else:
-                phi = cosmo_array(
+                phi = (
                     np.arctan2(
                         self.cartesian_coordinates.y, self.cartesian_coordinates.x
-                    ),
-                    units=unyt.rad,
-                    comoving=r.comoving,
-                    cosmo_factor=cosmo_factor(
-                        a**0, scale_factor=r.cosmo_factor.scale_factor
-                    ),
-                )
-                phi[phi < 0] = phi[phi < 0] + 2 * np.pi * unyt.rad
+                    )
+                    * unyt.rad
+                )  # arctan2 returns dimensionless
+                phi[phi < 0] += 2 * np.pi * np.ones_like(phi)[phi < 0]
             self._spherical_coordinates = dict(_r=r, _theta=theta, _phi=phi)
         return _CoordinateHelper(
             self._spherical_coordinates,
@@ -1198,19 +1192,13 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
             if self._spherical_coordinates is not None:
                 phi = self.spherical_coordinates.phi
             else:
-                # np.where returns ndarray
-                phi = np.arctan2(
-                    self.cartesian_coordinates.y, self.cartesian_coordinates.x
-                ).view(np.ndarray)
-                phi = np.where(phi < 0, phi + 2 * np.pi, phi)
-                phi = cosmo_array(
-                    phi,
-                    units=unyt.rad,
-                    comoving=rho.comoving,
-                    cosmo_factor=cosmo_factor(
-                        a**0, scale_factor=rho.cosmo_factor.scale_factor
-                    ),
-                )
+                phi = (
+                    np.arctan2(
+                        self.cartesian_coordinates.y, self.cartesian_coordinates.x
+                    )
+                    * unyt.rad
+                )  # arctan2 returns dimensionless
+                phi[phi < 0] += 2 * np.pi * np.ones_like(phi)[phi < 0]
             z = self.cartesian_coordinates.z
             self._cylindrical_coordinates = dict(_rho=rho, _phi=phi, _z=z)
         return _CoordinateHelper(

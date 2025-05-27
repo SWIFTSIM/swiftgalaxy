@@ -1,7 +1,9 @@
+import numpy as np
 from copy import copy, deepcopy
 import pytest
 import unyt as u
 from unyt.testing import assert_allclose_units
+from swiftgalaxy.masks import MaskCollection
 
 abstol_m = 1e2 * u.solMass
 reltol_m = 1.0e-4
@@ -139,3 +141,44 @@ class TestCopyNamedColumns:
             rtol=reltol_nd,
             atol=abstol_nd,
         )
+
+
+class TestCopyMaskCollection:
+    def test_copy_mask_collection(self):
+        """
+        Test that masks get copied.
+        """
+        mc = MaskCollection(
+            gas=np.ones(100, dtype=bool),
+            dark_matter=np.s_[:20],
+            stars=None,
+            black_holes=np.arange(3),
+        )
+        mc_copy = copy(mc)
+        assert set(mc_copy.__dict__.keys()) == set(mc.__dict__.keys())
+        for k in ("gas", "dark_matter", "stars", "black_holes"):
+            comparison = getattr(mc, k) == getattr(mc_copy, k)
+            if type(comparison) is bool:
+                assert comparison
+            else:
+                assert all(comparison)
+
+    def test_deepcopy_mask_collection(self):
+        """
+        Test that masks get copied along with values. Since the object isn't
+        really "deep", shallow copy and deepcopy have the same expectation.
+        """
+        mc = MaskCollection(
+            gas=np.ones(100, dtype=bool),
+            dark_matter=np.s_[:20],
+            stars=None,
+            black_holes=np.arange(3),
+        )
+        mc_copy = deepcopy(mc)
+        assert set(mc_copy.__dict__.keys()) == set(mc.__dict__.keys())
+        for k in ("gas", "dark_matter", "stars", "black_holes"):
+            comparison = getattr(mc, k) == getattr(mc_copy, k)
+            if type(comparison) is bool:
+                assert comparison
+            else:
+                assert all(comparison)

@@ -4,7 +4,13 @@ import unyt as u
 from unyt.testing import assert_allclose_units
 from swiftsimio.objects import cosmo_array, cosmo_factor, a, cosmo_quantity
 from scipy.spatial.transform import Rotation
-from toysnap import present_particle_types, toysnap_filename, ToyHF
+from toysnap import (
+    present_particle_types,
+    toysnap_filename,
+    ToyHF,
+    create_toysnap,
+    remove_toysnap,
+)
 from swiftgalaxy import SWIFTGalaxy
 from swiftgalaxy.reader import _apply_translation, _apply_4transform
 
@@ -603,6 +609,27 @@ class TestCopyingTransformations:
             SWIFTGalaxy(
                 toysnap_filename, ToyHF(), auto_recentre=True, coordinate_frame_from=sg
             )
+
+    def test_invalid_coordinate_frame_from(self, sg):
+        """
+        Check that we get an error if coordinate_frame_from has mismatched internal units.
+        """
+        new_time_unit = u.s
+        assert sg.metadata.units.time != new_time_unit
+        sg.metadata.units.time = new_time_unit
+        try:
+            create_toysnap()
+            with pytest.raises(
+                ValueError, match="Internal units \\(length and time\\) of"
+            ):
+                SWIFTGalaxy(
+                    toysnap_filename,
+                    ToyHF(),
+                    coordinate_frame_from=sg,
+                    auto_recentre=False,
+                )
+        finally:
+            remove_toysnap()
 
     def test_copied_coordinate_transform(self, sg):
         """
