@@ -30,7 +30,7 @@ SWIFTGalaxy
 
 SWIFTGalaxy is a module that extends SWIFTSimIO_ tailored to analyses of particles belonging to individual simulated galaxies. It inherits from and extends the functionality of the ``SWIFTDataset``. It understands the content of halo catalogues (supported: `Velociraptor`_, `Caesar`_, `SOAP`_) and therefore which particles belong to a galaxy or other group of particles, and its integrated properties. The particles occupy a coordinate frame that is enforced to be consistent, such that particles loaded on-the-fly will match e.g. rotations and translations of particles already in memory. Intuitive masking of particle datasets is also enabled. Utilities to make working in cylindrical and spherical coordinate systems more convenient are also provided. Finally, tools to iterate efficiently over multiple galaxies are also provided.
 
-Installation is as simple as `pip install swiftgalaxy`. `numpy>=2.0` is required and will be installed automatically as a dependency.
+Installation is as simple as ``pip install swiftgalaxy``. ``numpy>=2.0`` is required and will be installed automatically as a dependency.
 
 .. _SWIFTSimIO: http://swiftsimio.readthedocs.org
 .. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/abstract
