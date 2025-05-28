@@ -29,6 +29,8 @@ Pytest unit testing
 
 You can install the `pytest` unit testing toolkit with `pip install pytest`. You can then run `pytest` in the same directory as the `setup.py` file to run the existing unit tests. Any test failures will report detailed debugging information. Note that the tests on github are run with python versions `3.10`, `3.11` and `3.12`, and the latest PyPI releases of the relevant dependencies (swiftsimio, unyt, etc.). To run only tests in a specific file, you can do e.g. `pytest tests/test_creation.py`. The tests to be run can be further narrowed down with the `-k` argument to `pytest` (see `pytest --help`).
 
+Test coverage is provided by [Codecov](https://about.codecov.io/). This tool checks which lines of code are run during the execution of the test suite. While having all code lines run (called "100% test coverage"), or nearly, does not guarantee good tests, it is still a useful benchmark. Pull requests opened on SWIFTGalaxy will produce a test coverage report once the test suite finishes running. This will flag any new code lines not covered by tests, or previously covered lines that are no longer covered, etc. You should look at this and evaluate whether it reveals additional useful test cases that you hadn't considered. You can also generate a code coverage report locally with the `pytest-cov` extension for `pytest`.
+
 Documentation
 -------------
 
