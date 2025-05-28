@@ -87,6 +87,11 @@ Please also consider the `citations requested for SWIFTSimIO <citeSWIFTSimIO>`_.
 Community
 ---------
 
-Code contributions are very welcome! A good place to start is the [contributing guide](https://github.com/SWIFTSIM/swiftgalaxy/blob/main/CONTRIBUTING.md) and how to set up a [development environment](https://swiftgalaxy.readthedocs.io/en/latest/getting_started/index.html#installing).
+Code contributions are very welcome! A good place to start is the `contributing guide`_ and how to set up a `development environment`_.
 
-SWIFTGalaxy is licensed under [GPL-3.0](https://github.com/SWIFTSIM/swiftgalaxy/tree/main?tab=GPL-3.0-1-ov-file) and community members are expected to abide by the (code of conduct)[https://github.com/SWIFTSIM/swiftgalaxy/tree/main?tab=coc-ov-file].
+SWIFTGalaxy is licensed under `GPL-3.0`_ and community members are expected to abide by the `code of conduct`_.
+
+.. _contributing guide: https://github.com/SWIFTSIM/swiftgalaxy/blob/main/CONTRIBUTING.md
+.. _development environment: https://swiftgalaxy.readthedocs.io/en/latest/getting_started/index.html#installing
+.. _GPL-3.0: https://github.com/SWIFTSIM/swiftgalaxy/tree/main?tab=GPL-3.0-1-ov-file
+.. _code of conduct: https://github.com/SWIFTSIM/swiftgalaxy/tree/main?tab=coc-ov-file
