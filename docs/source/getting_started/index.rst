@@ -34,10 +34,6 @@ Installing
 
 ``pip install swiftgalaxy``
 
-.. note::
-
-   :mod:`swiftgalaxy` is not hosted on PyPI yet, so ``pip install swiftgalaxy`` will fail. Use the instructions below instead.
-
 Note that this will also install required dependencies.
 
 To set up the code for development, first clone the latest master from `github`_:
@@ -94,5 +90,11 @@ In this case with :class:`~swiftgalaxy.halo_catalogues.Velociraptor`, we can get
 .. code-block:: python
 
     sg.halo_catalogue.masses.mvir
+
+:mod:`swiftgalaxy` supports Python's tab completion features. This means that you can browse the available attributes of objects in an interactive interpreter by starting to type an attribute (or just a trailing dot) and pressing tab twice. A few examples to help start exploring:
+
+   - ``sg.<tab><tab>``
+   - ``sg.gas.<tab><tab>``
+   - ``sg.halo_catalogue.<tab><tab>``
 
 The further features of a :class:`~swiftgalaxy.reader.SWIFTGalaxy` are detailed in the next sections.

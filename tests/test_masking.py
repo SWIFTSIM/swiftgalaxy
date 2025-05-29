@@ -1,13 +1,22 @@
+"""
+Tests for applying masks to swiftgalaxy, datasets and named columns.
+"""
+
 import pytest
 import numpy as np
-import unyt as u
 from unyt.testing import assert_allclose_units
 from toysnap import present_particle_types
-from swiftgalaxy import MaskCollection
+from swiftgalaxy import SWIFTGalaxy, MaskCollection
+from toysnap import (
+    create_toysnap,
+    remove_toysnap,
+    toysnap_filename,
+    n_g_all,
+    n_dm_all,
+    n_s_all,
+    n_bh_all,
+)
 
-abstol_c = 1 * u.pc  # less than this is ~0
-abstol_v = 10 * u.m / u.s  # less than this is ~0
-abstol_a = 1.0e-4 * u.rad
 abstol_nd = 1.0e-4
 reltol_nd = 1.0e-4
 
@@ -60,6 +69,56 @@ class TestMaskingSWIFTGalaxy:
         sg.mask_particles(MaskCollection(**{particle_name: mask}))
         ids = getattr(sg, particle_name).particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
+
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_namedcolumn_masked(self, sg, before_load):
+        """
+        Test that named columns get masked too.
+        """
+        neutral_before = sg.gas.hydrogen_ionization_fractions.neutral
+        mask = np.random.rand(neutral_before.size) > 0.5
+        if before_load:
+            sg.gas.hydrogen_ionization_fractions._named_column_dataset._neutral = None
+        sg.mask_particles(MaskCollection(**{"gas": mask}))
+        neutral = sg.gas.hydrogen_ionization_fractions.neutral
+        assert_allclose_units(
+            neutral_before[mask], neutral, rtol=reltol_nd, atol=abstol_nd
+        )
+
+    def test_mask_without_spatial_mask(self):
+        """
+        Check that if we have no masks we read everything in the box (and warn about it).
+        Then that we can still apply an extra mask, and a second one (there's specific
+        logic for applying two consecutively).
+        """
+        try:
+            create_toysnap()
+            sg = SWIFTGalaxy(
+                toysnap_filename,
+                None,  # no halo_catalogue is easiest way to get no mask
+                transforms_like_coordinates={"coordinates", "extra_coordinates"},
+                transforms_like_velocities={"velocities", "extra_velocities"},
+            )
+            # check that extra mask is blank for all particle types:
+            assert sg._extra_mask.gas is None
+            assert sg._extra_mask.dark_matter is None
+            assert sg._extra_mask.stars is None
+            assert sg._extra_mask.black_holes is None
+            # check that cell mask is blank for all particle types:
+            assert sg._spatial_mask is None
+            # check that we read all the particles:
+            assert sg.gas.masses.size == n_g_all
+            assert sg.dark_matter.masses.size == n_dm_all
+            assert sg.stars.masses.size == n_s_all
+            assert sg.black_holes.masses.size == n_bh_all
+            # now apply an extra mask
+            sg.mask_particles(MaskCollection(gas=np.s_[:1000]))
+            assert sg.gas.masses.size == 1000
+            # and the second consecutive one
+            sg.mask_particles(MaskCollection(gas=np.s_[:100]))
+            assert sg.gas.masses.size == 100
+        finally:
+            remove_toysnap()
 
 
 class TestMaskingParticleDatasets:
