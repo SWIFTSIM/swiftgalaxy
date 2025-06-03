@@ -99,6 +99,9 @@ class TestSWIFTGalaxyCreation:
             return wrapper
 
         # decorate the mask evaluation to load an (unused) namedcolumn
+        # preserving old version to be resotred at end of test
+        # (otherwise it carries over into other tests!)
+        old_generate_bound_only_mask = ToyHF._generate_bound_only_mask
         ToyHF._generate_bound_only_mask = load_namedcolumn(
             ToyHF._generate_bound_only_mask
         )
@@ -115,6 +118,7 @@ class TestSWIFTGalaxyCreation:
             assert sg.gas.hydrogen_ionization_fractions.neutral.size == n_g_1
         finally:
             remove_toysnap()
+            ToyHF._generate_bound_only_mask = old_generate_bound_only_mask
 
 
 class TestSWIFTGalaxiesCreation:
