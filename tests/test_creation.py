@@ -4,7 +4,12 @@ fundamental has gone wrong.
 """
 
 from swiftgalaxy import SWIFTGalaxy
-from toysnap import create_toysnap, remove_toysnap, toysnap_filename, n_g_1
+from swiftgalaxy.demo_data import (
+    create_toysnap,
+    remove_toysnap,
+    toysnap_filename,
+    n_g_1,
+)
 
 
 class TestSWIFTGalaxyCreation:
@@ -83,7 +88,7 @@ class TestSWIFTGalaxyCreation:
         If namedcolumn data was loaded during evaluation of a mask, it needs to be masked
         during initialization.
         """
-        from toysnap import ToyHF
+        from swiftgalaxy.demo_data import ToyHF
 
         def load_namedcolumn(method):
 

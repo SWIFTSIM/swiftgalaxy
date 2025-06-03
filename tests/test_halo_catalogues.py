@@ -3,7 +3,7 @@ import h5py
 import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
-from toysnap import (
+from swiftgalaxy.demo_data import (
     toysnap_filename,
     toysoap_virtual_snapshot_filename,
     toysoap_membership_filebase,
@@ -123,7 +123,7 @@ class TestHaloCatalogues:
         """
         hf.extra_mask = "bound_only"
         if hasattr(hf, "soap_file"):
-            from toysnap import soap_script
+            from swiftgalaxy.demo_data import soap_script
             import os
 
             os.system(
@@ -342,7 +342,7 @@ class TestHaloCataloguesMulti:
         hf_multi.extra_mask = "bound_only"
         hf_multi._mask_multi_galaxy(0)
         if hasattr(hf_multi, "soap_file"):
-            from toysnap import soap_script
+            from swiftgalaxy.demo_data import soap_script
             import os
 
             os.system(

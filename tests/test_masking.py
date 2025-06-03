@@ -5,12 +5,12 @@ Tests for applying masks to swiftgalaxy, datasets and named columns.
 import pytest
 import numpy as np
 from unyt.testing import assert_allclose_units
-from toysnap import present_particle_types
 from swiftgalaxy import SWIFTGalaxy, MaskCollection
-from toysnap import (
+from swiftgalaxy.demo_data import (
     create_toysnap,
     remove_toysnap,
     toysnap_filename,
+    present_particle_types,
     n_g_all,
     n_dm_all,
     n_s_all,

@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
-from toysnap import (
+from swiftgalaxy.demo_data import (
     toysnap_filename,
     ToyHF,
     present_particle_types,

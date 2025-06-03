@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
-from toysnap import present_particle_types
+from swiftgalaxy.demo_data import present_particle_types
 from scipy.spatial.transform import Rotation
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 

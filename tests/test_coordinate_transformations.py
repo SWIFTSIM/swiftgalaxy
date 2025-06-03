@@ -4,7 +4,7 @@ import unyt as u
 from unyt.testing import assert_allclose_units
 from swiftsimio.objects import cosmo_array, cosmo_factor, a, cosmo_quantity
 from scipy.spatial.transform import Rotation
-from toysnap import (
+from swiftgalaxy.demo_data import (
     present_particle_types,
     toysnap_filename,
     ToyHF,

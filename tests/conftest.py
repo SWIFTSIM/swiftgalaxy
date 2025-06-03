@@ -12,7 +12,7 @@ from swiftgalaxy import (
     Standalone,
     MaskCollection,
 )
-from toysnap import (
+from swiftgalaxy.demo_data import (
     create_toysnap,
     remove_toysnap,
     create_toyvr,

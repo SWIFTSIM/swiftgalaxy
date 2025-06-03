@@ -1,12 +1,18 @@
+"""
+Functions and definitions to retrieve, generate and use illustrative example data.
+"""
+
 import os
 import h5py
 import numpy as np
 import unyt as u
+from typing import Optional
 from astropy.cosmology import LambdaCDM
 from astropy import units as U
-from swiftsimio.objects import cosmo_array, cosmo_factor, a
-from swiftsimio import Writer
-from swiftgalaxy import MaskCollection
+from swiftsimio.objects import cosmo_array
+import swiftsimio
+from swiftsimio import Writer, SWIFTMask
+from swiftgalaxy import MaskCollection, SWIFTGalaxy
 from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftsimio.units import cosmo_units
 
@@ -69,44 +75,97 @@ age = u.unyt_quantity.from_astropy(
 
 
 class ToyHF(_HaloCatalogue):
+    """
+    A minimalist halo catalogue class for demo use with
+    :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    Parameters
+    ----------
+    snapfile : :obj:`str`
+        The snapshot filename. (Default: ``'toysnap.hdf5'``)
+
+    index : :obj:`int`
+        The index (position in the catalogue) of the target galaxy.
+    """
 
     _index_attr = "_index"
 
-    def __init__(self, snapfile=toysnap_filename, index=0):
+    def __init__(self, snapfile: str = toysnap_filename, index: int = 0) -> None:
         self.snapfile = snapfile
         self._index = index
         super().__init__()
         return
 
-    def _load(self):
+    def _load(self) -> None:
+        """
+        Any non-trivial i/o operations needed at initialization go here.
+        """
         return
 
     @property
-    def index(self):
+    def index(self) -> int:
+        """
+        The position in the catalogue of the target galaxy.
+
+        Returns
+        -------
+        out : int
+            The position in the catalogue of the target galaxy.
+        """
         return self._mask_index()
 
-    def _generate_spatial_mask(self, SG):
-        import swiftsimio
+    def _generate_spatial_mask(self, sg: SWIFTGalaxy) -> SWIFTMask:
+        """
+        Evaluate the spatial mask (:class:`~swiftsimio.masks.SWIFTMask`) for the target
+        galaxy.
 
+        Parameters
+        ----------
+        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` for which the mask is being
+            evaluated.
+
+        Returns
+        -------
+        out : swiftsimio.masks.SWIFTMask
+            The spatial mask.
+        """
         if self.index == 0:
             spatial_mask = cosmo_array(
                 [[centre_1 - 0.1, centre_1 + 0.1] for ax in range(3)],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             )
         elif self.index == 1:
             spatial_mask = cosmo_array(
                 [[centre_2 - 0.1, centre_2 + 0.1] for ax in range(3)],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             )
         swift_mask = swiftsimio.mask(self.snapfile, spatial_only=True)
         swift_mask.constrain_spatial(spatial_mask)
         return swift_mask
 
-    def _generate_bound_only_mask(self, SG):
+    def _generate_bound_only_mask(self, sg: SWIFTGalaxy) -> MaskCollection:
+        """
+        Evaluate the extra mask (to apply after the spatial mask) selecting particles
+        belonging to the target galaxy.
+
+        Parameters
+        ----------
+        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` for which the mask is being
+            evaluated.
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.masks.MaskCollection`
+            The extra mask.
+        """
         # the two objects are in different cells, remember we're masking cell particles
         if self.index == 0:
             extra_mask = MaskCollection(
@@ -126,67 +185,149 @@ class ToyHF(_HaloCatalogue):
         return extra_mask
 
     @property
-    def centre(self):
+    def centre(self) -> cosmo_array:
+        """
+        Coordinate centre of the target galaxy.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The coordinate centre of the target galaxy.
+        """
         if self.index == 0:
             return cosmo_array(
                 [centre_1, centre_1, centre_1],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             )
         elif self.index == 1:
             return cosmo_array(
                 [centre_2, centre_2, centre_2],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             )
 
     @property
-    def velocity_centre(self):
+    def velocity_centre(self) -> cosmo_array:
+        """
+        Velocity centre of the target galaxy.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The velocity centre of the target galaxy.
+        """
         if self.index == 0:
             return cosmo_array(
                 [vcentre_1, vcentre_1, vcentre_1],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             )
         if self.index == 1:
             return cosmo_array(
                 [vcentre_2, vcentre_2, vcentre_2],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             )
 
     @property
-    def _region_centre(self):
+    def _region_centre(self) -> cosmo_array:
+        """
+        Centre of the bounding box that defines the spatial mask for the target galaxy.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The bounding box centre.
+        """
         return cosmo_array(
             [[centre_1, centre_1, centre_1], [centre_2, centre_2, centre_2]],
             u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, 1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )[(self.index,)]
 
     @property
-    def _region_aperture(self):
+    def _region_aperture(self) -> cosmo_array:
+        """
+        Half-side length of the bounding box that defines the spatial mask for the target
+        galaxy.
+
+        Returns
+        -------
+        out : :class:`~swiftsimio.objects.cosmo_array`
+            The half-length of the bounding box used to construct the spatial mask.
+        """
         return cosmo_array(
-            [0.5, 0.5], u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a**1, 1.0)
+            [0.5, 0.5],
+            u.Mpc,
+            comoving=True,
+            scale_factor=1.0,
+            scale_exponent=1,
         )[(self.index,)]
 
-    def _get_preload_fields(self, server):
+    def _get_preload_fields(self, server: SWIFTGalaxy) -> set:
+        """
+        Preload data needed to evaluate masks when in multi-galaxy mode.
+
+        Parameters
+        ----------
+        server : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The server object spawned by :class:`swiftgalaxy.iterator.SWIFTGalaxies`.
+
+        Returns
+        -------
+        out : :obj:`set`
+            The set of fields to preload.
+        """
         return set()
 
 
 def create_toysnap(
-    snapfile=toysnap_filename,
-    alt_coord_name=None,
-    alt_vel_name=None,
-    alt_id_name=None,
-    withfof=False,
-):
+    snapfile: str = toysnap_filename,
+    alt_coord_name: Optional[str] = None,
+    alt_vel_name: Optional[str] = None,
+    alt_id_name: Optional[str] = None,
+    withfof: bool = False,
+) -> None:
     """
-    Creates a sample dataset of a toy galaxy.
+    Creates a sample 'snapshot file' dataset containing 2 galaxies and a 'background' of
+    unassigned particles.
+
+    The data are created entirely "by hand" by drawing from random distributions (uniform,
+    exponential disk, etc.). They are not the result of any actual simulation. Their
+    purpose is to illustrate :mod:`swiftgalaxy` use by providing files with formats
+    identical to actual SWIFT snapshot files without the need for additional downloads.
+
+    Parameters
+    ----------
+    snapfile : :obj:`str`
+        Filename for snapshot file. (Default: ``"toysnap.hdf5"``)
+
+    alt_coord_name : :obj:`str`
+        Intended for continuous integration testing purposes. Create additional
+        coordinate-like data arrays with this name. (Default: ``None``)
+
+    alt_vel_name : :obj:`str`
+        Intended for continuous integration testing purposes. Create additional
+        velocity-like data arrays with this name. (Default: ``None``)
+
+    alt_id_name : :obj:`str`
+        Intended for continuous integration testing purposes. Create additional
+        particle ID-like data arrays with this name. (Default: ``None``)
+
+    withfof : :obj:`bool`
+        If ``True``, include friends-of-friends (FOF) group identifiers for each
+        particle.
     """
     if os.path.isfile(snapfile):
         return
@@ -692,13 +833,36 @@ def create_toysnap(
     return
 
 
-def remove_toysnap(snapfile=toysnap_filename):
+def remove_toysnap(snapfile: str = toysnap_filename) -> None:
+    """
+    Removes file created by :func:`~swiftgalaxy.demo_data.create_toysnap`.
+
+    Parameters
+    ----------
+    snapfile : :obj:`str`
+        Filename for snapshot file. (Default: ``"toysnap.hdf5"``)
+    """
     if os.path.isfile(snapfile):
         os.remove(snapfile)
     return
 
 
-def create_toyvr(filebase=toyvr_filebase):
+def create_toyvr(filebase: str = toyvr_filebase) -> None:
+    """
+    Creates a sample Velociraptor catalogue containing 2 galaxies matching the snapshot
+    file created by :func:`~swiftgalaxy.demo_data.create_toysnap`.
+
+    The data are created entirely "by hand". They are not the result of any actual
+    simulation. Their purpose is to illustrate :mod:`swiftgalaxy` use by providing files
+    with formats identical to actual Velociraptor catalogue files without the need for
+    additional downloads.
+
+    Parameters
+    ----------
+    filebase : :obj:`str`
+        The base name for catalogue files (several files ``base.properties``,
+        ``base.catalog_groups``, etc. will be created). (Default: ``"toyvr"``)
+    """
     with h5py.File(f"{toyvr_filebase}.properties", "w") as f:
         f.create_group("SimulationInfo")
         f["SimulationInfo"].attrs["ScaleFactor"] = 1.0
@@ -1017,7 +1181,16 @@ def create_toyvr(filebase=toyvr_filebase):
     return
 
 
-def remove_toyvr(filebase=toyvr_filebase):
+def remove_toyvr(filebase: str = toyvr_filebase) -> None:
+    """
+    Removes files created by :func:`~swiftgalaxy.demo_data.create_toyvr`.
+
+    Parameters
+    ----------
+    filebase : :obj:`str`
+        The base name for catalogue files (several files ``base.properties``,
+        ``base.catalog_groups``, etc. will be removed). (Default: ``"toyvr"``)
+    """
     os.remove(f"{toyvr_filebase}.properties")
     os.remove(f"{toyvr_filebase}.catalog_groups")
     os.remove(f"{toyvr_filebase}.catalog_particles")
@@ -1027,7 +1200,22 @@ def remove_toyvr(filebase=toyvr_filebase):
     return
 
 
-def create_toycaesar(filename=toycaesar_filename):
+def create_toycaesar(filename: str = toycaesar_filename) -> None:
+    """
+    Creates a sample Caesar catalogue containing 2 galaxies matching the snapshot
+    file created by :func:`~swiftgalaxy.demo_data.create_toysnap`.
+
+    The data are created entirely "by hand". They are not the result of any actual
+    simulation. Their purpose is to illustrate :mod:`swiftgalaxy` use by providing files
+    with formats identical to actual Caesar catalogue files without the need for
+    additional downloads.
+
+    Parameters
+    ----------
+    filename : :obj:`str`
+        The file name for the catalogue file to be created.
+        (Default: ``"toycaesar.hdf5"``)
+    """
     with h5py.File(filename, "w") as f:
         f.attrs["caesar"] = "fake"
         f.attrs["nclouds"] = 0
@@ -1405,19 +1593,66 @@ def create_toycaesar(filename=toycaesar_filename):
     return
 
 
-def remove_toycaesar(filename=toycaesar_filename):
+def remove_toycaesar(filename: str = toycaesar_filename) -> None:
+    """
+    Removes files created by :func:`~swiftgalaxy.demo_data.create_toycaesar`.
+
+    Parameters
+    ----------
+    filename : :obj:`str`
+        The file name for the catalogue file to be removed.
+        (Default: ``"toycaesar.hdf5"``)
+    """
     os.remove(filename)
     return
 
 
 def create_toysoap(
-    filename=toysoap_filename,
-    membership_filebase=toysoap_membership_filebase,
-    create_membership=True,
-    create_virtual_snapshot=False,
-    create_virtual_snapshot_from=toysnap_filename,
-    virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
-):
+    filename: str = toysoap_filename,
+    membership_filebase: str = toysoap_membership_filebase,
+    create_membership: bool = True,
+    create_virtual_snapshot: bool = False,
+    create_virtual_snapshot_from: str = toysnap_filename,
+    virtual_snapshot_filename: str = toysoap_virtual_snapshot_filename,
+) -> None:
+    """
+    Creates a sample SOAP catalogue containing 2 galaxies matching the snapshot
+    file created by :func:`~swiftgalaxy.demo_data.create_toysnap`. Files containing
+    particle membership information and a virtual snapshot linking this information
+    into the snapshot file can optionally be created.
+
+    The data are created entirely "by hand". They are not the result of any actual
+    simulation. Their purpose is to illustrate :mod:`swiftgalaxy` use by providing files
+    with formats identical to actual SOAP catalogue files without the need for
+    additional downloads.
+
+    Parameters
+    ----------
+    filename : :obj:`str`
+        The file name for the catalogue file to be created.
+        (Default: ``"toysoap.hdf5"``)
+
+    membership_filebase : :obj:`str`
+        The base name for membership files, completed as ``base.N.hdf5`` where ``N`` is
+        an integer. Ignored if ``create_membership`` is ``False``.
+        (Default: ``"toysoap_membership"``)
+
+    create_membership : :obj:`bool`
+        If ``True``, create membership files. (Default: ``True``)
+
+    create_virtual_snapshot : :obj:`bool`
+        If ``True``, create virtual snapshot with real snapshot and membership information
+        as links to other hdf5 files. (Default: ``False``)
+
+    create_virtual_snapshot_from : :obj:`str`
+        Snapshot file to use as the basis for the virtual snapshot file. Ignored if
+        ``create_virtual_snapshot`` is ``False``. (Default: ``"toysnap.hdf5"``)
+
+    virtual_snapshot_filename : :obj:`str`
+        Filename for virtual snapshot file. Ignored if ``create_virtual_snapshot`` is
+        ``False``. (Default: ``"toysnap_virtual.hdf5"``)
+    """
+
     with h5py.File(filename, "w") as f:
         f.create_group("Cells")
         f.create_group("Code")
@@ -2324,11 +2559,28 @@ def create_toysoap(
 
 
 def remove_toysoap(
-    filename=toysoap_filename,
-    membership_filebase=toysoap_membership_filebase,
-    virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
-):
-    os.remove(filename)
+    filename: str = toysoap_filename,
+    membership_filebase: str = toysoap_membership_filebase,
+    virtual_snapshot_filename: str = toysoap_virtual_snapshot_filename,
+) -> None:
+    """
+    Removes files created by :func:`~swiftgalaxy.demo_data.create_toysoap`. Any files
+    not found are ignored.
+
+    Parameters
+    ----------
+    filename : :obj:`str`
+        The file name for the catalogue file to be removed. (Default: ``"toysoap.hdf5"``)
+
+    membership_filebase : :obj:`str`
+        The base name for membership files, completed as ``base.N.hdf5`` where ``N`` is
+        an integer. (Default: ``"toysoap_membership"``)
+
+    virtual_snapshot_filename : :obj:`str`
+        Filename for virtual snapshot file. (Default: ``"toysnap_virtual.hdf5"``)
+    """
+    if os.path.isfile(filename):
+        os.remove(filename)
     i = 0
     while True:
         membership_file = f"{membership_filebase}.{i}.hdf5"
