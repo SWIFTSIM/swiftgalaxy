@@ -6,7 +6,8 @@ import os
 import h5py
 import numpy as np
 import unyt as u
-from typing import Optional
+import subprocess
+from typing import Optional, Callable, Any
 from astropy.cosmology import LambdaCDM
 from astropy import units as U
 from swiftsimio.objects import cosmo_array
@@ -15,7 +16,6 @@ from swiftsimio import Writer, SWIFTMask
 from swiftgalaxy import MaskCollection, SWIFTGalaxy
 from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftsimio.units import cosmo_units
-
 
 my_soap_script_path = os.path.expanduser("~/code/SOAP/")
 if os.path.exists(my_soap_script_path):
@@ -27,12 +27,13 @@ except KeyError:
 soap_script = os.path.join(soap_script_path, "make_virtual_snapshot.py")
 assert os.path.exists(soap_script)
 
-toysnap_filename = "toysnap.hdf5"
-toyvr_filebase = "toyvr"
-toysoap_filename = "toysoap.hdf5"
-toysoap_membership_filebase = "toysoap_membership"
-toysoap_virtual_snapshot_filename = "toysnap_virtual.hdf5"
-toycaesar_filename = "toycaesar.hdf5"
+demo_data_dir = "demo_data"
+toysnap_filename = os.path.join(demo_data_dir, "toysnap.hdf5")
+toyvr_filebase = os.path.join(demo_data_dir, "toyvr")
+toysoap_filename = os.path.join(demo_data_dir, "toysoap.hdf5")
+toysoap_membership_filebase = os.path.join(demo_data_dir, "toysoap_membership")
+toysoap_virtual_snapshot_filename = os.path.join(demo_data_dir, "toysnap_virtual.hdf5")
+toycaesar_filename = os.path.join(demo_data_dir, "toycaesar.hdf5")
 present_particle_types = {0: "gas", 1: "dark_matter", 4: "stars", 5: "black_holes"}
 boxsize = 10.0 * u.Mpc
 n_g_all = 32**3
@@ -74,6 +75,109 @@ age = u.unyt_quantity.from_astropy(
 )
 
 
+def ensure_demo_data_directory(func: Callable) -> Callable:
+    """
+    Decorator that makes sure demo data directory exists.
+
+    Parameters
+    ----------
+    func : :obj:`Callable`
+        Function to be decorated.
+
+    Returns
+    -------
+    out : callable
+        Decorated function.
+    """
+
+    def wrapper(*args: tuple, **kwargs: dict) -> Any:
+        """
+        Create demo data directory if it does not exist, then call wrapped function.
+
+        Parameters
+        ----------
+        *args : :obj:`tuple`
+            Arguments for wrapped function.
+
+        **kwargs : :obj:`dict`
+            Keyword arguments for wrapped function.
+        """
+        if not os.path.exists(demo_data_dir):
+            os.mkdir(demo_data_dir)
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+class _WebExamples(object):
+    """
+    Helper class to fetch example data from the web storage on demand.
+    """
+
+    webstorage_location = (
+        "https://virgodb.cosma.dur.ac.uk/swift-webstorage/IOExamples/ssio_ci_04_2025/"
+    )
+    # Each example can require one or more files. The first file is the one whose path
+    # is returned when the example is requested. The other files are additional
+    # dependencies, if relevant.
+    available_examples = {
+        "snapshot": ("EagleSingle.hdf5",),
+    }
+
+    def __init__(self) -> None:
+        return
+
+    @ensure_demo_data_directory
+    def _get_webdata_if_not_present(self, filename) -> None:
+        """
+        Retrieve a file from the web store.
+
+        Parameters
+        ----------
+        filename : :obj:`str`
+            Name of the file to fetch from the web store.
+        """
+        file_location = os.path.join(demo_data_dir, filename)
+        if os.path.exists(file_location):
+            ret = 0
+        else:
+            ret = subprocess.call(
+                ["wget", f"{self.webstorage_location}{filename}", "-O", file_location]
+            )
+        if ret != 0:
+            os.remove(file_location)  # it wrote an empty file, kill it
+            raise RuntimeError(f"Unable to download file at {filename}")
+
+    def __getattr__(self, attr: str) -> str:
+        """
+        If the attribute is in the list of available examples get the needed file(s) and
+        return the path to the requested example file.
+
+        Getting a virtual file for example would get the virtual file itself and the files
+        it links to, then return the path to the virtual file.
+
+        Parameters
+        ----------
+        attr : :obj:`str`
+            The name of the example to retrieve.
+
+        Returns
+        -------
+        out : :obj:`str`
+            The path to the requested example (that was downloaded if needed).
+        """
+        if attr in self.available_examples:
+            files_required = self.available_examples[attr]
+            for file_required in files_required:
+                self._get_webdata_if_not_present(file_required)
+            return os.path.join(demo_data_dir, files_required[0])
+        else:
+            raise AttributeError(f"_WebExamples attribute {attr} not found.")
+
+
+web_examples = _WebExamples()
+
+
 class ToyHF(_HaloCatalogue):
     """
     A minimalist halo catalogue class for demo use with
@@ -82,7 +186,7 @@ class ToyHF(_HaloCatalogue):
     Parameters
     ----------
     snapfile : :obj:`str`
-        The snapshot filename. (Default: ``'toysnap.hdf5'``)
+        The snapshot filename. (Default: ``"demo_data/toysnap.hdf5"``)
 
     index : :obj:`int`
         The index (position in the catalogue) of the target galaxy.
@@ -292,6 +396,7 @@ class ToyHF(_HaloCatalogue):
         return set()
 
 
+@ensure_demo_data_directory
 def create_toysnap(
     snapfile: str = toysnap_filename,
     alt_coord_name: Optional[str] = None,
@@ -311,7 +416,7 @@ def create_toysnap(
     Parameters
     ----------
     snapfile : :obj:`str`
-        Filename for snapshot file. (Default: ``"toysnap.hdf5"``)
+        Filename for snapshot file. (Default: ``"demo_data/toysnap.hdf5"``)
 
     alt_coord_name : :obj:`str`
         Intended for continuous integration testing purposes. Create additional
@@ -840,13 +945,14 @@ def remove_toysnap(snapfile: str = toysnap_filename) -> None:
     Parameters
     ----------
     snapfile : :obj:`str`
-        Filename for snapshot file. (Default: ``"toysnap.hdf5"``)
+        Filename for snapshot file. (Default: ``"demo_data/toysnap.hdf5"``)
     """
     if os.path.isfile(snapfile):
         os.remove(snapfile)
     return
 
 
+@ensure_demo_data_directory
 def create_toyvr(filebase: str = toyvr_filebase) -> None:
     """
     Creates a sample Velociraptor catalogue containing 2 galaxies matching the snapshot
@@ -861,7 +967,7 @@ def create_toyvr(filebase: str = toyvr_filebase) -> None:
     ----------
     filebase : :obj:`str`
         The base name for catalogue files (several files ``base.properties``,
-        ``base.catalog_groups``, etc. will be created). (Default: ``"toyvr"``)
+        ``base.catalog_groups``, etc. will be created). (Default: ``"demo_data/toyvr"``)
     """
     with h5py.File(f"{toyvr_filebase}.properties", "w") as f:
         f.create_group("SimulationInfo")
@@ -1189,7 +1295,7 @@ def remove_toyvr(filebase: str = toyvr_filebase) -> None:
     ----------
     filebase : :obj:`str`
         The base name for catalogue files (several files ``base.properties``,
-        ``base.catalog_groups``, etc. will be removed). (Default: ``"toyvr"``)
+        ``base.catalog_groups``, etc. will be removed). (Default: ``"demo_data/toyvr"``)
     """
     os.remove(f"{toyvr_filebase}.properties")
     os.remove(f"{toyvr_filebase}.catalog_groups")
@@ -1200,6 +1306,7 @@ def remove_toyvr(filebase: str = toyvr_filebase) -> None:
     return
 
 
+@ensure_demo_data_directory
 def create_toycaesar(filename: str = toycaesar_filename) -> None:
     """
     Creates a sample Caesar catalogue containing 2 galaxies matching the snapshot
@@ -1214,7 +1321,7 @@ def create_toycaesar(filename: str = toycaesar_filename) -> None:
     ----------
     filename : :obj:`str`
         The file name for the catalogue file to be created.
-        (Default: ``"toycaesar.hdf5"``)
+        (Default: ``"demo_data/toycaesar.hdf5"``)
     """
     with h5py.File(filename, "w") as f:
         f.attrs["caesar"] = "fake"
@@ -1601,12 +1708,13 @@ def remove_toycaesar(filename: str = toycaesar_filename) -> None:
     ----------
     filename : :obj:`str`
         The file name for the catalogue file to be removed.
-        (Default: ``"toycaesar.hdf5"``)
+        (Default: ``"demo_data/toycaesar.hdf5"``)
     """
     os.remove(filename)
     return
 
 
+@ensure_demo_data_directory
 def create_toysoap(
     filename: str = toysoap_filename,
     membership_filebase: str = toysoap_membership_filebase,
@@ -1630,12 +1738,12 @@ def create_toysoap(
     ----------
     filename : :obj:`str`
         The file name for the catalogue file to be created.
-        (Default: ``"toysoap.hdf5"``)
+        (Default: ``"demo_data/toysoap.hdf5"``)
 
     membership_filebase : :obj:`str`
         The base name for membership files, completed as ``base.N.hdf5`` where ``N`` is
         an integer. Ignored if ``create_membership`` is ``False``.
-        (Default: ``"toysoap_membership"``)
+        (Default: ``"demo_data/toysoap_membership"``)
 
     create_membership : :obj:`bool`
         If ``True``, create membership files. (Default: ``True``)
@@ -1646,11 +1754,11 @@ def create_toysoap(
 
     create_virtual_snapshot_from : :obj:`str`
         Snapshot file to use as the basis for the virtual snapshot file. Ignored if
-        ``create_virtual_snapshot`` is ``False``. (Default: ``"toysnap.hdf5"``)
+        ``create_virtual_snapshot`` is ``False``. (Default: ``"demo_data/toysnap.hdf5"``)
 
     virtual_snapshot_filename : :obj:`str`
         Filename for virtual snapshot file. Ignored if ``create_virtual_snapshot`` is
-        ``False``. (Default: ``"toysnap_virtual.hdf5"``)
+        ``False``. (Default: ``"demo_data/toysnap_virtual.hdf5"``)
     """
 
     with h5py.File(filename, "w") as f:
@@ -2570,14 +2678,16 @@ def remove_toysoap(
     Parameters
     ----------
     filename : :obj:`str`
-        The file name for the catalogue file to be removed. (Default: ``"toysoap.hdf5"``)
+        The file name for the catalogue file to be removed.
+        (Default: ``"demo_data/toysoap.hdf5"``)
 
     membership_filebase : :obj:`str`
         The base name for membership files, completed as ``base.N.hdf5`` where ``N`` is
-        an integer. (Default: ``"toysoap_membership"``)
+        an integer. (Default: ``"demo_data/toysoap_membership"``)
 
     virtual_snapshot_filename : :obj:`str`
-        Filename for virtual snapshot file. (Default: ``"toysnap_virtual.hdf5"``)
+        Filename for virtual snapshot file.
+        (Default: ``"demo_data/toysnap_virtual.hdf5"``)
     """
     if os.path.isfile(filename):
         os.remove(filename)
