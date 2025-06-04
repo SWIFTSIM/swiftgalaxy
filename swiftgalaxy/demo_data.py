@@ -7,7 +7,7 @@ import h5py
 import numpy as np
 import unyt as u
 import subprocess
-from typing import Optional, Callable, Any
+from typing import Optional, Callable, Any, Union
 from astropy.cosmology import LambdaCDM
 from astropy import units as U
 from swiftsimio.objects import cosmo_array
@@ -16,16 +16,6 @@ from swiftsimio import Writer, SWIFTMask
 from swiftgalaxy import MaskCollection, SWIFTGalaxy
 from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftsimio.units import cosmo_units
-
-my_soap_script_path = os.path.expanduser("~/code/SOAP/")
-if os.path.exists(my_soap_script_path):
-    soap_script_path = my_soap_script_path
-try:
-    soap_script_path = os.path.join(os.environ["GITHUB_WORKSPACE"], "SOAP")
-except KeyError:
-    pass  # not on github CI
-soap_script = os.path.join(soap_script_path, "make_virtual_snapshot.py")
-assert os.path.exists(soap_script)
 
 _demo_data_dir = "demo_data"
 _toysnap_filename = os.path.join(_demo_data_dir, "toysnap.hdf5")
@@ -225,7 +215,7 @@ class _GeneratedExamples(object):
         out : :obj:`str`
             The list of available example data.
         """
-        return f"Available examples: {', '.concatenate(self.available_examples)}."
+        return f"Available examples: {', '.join(self.available_examples)}."
 
     @_ensure_demo_data_directory
     def __getattr__(self, attr: str) -> str:
@@ -315,27 +305,26 @@ class ToyHF(_HaloCatalogue):
         return
 
     @property
-    def index(self) -> int:
+    def index(self) -> Optional[Union[int, list[int]]]:
         """
         The position in the catalogue of the target galaxy.
 
         Returns
         -------
-        out : int
+        out : :obj:`int`
             The position in the catalogue of the target galaxy.
         """
         return self._mask_index()
 
-    def _generate_spatial_mask(self, sg: SWIFTGalaxy) -> SWIFTMask:
+    def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         """
         Evaluate the spatial mask (:class:`~swiftsimio.masks.SWIFTMask`) for the target
         galaxy.
 
         Parameters
         ----------
-        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` for which the mask is being
-            evaluated.
+        snapshot_filename : :obj:`str`
+            Name of the snapshot file to be masked.
 
         Returns
         -------
@@ -2912,15 +2901,28 @@ def _create_toysoap(
                     ds_rank.attrs["a-scale exponent"] = np.array([0.0])
                     ds_rank.attrs["h-scale exponent"] = np.array([0.0])
     if create_virtual_snapshot:
-        if not os.path.isfile(virtual_snapshot_filename):
-            os.system(
-                f"python {soap_script} "
-                f"'{create_virtual_snapshot_from}' "
-                f"'{membership_filebase}."
-                "{file_nr}.hdf5' "
-                f"'{virtual_snapshot_filename}' "
-                "0"
-            )
+        from compression.make_virtual_snapshot import make_virtual_snapshot
+        from compression.update_vds_paths import update_virtual_snapshot_paths
+
+        membership_filepattern = membership_filebase + ".{file_nr}.hdf5"
+        make_virtual_snapshot(
+            create_virtual_snapshot_from,
+            membership_filepattern,
+            virtual_snapshot_filename,
+            0,  # snapshot number, not used since no pattern in filenames
+        )
+        abs_snapshot_dir = os.path.abspath(
+            os.path.dirname(create_virtual_snapshot_from)
+        )
+        abs_membership_dir = os.path.abspath(
+            os.path.dirname(membership_filepattern.format(file_nr=0))
+        )
+        abs_output_dir = os.path.abspath(os.path.dirname(virtual_snapshot_filename))
+        rel_snapshot_dir = os.path.relpath(abs_snapshot_dir, abs_output_dir)
+        rel_membership_dir = os.path.relpath(abs_membership_dir, abs_output_dir)
+        update_virtual_snapshot_paths(
+            virtual_snapshot_filename, rel_snapshot_dir, rel_membership_dir
+        )
     return
 
 

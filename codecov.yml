@@ -8,6 +8,3 @@ ignore:
   - "^tests"
   - "^docs"
   - "^examples"
-  - "^SOAP"
-fixes:
-  - "^swiftgalaxy/::"
