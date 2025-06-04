@@ -4,28 +4,27 @@ import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
 from swiftgalaxy.demo_data import (
-    toysnap_filename,
-    toysoap_virtual_snapshot_filename,
-    toysoap_membership_filebase,
-    n_g_1,
-    n_g_2,
-    n_g_b,
-    n_g_all,
-    n_dm_1,
-    n_dm_b,
-    n_dm_all,
-    n_s_1,
-    n_s_2,
-    n_bh_1,
-    n_bh_2,
-    m_g,
-    # m_dm,
-    m_s,
-    m_bh,
-    centre_1,
-    centre_2,
-    vcentre_1,
-    present_particle_types,
+    _toysnap_filename,
+    _toysoap_virtual_snapshot_filename,
+    _toysoap_membership_filebase,
+    _n_g_1,
+    _n_g_2,
+    _n_g_b,
+    _n_g_all,
+    _n_dm_1,
+    _n_dm_b,
+    _n_dm_all,
+    _n_s_1,
+    _n_s_2,
+    _n_bh_1,
+    _n_bh_2,
+    _m_g,
+    _m_s,
+    _m_bh,
+    _centre_1,
+    _centre_2,
+    _vcentre_1,
+    _present_particle_types,
 )
 from swiftgalaxy import SWIFTGalaxy, MaskCollection
 from swiftgalaxy.halo_catalogues import Velociraptor, Caesar, SOAP, Standalone
@@ -44,8 +43,8 @@ class TestHaloCatalogues:
         """
         # don't use sg fixture here, just need the snapshot file
         # so don't want overhead of a SWIFTGalaxy
-        spatial_mask = hf._get_spatial_mask(toysnap_filename)
-        with h5py.File(toysnap_filename, "r") as snap:
+        spatial_mask = hf._get_spatial_mask(_toysnap_filename)
+        with h5py.File(_toysnap_filename, "r") as snap:
             n_g_firstcell = snap["/Cells/Counts/PartType0"][0]
             n_dm_firstcell = snap["/Cells/Counts/PartType1"][0]
             n_s_firstcell = snap["/Cells/Counts/PartType4"][0]
@@ -66,19 +65,19 @@ class TestHaloCatalogues:
             # this is Standalone
             assert np.array_equal(
                 spatial_mask.gas,
-                np.array([[0, n_g_firstcell], [n_g_firstcell, n_g_all]]),
+                np.array([[0, n_g_firstcell], [n_g_firstcell, _n_g_all]]),
             )
             assert np.array_equal(
                 spatial_mask.dark_matter,
-                np.array([[0, n_dm_firstcell], [n_dm_firstcell, n_dm_all]]),
+                np.array([[0, n_dm_firstcell], [n_dm_firstcell, _n_dm_all]]),
             )
             assert np.array_equal(
                 spatial_mask.stars,
-                np.array([[0, n_s_firstcell], [n_s_firstcell, n_s_1 + n_s_2]]),
+                np.array([[0, n_s_firstcell], [n_s_firstcell, _n_s_1 + _n_s_2]]),
             )
             assert np.array_equal(
                 spatial_mask.black_holes,
-                np.array([[0, n_bh_firstcell], [n_bh_firstcell, n_bh_1 + n_bh_2]]),
+                np.array([[0, n_bh_firstcell], [n_bh_firstcell, _n_bh_1 + _n_bh_2]]),
             )
 
     def test_get_user_spatial_mask(self, hf, toysnap):
@@ -93,28 +92,28 @@ class TestHaloCatalogues:
             cosmo_factor=cosmo_factor(a**1, 1.0),
         )
         hf.extra_mask = None
-        sg = SWIFTGalaxy(toysnap_filename, hf)
+        sg = SWIFTGalaxy(_toysnap_filename, hf)
         generated_spatial_mask = sg._spatial_mask
-        with h5py.File(toysnap_filename, "r") as snap:
+        with h5py.File(_toysnap_filename, "r") as snap:
             n_g_firstcell = snap["/Cells/Counts/PartType0"][0]
             n_dm_firstcell = snap["/Cells/Counts/PartType1"][0]
             n_s_firstcell = snap["/Cells/Counts/PartType4"][0]
             n_bh_firstcell = snap["/Cells/Counts/PartType5"][0]
         assert np.array_equal(
             generated_spatial_mask.gas,
-            np.array([[0, n_g_firstcell], [n_g_firstcell, n_g_all]]),
+            np.array([[0, n_g_firstcell], [n_g_firstcell, _n_g_all]]),
         )
         assert np.array_equal(
             generated_spatial_mask.dark_matter,
-            np.array([[0, n_dm_firstcell], [n_dm_firstcell, n_dm_all]]),
+            np.array([[0, n_dm_firstcell], [n_dm_firstcell, _n_dm_all]]),
         )
         assert np.array_equal(
             generated_spatial_mask.stars,
-            np.array([[0, n_s_firstcell], [n_s_firstcell, n_s_1 + n_s_2]]),
+            np.array([[0, n_s_firstcell], [n_s_firstcell, _n_s_1 + _n_s_2]]),
         )
         assert np.array_equal(
             generated_spatial_mask.black_holes,
-            np.array([[0, n_bh_firstcell], [n_bh_firstcell, n_bh_1 + n_bh_2]]),
+            np.array([[0, n_bh_firstcell], [n_bh_firstcell, _n_bh_1 + _n_bh_2]]),
         )
 
     def test_get_bound_only_extra_mask(self, hf, toysnap_withfof):
@@ -129,30 +128,30 @@ class TestHaloCatalogues:
             os.system(
                 f"python {soap_script} "
                 f"--absolute-paths "
-                f"'{toysnap_filename}' "
-                f"'{toysoap_membership_filebase}."
+                f"'{_toysnap_filename}' "
+                f"'{_toysoap_membership_filebase}."
                 "{file_nr}.hdf5' "
-                f"'{toysoap_virtual_snapshot_filename}' "
+                f"'{_toysoap_virtual_snapshot_filename}' "
                 "0"
             )
-            sg = SWIFTGalaxy(toysoap_virtual_snapshot_filename, hf)
+            sg = SWIFTGalaxy(_toysoap_virtual_snapshot_filename, hf)
         else:
             try:
-                sg = SWIFTGalaxy(toysnap_filename, hf)
+                sg = SWIFTGalaxy(_toysnap_filename, hf)
             except NotImplementedError:
                 # expected for Standalone
                 return
         generated_extra_mask = sg._extra_mask
         expected_shape = dict()
-        for particle_type in present_particle_types.values():
-            with h5py.File(toysnap_filename, "r") as snap:
+        for particle_type in _present_particle_types.values():
+            with h5py.File(_toysnap_filename, "r") as snap:
                 expected_shape[particle_type] = snap[
                     "Cells/Counts/PartType"
                     f"{dict(gas=0, dark_matter=1, stars=4, black_holes=5)[particle_type]}"
                 ][0]
         if hasattr(hf, "_caesar") and hf.group_type == "galaxy":
             expected_shape["dark_matter"] = None
-        for particle_type in present_particle_types.values():
+        for particle_type in _present_particle_types.values():
             if expected_shape[particle_type] is not None:
                 assert (
                     getattr(generated_extra_mask, particle_type).shape
@@ -161,7 +160,10 @@ class TestHaloCatalogues:
                 assert (
                     getattr(generated_extra_mask, particle_type).sum()
                     == dict(
-                        gas=n_g_1, dark_matter=n_dm_1, stars=n_s_1, black_holes=n_bh_1
+                        gas=_n_g_1,
+                        dark_matter=_n_dm_1,
+                        stars=_n_s_1,
+                        black_holes=_n_bh_1,
                     )[particle_type]
                 )
 
@@ -170,9 +172,9 @@ class TestHaloCatalogues:
         Check that None extra mask gives expected result.
         """
         hf.extra_mask = None
-        sg = SWIFTGalaxy(toysnap_filename, hf)
+        sg = SWIFTGalaxy(_toysnap_filename, hf)
         generated_extra_mask = sg._extra_mask
-        for particle_type in present_particle_types.values():
+        for particle_type in _present_particle_types.values():
             assert getattr(generated_extra_mask, particle_type) is None
 
     def test_get_user_extra_mask(self, hf, toysnap):
@@ -180,17 +182,17 @@ class TestHaloCatalogues:
         Check that extra masks of different kinds have the right shape or type.
         """
         hf.extra_mask = MaskCollection(
-            gas=np.r_[np.ones(100, dtype=bool), np.zeros(n_g_all - 100, dtype=bool)],
+            gas=np.r_[np.ones(100, dtype=bool), np.zeros(_n_g_all - 100, dtype=bool)],
             dark_matter=None,
-            stars=np.r_[np.ones(100, dtype=bool), np.zeros(n_s_1 - 100, dtype=bool)],
-            black_holes=np.ones(n_bh_1, dtype=bool),
+            stars=np.r_[np.ones(100, dtype=bool), np.zeros(_n_s_1 - 100, dtype=bool)],
+            black_holes=np.ones(_n_bh_1, dtype=bool),
         )
-        sg = SWIFTGalaxy(toysnap_filename, hf)
+        sg = SWIFTGalaxy(_toysnap_filename, hf)
         generated_extra_mask = sg._extra_mask
-        for particle_type in present_particle_types.values():
+        for particle_type in _present_particle_types.values():
             if getattr(generated_extra_mask, particle_type) is None:
                 assert (
-                    dict(gas=100, dark_matter=None, stars=100, black_holes=n_bh_1)[
+                    dict(gas=100, dark_matter=None, stars=100, black_holes=_n_bh_1)[
                         particle_type
                     ]
                     is None
@@ -198,7 +200,7 @@ class TestHaloCatalogues:
             else:
                 assert (
                     getattr(generated_extra_mask, particle_type).sum()
-                    == dict(gas=100, dark_matter=None, stars=100, black_holes=n_bh_1)[
+                    == dict(gas=100, dark_matter=None, stars=100, black_holes=_n_bh_1)[
                         particle_type
                     ]
                 )
@@ -211,7 +213,7 @@ class TestHaloCatalogues:
         assert_allclose_units(
             hf.centre,
             cosmo_array(
-                [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
+                [_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001],
                 u.Mpc,
                 comoving=True,
                 cosmo_factor=cosmo_factor(a**1, 1.0),
@@ -228,7 +230,7 @@ class TestHaloCatalogues:
         assert_allclose_units(
             hf.velocity_centre,
             cosmo_array(
-                [vcentre_1 + 1.0, vcentre_1 + 1.0, vcentre_1 + 1.0],
+                [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
                 u.km / u.s,
                 comoving=True,
                 cosmo_factor=cosmo_factor(a**0, 1.0),
@@ -298,10 +300,10 @@ class TestHaloCataloguesMulti:
         Check that we get spatial masks that we expect.
         """
         with pytest.raises(RuntimeError, match="not currently masked"):
-            hf_multi._get_spatial_mask(toysnap_filename)
+            hf_multi._get_spatial_mask(_toysnap_filename)
         hf_multi._mask_multi_galaxy(0)
-        spatial_mask = hf_multi._get_spatial_mask(toysnap_filename)
-        with h5py.File(toysnap_filename, "r") as snap:
+        spatial_mask = hf_multi._get_spatial_mask(_toysnap_filename)
+        with h5py.File(_toysnap_filename, "r") as snap:
             n_g_firstcell = snap["/Cells/Counts/PartType0"][0]
             n_dm_firstcell = snap["/Cells/Counts/PartType1"][0]
             n_s_firstcell = snap["/Cells/Counts/PartType4"][0]
@@ -320,19 +322,19 @@ class TestHaloCataloguesMulti:
             # this is Standalone
             assert np.array_equal(
                 spatial_mask.gas,
-                np.array([[0, n_g_firstcell], [n_g_firstcell, n_g_all]]),
+                np.array([[0, n_g_firstcell], [n_g_firstcell, _n_g_all]]),
             )
             assert np.array_equal(
                 spatial_mask.dark_matter,
-                np.array([[0, n_dm_firstcell], [n_dm_firstcell, n_dm_all]]),
+                np.array([[0, n_dm_firstcell], [n_dm_firstcell, _n_dm_all]]),
             )
             assert np.array_equal(
                 spatial_mask.stars,
-                np.array([[0, n_s_firstcell], [n_s_firstcell, n_s_1 + n_s_2]]),
+                np.array([[0, n_s_firstcell], [n_s_firstcell, _n_s_1 + _n_s_2]]),
             )
             assert np.array_equal(
                 spatial_mask.black_holes,
-                np.array([[0, n_bh_firstcell], [n_bh_firstcell, n_bh_1 + n_bh_2]]),
+                np.array([[0, n_bh_firstcell], [n_bh_firstcell, _n_bh_1 + _n_bh_2]]),
             )
 
     def test_generate_extra_mask(self, hf_multi, toysnap_withfof):
@@ -348,30 +350,30 @@ class TestHaloCataloguesMulti:
             os.system(
                 f"python {soap_script} "
                 f"--absolute-paths "
-                f"'{toysnap_filename}' "
-                f"'{toysoap_membership_filebase}."
+                f"'{_toysnap_filename}' "
+                f"'{_toysoap_membership_filebase}."
                 "{file_nr}.hdf5' "
-                f"'{toysoap_virtual_snapshot_filename}' "
+                f"'{_toysoap_virtual_snapshot_filename}' "
                 "0"
             )
-            sg = SWIFTGalaxy(toysoap_virtual_snapshot_filename, hf_multi)
+            sg = SWIFTGalaxy(_toysoap_virtual_snapshot_filename, hf_multi)
         else:
             try:
-                sg = SWIFTGalaxy(toysnap_filename, hf_multi)
+                sg = SWIFTGalaxy(_toysnap_filename, hf_multi)
             except NotImplementedError:
                 # expected for Standalone
                 return
         generated_extra_mask = sg._extra_mask
         expected_shape = dict()
-        for particle_type in present_particle_types.values():
-            with h5py.File(toysnap_filename, "r") as snap:
+        for particle_type in _present_particle_types.values():
+            with h5py.File(_toysnap_filename, "r") as snap:
                 expected_shape[particle_type] = snap[
                     "Cells/Counts/PartType"
                     f"{dict(gas=0, dark_matter=1, stars=4, black_holes=5)[particle_type]}"
                 ][0]
         if hasattr(hf_multi, "_caesar") and hf_multi.group_type == "galaxy":
             expected_shape["dark_matter"] = None
-        for particle_type in present_particle_types.values():
+        for particle_type in _present_particle_types.values():
             if expected_shape[particle_type] is not None:
                 assert (
                     getattr(generated_extra_mask, particle_type).shape
@@ -380,7 +382,10 @@ class TestHaloCataloguesMulti:
                 assert (
                     getattr(generated_extra_mask, particle_type).sum()
                     == dict(
-                        gas=n_g_1, dark_matter=n_dm_1, stars=n_s_1, black_holes=n_bh_1
+                        gas=_n_g_1,
+                        dark_matter=_n_dm_1,
+                        stars=_n_s_1,
+                        black_holes=_n_bh_1,
                     )[particle_type]
                 )
 
@@ -457,11 +462,11 @@ class TestVelociraptor:
     @pytest.mark.parametrize(
         "centre_type, expected",
         (
-            ("", centre_1),
-            ("minpot", centre_1 + 0.001),
-            ("mbp", centre_1 + 0.002),
-            ("_gas", centre_1 + 0.003),
-            ("_stars", centre_1 + 0.004),
+            ("", _centre_1),
+            ("minpot", _centre_1 + 0.001),
+            ("mbp", _centre_1 + 0.002),
+            ("_gas", _centre_1 + 0.003),
+            ("_stars", _centre_1 + 0.004),
         ),
     )
     def test_centre_types(self, vr, centre_type, expected):
@@ -484,11 +489,11 @@ class TestVelociraptor:
     @pytest.mark.parametrize(
         "centre_type, expected",
         (
-            ("", vcentre_1),
-            ("minpot", vcentre_1 + 1.0),
-            ("mbp", vcentre_1 + 2.0),
-            ("_gas", vcentre_1 + 3.0),
-            ("_stars", vcentre_1 + 4.0),
+            ("", _vcentre_1),
+            ("minpot", _vcentre_1 + 1.0),
+            ("mbp", _vcentre_1 + 2.0),
+            ("_gas", _vcentre_1 + 3.0),
+            ("_stars", _vcentre_1 + 4.0),
         ),
     )
     def test_velocity_centre_types(self, vr, centre_type, expected):
@@ -561,7 +566,7 @@ class TestVelociraptorWithSWIFTGalaxy:
             atol=abstol_m,
         )
 
-    @pytest.mark.parametrize("particle_type", present_particle_types.values())
+    @pytest.mark.parametrize("particle_type", _present_particle_types.values())
     def test_masks_compatible(self, sg_vr, particle_type):
         """
         Check that the bound_only default mask works with the spatial mask,
@@ -569,7 +574,7 @@ class TestVelociraptorWithSWIFTGalaxy:
         """
         assert (
             getattr(sg_vr, particle_type).masses.size
-            == dict(gas=n_g_1, dark_matter=n_dm_1, stars=n_s_1, black_holes=n_bh_1)[
+            == dict(gas=_n_g_1, dark_matter=_n_dm_1, stars=_n_s_1, black_holes=_n_bh_1)[
                 particle_type
             ]
         )
@@ -583,7 +588,7 @@ class TestVelociraptorWithSWIFTGalaxy:
                     halo_index=sg_from_sgs.halo_catalogue.halo_index,
                 ),
             )
-            for ptype in present_particle_types.values():
+            for ptype in _present_particle_types.values():
                 assert np.all(
                     getattr(sg_from_sgs._extra_mask, ptype)
                     == getattr(sg._extra_mask, ptype)
@@ -599,7 +604,7 @@ class TestCaesar:
         pass  # Caesar has nothing to do in _load
 
     @pytest.mark.parametrize(
-        "centre_type, expected", (("", centre_1), ("minpot", centre_1 + 0.001))
+        "centre_type, expected", (("", _centre_1), ("minpot", _centre_1 + 0.001))
     )
     def test_centre_types(self, caesar, centre_type, expected):
         """
@@ -619,7 +624,7 @@ class TestCaesar:
         )
 
     @pytest.mark.parametrize(
-        "centre_type, expected", (("", vcentre_1), ("minpot", vcentre_1 + 1.0))
+        "centre_type, expected", (("", _vcentre_1), ("minpot", _vcentre_1 + 1.0))
     )
     def test_vcentre_types(self, caesar, centre_type, expected):
         """
@@ -653,7 +658,7 @@ class TestCaesar:
         elif hasattr(caesar, "masses"):
             assert_allclose_units(
                 caesar.masses["total"],
-                n_g_1 * m_g + n_s_1 * m_s + n_bh_1 * m_bh,
+                _n_g_1 * _m_g + _n_s_1 * _m_s + _n_bh_1 * _m_bh,
                 rtol=reltol_nd,
                 atol=abstol_m,
             )
@@ -676,8 +681,8 @@ class TestCaesar:
             assert_allclose_units(
                 [c["total"] for c in caesar_multi.masses],
                 [
-                    n_g_1 * m_g + n_s_1 * m_s + n_bh_1 * m_bh,
-                    n_g_2 * m_g + n_s_2 * m_s + n_bh_2 * m_bh,
+                    _n_g_1 * _m_g + _n_s_1 * _m_s + _n_bh_1 * _m_bh,
+                    _n_g_2 * _m_g + _n_s_2 * _m_s + _n_bh_2 * _m_bh,
                 ],
                 rtol=reltol_nd,
                 atol=abstol_m,
@@ -693,15 +698,15 @@ class TestCaesar:
         applied.
         """
         caesar.extra_mask = None  # apply only the spatial mask
-        sg = SWIFTGalaxy(toysnap_filename, caesar)
-        for particle_type in present_particle_types.values():
+        sg = SWIFTGalaxy(_toysnap_filename, caesar)
+        for particle_type in _present_particle_types.values():
             assert (
                 getattr(sg, particle_type).masses.size
                 == dict(
-                    gas=n_g_b // 2 + n_g_1,
-                    dark_matter=n_dm_b // 2 + n_dm_1,
-                    stars=n_s_1,
-                    black_holes=n_bh_1,
+                    gas=_n_g_b // 2 + _n_g_1,
+                    dark_matter=_n_dm_b // 2 + _n_dm_1,
+                    stars=_n_s_1,
+                    black_holes=_n_bh_1,
                 )[particle_type]
             )
 
@@ -739,24 +744,24 @@ class TestCaesarWithSWIFTGalaxy:
         elif hasattr(sg_caesar.halo_catalogue, "masses"):
             assert_allclose_units(
                 sg_caesar.halo_catalogue.masses["total"],
-                n_g_1 * m_g + n_s_1 * m_s + n_bh_1 * m_bh,
+                _n_g_1 * _m_g + _n_s_1 * _m_s + _n_bh_1 * _m_bh,
                 rtol=reltol_nd,
                 atol=abstol_m,
             )
         else:
             raise AttributeError
 
-    @pytest.mark.parametrize("particle_type", present_particle_types.values())
+    @pytest.mark.parametrize("particle_type", _present_particle_types.values())
     def test_masks_compatible(self, sg_caesar, particle_type):
         """
         Check that the bound_only default mask works with the spatial mask,
         giving the expected shapes for arrays.
         """
-        expected_dm = 0 if sg_caesar.halo_catalogue.group_type == "galaxy" else n_dm_1
+        expected_dm = 0 if sg_caesar.halo_catalogue.group_type == "galaxy" else _n_dm_1
         assert (
             getattr(sg_caesar, particle_type).masses.size
             == dict(
-                gas=n_g_1, dark_matter=expected_dm, stars=n_s_1, black_holes=n_bh_1
+                gas=_n_g_1, dark_matter=expected_dm, stars=_n_s_1, black_holes=_n_bh_1
             )[particle_type]
         )
 
@@ -770,7 +775,7 @@ class TestCaesarWithSWIFTGalaxy:
                     group_index=sg_from_sgs.halo_catalogue.group_index,
                 ),
             )
-            for ptype in present_particle_types.values():
+            for ptype in _present_particle_types.values():
                 if isinstance(getattr(sg_from_sgs._extra_mask, ptype), slice):
                     assert getattr(sg_from_sgs._extra_mask, ptype) == getattr(
                         sg._extra_mask, ptype
@@ -789,15 +794,15 @@ class TestStandalone:
         applied.
         """
         sa.extra_mask = None  # apply only the spatial mask
-        sg = SWIFTGalaxy(toysnap_filename, sa)
-        for particle_type in present_particle_types.values():
+        sg = SWIFTGalaxy(_toysnap_filename, sa)
+        for particle_type in _present_particle_types.values():
             assert (
                 getattr(sg, particle_type).masses.size
                 == dict(
-                    gas=n_g_b // 2 + n_g_1,
-                    dark_matter=n_dm_b // 2 + n_dm_1,
-                    stars=n_s_1,
-                    black_holes=n_bh_1,
+                    gas=_n_g_b // 2 + _n_g_1,
+                    dark_matter=_n_dm_b // 2 + _n_dm_1,
+                    stars=_n_s_1,
+                    black_holes=_n_bh_1,
                 )[particle_type]
             )
 
@@ -813,14 +818,14 @@ class TestSOAP:
     @pytest.mark.parametrize(
         "centre_type, expected",
         (
-            ("bound_subhalo.centre_of_mass", centre_1 + 0.001),
-            ("exclusive_sphere_100kpc.centre_of_mass", centre_1 + 0.003),
-            ("inclusive_sphere_100kpc.centre_of_mass", centre_1 + 0.011),
-            ("input_halos_fof.centres", centre_1),
-            ("input_halos.halo_centre", centre_1 + 0.001),
-            ("projected_aperture_50kpc_projx.centre_of_mass", centre_1 + 0.027),
-            ("spherical_overdensity_200_crit.centre_of_mass", centre_1 + 0.032),
-            ("spherical_overdensity_bn98.centre_of_mass", centre_1 + 0.038),
+            ("bound_subhalo.centre_of_mass", _centre_1 + 0.001),
+            ("exclusive_sphere_100kpc.centre_of_mass", _centre_1 + 0.003),
+            ("inclusive_sphere_100kpc.centre_of_mass", _centre_1 + 0.011),
+            ("input_halos_fof.centres", _centre_1),
+            ("input_halos.halo_centre", _centre_1 + 0.001),
+            ("projected_aperture_50kpc_projx.centre_of_mass", _centre_1 + 0.027),
+            ("spherical_overdensity_200_crit.centre_of_mass", _centre_1 + 0.032),
+            ("spherical_overdensity_bn98.centre_of_mass", _centre_1 + 0.038),
         ),
     )
     def test_centre_types(self, soap, centre_type, expected):
@@ -843,12 +848,12 @@ class TestSOAP:
     @pytest.mark.parametrize(
         "velocity_centre_type, expected",
         (
-            ("bound_subhalo.centre_of_mass_velocity", vcentre_1 + 1),
-            ("exclusive_sphere_100kpc.centre_of_mass_velocity", vcentre_1 + 3),
-            ("inclusive_sphere_100kpc.centre_of_mass_velocity", vcentre_1 + 11),
-            ("projected_aperture_50kpc_projx.centre_of_mass_velocity", vcentre_1 + 27),
-            ("spherical_overdensity_200_crit.centre_of_mass_velocity", vcentre_1 + 32),
-            ("spherical_overdensity_bn98.centre_of_mass_velocity", vcentre_1 + 38),
+            ("bound_subhalo.centre_of_mass_velocity", _vcentre_1 + 1),
+            ("exclusive_sphere_100kpc.centre_of_mass_velocity", _vcentre_1 + 3),
+            ("inclusive_sphere_100kpc.centre_of_mass_velocity", _vcentre_1 + 11),
+            ("projected_aperture_50kpc_projx.centre_of_mass_velocity", _vcentre_1 + 27),
+            ("spherical_overdensity_200_crit.centre_of_mass_velocity", _vcentre_1 + 32),
+            ("spherical_overdensity_bn98.centre_of_mass_velocity", _vcentre_1 + 38),
         ),
     )
     def test_velocity_centre_types(self, soap, velocity_centre_type, expected):
@@ -879,7 +884,7 @@ class TestSOAP:
         assert_allclose_units(
             soap.bound_subhalo.centre_of_mass,
             cosmo_array(
-                [[centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001]],
+                [[_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001]],
                 u.Mpc,
                 comoving=False,
                 cosmo_factor=cosmo_factor(a**1, 1.0),
@@ -901,8 +906,8 @@ class TestSOAP:
             soap_multi.bound_subhalo.centre_of_mass,
             cosmo_array(
                 [
-                    [centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001],
-                    [centre_2 + 0.001, centre_2 + 0.001, centre_2 + 0.001],
+                    [_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001],
+                    [_centre_2 + 0.001, _centre_2 + 0.001, _centre_2 + 0.001],
                 ],
                 u.Mpc,
                 comoving=False,
@@ -949,7 +954,7 @@ class TestSOAPWithSWIFTGalaxy:
         assert_allclose_units(
             sg_soap.halo_catalogue.bound_subhalo.centre_of_mass,
             cosmo_array(
-                [[centre_1 + 0.001, centre_1 + 0.001, centre_1 + 0.001]],
+                [[_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001]],
                 u.Mpc,
                 comoving=False,
                 cosmo_factor=cosmo_factor(a**1, 1.0),
@@ -958,7 +963,7 @@ class TestSOAPWithSWIFTGalaxy:
             atol=abstol_c,
         )
 
-    @pytest.mark.parametrize("particle_type", present_particle_types.values())
+    @pytest.mark.parametrize("particle_type", _present_particle_types.values())
     def test_masks_compatible(self, sg_soap, particle_type):
         """
         Check that the bound_only default mask works with the spatial mask,
@@ -966,7 +971,7 @@ class TestSOAPWithSWIFTGalaxy:
         """
         assert (
             getattr(sg_soap, particle_type).masses.size
-            == dict(gas=n_g_1, dark_matter=n_dm_1, stars=n_s_1, black_holes=n_bh_1)[
+            == dict(gas=_n_g_1, dark_matter=_n_dm_1, stars=_n_s_1, black_holes=_n_bh_1)[
                 particle_type
             ]
         )
@@ -980,7 +985,7 @@ class TestSOAPWithSWIFTGalaxy:
                     soap_index=sg_from_sgs.halo_catalogue.soap_index,
                 ),
             )
-            for ptype in present_particle_types.values():
+            for ptype in _present_particle_types.values():
                 assert np.all(
                     getattr(sg_from_sgs._extra_mask, ptype)
                     == getattr(sg._extra_mask, ptype)

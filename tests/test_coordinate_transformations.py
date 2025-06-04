@@ -5,11 +5,11 @@ from unyt.testing import assert_allclose_units
 from swiftsimio.objects import cosmo_array, cosmo_factor, a, cosmo_quantity
 from scipy.spatial.transform import Rotation
 from swiftgalaxy.demo_data import (
-    present_particle_types,
-    toysnap_filename,
+    _present_particle_types,
+    _toysnap_filename,
     ToyHF,
-    create_toysnap,
-    remove_toysnap,
+    _create_toysnap,
+    _remove_toysnap,
 )
 from swiftgalaxy import SWIFTGalaxy
 from swiftgalaxy.reader import _apply_translation, _apply_4transform
@@ -143,7 +143,7 @@ rot = np.array(
 class TestAutoCoordinateTransformations:
     @pytest.mark.parametrize(
         "particle_name, expected_xy, expected_z",
-        [(k, expected_xy[k], expected_z[k]) for k in present_particle_types.values()],
+        [(k, expected_xy[k], expected_z[k]) for k in _present_particle_types.values()],
     )
     def test_auto_recentering(self, sg, particle_name, expected_xy, expected_z):
         """
@@ -156,7 +156,10 @@ class TestAutoCoordinateTransformations:
 
     @pytest.mark.parametrize(
         "particle_name, expected_vxy, expected_vz",
-        [(k, expected_vxy[k], expected_vz[k]) for k in present_particle_types.values()],
+        [
+            (k, expected_vxy[k], expected_vz[k])
+            for k in _present_particle_types.values()
+        ],
     )
     def test_auto_recentering_velocity(
         self, sg, particle_name, expected_vxy, expected_vz
@@ -171,7 +174,7 @@ class TestAutoCoordinateTransformations:
 
     @pytest.mark.parametrize(
         "particle_name, expected_xy, expected_z",
-        [(k, expected_xy[k], expected_z[k]) for k in present_particle_types.values()],
+        [(k, expected_xy[k], expected_z[k]) for k in _present_particle_types.values()],
     )
     def test_auto_recentering_extra(self, sg, particle_name, expected_xy, expected_z):
         """
@@ -184,7 +187,10 @@ class TestAutoCoordinateTransformations:
 
     @pytest.mark.parametrize(
         "particle_name, expected_vxy, expected_vz",
-        [(k, expected_vxy[k], expected_vz[k]) for k in present_particle_types.values()],
+        [
+            (k, expected_vxy[k], expected_vz[k])
+            for k in _present_particle_types.values()
+        ],
     )
     def test_auto_recentering_velocity_extra(
         self, sg, particle_name, expected_vxy, expected_vz
@@ -199,7 +205,7 @@ class TestAutoCoordinateTransformations:
 
     @pytest.mark.parametrize(
         "particle_name, expected_xy, expected_z",
-        [(k, expected_xy[k], expected_z[k]) for k in present_particle_types.values()],
+        [(k, expected_xy[k], expected_z[k]) for k in _present_particle_types.values()],
     )
     def test_auto_recentering_custom_name(
         self, sg_custom_names, particle_name, expected_xy, expected_z
@@ -214,7 +220,10 @@ class TestAutoCoordinateTransformations:
 
     @pytest.mark.parametrize(
         "particle_name, expected_vxy, expected_vz",
-        [(k, expected_vxy[k], expected_vz[k]) for k in present_particle_types.values()],
+        [
+            (k, expected_vxy[k], expected_vz[k])
+            for k in _present_particle_types.values()
+        ],
     )
     def test_auto_recentering_velocity_custom_name(
         self, sg_custom_names, particle_name, expected_vxy, expected_vz
@@ -229,7 +238,7 @@ class TestAutoCoordinateTransformations:
 
     @pytest.mark.parametrize(
         "particle_name, expected_xy, expected_z",
-        [(k, expected_xy[k], expected_z[k]) for k in present_particle_types.values()],
+        [(k, expected_xy[k], expected_z[k]) for k in _present_particle_types.values()],
     )
     def test_auto_recentering_off(
         self, sg_autorecentre_off, particle_name, expected_xy, expected_z
@@ -259,7 +268,10 @@ class TestAutoCoordinateTransformations:
 
     @pytest.mark.parametrize(
         "particle_name, expected_vxy, expected_vz",
-        [(k, expected_vxy[k], expected_vz[k]) for k in present_particle_types.values()],
+        [
+            (k, expected_vxy[k], expected_vz[k])
+            for k in _present_particle_types.values()
+        ],
     )
     def test_auto_recentering_off_velocity(
         self, sg_autorecentre_off, particle_name, expected_vxy, expected_vz
@@ -296,7 +308,7 @@ class TestAutoCoordinateTransformations:
 
 class TestManualCoordinateTransformations:
     @pytest.mark.parametrize("coordinate_name", ("coordinates", "extra_coordinates"))
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_manual_recentring(self, sg, particle_name, coordinate_name, before_load):
         """
@@ -320,7 +332,7 @@ class TestManualCoordinateTransformations:
         assert_allclose_units(xyz_before - new_centre, xyz, rtol=1.0e-4, atol=abstol_c)
 
     @pytest.mark.parametrize("velocity_name", ("velocities", "extra_velocities"))
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_manual_recentring_velocity(
         self, sg, particle_name, velocity_name, before_load
@@ -346,7 +358,7 @@ class TestManualCoordinateTransformations:
         )
 
     @pytest.mark.parametrize("coordinate_name", ("coordinates", "extra_coordinates"))
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_translate(self, sg, particle_name, coordinate_name, before_load):
         """
@@ -382,7 +394,7 @@ class TestManualCoordinateTransformations:
             sg.translate(translation)
 
     @pytest.mark.parametrize("velocity_name", ("velocities", "extra_velocities"))
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_boost(self, sg, particle_name, velocity_name, before_load):
         """
@@ -407,7 +419,7 @@ class TestManualCoordinateTransformations:
         "coordinate_name, velocity_name",
         (("coordinates", "velocities"), ("extra_coordinates", "extra_velocities")),
     )
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_rotation(
         self, sg, particle_name, coordinate_name, velocity_name, before_load
@@ -433,7 +445,7 @@ class TestManualCoordinateTransformations:
         assert_allclose_units(vxyz_before.dot(rot), vxyz, rtol=1.0e-4, atol=abstol_v)
 
     @pytest.mark.parametrize("coordinate_name", ("coordinates", "extra_coordinates"))
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     def test_box_wrap(self, sg, particle_name, coordinate_name):
         """
         Check that translating by two box lengths wraps back to previous state.
@@ -444,7 +456,7 @@ class TestManualCoordinateTransformations:
         assert_allclose_units(xyz_before, xyz, rtol=1.0e-4, atol=abstol_c)
 
     @pytest.mark.parametrize("coordinate_name", ("coordinates", "extra_coordinates"))
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_transform(self, sg, particle_name, coordinate_name, before_load):
         """
@@ -473,7 +485,7 @@ class TestManualCoordinateTransformations:
         )
 
     @pytest.mark.parametrize("coordinate_name", ("velocities", "extra_velocities"))
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_transform_velocity(self, sg, particle_name, coordinate_name, before_load):
         """
@@ -607,7 +619,7 @@ class TestCopyingTransformations:
             match="Cannot use coordinate_frame_from with auto_recentre=True.",
         ):
             SWIFTGalaxy(
-                toysnap_filename, ToyHF(), auto_recentre=True, coordinate_frame_from=sg
+                _toysnap_filename, ToyHF(), auto_recentre=True, coordinate_frame_from=sg
             )
 
     def test_invalid_coordinate_frame_from(self, sg):
@@ -618,18 +630,18 @@ class TestCopyingTransformations:
         assert sg.metadata.units.time != new_time_unit
         sg.metadata.units.time = new_time_unit
         try:
-            create_toysnap()
+            _create_toysnap()
             with pytest.raises(
                 ValueError, match="Internal units \\(length and time\\) of"
             ):
                 SWIFTGalaxy(
-                    toysnap_filename,
+                    _toysnap_filename,
                     ToyHF(),
                     coordinate_frame_from=sg,
                     auto_recentre=False,
                 )
         finally:
-            remove_toysnap()
+            _remove_toysnap()
 
     def test_copied_coordinate_transform(self, sg):
         """
@@ -645,7 +657,7 @@ class TestCopyingTransformations:
         )
         sg.translate(translation)
         sg2 = SWIFTGalaxy(
-            toysnap_filename, ToyHF(), auto_recentre=False, coordinate_frame_from=sg
+            _toysnap_filename, ToyHF(), auto_recentre=False, coordinate_frame_from=sg
         )
         assert_allclose_units(
             sg.gas.coordinates, sg2.gas.coordinates, rtol=1.0e-4, atol=abstol_c
@@ -665,7 +677,7 @@ class TestCopyingTransformations:
         )
         sg.translate(translation)
         sg2 = SWIFTGalaxy(
-            toysnap_filename, ToyHF(), auto_recentre=False, coordinate_frame_from=sg
+            _toysnap_filename, ToyHF(), auto_recentre=False, coordinate_frame_from=sg
         )
         assert_allclose_units(
             sg.gas.velocities, sg2.gas.velocities, rtol=1.0e-4, atol=abstol_v
