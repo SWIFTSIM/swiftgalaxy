@@ -2901,28 +2901,29 @@ def _create_toysoap(
                     ds_rank.attrs["a-scale exponent"] = np.array([0.0])
                     ds_rank.attrs["h-scale exponent"] = np.array([0.0])
     if create_virtual_snapshot:
-        from compression.make_virtual_snapshot import make_virtual_snapshot
-        from compression.update_vds_paths import update_virtual_snapshot_paths
+        if not os.path.isfile(virtual_snapshot_filename):
+            from compression.make_virtual_snapshot import make_virtual_snapshot
+            from compression.update_vds_paths import update_virtual_snapshot_paths
 
-        membership_filepattern = membership_filebase + ".{file_nr}.hdf5"
-        make_virtual_snapshot(
-            create_virtual_snapshot_from,
-            membership_filepattern,
-            virtual_snapshot_filename,
-            0,  # snapshot number, not used since no pattern in filenames
-        )
-        abs_snapshot_dir = os.path.abspath(
-            os.path.dirname(create_virtual_snapshot_from)
-        )
-        abs_membership_dir = os.path.abspath(
-            os.path.dirname(membership_filepattern.format(file_nr=0))
-        )
-        abs_output_dir = os.path.abspath(os.path.dirname(virtual_snapshot_filename))
-        rel_snapshot_dir = os.path.relpath(abs_snapshot_dir, abs_output_dir)
-        rel_membership_dir = os.path.relpath(abs_membership_dir, abs_output_dir)
-        update_virtual_snapshot_paths(
-            virtual_snapshot_filename, rel_snapshot_dir, rel_membership_dir
-        )
+            membership_filepattern = membership_filebase + ".{file_nr}.hdf5"
+            make_virtual_snapshot(
+                create_virtual_snapshot_from,
+                membership_filepattern,
+                virtual_snapshot_filename,
+                0,  # snapshot number, not used since no pattern in filenames
+            )
+            abs_snapshot_dir = os.path.abspath(
+                os.path.dirname(create_virtual_snapshot_from)
+            )
+            abs_membership_dir = os.path.abspath(
+                os.path.dirname(membership_filepattern.format(file_nr=0))
+            )
+            abs_output_dir = os.path.abspath(os.path.dirname(virtual_snapshot_filename))
+            rel_snapshot_dir = os.path.relpath(abs_snapshot_dir, abs_output_dir)
+            rel_membership_dir = os.path.relpath(abs_membership_dir, abs_output_dir)
+            update_virtual_snapshot_paths(
+                virtual_snapshot_filename, rel_snapshot_dir, rel_membership_dir
+            )
     return
 
 
