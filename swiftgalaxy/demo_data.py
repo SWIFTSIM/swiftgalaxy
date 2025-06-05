@@ -107,13 +107,21 @@ class _WebExamples(object):
     """
 
     webstorage_location = (
-        "https://virgodb.cosma.dur.ac.uk/swift-webstorage/IOExamples/ssio_ci_04_2025/"
+        "https://virgodb.cosma.dur.ac.uk/swift-webstorage/IOExamples/sg_ci_06_2025/"
     )
-    # Each example can require one or more files. The first file is the one whose path
-    # is returned when the example is requested. The other files are additional
-    # dependencies, if relevant.
+    # Each example can require one or more files. We store a list of these, and also
+    # the string that will be returned by the function for a user-friendly interface.
     available_examples = {
-        "snapshot": ("EagleSingle.hdf5",),
+        "snapshot": {"handle": "EagleSingle.hdf5", "files": ("EagleSingle.hdf5",)},
+        "soap": {"handle": "SOAPEagleSingle.hdf5", "files": ("SOAPEagleSingle.hdf5",)},
+        "virtual_snapshot": {
+            "handle": "EagleSingleVirtual.hdf5",
+            "files": ("EagleSingleVirtual.hdf5", "membership_0000.0.hdf5"),
+        },
+        "caesar": {
+            "handle": "CaesarEagleSingle.hdf5",
+            "files": ("CaesarEagleSingle.hdf5",),
+        },
     }
 
     def __init__(self) -> None:
@@ -170,10 +178,12 @@ class _WebExamples(object):
             The path to the requested example file (that was downloaded if needed).
         """
         if attr in self.available_examples:
-            files_required = self.available_examples[attr]
+            files_required = self.available_examples[attr]["files"]
             for file_required in files_required:
                 self._get_webdata_if_not_present(file_required)
-            return os.path.join(_demo_data_dir, files_required[0])
+            return os.path.join(
+                _demo_data_dir, str(self.available_examples[attr]["handle"])
+            )
         else:
             raise AttributeError(f"_WebExamples attribute {attr} not found.")
 

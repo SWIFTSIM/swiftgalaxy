@@ -56,6 +56,26 @@ class TestWebExampleData:
             ),
         )
 
+    @pytest.mark.parametrize("group_type", ["halo", "galaxy"])
+    def test_caesar(self, group_type):
+        """
+        Check that we can create a swiftgalaxy, retrieving a sample snapshot file and
+        caesar catalogue.
+        """
+        SWIFTGalaxy(
+            web_examples.snapshot,
+            Caesar(web_examples.caesar, group_type=group_type, group_index=0),
+        )
+
+    def test_soap(self):
+        """
+        Check that we can create a swiftgalaxy, retrieving a sample virtual snapshot
+        file and a soap catalogue.
+        """
+        SWIFTGalaxy(
+            web_examples.virtual_snapshot, SOAP(web_examples.soap, soap_index=0)
+        )
+
     def test_remove(self):
         """
         Check that example data files get cleaned up on request.
