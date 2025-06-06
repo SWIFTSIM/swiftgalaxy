@@ -93,15 +93,15 @@ This returns a masked copy of the individual particle array, so does not imply t
 Cookbook: all particles in a spherical aperture
 -----------------------------------------------
 
-One of :mod:`swiftgalaxy`'s features is that it can conveniently provide a set of particles that a halo finder has identified as belonging to a galaxy (or other object). However, in some cases this might not be the selection of particles that you want. When the desired particles include some that are not identified as members by the halo finder, a modified approach is needed. For example, let's suppose that you want to select *all* simulation particles within a 1 Mpc aperture of a galaxy's centre, regardless of their membership status according to the halo catalogue. For illustration we'll take a galaxy picked from a :class:`~swiftgalaxy.halo_finders.Velociraptor` catalogue. The first step is to override the default ``extra_mask="bound_only"`` behaviour with ``extra_mask=None``. We also need to override the default spatial selection from the simulation, because the 1 Mpc spherical region of interest might extend beyond the region occupied by member particles as defined by the halo finder, which is all that the default spatial selection is guaranteed to enclose:
+One of :mod:`swiftgalaxy`'s features is that it can conveniently provide a set of particles that a halo finder has identified as belonging to a galaxy (or other object). However, in some cases this might not be the selection of particles that you want. When the desired particles include some that are not identified as members by the halo finder, a modified approach is needed. For example, let's suppose that you want to select *all* simulation particles within a 1 Mpc aperture of a galaxy's centre, regardless of their membership status according to the halo catalogue. For illustration we'll take a galaxy picked from a :class:`~swiftgalaxy.halo_finders.SOAP` catalogue. The first step is to override the default ``extra_mask="bound_only"`` behaviour with ``extra_mask=None``. We also need to override the default spatial selection from the simulation, because the 1 Mpc spherical region of interest might extend beyond the region occupied by member particles as defined by the halo finder, which is all that the default spatial selection is guaranteed to enclose:
 
 .. code-block:: python
 
     sg = SWIFTGalaxy(
         "my_snapshot.hdf5",
-	Velociraptor(
-	    "halos",  # name of output files excluding extension (e.g. 'halos.properties', etc.)
-	    halo_index=3,  # pick the 4th galaxy (i.e. indexed from 0) in the catalogue array
+	SOAP(
+	    "my_soap.hdf5",  # name of catalogue file
+	    soap_index=3,  # pick the 4th galaxy (i.e. indexed from 0) in the catalogue array
 	    extra_mask=None,  # select all particles in the spatially selected region (for now)
 	    custom_spatial_offsets=cosmo_array([[-1, 1], [-1, 1], [-1, 1]], u.Mpc), # relative to centre
 	),

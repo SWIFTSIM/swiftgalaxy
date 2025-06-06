@@ -3,7 +3,7 @@ Halo catalogues
 
 :mod:`swiftgalaxy` uses a helper class to create a uniform interface to outputs from different halo finders. Provided a python library to read the halo catalogues already exists, this helper class is usually lightweight and easy to create. Currently, the SOAP, Caesar and Velociraptor catalogue formats have built-in support. Other halo finders may be supported on request -- pull requests to the repository are also welcome.
 
-The second argument to create a :class:`~swiftgalaxy.reader.SWIFTGalaxy` is an instance of a class derived from the base helper class :class:`~swiftgalaxy.halo_finders._HaloCatalogue`, such as :class:`~swiftgalaxy.halo_catalogues.Velociraptor`. This object has multiple roles. It will be aware of:
+The second argument to create a :class:`~swiftgalaxy.reader.SWIFTGalaxy` is an instance of a class derived from the base helper class :class:`~swiftgalaxy.halo_finders._HaloCatalogue`, such as :class:`~swiftgalaxy.halo_catalogues.SOAP`. This object has multiple roles. It will be aware of:
 
   + the location of the halo catalogue files;
   + how to extract the properties of a galaxy of interest from those files;
@@ -262,10 +262,13 @@ Support for other halo catalogue formats will be considered on request.
 Entrepreneurial users may also create their own helper class inheriting from :class:`swiftgalaxy.halo_catalogues._HaloCatalogue`. In this case, the following methods should be implemented:
 
   + :meth:`~swiftgalaxy.halo_catalogues._HaloCatalogue._load`: called during :meth:`~swiftgalaxy.halo_catalogues._HaloCatalogue.__init__`, implement any initialisation tasks here.
-  + :meth:`~swiftgalaxy.halo_catalogues._HaloCatalogue._get_spatial_mask`: return a :class:`~swiftsimio.masks.SWIFTMask` defining the spatial region to be loaded for the galaxy of interest.
-  + :meth:`~swiftgalaxy.halo_catalogues._HaloCatalogue._get_extra_mask`: return a :class:`~swiftgalaxy.masks.MaskCollection` defining the subset of particles from the loaded spatial region that belong to the galaxy of interest.
+  + :meth:`~swiftgalaxy.halo_catalogues._HaloCatalogue._generate_spatial_mask`: return a :class:`~swiftsimio.masks.SWIFTMask` defining the spatial region to be loaded for the galaxy of interest.
+  + :meth:`~swiftgalaxy.halo_catalogues._HaloCatalogue._generate_bound_only_mask`: return a :class:`~swiftgalaxy.masks.MaskCollection` defining the subset of particles from the loaded spatial region that belong to the galaxy of interest.
+  + :meth:`~swiftgalaxy.halo_catalogues._HaloCatalogue._get_preload_fields`: return the :obj:`set` of particle data fields needed to evaluate the masks in the two preceding functions.
   + :meth:`~swiftgalaxy.halo_catalogues._HaloCatalogue.centre`: return the coordinates (as a :class:`~swiftsimio.objects.cosmo_array`) to be used as the centre of the galaxy of interest (implemented with the `@property` decorator).
   + :meth:`~swiftgalaxy.halo_catalogues._HaloCatalogue.velocity_centre`: return the coordinates (as a :class:`~swiftsimio.objects.cosmo_array`) to be used as the bulk velocity of the galaxy of interest (implemented with the `@property` decorator).
+  + :meth:`~swiftgalaxy.halo_catalogues._HaloCatalogue._region_centre`: return the coordinates (as a :class:`~swiftsimio.objects.cosmo_array`) to be used as the centre of a bounding box guaranteed to contain all particles belonging to the galaxy of interest (implemented with the `@property` decorator).
+  + :meth:`~swiftgalaxy.halo_catalogues._HaloCatalogue._region_aperture`: return the half-lengths (as a :class:`~swiftsimio.objects.cosmo_array`) to be used to construct a bounding box guaranteed to contain all particles belonging to the galaxy of interest (implemented with the `@property` decorator).
 
 In addition, it is recommended to expose the properties computed by the halo finder, masked to the values corresponding to the object of interest. To make this intuitive for users, the syntax to access attributes of the galaxy of interest should preferably match the syntax used for the library conventionally used to read outputs of that halo finder, if it exists. For instance, for Velociraptor this is implemented via ``__getattr__`` (dot syntax), which simply exposes the usual interface (with a mask to pick out the galaxy of interest).
 

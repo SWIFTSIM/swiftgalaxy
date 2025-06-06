@@ -6,4 +6,4 @@ numba
 scipy
 h5py
 unyt
-git+https://github.com/SWIFTSIM/swiftsimio.git
+swiftsimio

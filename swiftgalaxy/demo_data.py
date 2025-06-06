@@ -1994,7 +1994,7 @@ def _create_toysoap(
             f["Cosmology"].attrs["T_CMB_0 [internal units]"] = np.array([2.7255])
             f["Cosmology"].attrs["T_nu_0 [eV]"] = np.array([0.00016819])
             f["Cosmology"].attrs["T_nu_0 [internal units]"] = np.array([1.9517578])
-            f["Cosmology"].attrs["Universe _age [internal units]"] = np.array(
+            f["Cosmology"].attrs["Universe_age [internal units]"] = np.array(
                 [0.01407376]
             )
             f["Cosmology"].attrs["a_beg"] = np.array([0.03125])

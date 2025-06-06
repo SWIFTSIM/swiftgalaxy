@@ -14,6 +14,7 @@ Documentation contents
    :maxdepth: 2
 
    getting_started/index
+   demo_data/index
    coordinate_transformations/index
    additional_coordinates/index
    halo_catalogues/index
