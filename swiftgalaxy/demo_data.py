@@ -122,6 +122,17 @@ class _WebExamples(object):
             "handle": "CaesarEagleSingle.hdf5",
             "files": ("CaesarEagleSingle.hdf5",),
         },
+        "velociraptor": {
+            "handle": "VelociraptorEagleSingle",
+            "files": (
+                "VelociraptorEagleSingle.properties",
+                "VelociraptorEagleSingle.catalog_particles",
+                "VelociraptorEagleSingle.catalog_particles.unbound",
+                "VelociraptorEagleSingle.catalog_parttypes",
+                "VelociraptorEagleSingle.catalog_parttypes.unbound",
+                "VelociraptorEagleSingle.catalog_groups",
+            ),
+        },
     }
 
     def __init__(self) -> None:

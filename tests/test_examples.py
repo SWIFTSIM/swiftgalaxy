@@ -76,6 +76,15 @@ class TestWebExampleData:
             web_examples.virtual_snapshot, SOAP(web_examples.soap, soap_index=0)
         )
 
+    def test_vr(self):
+        """
+        Check that we can create a swiftgalaxy, retrieving a sample snapshot file
+        and velociraptor catalogue.
+        """
+        SWIFTGalaxy(
+            web_examples.snapshot, Velociraptor(web_examples.velociraptor, halo_index=0)
+        )
+
     def test_remove(self):
         """
         Check that example data files get cleaned up on request.
