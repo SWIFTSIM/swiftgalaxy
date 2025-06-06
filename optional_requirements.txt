@@ -1,5 +1,11 @@
 pytest
+pytest-cov
+flake8
 black[jupyter]
-wily
+mypy
+numpydoc
+h5py
+astropy
 velociraptor
 git+https://github.com/dnarayanan/caesar.git
+git+https://github.com/SWIFTSIM/soap.git@soap_runtime
