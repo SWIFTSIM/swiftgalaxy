@@ -1096,12 +1096,13 @@ def _create_toyvr(filebase: str = _toyvr_filebase) -> None:
             f["SimulationInfo"].attrs["Cosmological_Sim"] = 1
             for coord in "XYZ":
                 f.create_dataset(
-                    f"{coord}c", data=np.array([_centre_1, _centre_2], dtype=float)
+                    f"{coord}c",
+                    data=np.array([_centre_1, _centre_2], dtype=float) + 0.001,
                 )
                 (
                     f.create_dataset(
                         f"{coord}cminpot",
-                        data=np.array([_centre_1, _centre_2], dtype=float) + 0.001,
+                        data=np.array([_centre_1, _centre_2], dtype=float),
                     )
                 )
                 (
@@ -1117,12 +1118,13 @@ def _create_toyvr(filebase: str = _toyvr_filebase) -> None:
                     f"{coord}c_stars", data=np.array([0.004, 0.004], dtype=float)
                 )
                 f.create_dataset(
-                    f"V{coord}c", data=np.array([_vcentre_1, _vcentre_2], dtype=float)
+                    f"V{coord}c",
+                    data=np.array([_vcentre_1, _vcentre_2], dtype=float) + 1.0,
                 )
                 (
                     f.create_dataset(
                         f"V{coord}cminpot",
-                        data=np.array([_vcentre_1, _vcentre_2], dtype=float) + 1.0,
+                        data=np.array([_vcentre_1, _vcentre_2], dtype=float),
                     )
                 )
                 (
@@ -1566,14 +1568,14 @@ def _create_toycaesar(filename: str = _toycaesar_filename) -> None:
             data=np.array(
                 [
                     [
-                        _centre_1 * 1000 + 1.0,
-                        _centre_1 * 1000 + 1.0,
-                        _centre_1 * 1000 + 1.0,
+                        _centre_1 * 1000,
+                        _centre_1 * 1000,
+                        _centre_1 * 1000,
                     ],
                     [
-                        _centre_2 * 1000 + 1.0,
-                        _centre_2 * 1000 + 1.0,
-                        _centre_2 * 1000 + 1.0,
+                        _centre_2 * 1000,
+                        _centre_2 * 1000,
+                        _centre_2 * 1000,
                     ],
                 ],
                 dtype=float,
@@ -1584,8 +1586,8 @@ def _create_toycaesar(filename: str = _toycaesar_filename) -> None:
             "minpotvel",
             data=np.array(
                 [
-                    [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
-                    [_vcentre_2 + 1.0, _vcentre_2 + 1.0, _vcentre_2 + 1.0],
+                    [_vcentre_1, _vcentre_1, _vcentre_1],
+                    [_vcentre_2, _vcentre_2, _vcentre_2],
                 ],
                 dtype=float,
             ),
@@ -1611,8 +1613,16 @@ def _create_toycaesar(filename: str = _toycaesar_filename) -> None:
             "pos",
             data=np.array(
                 [
-                    [_centre_1 * 1000, _centre_1 * 1000, _centre_1 * 1000],
-                    [_centre_2 * 1000, _centre_2 * 1000, _centre_2 * 1000],
+                    [
+                        _centre_1 * 1000 + 1.0,
+                        _centre_1 * 1000 + 1.0,
+                        _centre_1 * 1000 + 1.0,
+                    ],
+                    [
+                        _centre_2 * 1000 + 1.0,
+                        _centre_2 * 1000 + 1.0,
+                        _centre_2 * 1000 + 1.0,
+                    ],
                 ],
                 dtype=float,
             ),
@@ -1628,8 +1638,8 @@ def _create_toycaesar(filename: str = _toycaesar_filename) -> None:
             "vel",
             data=np.array(
                 [
-                    [_vcentre_1, _vcentre_1, _vcentre_1],
-                    [_vcentre_2, _vcentre_2, _vcentre_2],
+                    [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
+                    [_vcentre_2 + 1.0, _vcentre_2 + 1.0, _vcentre_2 + 1.0],
                 ],
                 dtype=float,
             ),
@@ -1768,14 +1778,14 @@ def _create_toycaesar(filename: str = _toycaesar_filename) -> None:
             data=np.array(
                 [
                     [
-                        _centre_1 * 1000 + 1.0,
-                        _centre_1 * 1000 + 1.0,
-                        _centre_1 * 1000 + 1.0,
+                        _centre_1 * 1000,
+                        _centre_1 * 1000,
+                        _centre_1 * 1000,
                     ],
                     [
-                        _centre_2 * 1000 + 1.0,
-                        _centre_2 * 1000 + 1.0,
-                        _centre_2 * 1000 + 1.0,
+                        _centre_2 * 1000,
+                        _centre_2 * 1000,
+                        _centre_2 * 1000,
                     ],
                 ],
                 dtype=float,
@@ -1786,8 +1796,8 @@ def _create_toycaesar(filename: str = _toycaesar_filename) -> None:
             "minpotvel",
             data=np.array(
                 [
-                    [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
-                    [_vcentre_2 + 1.0, _vcentre_2 + 1.0, _vcentre_2 + 1.0],
+                    [_vcentre_1, _vcentre_1, _vcentre_1],
+                    [_vcentre_2, _vcentre_2, _vcentre_2],
                 ],
                 dtype=float,
             ),
@@ -1810,8 +1820,16 @@ def _create_toycaesar(filename: str = _toycaesar_filename) -> None:
             "pos",
             data=np.array(
                 [
-                    [_centre_1 * 1000, _centre_1 * 1000, _centre_1 * 1000],
-                    [_centre_2 * 1000, _centre_2 * 1000, _centre_2 * 1000],
+                    [
+                        _centre_1 * 1000 + 1.0,
+                        _centre_1 * 1000 + 1.0,
+                        _centre_1 * 1000 + 1.0,
+                    ],
+                    [
+                        _centre_2 * 1000 + 1.0,
+                        _centre_2 * 1000 + 1.0,
+                        _centre_2 * 1000 + 1.0,
+                    ],
                 ],
                 dtype=float,
             ),
@@ -1827,8 +1845,8 @@ def _create_toycaesar(filename: str = _toycaesar_filename) -> None:
             "vel",
             data=np.array(
                 [
-                    [_vcentre_1, _vcentre_1, _vcentre_1],
-                    [_vcentre_2, _vcentre_2, _vcentre_2],
+                    [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
+                    [_vcentre_2 + 1.0, _vcentre_2 + 1.0, _vcentre_2 + 1.0],
                 ],
                 dtype=float,
             ),
@@ -2406,7 +2424,6 @@ def _create_toysoap(
                     "/SO/5xR_500_crit",
                     "/SO/BN98",
                 ],
-                1,
             ):
                 com_ds = f[so].create_dataset(
                     "CentreOfMass",

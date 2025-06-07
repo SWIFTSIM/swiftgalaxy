@@ -15,6 +15,7 @@ Documentation contents
 
    getting_started/index
    demo_data/index
+   Example notebooks <https://github.com/SWIFTSIM/swiftgalaxy/tree/main/examples>
    coordinate_transformations/index
    additional_coordinates/index
    halo_catalogues/index

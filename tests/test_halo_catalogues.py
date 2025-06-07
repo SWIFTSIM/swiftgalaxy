@@ -220,11 +220,11 @@ class TestHaloCatalogues:
         """
         Check that the _centre function returns the expected centre.
         """
-        # default is minpot == 2.001 Mpc
+        # default is minpot == 2.0 Mpc
         assert_allclose_units(
             hf.centre,
             cosmo_array(
-                [_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001],
+                [_centre_1, _centre_1, _centre_1],
                 u.Mpc,
                 comoving=True,
                 cosmo_factor=cosmo_factor(a**1, 1.0),
@@ -237,11 +237,11 @@ class TestHaloCatalogues:
         """
         Check that the velocity_centre function returns the expected velocity centre.
         """
-        # default is minpot == 201. km/s
+        # default is minpot == 200. km/s
         assert_allclose_units(
             hf.velocity_centre,
             cosmo_array(
-                [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
+                [_vcentre_1, _vcentre_1, _vcentre_1],
                 u.km / u.s,
                 comoving=True,
                 cosmo_factor=cosmo_factor(a**0, 1.0),
@@ -484,11 +484,11 @@ class TestVelociraptor:
     @pytest.mark.parametrize(
         "centre_type, expected",
         (
-            ("", _centre_1),
-            ("minpot", _centre_1 + 0.001),
+            ("", _centre_1 + 0.001),
+            ("minpot", _centre_1),
             ("mbp", _centre_1 + 0.002),
-            ("_gas", _centre_1 + 0.003),
-            ("_stars", _centre_1 + 0.004),
+            ("_gas", _centre_1 + 0.004),
+            ("_stars", _centre_1 + 0.005),
         ),
     )
     def test_centre_types(self, vr, centre_type, expected):
@@ -511,11 +511,11 @@ class TestVelociraptor:
     @pytest.mark.parametrize(
         "centre_type, expected",
         (
-            ("", _vcentre_1),
-            ("minpot", _vcentre_1 + 1.0),
+            ("", _vcentre_1 + 1.0),
+            ("minpot", _vcentre_1),
             ("mbp", _vcentre_1 + 2.0),
-            ("_gas", _vcentre_1 + 3.0),
-            ("_stars", _vcentre_1 + 4.0),
+            ("_gas", _vcentre_1 + 4.0),
+            ("_stars", _vcentre_1 + 5.0),
         ),
     )
     def test_velocity_centre_types(self, vr, centre_type, expected):
@@ -626,7 +626,7 @@ class TestCaesar:
         pass  # Caesar has nothing to do in _load
 
     @pytest.mark.parametrize(
-        "centre_type, expected", (("", _centre_1), ("minpot", _centre_1 + 0.001))
+        "centre_type, expected", (("", _centre_1 + 0.001), ("minpot", _centre_1))
     )
     def test_centre_types(self, caesar, centre_type, expected):
         """
@@ -646,7 +646,7 @@ class TestCaesar:
         )
 
     @pytest.mark.parametrize(
-        "centre_type, expected", (("", _vcentre_1), ("minpot", _vcentre_1 + 1.0))
+        "centre_type, expected", (("", _vcentre_1 + 1.0), ("minpot", _vcentre_1))
     )
     def test_vcentre_types(self, caesar, centre_type, expected):
         """
@@ -840,14 +840,14 @@ class TestSOAP:
     @pytest.mark.parametrize(
         "centre_type, expected",
         (
-            ("bound_subhalo.centre_of_mass", _centre_1 + 0.001),
-            ("exclusive_sphere_100kpc.centre_of_mass", _centre_1 + 0.003),
-            ("inclusive_sphere_100kpc.centre_of_mass", _centre_1 + 0.011),
+            ("bound_subhalo.centre_of_mass", _centre_1),
+            ("exclusive_sphere_100kpc.centre_of_mass", _centre_1 + 0.002),
+            ("inclusive_sphere_100kpc.centre_of_mass", _centre_1 + 0.010),
             ("input_halos_fof.centres", _centre_1),
             ("input_halos.halo_centre", _centre_1),
-            ("projected_aperture_50kpc_projx.centre_of_mass", _centre_1 + 0.027),
-            ("spherical_overdensity_200_crit.centre_of_mass", _centre_1 + 0.032),
-            ("spherical_overdensity_bn98.centre_of_mass", _centre_1 + 0.038),
+            ("projected_aperture_50kpc_projx.centre_of_mass", _centre_1 + 0.026),
+            ("spherical_overdensity_200_crit.centre_of_mass", _centre_1 + 0.031),
+            ("spherical_overdensity_bn98.centre_of_mass", _centre_1 + 0.037),
         ),
     )
     def test_centre_types(self, soap, centre_type, expected):
@@ -870,12 +870,12 @@ class TestSOAP:
     @pytest.mark.parametrize(
         "velocity_centre_type, expected",
         (
-            ("bound_subhalo.centre_of_mass_velocity", _vcentre_1 + 1),
-            ("exclusive_sphere_100kpc.centre_of_mass_velocity", _vcentre_1 + 3),
-            ("inclusive_sphere_100kpc.centre_of_mass_velocity", _vcentre_1 + 11),
-            ("projected_aperture_50kpc_projx.centre_of_mass_velocity", _vcentre_1 + 27),
-            ("spherical_overdensity_200_crit.centre_of_mass_velocity", _vcentre_1 + 32),
-            ("spherical_overdensity_bn98.centre_of_mass_velocity", _vcentre_1 + 38),
+            ("bound_subhalo.centre_of_mass_velocity", _vcentre_1),
+            ("exclusive_sphere_100kpc.centre_of_mass_velocity", _vcentre_1 + 2),
+            ("inclusive_sphere_100kpc.centre_of_mass_velocity", _vcentre_1 + 10),
+            ("projected_aperture_50kpc_projx.centre_of_mass_velocity", _vcentre_1 + 26),
+            ("spherical_overdensity_200_crit.centre_of_mass_velocity", _vcentre_1 + 31),
+            ("spherical_overdensity_bn98.centre_of_mass_velocity", _vcentre_1 + 37),
         ),
     )
     def test_velocity_centre_types(self, soap, velocity_centre_type, expected):
@@ -906,7 +906,7 @@ class TestSOAP:
         assert_allclose_units(
             soap.bound_subhalo.centre_of_mass,
             cosmo_array(
-                [[_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001]],
+                [[_centre_1, _centre_1, _centre_1]],
                 u.Mpc,
                 comoving=False,
                 cosmo_factor=cosmo_factor(a**1, 1.0),
@@ -928,8 +928,8 @@ class TestSOAP:
             soap_multi.bound_subhalo.centre_of_mass,
             cosmo_array(
                 [
-                    [_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001],
-                    [_centre_2 + 0.001, _centre_2 + 0.001, _centre_2 + 0.001],
+                    [_centre_1, _centre_1, _centre_1],
+                    [_centre_2, _centre_2, _centre_2],
                 ],
                 u.Mpc,
                 comoving=False,
@@ -976,7 +976,7 @@ class TestSOAPWithSWIFTGalaxy:
         assert_allclose_units(
             sg_soap.halo_catalogue.bound_subhalo.centre_of_mass,
             cosmo_array(
-                [[_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001]],
+                [[_centre_1, _centre_1, _centre_1]],
                 u.Mpc,
                 comoving=False,
                 cosmo_factor=cosmo_factor(a**1, 1.0),
