@@ -2,20 +2,20 @@ import pytest
 import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
-from toysnap import (
-    toysnap_filename,
+from swiftgalaxy.demo_data import (
+    _toysnap_filename,
     ToyHF,
-    present_particle_types,
-    toysoap_virtual_snapshot_filename,
-    toysoap_filename,
-    toyvr_filebase,
-    toycaesar_filename,
-    create_toysoap,
-    create_toyvr,
-    create_toycaesar,
-    remove_toysoap,
-    remove_toyvr,
-    remove_toycaesar,
+    _present_particle_types,
+    _toysoap_virtual_snapshot_filename,
+    _toysoap_filename,
+    _toyvr_filebase,
+    _toycaesar_filename,
+    _create_toysoap,
+    _create_toyvr,
+    _create_toycaesar,
+    _remove_toysoap,
+    _remove_toyvr,
+    _remove_toycaesar,
 )
 from conftest import hfs
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
@@ -36,7 +36,7 @@ class TestSWIFTGalaxies:
         # this should make sparse iteration optimal
         # at a cost of 2 cell reads
         sgs = SWIFTGalaxies(
-            toysnap_filename,
+            _toysnap_filename,
             Standalone(
                 centre=cosmo_array(
                     [[2.5, 5.0, 5.0], [7.5, 5.0, 5.0]],
@@ -117,7 +117,7 @@ class TestSWIFTGalaxies:
         # copies if the target region is larger than ~0.5 the
         # box size in any dimension.
         sgs = SWIFTGalaxies(
-            toysnap_filename,
+            _toysnap_filename,
             Standalone(
                 centre=cosmo_array(
                     [
@@ -228,12 +228,12 @@ class TestSWIFTGalaxies:
         count = 0
         for sg_from_sgs in sgs:
             sg = SWIFTGalaxy(
-                toysnap_filename,
+                _toysnap_filename,
                 ToyHF(
-                    snapfile=toysnap_filename, index=sg_from_sgs.halo_catalogue.index
+                    snapfile=_toysnap_filename, index=sg_from_sgs.halo_catalogue.index
                 ),
             )
-            for ptype in present_particle_types.values():
+            for ptype in _present_particle_types.values():
                 assert np.all(
                     getattr(sg_from_sgs._extra_mask, ptype)
                     == getattr(sg._extra_mask, ptype)
@@ -249,9 +249,9 @@ class TestSWIFTGalaxies:
         hf_multi.extra_mask = extra_mask
         sgs = SWIFTGalaxies(
             (
-                toysoap_virtual_snapshot_filename
+                _toysoap_virtual_snapshot_filename
                 if isinstance(hf_multi, SOAP)
-                else toysnap_filename
+                else _toysnap_filename
             ),
             hf_multi,
             preload={
@@ -261,7 +261,7 @@ class TestSWIFTGalaxies:
                 "black_holes.particle_ids",
             },
         )
-        region_mask = mask(toysnap_filename)
+        region_mask = mask(_toysnap_filename)
         region_mask.constrain_spatial(sgs._solution["regions"][0])
         sgs._start_server(region_mask)
         sgs._preload()
@@ -279,7 +279,7 @@ class TestSWIFTGalaxies:
         """
         with pytest.warns(RuntimeWarning, match="No data specified to preload"):
             SWIFTGalaxies(
-                toysnap_filename,
+                _toysnap_filename,
                 ToyHF(index=[0, 1]),
             )
 
@@ -301,7 +301,7 @@ class TestSWIFTGalaxies:
         """
         with pytest.raises(ValueError, match="must not contain duplicates"):
             SWIFTGalaxies(
-                toysnap_filename,
+                _toysnap_filename,
                 ToyHF(index=[0, 0]),
             )
 
@@ -313,9 +313,9 @@ class TestSWIFTGalaxies:
         """
         sgs = SWIFTGalaxies(
             (
-                toysoap_virtual_snapshot_filename
+                _toysoap_virtual_snapshot_filename
                 if isinstance(hf_multi, SOAP)
-                else toysnap_filename
+                else _toysnap_filename
             ),
             hf_multi,
             preload={  # just to keep warnings quiet
@@ -371,9 +371,9 @@ class TestSWIFTGalaxies:
 
         sgs_forwards = SWIFTGalaxies(
             (
-                toysoap_virtual_snapshot_filename
+                _toysoap_virtual_snapshot_filename
                 if isinstance(hf_multi, SOAP)
-                else toysnap_filename
+                else _toysnap_filename
             ),
             hf_multi,
             preload={  # just to keep warnings quiet
@@ -386,9 +386,9 @@ class TestSWIFTGalaxies:
         map_forwards = sgs_forwards.map(f)
         sgs_backwards = SWIFTGalaxies(
             (
-                toysoap_virtual_snapshot_filename
+                _toysoap_virtual_snapshot_filename
                 if isinstance(hf_multi, SOAP)
-                else toysnap_filename
+                else _toysnap_filename
             ),
             hf_multi_backwards,
             preload={  # just to keep warnings quiet
@@ -427,15 +427,15 @@ class TestSWIFTGalaxies:
         in the order that they appear in the catalogue.
         """
         soaps = [
-            SOAP(soap_file=toysoap_filename, soap_index=0),
-            SOAP(soap_file=toysoap_filename, soap_index=1),
+            SOAP(soap_file=_toysoap_filename, soap_index=0),
+            SOAP(soap_file=_toysoap_filename, soap_index=1),
         ]
-        soap_both = SOAP(soap_file=toysoap_filename, soap_index=[1, 0])
+        soap_both = SOAP(soap_file=_toysoap_filename, soap_index=[1, 0])
         sgs_individual = [
-            SWIFTGalaxy(toysoap_virtual_snapshot_filename, soap) for soap in soaps
+            SWIFTGalaxy(_toysoap_virtual_snapshot_filename, soap) for soap in soaps
         ]
         sgs = SWIFTGalaxies(
-            toysoap_virtual_snapshot_filename,
+            _toysoap_virtual_snapshot_filename,
             soap_both,
             preload={"black_holes.masses"},  # just keep warnings quiet
         )
@@ -465,11 +465,11 @@ class TestSWIFTGalaxies:
         ordered containers that are not a list.
         """
         if hf_type == "soap":
-            create_toysoap(create_virtual_snapshot=True)
+            _create_toysoap(create_virtual_snapshot=True)
         elif hf_type == "vr":
-            create_toyvr()
+            _create_toyvr()
         elif "caesar" in hf_type:
-            create_toycaesar()
+            _create_toycaesar()
         elif hf_type == "sa":
             return  # doesn't take an index list, nothing to test
         else:
@@ -480,23 +480,23 @@ class TestSWIFTGalaxies:
         ):
             if hf_type == "soap":
                 sgs = SWIFTGalaxies(
-                    toysoap_virtual_snapshot_filename,
-                    SOAP(toysoap_filename, soap_index=init_indices),
+                    _toysoap_virtual_snapshot_filename,
+                    SOAP(_toysoap_filename, soap_index=init_indices),
                     preload={"gas.masses"},  # just to keep warnings quiet
                 )
             elif hf_type == "vr":
                 sgs = SWIFTGalaxies(
-                    toysnap_filename,
+                    _toysnap_filename,
                     Velociraptor(
-                        velociraptor_filebase=toyvr_filebase, halo_index=init_indices
+                        velociraptor_filebase=_toyvr_filebase, halo_index=init_indices
                     ),
                     preload={"gas.masses"},
                 )
             elif hf_type == "caesar_galaxy":
                 sgs = SWIFTGalaxies(
-                    toysnap_filename,
+                    _toysnap_filename,
                     Caesar(
-                        toycaesar_filename,
+                        _toycaesar_filename,
                         group_type="galaxy",
                         group_index=init_indices,
                     ),
@@ -504,20 +504,20 @@ class TestSWIFTGalaxies:
                 )
             elif hf_type == "caesar_halo":
                 sgs = SWIFTGalaxies(
-                    toysnap_filename,
+                    _toysnap_filename,
                     Caesar(
-                        toycaesar_filename, group_type="halo", group_index=init_indices
+                        _toycaesar_filename, group_type="halo", group_index=init_indices
                     ),
                     preload={"gas.masses"},
                 )
             for sg in sgs:
                 pass  # just go through the iteration
         if hf_type == "soap":
-            remove_toysoap()
+            _remove_toysoap()
         elif hf_type == "vr":
-            remove_toyvr()
+            _remove_toyvr()
         elif "caesar" in hf_type:
-            remove_toycaesar()
+            _remove_toycaesar()
 
     def test_zero_targets(self, toysnap_withfof, hf_multi_zerotarget):
         """
@@ -525,9 +525,9 @@ class TestSWIFTGalaxies:
         """
         sgs = SWIFTGalaxies(
             (
-                toysoap_virtual_snapshot_filename
+                _toysoap_virtual_snapshot_filename
                 if isinstance(hf_multi_zerotarget, SOAP)
-                else toysnap_filename
+                else _toysnap_filename
             ),
             hf_multi_zerotarget,
             preload={  # just to keep warnings quiet
@@ -553,9 +553,9 @@ class TestSWIFTGalaxies:
         """
         sgs = SWIFTGalaxies(
             (
-                toysoap_virtual_snapshot_filename
+                _toysoap_virtual_snapshot_filename
                 if isinstance(hf_multi_onetarget, SOAP)
-                else toysnap_filename
+                else _toysnap_filename
             ),
             hf_multi_onetarget,
             preload={  # just to keep warnings quiet

@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
-from toysnap import present_particle_types
+from swiftgalaxy.demo_data import _present_particle_types
 from scipy.spatial.transform import Rotation
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 
@@ -12,7 +12,7 @@ abstol_a = 1.0e-4 * u.rad
 
 
 class TestCartesianCoordinates:
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize(
         "coordinate_name, mask",
         (
@@ -40,7 +40,7 @@ class TestCartesianCoordinates:
 
 
 class TestSphericalCoordinates:
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("r", "radius"))
     @pytest.mark.filterwarnings(
         "ignore:invalid value encountered in true_divide"
@@ -54,7 +54,7 @@ class TestSphericalCoordinates:
         r_from_cartesian = np.sqrt(np.sum(np.power(xyz, 2), axis=1))
         assert_allclose_units(spherical_r, r_from_cartesian, rtol=1.0e-4, atol=abstol_c)
 
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("r", "radius"))
     @pytest.mark.filterwarnings(
         "ignore:invalid value encountered in true_divide"
@@ -89,7 +89,7 @@ class TestSphericalCoordinates:
             spherical_v_r, v_r_from_cartesian, rtol=1.0e-4, atol=abstol_v
         )
 
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("theta", "lat", "latitude", "pol", "polar"))
     @pytest.mark.filterwarnings(
         "ignore:invalid value encountered in true_divide"
@@ -114,7 +114,7 @@ class TestSphericalCoordinates:
             spherical_theta, theta_from_cartesian, rtol=1.0e-4, atol=abstol_a
         )
 
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("theta", "lat", "latitude", "pol", "polar"))
     @pytest.mark.filterwarnings(
         "ignore:invalid value encountered in true_divide"
@@ -151,7 +151,7 @@ class TestSphericalCoordinates:
             spherical_v_theta, v_theta_from_cartesian, rtol=1.0e-4, atol=abstol_v
         )
 
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("phi", "lon", "longitude", "az", "azimuth"))
     @pytest.mark.filterwarnings(
         "ignore:invalid value encountered in true_divide"
@@ -175,7 +175,7 @@ class TestSphericalCoordinates:
             spherical_phi, phi_from_cartesian, rtol=1.0e-4, atol=abstol_a
         )
 
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("phi", "lon", "longitude", "az", "azimuth"))
     @pytest.mark.filterwarnings(
         "ignore:invalid value encountered in true_divide"
@@ -219,7 +219,7 @@ class TestSphericalCoordinates:
 
 
 class TestCylindricalCoordinates:
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("rho", "R", "radius"))
     def test_cylindrical_rho(self, sg, particle_name, alias):
         """
@@ -234,7 +234,7 @@ class TestCylindricalCoordinates:
             spherical_rho, rho_from_cartesian, rtol=1.0e-4, atol=abstol_c
         )
 
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("rho", "R", "radius"))
     def test_cylindrical_velocity_rho(self, sg, particle_name, alias):
         """
@@ -262,7 +262,7 @@ class TestCylindricalCoordinates:
             cylindrical_v_rho, v_rho_from_cartesian, rtol=1.0e-4, atol=abstol_v
         )
 
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("phi", "lon", "longitude", "az", "azimuth"))
     def test_cylindrical_phi(self, sg, particle_name, alias):
         """
@@ -285,7 +285,7 @@ class TestCylindricalCoordinates:
             cylindrical_phi, phi_from_cartesian, rtol=1.0e-4, atol=abstol_a
         )
 
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("phi", "lon", "longitude", "az", "azimuth"))
     def test_cylindrical_velocity_phi(self, sg, particle_name, alias):
         """
@@ -313,7 +313,7 @@ class TestCylindricalCoordinates:
             cylindrical_v_phi, v_phi_from_cartesian, rtol=1.0e-4, atol=abstol_v
         )
 
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("z", "height"))
     def test_cylindrical_z(self, sg, particle_name, alias):
         """
@@ -328,7 +328,7 @@ class TestCylindricalCoordinates:
             cylindrical_z, z_from_cartesian, rtol=1.0e-4, atol=abstol_c
         )
 
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("z", "height"))
     def test_cylindrical_velocity_z(self, sg, particle_name, alias):
         cylindrical_v_z = getattr(
@@ -355,7 +355,7 @@ class TestCylindricalCoordinates:
 class TestInteractionWithCoordinateTransformations:
     @pytest.mark.parametrize("coordinate_type", ("coordinates", "velocities"))
     @pytest.mark.parametrize("coordinate_system", ("spherical", "cylindrical"))
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize(
         "transform_function, transform_arg",
         (
@@ -431,7 +431,7 @@ class TestInteractionWithCoordinateTransformations:
         assert internal_coords is None
 
     @pytest.mark.parametrize("coordinate_type", ("coordinates", "velocities"))
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize(
         "transform_function, transform_arg",
         (
@@ -517,7 +517,7 @@ class TestInteractionWithMasking:
     @pytest.mark.parametrize(
         "coordinate_system", ("cartesian", "spherical", "cylindrical")
     )
-    @pytest.mark.parametrize("particle_name", present_particle_types.values())
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     @pytest.mark.filterwarnings(
         "ignore:invalid value encountered in true_divide"

@@ -30,7 +30,49 @@ SWIFTGalaxy
 
 SWIFTGalaxy is a module that extends SWIFTSimIO_ tailored to analyses of particles belonging to individual simulated galaxies. It inherits from and extends the functionality of the ``SWIFTDataset``. It understands the content of halo catalogues (supported: `Velociraptor`_, `Caesar`_, `SOAP`_) and therefore which particles belong to a galaxy or other group of particles, and its integrated properties. The particles occupy a coordinate frame that is enforced to be consistent, such that particles loaded on-the-fly will match e.g. rotations and translations of particles already in memory. Intuitive masking of particle datasets is also enabled. Utilities to make working in cylindrical and spherical coordinate systems more convenient are also provided. Finally, tools to iterate efficiently over multiple galaxies are also provided.
 
-Installation is as simple as ``pip install swiftgalaxy``. ``numpy>=2.0`` is required and will be installed automatically as a dependency.
+Installation is as simple as ``pip install swiftgalaxy``. Once installed, creating a ``SWIFTGalaxy`` object to get started with analysis is simple! For example, for a SWIFT simulation with a SOAP-format halo catalogue (an example - 300 MB - will be automatically downloaded):
+
+.. code-block:: python
+
+   from swiftgalaxy import SWIFTGalaxy, SOAP
+   from swiftgalaxy.demo_data import web_examples
+
+   sg = SWIFTGalaxy(
+       web_examples.virtual_snapshot,
+       SOAP(web_examples.soap, soap_index=0)
+   )
+
+   # access data for particles belonging to the galaxy:
+   sg.gas.temperatures
+
+   # automatically generated spherical/cylindrical coordinates:
+   sg.gas.spherical_coordinates.r
+
+   # consistent coordinate transformations of all particles, even those not loaded yet:
+   from scipy.spatial.transform import Rotation
+   sg.rotate(Rotation.from_euler("x", 90, degrees=True))
+
+   # compatible with swiftsimio visualisation:
+   import numpy as np
+   import unyt as u
+   from swiftsimio import cosmo_array
+   from swiftsimio.visualisation import project_gas
+   import matplotlib.pyplot as plt
+   img = project_gas(
+       sg,
+       periodic=False,
+       resolution=256,
+       region=cosmo_array(
+           [-30, 30, -30, 30],
+	   u.kpc,
+	   comoving=True,
+	   scale_factor=sg.metadata.a,
+	   scale_exponent=1
+       ),
+   )
+   plt.imsave("eagle6_galaxy.png", np.log10(img.T), origin="lower", cmap="inferno")
+
+.. image:: eagle6_galaxy.png
 
 .. _SWIFTSimIO: http://swiftsimio.readthedocs.org
 .. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/abstract
@@ -39,6 +81,17 @@ Installation is as simple as ``pip install swiftgalaxy``. ``numpy>=2.0`` is requ
 .. _PyPI: https://pypi.org
 
 .. INTRO_END_LABEL
+
+Examples
+--------
+
+.. EXAMPLES_START_LABEL
+
+More usage examples can be found in the `examples folder on github`_.
+
+.. _examples folder on github: https://github.com/SWIFTSIM/swiftgalaxy/tree/main/examples
+
+.. EXAMPLES_END_LABEL
 
 + `Quick start guide`_
 + `Full documentation`_

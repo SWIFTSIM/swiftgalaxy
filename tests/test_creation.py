@@ -4,7 +4,12 @@ fundamental has gone wrong.
 """
 
 from swiftgalaxy import SWIFTGalaxy
-from toysnap import create_toysnap, remove_toysnap, toysnap_filename, n_g_1
+from swiftgalaxy.demo_data import (
+    _create_toysnap,
+    _remove_toysnap,
+    _toysnap_filename,
+    _n_g_1,
+)
 
 
 class TestSWIFTGalaxyCreation:
@@ -83,7 +88,7 @@ class TestSWIFTGalaxyCreation:
         If namedcolumn data was loaded during evaluation of a mask, it needs to be masked
         during initialization.
         """
-        from toysnap import ToyHF
+        from swiftgalaxy.demo_data import ToyHF
 
         def load_namedcolumn(method):
 
@@ -94,22 +99,26 @@ class TestSWIFTGalaxyCreation:
             return wrapper
 
         # decorate the mask evaluation to load an (unused) namedcolumn
+        # preserving old version to be resotred at end of test
+        # (otherwise it carries over into other tests!)
+        old_generate_bound_only_mask = ToyHF._generate_bound_only_mask
         ToyHF._generate_bound_only_mask = load_namedcolumn(
             ToyHF._generate_bound_only_mask
         )
 
         try:
-            create_toysnap()
-            sg = SWIFTGalaxy(toysnap_filename, ToyHF())
+            _create_toysnap()
+            sg = SWIFTGalaxy(_toysnap_filename, ToyHF())
             # confirm that we loaded a namedcolumn during initialization:
             assert (
                 sg.gas.hydrogen_ionization_fractions._internal_dataset._neutral
                 is not None
             )
             # confirm that it got masked:
-            assert sg.gas.hydrogen_ionization_fractions.neutral.size == n_g_1
+            assert sg.gas.hydrogen_ionization_fractions.neutral.size == _n_g_1
         finally:
-            remove_toysnap()
+            _remove_toysnap()
+            ToyHF._generate_bound_only_mask = old_generate_bound_only_mask
 
 
 class TestSWIFTGalaxiesCreation:

@@ -17,3 +17,4 @@ Submodules
    swiftgalaxy.masks
    swiftgalaxy.reader
    swiftgalaxy.iterator
+   swiftgalaxy.demo_data

@@ -27,4 +27,4 @@ When a :class:`~swiftgalaxy.reader.SWIFTGalaxy` has been recentered (the default
        )
    )
 
-For general information on the visualisation routines consult the swiftsimio documentation pages.
+For general information on the visualisation routines consult the :mod:`swiftsimio.visualisation` documentation pages.
