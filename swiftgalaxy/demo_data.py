@@ -2686,8 +2686,8 @@ def _create_toysoap(
                 "HaloCentre",
                 data=np.array(
                     [
-                        [_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001],
-                        [_centre_2 + 0.001, _centre_2 + 0.001, _centre_2 + 0.001],
+                        [_centre_1, _centre_1, _centre_1],
+                        [_centre_2, _centre_2, _centre_2],
                     ]
                 ),
                 dtype=float,
@@ -2773,6 +2773,34 @@ def _create_toysoap(
             nbp.attrs["Value stored as physical"] = np.array([1])
             nbp.attrs["a-scale exponent"] = np.array([0.0])
             nbp.attrs["h-scale exponent"] = np.array([0.0])
+            r200 = f["SO/200_crit"].create_dataset(
+                "SORadius",
+                data=np.array([0.2, 0.2]),
+                dtype=float,
+            )
+            r200.attrs[
+                "Conversion factor to CGS " "(not including cosmological corrections)"
+            ] = np.array([3.08567758e24])
+            r200.attrs[
+                "Conversion factor to physical CGS "
+                "(including cosmological corrections)"
+            ] = np.array([3.08567758e24])
+            r200.attrs["Description"] = (
+                "Radius of a sphere within which the density is 200 times the critical "
+                "value."
+            )
+            r200.attrs["Is Compressed"] = np.True_
+            r200.attrs["Lossy compression filter"] = "DScale5"
+            r200.attrs["Masked"] = np.False_
+            r200.attrs["Property can be converted to comoving"] = np.array([1])
+            r200.attrs["U_I exponent"] = np.array([0.0])
+            r200.attrs["U_L exponent"] = np.array([1.0])
+            r200.attrs["U_M exponent"] = np.array([0.0])
+            r200.attrs["U_T exponent"] = np.array([0.0])
+            r200.attrs["U_t exponent"] = np.array([0.0])
+            r200.attrs["Value stored as physical"] = np.array([0])
+            r200.attrs["a-scale exponent"] = np.array([1])
+            r200.attrs["h-scale exponent"] = np.array([0.0])
 
     if create_membership:
         if not os.path.isfile(f"{membership_filebase}.0.hdf5"):
