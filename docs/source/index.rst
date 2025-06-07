@@ -14,7 +14,7 @@ Documentation contents
    :maxdepth: 2
 
    getting_started/index
-   demo_data/index
+   demonstration_data/index
    Example notebooks <https://github.com/SWIFTSIM/swiftgalaxy/tree/main/examples>
    coordinate_transformations/index
    additional_coordinates/index
