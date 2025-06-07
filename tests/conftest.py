@@ -337,13 +337,13 @@ def sa():
             black_holes=None,
         ),
         centre=cosmo_array(
-            [_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001],
+            [_centre_1, _centre_1, _centre_1],
             u.Mpc,
             comoving=True,
             cosmo_factor=cosmo_factor(a**1, 1.0),
         ),
         velocity_centre=cosmo_array(
-            [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
+            [_vcentre_1, _vcentre_1, _vcentre_1],
             u.km / u.s,
             comoving=True,
             cosmo_factor=cosmo_factor(a**0, 1.0),
@@ -363,8 +363,8 @@ def sa_multi():
         extra_mask=None,
         centre=cosmo_array(
             [
-                [_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001],
-                [_centre_2 + 0.001, _centre_2 + 0.001, _centre_2 + 0.001],
+                [_centre_1, _centre_1, _centre_1],
+                [_centre_2, _centre_2, _centre_2],
             ],
             u.Mpc,
             comoving=True,
@@ -372,8 +372,8 @@ def sa_multi():
         ),
         velocity_centre=cosmo_array(
             [
-                [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
-                [_vcentre_2 + 1.0, _vcentre_2 + 1.0, _vcentre_2 + 1.0],
+                [_vcentre_1, _vcentre_1, _vcentre_1],
+                [_vcentre_2, _vcentre_2, _vcentre_2],
             ],
             u.km / u.s,
             comoving=True,
@@ -401,13 +401,13 @@ def sg_sa():
                 black_holes=None,
             ),
             centre=cosmo_array(
-                [_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001],
+                [_centre_1, _centre_1, _centre_1],
                 u.Mpc,
                 comoving=True,
                 cosmo_factor=cosmo_factor(a**1, 1.0),
             ),
             velocity_centre=cosmo_array(
-                [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
+                [_vcentre_1, _vcentre_1, _vcentre_1],
                 u.km / u.s,
                 comoving=True,
                 cosmo_factor=cosmo_factor(a**0, 1.0),
@@ -432,8 +432,8 @@ def sgs_sa():
             extra_mask=None,
             centre=cosmo_array(
                 [
-                    [_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001],
-                    [_centre_2 + 0.001, _centre_2 + 0.001, _centre_2 + 0.001],
+                    [_centre_1, _centre_1, _centre_1],
+                    [_centre_2, _centre_2, _centre_2],
                 ],
                 u.Mpc,
                 comoving=True,
@@ -441,8 +441,8 @@ def sgs_sa():
             ),
             velocity_centre=cosmo_array(
                 [
-                    [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
-                    [_vcentre_2 + 1.0, _vcentre_2 + 1.0, _vcentre_2 + 1.0],
+                    [_vcentre_1, _vcentre_1, _vcentre_1],
+                    [_vcentre_2, _vcentre_2, _vcentre_2],
                 ],
                 u.km / u.s,
                 comoving=True,
@@ -511,13 +511,13 @@ def sg_hf(request):
                 black_holes=None,
             ),
             centre=cosmo_array(
-                [_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001],
+                [_centre_1, _centre_1, _centre_1],
                 u.Mpc,
                 comoving=True,
                 cosmo_factor=cosmo_factor(a**1, 1.0),
             ),
             velocity_centre=cosmo_array(
-                [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
+                [_vcentre_1, _vcentre_1, _vcentre_1],
                 u.km / u.s,
                 comoving=True,
                 cosmo_factor=cosmo_factor(a**0, 1.0),
@@ -568,13 +568,13 @@ def hf(request):
                 black_holes=None,
             ),
             centre=cosmo_array(
-                [_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001],
+                [_centre_1, _centre_1, _centre_1],
                 u.Mpc,
                 comoving=True,
                 cosmo_factor=cosmo_factor(a**1, 1.0),
             ),
             velocity_centre=cosmo_array(
-                [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
+                [_vcentre_1, _vcentre_1, _vcentre_1],
                 u.km / u.s,
                 comoving=True,
                 cosmo_factor=cosmo_factor(a**0, 1.0),
@@ -620,8 +620,8 @@ def hf_multi(request):
             extra_mask=None,
             centre=cosmo_array(
                 [
-                    [_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001],
-                    [_centre_2 + 0.001, _centre_2 + 0.001, _centre_2 + 0.001],
+                    [_centre_1, _centre_1, _centre_1],
+                    [_centre_2, _centre_2, _centre_2],
                 ],
                 u.Mpc,
                 comoving=True,
@@ -629,8 +629,8 @@ def hf_multi(request):
             ),
             velocity_centre=cosmo_array(
                 [
-                    [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
-                    [_vcentre_2 + 1.0, _vcentre_2 + 1.0, _vcentre_2 + 1.0],
+                    [_vcentre_1, _vcentre_1, _vcentre_1],
+                    [_vcentre_2, _vcentre_2, _vcentre_2],
                 ],
                 u.km / u.s,
                 comoving=True,
@@ -686,8 +686,8 @@ def hf_multi_forwards_and_backwards(request):
             extra_mask=None,
             centre=cosmo_array(
                 [
-                    [_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001],
-                    [_centre_2 + 0.001, _centre_2 + 0.001, _centre_2 + 0.001],
+                    [_centre_1, _centre_1, _centre_1],
+                    [_centre_2, _centre_2, _centre_2],
                 ],
                 u.Mpc,
                 comoving=True,
@@ -695,8 +695,8 @@ def hf_multi_forwards_and_backwards(request):
             ),
             velocity_centre=cosmo_array(
                 [
-                    [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
-                    [_vcentre_2 + 1.0, _vcentre_2 + 1.0, _vcentre_2 + 1.0],
+                    [_vcentre_1, _vcentre_1, _vcentre_1],
+                    [_vcentre_2, _vcentre_2, _vcentre_2],
                 ],
                 u.km / u.s,
                 comoving=True,
@@ -712,8 +712,8 @@ def hf_multi_forwards_and_backwards(request):
             extra_mask=None,
             centre=cosmo_array(
                 [
-                    [_centre_2 + 0.001, _centre_2 + 0.001, _centre_2 + 0.001],
-                    [_centre_1 + 0.001, _centre_1 + 0.001, _centre_1 + 0.001],
+                    [_centre_2, _centre_2, _centre_2],
+                    [_centre_1, _centre_1, _centre_1],
                 ],
                 u.Mpc,
                 comoving=True,
@@ -721,8 +721,8 @@ def hf_multi_forwards_and_backwards(request):
             ),
             velocity_centre=cosmo_array(
                 [
-                    [_vcentre_2 + 1.0, _vcentre_2 + 1.0, _vcentre_2 + 1.0],
-                    [_vcentre_1 + 1.0, _vcentre_1 + 1.0, _vcentre_1 + 1.0],
+                    [_vcentre_2, _vcentre_2, _vcentre_2],
+                    [_vcentre_1, _vcentre_1, _vcentre_1],
                 ],
                 u.km / u.s,
                 comoving=True,
@@ -769,7 +769,7 @@ def hf_multi_onetarget(request):
             extra_mask=None,
             centre=cosmo_array(
                 [
-                    [_centre_2 + 0.001, _centre_2 + 0.001, _centre_2 + 0.001],
+                    [_centre_2, _centre_2, _centre_2],
                 ],
                 u.Mpc,
                 comoving=True,
@@ -777,7 +777,7 @@ def hf_multi_onetarget(request):
             ),
             velocity_centre=cosmo_array(
                 [
-                    [_vcentre_2 + 1.0, _vcentre_2 + 1.0, _vcentre_2 + 1.0],
+                    [_vcentre_2, _vcentre_2, _vcentre_2],
                 ],
                 u.km / u.s,
                 comoving=True,

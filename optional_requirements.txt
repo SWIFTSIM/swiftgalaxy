@@ -4,6 +4,7 @@ flake8
 black[jupyter]
 mypy
 numpydoc
+nbmake
 h5py
 astropy
 velociraptor

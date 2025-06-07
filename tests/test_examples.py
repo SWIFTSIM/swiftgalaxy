@@ -169,3 +169,26 @@ class TestGeneratedExampleData:
         )
         for absent_file in absent_files:
             assert not os.path.isfile(absent_file)
+
+
+class TestExampleNotebooks:
+
+    def test_generated_example_notebook(self):
+        """
+        Check that the example notebook with data generated on the fly runs without error.
+        """
+        pytest.importorskip(
+            "nbmake", reason="nbmake (optional dependency) not available"
+        )
+        from nbmake.nb_run import NotebookRun
+        from nbmake.pytest_items import NotebookFailedException
+        import pathlib
+
+        generated_examples.remove()
+        nbr = NotebookRun(pathlib.Path("examples/SWIFTGalaxy_demo.ipynb"), 300)
+        try:
+            result = nbr.execute()
+            if result.error is not None:
+                raise NotebookFailedException(result)
+        finally:
+            generated_examples.remove()
