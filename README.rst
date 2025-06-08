@@ -30,7 +30,20 @@ SWIFTGalaxy
 
 SWIFTGalaxy is a module that extends SWIFTSimIO_ tailored to analyses of particles belonging to individual simulated galaxies. It inherits from and extends the functionality of the ``SWIFTDataset``. It understands the content of halo catalogues (supported: `Velociraptor`_, `Caesar`_, `SOAP`_) and therefore which particles belong to a galaxy or other group of particles, and its integrated properties. The particles occupy a coordinate frame that is enforced to be consistent, such that particles loaded on-the-fly will match e.g. rotations and translations of particles already in memory. Intuitive masking of particle datasets is also enabled. Utilities to make working in cylindrical and spherical coordinate systems more convenient are also provided. Finally, tools to iterate efficiently over multiple galaxies are also provided.
 
-Installation is as simple as ``pip install swiftgalaxy``. Once installed, creating a ``SWIFTGalaxy`` object to get started with analysis is simple! For example, for a SWIFT simulation with a SOAP-format halo catalogue (an example - 300 MB - will be automatically downloaded):
+.. _SWIFTSimIO: http://swiftsimio.readthedocs.org
+.. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/abstract
+.. _Caesar: https://caesar.readthedocs.io/en/latest/
+.. _SOAP: https://github.com/SWIFTSIM/SOAP
+
+.. INTRO_END_LABEL
+
+Installation_ is as simple as ``pip install swiftgalaxy``. Dependencies for using SOAP, Caesar and Velociraptor catalogues can be installed with ``pip install swiftgalaxy[soap,caesar,velociraptor]``.
+
+.. _Installation: https://swiftgalaxy.readthedocs.io/en/latest/getting_started/index.html#installing
+
+.. EXAMPLE_START_LABEL
+
+Once installed, creating a ``SWIFTGalaxy`` object to get started with analysis is simple! For example, for a SWIFT simulation with a SOAP-format halo catalogue (an example - 300 MB - will be automatically downloaded):
 
 .. code-block:: python
 
@@ -44,6 +57,9 @@ Installation is as simple as ``pip install swiftgalaxy``. Once installed, creati
 
    # access data for particles belonging to the galaxy:
    sg.gas.temperatures
+
+   # access integrated properties from the halo catalogue
+   sg.halo_catalogue.spherical_overdensity_200_crit.soradius
 
    # automatically generated spherical/cylindrical coordinates:
    sg.gas.spherical_coordinates.r
@@ -74,13 +90,7 @@ Installation is as simple as ``pip install swiftgalaxy``. Once installed, creati
 
 .. image:: eagle6_galaxy.png
 
-.. _SWIFTSimIO: http://swiftsimio.readthedocs.org
-.. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/abstract
-.. _Caesar: https://caesar.readthedocs.io/en/latest/
-.. _SOAP: https://github.com/SWIFTSIM/SOAP
-.. _PyPI: https://pypi.org
-
-.. INTRO_END_LABEL
+.. EXAMPLE_END_LABEL
 
 Examples
 --------
@@ -140,6 +150,8 @@ Please also consider the `citations requested for SWIFTSimIO <citeSWIFTSimIO>`_.
 Community
 ---------
 
+.. COMMUNITY_START_LABEL
+
 Code contributions are very welcome! A good place to start is the `contributing guide`_ and how to set up a `development environment`_.
 
 SWIFTGalaxy is licensed under `GPL-3.0`_ and community members are expected to abide by the `code of conduct`_.
@@ -148,3 +160,5 @@ SWIFTGalaxy is licensed under `GPL-3.0`_ and community members are expected to a
 .. _development environment: https://swiftgalaxy.readthedocs.io/en/latest/getting_started/index.html#installing
 .. _GPL-3.0: https://github.com/SWIFTSIM/swiftgalaxy/tree/main?tab=GPL-3.0-1-ov-file
 .. _code of conduct: https://github.com/SWIFTSIM/swiftgalaxy/tree/main?tab=coc-ov-file
+
+.. COMMUNITY_END_LABEL

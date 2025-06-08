@@ -41,6 +41,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
+    "sphinx_design",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
