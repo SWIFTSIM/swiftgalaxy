@@ -31,8 +31,8 @@ dependencies = [
 
 [project.optional-dependencies]
 velociraptor = ["velociraptor"]
-soap = ["git+https://github.com/SWIFTSIM/soap.git@soap_runtime"]
-caesar = ["git+https://github.com/dnarayanan/caesar.git"]
+soap = ["soap @ git+https://github.com/SWIFTSIM/soap.git@soap_runtime"]
+caesar = ["caesar @ git+https://github.com/dnarayanan/caesar.git"]
 
 [tool.numpydoc_validation]
 checks = [
