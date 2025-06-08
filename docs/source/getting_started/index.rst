@@ -41,7 +41,14 @@ Additional optional packages for developers:
 + :mod:`pytest` to run the test suite.
 + :mod:`numpydoc` to check for issues in docstrings.
 + :mod:`flake8` to check for code style issues.
-+ :mod:`pytest-cov` to generate test coverage reports.
++ :mod:`pytest-cov` to generate test coverage reports
+
+And for building the docs:
+
++ :mod:`sphinx`
++ :mod:`sphinx-rtd-theme`
++ :mod:`sphinx-design`
++ :mod:`recommonmark`
 
 
 Installing
@@ -51,7 +58,14 @@ Installing
 
 ``pip install swiftgalaxy``
 
-Note that this will also install required dependencies.
+Note that this will also install required dependencies. To install optional dependencies to support Velociraptor catalogues use ``pip install swiftgalaxy[velociraptor]``. For SOAP and Caesar support use:
+
+.. code-block::
+
+   pip install git+https://github.com/SWIFTSIM/soap.git@soap_runtime
+   pip install git+https://github.com/dnarayanan/caesar.git
+
+The SOAP package is only needed if you want to generate example input files for SOAP, otherwise there are no additional dependencies.
 
 Installation for development
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

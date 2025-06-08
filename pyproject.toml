@@ -4,16 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "swiftgalaxy"
-version="2.1.0"
+version="2.1.1"
 authors = [
     { name="Kyle Oman", email="kyle.a.oman@durham.ac.uk" },
 ]
 description="Code abstraction of objects (galaxies) in simulations."
 readme = "README.rst"
 requires-python = ">=3.10"
+license = "GPL-3.0-or-later"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
 ]
 dependencies = [
@@ -31,8 +31,6 @@ dependencies = [
 
 [project.optional-dependencies]
 velociraptor = ["velociraptor"]
-soap = ["soap @ git+https://github.com/SWIFTSIM/soap.git@soap_runtime"]
-caesar = ["caesar @ git+https://github.com/dnarayanan/caesar.git"]
 
 [tool.numpydoc_validation]
 checks = [

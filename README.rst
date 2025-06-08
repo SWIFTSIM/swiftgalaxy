@@ -37,7 +37,12 @@ SWIFTGalaxy is a module that extends SWIFTSimIO_ tailored to analyses of particl
 
 .. INTRO_END_LABEL
 
-Installation_ is as simple as ``pip install swiftgalaxy``. Dependencies for using SOAP, Caesar and Velociraptor catalogues can be installed with ``pip install swiftgalaxy[soap,caesar,velociraptor]``.
+Installation_ is as simple as ``pip install swiftgalaxy``. Dependencies for using Velociraptor catalogues can be installed with ``pip install swiftgalaxy[velociraptor]``. For SOAP and Caesar support use:
+
+.. code-block::
+
+   pip install git+https://github.com/SWIFTSIM/soap.git@soap_runtime
+   pip install git+https://github.com/dnarayanan/caesar.git
 
 .. _Installation: https://swiftgalaxy.readthedocs.io/en/latest/getting_started/index.html#installing
 
