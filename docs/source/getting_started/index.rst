@@ -113,33 +113,18 @@ and `pre-push hook`_:
 .. _pre-commit hook: https://git-scm.com/book/ms/v2/Customizing-Git-Git-Hooks
 .. _pre-push hook: https://git-scm.com/book/ms/v2/Customizing-Git-Git-Hooks
 
+.. _quick-start:
 
 Quick start
 -----------
 
-:mod:`swiftgalaxy` comes with some tools to procedurally generate very simple example data, and to download more realistic example data (~300 MB). Using the genrated example snapshot :file:`toysnap_virtual.hdf5` and SOAP catalogue :file:`toysoap.hdf5`, initializing a :class:`SWIFTGalaxy` for the galaxy in the first row (indexed from 0) in the SOAP catalogue is as easy as:
+.. include:: ../../../README.rst
+   :start-after: EXAMPLE_START_LABEL
+   :end-before: EXAMPLE_END_LABEL
 
-.. code-block:: python
+Like a :class:`~swiftsimio.reader.SWIFTDataset`, all data are loaded 'lazily' on demand.
 
-    from swiftgalaxy import SWIFTGalaxy, SOAP
-    from swiftgalaxy.demo_data import generated_examples
-
-    sg = SWIFTGalaxy(
-        generated_examples.virtual_snapshot,  # autofills the name of the snapshot "toysnap.hdf5"
-        SOAP(
-            generated_examples.soap,  # autofills the name of the catalogue "toysoap.hdf5"
-            soap_index=0
-        )
-    )
-
-Like a :class:`~swiftsimio.reader.SWIFTDataset`, the particle datasets are accessed as below, and all data are loaded 'lazily', on demand.
-
-.. code-block:: python
-
-    sg.gas.particle_ids
-    sg.dark_matter.coordinates
-
-However, information from the halo catalogue is used to select only the particles identified as bound to this galaxy. The coordinate system is centred in both position and velocity on the centre and peculiar velocity of the galaxy, as determined by the halo finder. The coordinate system can be further manipulated, and all particle arrays will stay in a consistent reference frame at all times.
+However, information from the halo catalogue is used to select only the particles identified as bound to this galaxy. The coordinate system is centred in both position and velocity on the centre and peculiar velocity of the galaxy, as determined by the halo catalogue. The coordinate system can be further manipulated, and all particle arrays will stay in a consistent reference frame at all times.
 
 Again like for a :class:`~swiftsimio.reader.SWIFTDataset`, the units and metadata information are available:
 
@@ -147,33 +132,6 @@ Again like for a :class:`~swiftsimio.reader.SWIFTDataset`, the units and metadat
 
     sg.units
     sg.metadata
-
-The halo catalogue interface is accessible as shown below. What this interface looks like depends on the halo finder being used, but will provide values for the individual galaxy of interest.
-
-.. code-block:: python
-
-    sg.halo_catalogue
-
-In this case with :class:`~swiftgalaxy.halo_catalogues.SOAP`, we can get the centre of mass of the bound particles like this:
-
-.. code-block:: python
-
-    sg.halo_catalogue.bound_subhalo.centre_of_mass
-
-The procedurally generated example conforms to the data format of a real data set, but quantitatively speaking the contents are mostly nonsensical, and the halo catalogue has many fewer fields than a "real" one. A more interesting example data set, a :math:`(6\,\mathrm{Mpc})^3` EAGLE simulation at z=?? (about 300 MB to download) can be initialized with:
-
-.. code-block:: python
-
-    from swiftgalaxy import SWIFTGalaxy, SOAP
-    from swiftgalaxy.demo_data import web_examples
-
-    sg = SWIFTGalaxy(
-        web_examples.virtual_snapshot,  # autofills the name of the snapshot "EagleSingleVirtual.hdf5"
-        SOAP(
-            web_examples.soap,  # autofills the name of the catalogue "SOAPEagleSingle.hdf5"
-            soap_index=0
-        )
-    )		
 
 :mod:`swiftgalaxy` supports Python's tab completion features. This means that you can browse the available attributes of objects in an interactive interpreter by starting to type an attribute (or just a trailing dot) and pressing tab twice. A few examples to help start exploring:
 
