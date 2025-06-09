@@ -166,7 +166,7 @@ class _WebExamples(object):
             ret = subprocess.call(
                 ["wget", f"{self.webstorage_location}{filename}", "-O", file_location]
             )
-        if ret != 0:
+        if ret != 0:  # pragma: no cover
             os.remove(file_location)  # it wrote an empty file, kill it
             raise RuntimeError(f"Unable to download file at {filename}")
 
@@ -202,7 +202,8 @@ class _WebExamples(object):
         """
         Remove all downloaded example files.
         """
-        for filenames in self.available_examples.values():
+        for example_dict in self.available_examples.values():
+            filenames = example_dict["files"]
             for filename in filenames:
                 if os.path.isfile(filename):
                     os.remove(filename)
