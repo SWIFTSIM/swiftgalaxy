@@ -680,3 +680,16 @@ class TestSWIFTGalaxies:
         ):
             for sg_i in sgs:
                 pass
+
+    def test_auto_recentre_off(self, toysnap):
+        """
+        Check that we can switch of auto-recentering in iteration.
+        """
+        sgs = SWIFTGalaxies(
+            _toysnap_filename,
+            ToyHF(index=[0, 1]),
+            preload=("gas.coordinates",),  # just keep warning quiet
+            auto_recentre=False,
+        )
+        for sg in sgs:
+            assert np.allclose(sg.centre, np.zeros(3))

@@ -1729,10 +1729,12 @@ class Caesar(_HaloCatalogue):
                 Boolean array with same shape as `ints`, `True` if the integer is in
                 at least one of the ranges, `False` otherwise.
             """
-            return np.logical_and(
+            retval = np.logical_and(
                 ints >= int_ranges[:, 0, np.newaxis],
                 ints < int_ranges[:, 1, np.newaxis],
             ).any(axis=0)
+            assert not isinstance(retval, np.bool_)  # placate mypy
+            return retval
 
         cat = self._mask_catalogue()
         null_slice = np.s_[:0]  # mask that selects no particles

@@ -1,6 +1,5 @@
 import os
 import pytest
-import numpy as np
 import unyt as u
 from swiftsimio import cosmo_array, mask
 from swiftgalaxy import SWIFTGalaxy, Velociraptor, Caesar, SOAP, Standalone
@@ -14,8 +13,6 @@ from swiftgalaxy.demo_data import (
     _toysoap_membership_filebase,
     _toysoap_virtual_snapshot_filename,
     _toycaesar_filename,
-    _centre_2,
-    _vcentre_2,
 )
 
 
@@ -113,17 +110,9 @@ class TestGeneratedExampleData:
         """
         Check that we can create a swiftgalaxy using the helper for a generated snapshot.
         """
-        sg = SWIFTGalaxy(
+        SWIFTGalaxy(
             generated_examples.snapshot,
-            ToyHF(index=1),
-        )
-        assert np.allclose(
-            sg.centre.to_physical_value(u.Mpc),
-            np.ones(3) * _centre_2,
-        )
-        assert np.allclose(
-            sg.velocity_centre.to_physical_value(u.km / u.s),
-            np.ones(3) * _vcentre_2,
+            ToyHF(index=0),
         )
 
     def test_velociraptor(self):

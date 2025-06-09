@@ -7,7 +7,7 @@ import h5py
 import numpy as np
 import unyt as u
 import subprocess
-from typing import Optional, Callable, Any, Union
+from typing import Optional, Callable, Any, Union, Sequence
 from astropy.cosmology import LambdaCDM
 from astropy import units as U
 from swiftsimio.objects import cosmo_array
@@ -205,8 +205,8 @@ class _WebExamples(object):
         for example_dict in self.available_examples.values():
             filenames = example_dict["files"]
             for filename in filenames:
-                if os.path.isfile(filename):
-                    os.remove(filename)
+                if os.path.isfile(os.path.join(_demo_data_dir, filename)):
+                    os.remove(os.path.join(_demo_data_dir, filename))
 
 
 web_examples = _WebExamples()
@@ -308,14 +308,20 @@ class ToyHF(_HaloCatalogue):
     snapfile : :obj:`str`
         The snapshot filename. (Default: ``"demo_data/toysnap.hdf5"``)
 
-    index : :obj:`int`
+    index : :obj:`int` or :obj:`list`, default: ``0``
         The index (position in the catalogue) of the target galaxy.
     """
 
     _index_attr = "_index"
 
-    def __init__(self, snapfile: str = _toysnap_filename, index: int = 0) -> None:
+    def __init__(
+        self, snapfile: str = _toysnap_filename, index: Union[int, Sequence[int]] = 0
+    ) -> None:
         self.snapfile = snapfile
+        if isinstance(index, Sequence):
+            assert set(index) <= {0, 1}  # only 0 and 1 can be in the list of indices
+        else:
+            assert index in {0, 1}
         self._index = index
         super().__init__()
         return
@@ -361,7 +367,7 @@ class ToyHF(_HaloCatalogue):
                 scale_factor=1.0,
                 scale_exponent=1,
             )
-        elif self.index == 1:
+        else:  # self.index == 1
             spatial_mask = cosmo_array(
                 [[_centre_2 - 0.1, _centre_2 + 0.1] for ax in range(3)],
                 u.Mpc,
@@ -397,7 +403,7 @@ class ToyHF(_HaloCatalogue):
                 stars=np.s_[...],
                 black_holes=np.s_[...],
             )
-        elif self.index == 1:
+        else:  # self.index == 1
             extra_mask = MaskCollection(
                 gas=np.s_[-_n_g_2:],
                 dark_matter=np.s_[-_n_dm_2:],
@@ -425,7 +431,7 @@ class ToyHF(_HaloCatalogue):
                 scale_factor=1.0,
                 scale_exponent=1,
             )
-        elif self.index == 1:
+        else:  # self.index == 1
             return cosmo_array(
                 [_centre_2, _centre_2, _centre_2],
                 u.Mpc,
