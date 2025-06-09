@@ -14,8 +14,8 @@ from swiftgalaxy.demo_data import (
     _toysoap_membership_filebase,
     _toysoap_virtual_snapshot_filename,
     _toycaesar_filename,
-    _centre2,
-    _vcentre2,
+    _centre_2,
+    _vcentre_2,
 )
 
 
@@ -119,11 +119,11 @@ class TestGeneratedExampleData:
         )
         assert np.allclose(
             sg.centre.to_physical_value(u.Mpc),
-            np.ones(3) * _centre2,
+            np.ones(3) * _centre_2,
         )
         assert np.allclose(
             sg.velocity_centre.to_physical_value(u.Mpc),
-            np.ones(3) * _vcentre2,
+            np.ones(3) * _vcentre_2,
         )
 
     def test_velociraptor(self):
