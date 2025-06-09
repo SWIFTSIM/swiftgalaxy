@@ -265,7 +265,7 @@ def sgs_caesar(request):
 
 @pytest.fixture(scope="function")
 def soap():
-    _create_toysoap()
+    _create_toysoap(create_membership=False)
 
     yield SOAP(
         soap_file=_toysoap_filename,
