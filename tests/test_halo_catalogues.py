@@ -1,3 +1,4 @@
+from pathlib import Path
 import pytest
 import h5py
 import numpy as np
@@ -122,26 +123,25 @@ class TestHaloCatalogues:
         """
         hf.extra_mask = "bound_only"
         if hasattr(hf, "soap_file"):
-            import os
             from compression.make_virtual_snapshot import make_virtual_snapshot
             from compression.update_vds_paths import update_virtual_snapshot_paths
 
-            membership_filepattern = _toysoap_membership_filebase + ".{file_nr}.hdf5"
+            membership_filepattern = (
+                str(_toysoap_membership_filebase) + ".{file_nr}.hdf5"
+            )
             make_virtual_snapshot(
                 _toysnap_filename,
                 membership_filepattern,
                 _toysoap_virtual_snapshot_filename,
                 0,  # snapshot number, not used since no pattern in filenames
             )
-            abs_snapshot_dir = os.path.abspath(os.path.dirname(_toysnap_filename))
-            abs_membership_dir = os.path.abspath(
-                os.path.dirname(membership_filepattern.format(file_nr=0))
-            )
-            abs_output_dir = os.path.abspath(
-                os.path.dirname(_toysoap_virtual_snapshot_filename)
-            )
-            rel_snapshot_dir = os.path.relpath(abs_snapshot_dir, abs_output_dir)
-            rel_membership_dir = os.path.relpath(abs_membership_dir, abs_output_dir)
+            abs_snapshot_dir = Path(_toysnap_filename).parent.absolute()
+            abs_membership_dir = Path(
+                membership_filepattern.format(file_nr=0)
+            ).parent.absolute()
+            abs_output_dir = Path(_toysoap_virtual_snapshot_filename).parent.absolute()
+            rel_snapshot_dir = abs_snapshot_dir.relative_to(abs_output_dir)
+            rel_membership_dir = abs_membership_dir.relative_to(abs_output_dir)
             update_virtual_snapshot_paths(
                 _toysoap_virtual_snapshot_filename, rel_snapshot_dir, rel_membership_dir
             )
@@ -355,26 +355,25 @@ class TestHaloCataloguesMulti:
         hf_multi.extra_mask = "bound_only"
         hf_multi._mask_multi_galaxy(0)
         if hasattr(hf_multi, "soap_file"):
-            import os
             from compression.make_virtual_snapshot import make_virtual_snapshot
             from compression.update_vds_paths import update_virtual_snapshot_paths
 
-            membership_filepattern = _toysoap_membership_filebase + ".{file_nr}.hdf5"
+            membership_filepattern = (
+                str(_toysoap_membership_filebase) + ".{file_nr}.hdf5"
+            )
             make_virtual_snapshot(
                 _toysnap_filename,
                 membership_filepattern,
                 _toysoap_virtual_snapshot_filename,
                 0,  # snapshot number, not used since no pattern in filenames
             )
-            abs_snapshot_dir = os.path.abspath(os.path.dirname(_toysnap_filename))
-            abs_membership_dir = os.path.abspath(
-                os.path.dirname(membership_filepattern.format(file_nr=0))
-            )
-            abs_output_dir = os.path.abspath(
-                os.path.dirname(_toysoap_virtual_snapshot_filename)
-            )
-            rel_snapshot_dir = os.path.relpath(abs_snapshot_dir, abs_output_dir)
-            rel_membership_dir = os.path.relpath(abs_membership_dir, abs_output_dir)
+            abs_snapshot_dir = Path(_toysnap_filename).parent.absolute()
+            abs_membership_dir = Path(
+                membership_filepattern.format(file_nr=0)
+            ).parent.absolute()
+            abs_output_dir = Path(_toysoap_virtual_snapshot_filename).parent.absolute()
+            rel_snapshot_dir = abs_snapshot_dir.relative_to(abs_output_dir)
+            rel_membership_dir = abs_membership_dir.relative_to(abs_output_dir)
             update_virtual_snapshot_paths(
                 _toysoap_virtual_snapshot_filename, rel_snapshot_dir, rel_membership_dir
             )

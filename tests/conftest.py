@@ -1,5 +1,5 @@
 import pytest
-import os
+from pathlib import Path
 import numpy as np
 import unyt as u
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
@@ -601,7 +601,7 @@ def hf_multi(request):
 
         _remove_toycaesar()
     elif request.param == "soap":
-        _create_toysoap(create_virtual_snapshot=os.path.isfile(_toysnap_filename))
+        _create_toysoap(create_virtual_snapshot=Path(_toysnap_filename).is_file())
 
         yield SOAP(
             soap_file=_toysoap_filename,
@@ -662,7 +662,7 @@ def hf_multi_forwards_and_backwards(request):
 
         _remove_toycaesar()
     elif request.param == "soap":
-        _create_toysoap(create_virtual_snapshot=os.path.isfile(_toysnap_filename))
+        _create_toysoap(create_virtual_snapshot=Path(_toysnap_filename).is_file())
 
         yield SOAP(
             soap_file=_toysoap_filename,
@@ -750,7 +750,7 @@ def hf_multi_onetarget(request):
 
         _remove_toycaesar()
     elif request.param == "soap":
-        _create_toysoap(create_virtual_snapshot=os.path.isfile(_toysnap_filename))
+        _create_toysoap(create_virtual_snapshot=Path(_toysnap_filename).is_file())
 
         yield SOAP(
             soap_file=_toysoap_filename,
@@ -805,7 +805,7 @@ def hf_multi_zerotarget(request):
 
         _remove_toycaesar()
     elif request.param == "soap":
-        _create_toysoap(create_virtual_snapshot=os.path.isfile(_toysnap_filename))
+        _create_toysoap(create_virtual_snapshot=Path(_toysnap_filename).is_file())
 
         yield SOAP(
             soap_file=_toysoap_filename,
