@@ -272,7 +272,7 @@ class SWIFTGalaxies:
             )
         elif optimize_iteration == "dense":
             self._solution = self._dense_optimized_solution
-        elif optimize_iteration == "sparse":
+        else:  # optimize_iteration == "sparse"
             self._solution = self._sparse_optimized_solution
         return
 

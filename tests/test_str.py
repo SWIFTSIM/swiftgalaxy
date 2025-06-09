@@ -43,5 +43,5 @@ class TestStr:
         Check that the webexample has an informative string representation.
         """
         string = str(demodata)
-        for k in demodata.available_examples.keys():
+        for k in demodata.available_examples:
             assert k in string

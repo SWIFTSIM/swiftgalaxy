@@ -594,3 +594,24 @@ class TestSWIFTGalaxies:
             assert map_result == [1]
         else:
             assert map_result == [0]  # standalone gets position in own catalogue: 0
+
+    def test_catalogue_not_iterable(self, toysnap):
+        """
+        Check that trying to use a non-iterable catalogue raises.
+        """
+        with pytest.raises(
+            ValueError, match="halo_catalogue target list is not iterable"
+        ):
+            SWIFTGalaxies(_toysnap_filename, ToyHF(index=0))
+
+    def test_invalid_iteration_mode(self, toysnap):
+        """
+        Check that giving an invalid iteration mode raises.
+        """
+        with pytest.raises(ValueError, match="optimize_iteration must be one of"):
+            SWIFTGalaxies(
+                _toysnap_filename,
+                ToyHF(index=[0, 1]),
+                preload=("gas.coordinates",),  # just keep warning quiet
+                optimize_iteration="not_implemented",
+            )

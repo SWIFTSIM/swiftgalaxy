@@ -122,7 +122,7 @@ class TestGeneratedExampleData:
             np.ones(3) * _centre_2,
         )
         assert np.allclose(
-            sg.velocity_centre.to_physical_value(u.Mpc),
+            sg.velocity_centre.to_physical_value(u.km / u.s),
             np.ones(3) * _vcentre_2,
         )
 
