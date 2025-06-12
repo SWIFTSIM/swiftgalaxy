@@ -3,7 +3,9 @@ Tests of string representations of objects.
 """
 
 import pytest
+import numpy as np
 from swiftgalaxy.demo_data import web_examples, generated_examples
+from swiftgalaxy.halo_catalogues import _MaskHelper
 
 
 class TestStr:
@@ -45,3 +47,19 @@ class TestStr:
         string = str(demodata)
         for k in demodata.available_examples:
             assert k in string
+
+    def test_mask_helper_repr(self):
+        """
+        Check that mask helper delegates repr to its data object.
+        """
+        expected_repr = "expected repr"
+
+        class DummyData(object):
+
+            def __repr__(self):
+                return expected_repr
+
+        data = DummyData()
+        mask = np.s_[...]
+        mh = _MaskHelper(data, mask)
+        assert repr(mh) == expected_repr

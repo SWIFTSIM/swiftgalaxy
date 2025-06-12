@@ -22,7 +22,7 @@ from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from typing import Any, Union, Optional, TYPE_CHECKING, List, Set, Dict
 from numpy.typing import NDArray
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from swiftgalaxy.reader import SWIFTGalaxy
     from velociraptor.catalogue.catalogue import Catalogue as VelociraptorCatalogue
     from caesar.loader import Galaxy as CaesarGalaxy, Halo as CaesarHalo
@@ -1668,11 +1668,11 @@ class Caesar(_HaloCatalogue):
                 cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
             ).to_comoving()
             load_region = cosmo_array([pos - rmax, pos + rmax]).T
-        else:
+        else:  # pragma: no cover
             # probably an older caesar output file, not enough information to define mask
             # so we read the entire box and warn
             boxsize = sm.metadata.boxsize
-            load_region = [[0.0 * b, 1.0 * b] for b in boxsize]
+            load_region = cosmo_array([np.zeros_like(boxsize), boxsize]).T
             warn(
                 "CAESAR catalogue does not contain group extent information, so spatial "
                 "mask defaults to entire box. Reading will be inefficient. See "
@@ -1882,7 +1882,7 @@ class Caesar(_HaloCatalogue):
                         a**1, self._caesar.simulation.scale_factor
                     ),
                 ).to_comoving()
-        else:
+        else:  # pragma: no cover
             # probably an older caesar output file
             raise KeyError(
                 "CAESAR catalogue does not contain group extent information, is probably "
@@ -2209,7 +2209,7 @@ class Standalone(_HaloCatalogue):
         # if we're here then the user didn't provide a mask, read the whole box
         sm = mask(snapshot_filename, spatial_only=True)
         boxsize = sm.metadata.boxsize
-        region = [[0.0 * b, 1.0 * b] for b in boxsize]
+        region = cosmo_array([np.zeros_like(boxsize), boxsize]).T
         sm.constrain_spatial(region)
         return sm
 
@@ -2264,16 +2264,13 @@ class Standalone(_HaloCatalogue):
             The half-length of the bounding box to use to construct the spatial mask
             regions.
         """
-        if self._user_spatial_offsets is not None:
-            if self._multi_galaxy_index_mask is None:
-                return np.repeat(
-                    np.max(np.abs(self._user_spatial_offsets)), len(self._centre)
-                )
-            else:
-                return np.max(np.abs(self._user_spatial_offsets))
+        assert self._user_spatial_offsets is not None  # guarded in initialization
+        if self._multi_galaxy_index_mask is None:
+            return np.repeat(
+                np.max(np.abs(self._user_spatial_offsets)), len(self._centre)
+            )
         else:
-            # should never reach here (guarded in initialization)
-            raise NotImplementedError
+            return np.max(np.abs(self._user_spatial_offsets))
 
     def _get_preload_fields(self, sg: "SWIFTGalaxy") -> Set[str]:
         """

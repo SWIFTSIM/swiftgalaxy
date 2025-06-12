@@ -4,6 +4,7 @@ import h5py
 import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
+from swiftsimio import mask
 from swiftgalaxy.demo_data import (
     _toysnap_filename,
     _toysoap_virtual_snapshot_filename,
@@ -28,7 +29,13 @@ from swiftgalaxy.demo_data import (
     _present_particle_types,
 )
 from swiftgalaxy import SWIFTGalaxy, MaskCollection
-from swiftgalaxy.halo_catalogues import Velociraptor, Caesar, SOAP, Standalone
+from swiftgalaxy.halo_catalogues import (
+    Velociraptor,
+    Caesar,
+    SOAP,
+    Standalone,
+    _MaskHelper,
+)
 from swiftsimio.objects import cosmo_array, cosmo_factor, a
 
 abstol_c = 1 * u.pc  # less than this is ~0
@@ -827,6 +834,130 @@ class TestStandalone:
                 )[particle_type]
             )
 
+    def test_no_spatial_offsets(self, toysnap):
+        """
+        Check that the user is warned if reading all particles.
+        """
+        m = mask(_toysnap_filename)
+        with pytest.warns(
+            UserWarning, match="No spatial_offsets provided. All particles"
+        ):
+            sa = Standalone(
+                centre=cosmo_array(
+                    [2, 2, 2],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=m.metadata.a,
+                    scale_exponent=1.0,
+                ),
+                velocity_centre=cosmo_array(
+                    [0, 0, 0],
+                    u.km / u.s,
+                    comoving=True,
+                    scale_factor=m.metadata.a,
+                    scale_exponent=0,
+                ),
+                spatial_offsets=None,
+            )
+            sg = SWIFTGalaxy(_toysnap_filename, sa)
+            assert sg.gas.particle_ids.size == _n_g_all
+
+    def test_missing_centre_raises(self, toysnap):
+        """
+        Check that failing to provide a (velocity) centre raises an exception.
+        """
+        with pytest.raises(ValueError, match="A centre is required."):
+            Standalone(
+                velocity_centre=cosmo_array(
+                    [0, 0, 0],
+                    u.km / u.s,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=0,
+                ),
+                spatial_offsets=cosmo_array(
+                    [[-1, 1], [-1, 1], [-1, 1]],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1.0,
+                ),
+            )
+        with pytest.raises(ValueError, match="A velocity_centre is required."):
+            Standalone(
+                centre=cosmo_array(
+                    [0, 0, 0],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1.0,
+                ),
+                spatial_offsets=cosmo_array(
+                    [[-1, 1], [-1, 1], [-1, 1]],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1.0,
+                ),
+            )
+
+    def test_other_invalid_input(self):
+        """
+        Check that trying to use a bound_only mask fails, and that omitting
+        spatial_offsets with multiple galaxies fails.
+        """
+        with pytest.raises(
+            ValueError, match="extra_mask='bound_only' is not supported"
+        ):
+            Standalone(
+                centre=cosmo_array(
+                    [0, 0, 0],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1.0,
+                ),
+                velocity_centre=cosmo_array(
+                    [0, 0, 0],
+                    u.km / u.s,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=0,
+                ),
+                spatial_offsets=cosmo_array(
+                    [[-1, 1], [-1, 1], [-1, 1]],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1.0,
+                ),
+                extra_mask="bound_only",
+            )
+        with pytest.raises(
+            ValueError, match="To use `Standalone` with multiple galaxies"
+        ):
+            # this also warns before raising since we omitted spatial_offsets
+            with pytest.warns(
+                UserWarning, match="No spatial_offsets provided. All particles"
+            ):
+                Standalone(
+                    centre=cosmo_array(
+                        [[0, 0, 0], [1, 1, 1]],
+                        u.Mpc,
+                        comoving=True,
+                        scale_factor=1.0,
+                        scale_exponent=1.0,
+                    ),
+                    velocity_centre=cosmo_array(
+                        [[0, 0, 0], [1, 1, 1]],
+                        u.km / u.s,
+                        comoving=True,
+                        scale_factor=1.0,
+                        scale_exponent=0,
+                    ),
+                    spatial_offsets=None,
+                )
+
 
 class TestSOAP:
     def test_load(self, soap):
@@ -1011,3 +1142,23 @@ class TestSOAPWithSWIFTGalaxy:
                     getattr(sg_from_sgs._extra_mask, ptype)
                     == getattr(sg._extra_mask, ptype)
                 )
+
+
+class TestMaskHelper:
+
+    def test_mask_applied(self):
+        """
+        Check that the mask helper applies the mask when getting an attribute.
+        """
+
+        class DummyData(object):
+            pass
+
+        data = DummyData()
+        data.attr = np.arange(10)
+        mask = np.tile(np.arange(2), 5).astype(bool)
+        mh = _MaskHelper(data, mask)
+        # get attribute by dot syntax
+        assert all(mh.attr == data.attr[mask])
+        # or square bracket syntax
+        assert all(mh["attr"] == data.attr[mask])
