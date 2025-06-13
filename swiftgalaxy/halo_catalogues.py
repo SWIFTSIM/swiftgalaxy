@@ -22,7 +22,7 @@ from swiftsimio.objects import cosmo_array, cosmo_factor, a
 from typing import Any, Union, Optional, TYPE_CHECKING, List, Set, Dict
 from numpy.typing import NDArray
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from swiftgalaxy.reader import SWIFTGalaxy
     from velociraptor.catalogue.catalogue import Catalogue as VelociraptorCatalogue
     from caesar.loader import Galaxy as CaesarGalaxy, Halo as CaesarHalo
@@ -339,8 +339,8 @@ class _HaloCatalogue(ABC):
             index = getattr(self, self._index_attr)
             if isinstance(index, (Sequence, np.ndarray)):
                 self._multi_galaxy = True
-                if not isinstance(index, int):  # placate mypy
-                    self._multi_count = len(index)
+                assert not isinstance(index, int)  # placate mypy
+                self._multi_count = len(index)
             else:
                 self._multi_galaxy = False
                 self._multi_count = 1
@@ -695,15 +695,9 @@ class SOAP(_HaloCatalogue):
             The index or indices of the object(s) of interest in the halo catalogue.
         """
         index = self._mask_index()
-        if index is not None:
-            squeezed_index = np.squeeze(index)
-            return (
-                int(squeezed_index)
-                if squeezed_index.ndim == 0
-                else list(squeezed_index)
-            )
-        else:
-            raise ValueError("SOAP definition of _index_attr unset!")
+        assert index is not None  # placate mypy
+        squeezed_index = np.squeeze(index)
+        return int(squeezed_index) if squeezed_index.ndim == 0 else list(squeezed_index)
 
     def _mask_multi_galaxy(self, index) -> None:
         """
@@ -1114,10 +1108,10 @@ class Velociraptor(_HaloCatalogue):
             catalogue=load_catalogue(self.velociraptor_files["properties"]),
         )
         if self._multi_galaxy:
-            if not isinstance(self._halo_index, int):  # placate mypy
-                self._particles = [
-                    groups.extract_halo(halo_index=hi)[0] for hi in self._halo_index
-                ]
+            assert not isinstance(self._halo_index, int)  # placate mypy
+            self._particles = [
+                groups.extract_halo(halo_index=hi)[0] for hi in self._halo_index
+            ]
         else:
             self._particles, unbound_particles_unused = groups.extract_halo(
                 halo_index=self._halo_index
@@ -1201,12 +1195,9 @@ class Velociraptor(_HaloCatalogue):
         out : :obj:`int` or :obj:`list`
             The index or indices of the object(s) of interest in the halo catalogue.
         """
-        # a bit of logic to placate mypy
         index = self._mask_index()
-        if index is not None:
-            return index
-        else:
-            raise ValueError("Velociraptor _index_attr is unset!")
+        assert index is not None  # placate mypy
+        return index
 
     @property
     def _region_centre(self) -> cosmo_array:
@@ -1597,7 +1588,10 @@ class Caesar(_HaloCatalogue):
 
         log_level = logging.getLogger("yt").level  # cache the log level before we start
         yt_logger.set_log_level("warning")  # disable INFO log messages
-        self.caesar_file = caesar_file
+        if caesar_file is not None:
+            self.caesar_file = caesar_file
+        else:
+            raise ValueError("Provide a caesar_file.")
         self._caesar = caesar.load(caesar_file)
         yt_logger.set_log_level(log_level)  # restore old log level
 
@@ -1618,8 +1612,8 @@ class Caesar(_HaloCatalogue):
         super().__init__(extra_mask=extra_mask)
         self._catalogue = getattr(self._caesar, valid_group_types[group_type])
         if self._multi_galaxy:  # set in super().__init__
-            if not isinstance(group_index, int):  # placate mypy
-                self._catalogue = [self._catalogue[gi] for gi in group_index]
+            assert not isinstance(group_index, int)  # placate mypy
+            self._catalogue = [self._catalogue[gi] for gi in group_index]
         else:
             self._catalogue = self._catalogue[group_index]
         return
@@ -1668,11 +1662,11 @@ class Caesar(_HaloCatalogue):
                 cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
             ).to_comoving()
             load_region = cosmo_array([pos - rmax, pos + rmax]).T
-        else:
+        else:  # pragma: no cover
             # probably an older caesar output file, not enough information to define mask
             # so we read the entire box and warn
             boxsize = sm.metadata.boxsize
-            load_region = [[0.0 * b, 1.0 * b] for b in boxsize]
+            load_region = cosmo_array([np.zeros_like(boxsize), boxsize]).T
             warn(
                 "CAESAR catalogue does not contain group extent information, so spatial "
                 "mask defaults to entire box. Reading will be inefficient. See "
@@ -1729,10 +1723,12 @@ class Caesar(_HaloCatalogue):
                 Boolean array with same shape as `ints`, `True` if the integer is in
                 at least one of the ranges, `False` otherwise.
             """
-            return np.logical_and(
+            retval = np.logical_and(
                 ints >= int_ranges[:, 0, np.newaxis],
                 ints < int_ranges[:, 1, np.newaxis],
             ).any(axis=0)
+            assert not isinstance(retval, np.bool_)  # placate mypy
+            return retval
 
         cat = self._mask_catalogue()
         null_slice = np.s_[:0]  # mask that selects no particles
@@ -1802,12 +1798,10 @@ class Caesar(_HaloCatalogue):
         out : :obj:`int` or :obj:`list`
             The index or indices of the object(s) of interest in the halo catalogue.
         """
-        # a bit of logic to placate mypy
+
         index = self._mask_index()
-        if index is not None:
-            return index
-        else:
-            raise ValueError("Caesar _index_attr is unset!")
+        assert index is not None  # placate mypy
+        return index
 
     @property
     def _region_centre(self) -> cosmo_array:
@@ -1880,7 +1874,7 @@ class Caesar(_HaloCatalogue):
                         a**1, self._caesar.simulation.scale_factor
                     ),
                 ).to_comoving()
-        else:
+        else:  # pragma: no cover
             # probably an older caesar output file
             raise KeyError(
                 "CAESAR catalogue does not contain group extent information, is probably "
@@ -2207,7 +2201,7 @@ class Standalone(_HaloCatalogue):
         # if we're here then the user didn't provide a mask, read the whole box
         sm = mask(snapshot_filename, spatial_only=True)
         boxsize = sm.metadata.boxsize
-        region = [[0.0 * b, 1.0 * b] for b in boxsize]
+        region = cosmo_array([np.zeros_like(boxsize), boxsize]).T
         sm.constrain_spatial(region)
         return sm
 
@@ -2262,16 +2256,13 @@ class Standalone(_HaloCatalogue):
             The half-length of the bounding box to use to construct the spatial mask
             regions.
         """
-        if self._user_spatial_offsets is not None:
-            if self._multi_galaxy_index_mask is None:
-                return np.repeat(
-                    np.max(np.abs(self._user_spatial_offsets)), len(self._centre)
-                )
-            else:
-                return np.max(np.abs(self._user_spatial_offsets))
+        assert self._user_spatial_offsets is not None  # guarded in initialization
+        if self._multi_galaxy_index_mask is None:
+            return np.repeat(
+                np.max(np.abs(self._user_spatial_offsets)), len(self._centre)
+            )
         else:
-            # should never reach here (guarded in initialization)
-            raise NotImplementedError
+            return np.max(np.abs(self._user_spatial_offsets))
 
     def _get_preload_fields(self, sg: "SWIFTGalaxy") -> Set[str]:
         """
