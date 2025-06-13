@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import pytest
 import h5py
 import numpy as np
@@ -7,6 +8,9 @@ from unyt.testing import assert_allclose_units
 from swiftsimio import mask
 from swiftgalaxy.demo_data import (
     _toysnap_filename,
+    _toysoap_filename,
+    _toyvr_filebase,
+    _toycaesar_filename,
     _toysoap_virtual_snapshot_filename,
     _toysoap_membership_filebase,
     _n_g_1,
@@ -573,6 +577,30 @@ class TestVelociraptor:
         for prop in ("energies", "metallicity", "temperature"):
             assert prop in dir(vr)
 
+    def test_required_args(self):
+        """
+        Check that failing to pass valid combinations of required args raises.
+        """
+        with pytest.raises(
+            ValueError,
+            match="Provide either velociraptor_filebase or velociraptor_files",
+        ):
+            Velociraptor(
+                velociraptor_filebase=_toyvr_filebase,
+                velociraptor_files={
+                    "properties": f"{_toyvr_filebase}.properties",
+                    "catalog_groups": f"{_toyvr_filebase}.catalog_groups",
+                },
+                halo_index=0,
+            )
+        with pytest.raises(
+            ValueError,
+            match="Provide one of velociraptor_filebase or velociraptor_files.",
+        ):
+            Velociraptor(halo_index=0)
+        with pytest.raises(ValueError, match="Provide a halo_index."):
+            Velociraptor(velociraptor_filebase=_toyvr_filebase)
+
 
 class TestVelociraptorWithSWIFTGalaxy:
     """
@@ -747,6 +775,23 @@ class TestCaesar:
         # picked these to be common between halo and galaxy catalogues:
         for prop in ("glist", "pos", "radii"):
             assert prop in dir(caesar)
+
+    def test_required_args(self, caesar):
+        """
+        Check that caesar_file, group_type and group_index are required.
+        """
+        with pytest.raises(ValueError, match="Provide a caesar_file."):
+            Caesar(group_type="halo", group_index=0)
+        with pytest.raises(ValueError, match="group_type required, valid values"):
+            Caesar(_toycaesar_filename, group_index=0)  # missing group_type
+        with pytest.raises(ValueError, match="group_type required, valid values"):
+            Caesar(
+                _toycaesar_filename, group_type="invalid", group_index=0
+            )  # invalid group_type
+        with pytest.raises(
+            ValueError, match=re.escape("group_index (int or list) required.")
+        ):
+            Caesar(_toycaesar_filename, group_type="halo")
 
 
 class TestCaesarWithSWIFTGalaxy:
@@ -1083,6 +1128,15 @@ class TestSOAP:
             "spherical_overdensity_bn98",
         ):
             assert prop in dir(soap)
+
+    def test_required_args(self):
+        """
+        Check that the soap_file and soap_index arguments are mandatory.
+        """
+        with pytest.raises(ValueError, match="Provide a soap_file."):
+            SOAP(soap_index=1)
+        with pytest.raises(ValueError, match="Provide a soap_index."):
+            SOAP(soap_file=_toysoap_filename)
 
 
 class TestSOAPWithSWIFTGalaxy:

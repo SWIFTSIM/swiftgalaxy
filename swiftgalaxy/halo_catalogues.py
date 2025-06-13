@@ -339,8 +339,8 @@ class _HaloCatalogue(ABC):
             index = getattr(self, self._index_attr)
             if isinstance(index, (Sequence, np.ndarray)):
                 self._multi_galaxy = True
-                if not isinstance(index, int):  # placate mypy
-                    self._multi_count = len(index)
+                assert not isinstance(index, int)  # placate mypy
+                self._multi_count = len(index)
             else:
                 self._multi_galaxy = False
                 self._multi_count = 1
@@ -695,15 +695,9 @@ class SOAP(_HaloCatalogue):
             The index or indices of the object(s) of interest in the halo catalogue.
         """
         index = self._mask_index()
-        if index is not None:
-            squeezed_index = np.squeeze(index)
-            return (
-                int(squeezed_index)
-                if squeezed_index.ndim == 0
-                else list(squeezed_index)
-            )
-        else:
-            raise ValueError("SOAP definition of _index_attr unset!")
+        assert index is not None  # placate mypy
+        squeezed_index = np.squeeze(index)
+        return int(squeezed_index) if squeezed_index.ndim == 0 else list(squeezed_index)
 
     def _mask_multi_galaxy(self, index) -> None:
         """
@@ -1114,10 +1108,10 @@ class Velociraptor(_HaloCatalogue):
             catalogue=load_catalogue(self.velociraptor_files["properties"]),
         )
         if self._multi_galaxy:
-            if not isinstance(self._halo_index, int):  # placate mypy
-                self._particles = [
-                    groups.extract_halo(halo_index=hi)[0] for hi in self._halo_index
-                ]
+            assert not isinstance(self._halo_index, int)  # placate mypy
+            self._particles = [
+                groups.extract_halo(halo_index=hi)[0] for hi in self._halo_index
+            ]
         else:
             self._particles, unbound_particles_unused = groups.extract_halo(
                 halo_index=self._halo_index
@@ -1201,12 +1195,9 @@ class Velociraptor(_HaloCatalogue):
         out : :obj:`int` or :obj:`list`
             The index or indices of the object(s) of interest in the halo catalogue.
         """
-        # a bit of logic to placate mypy
         index = self._mask_index()
-        if index is not None:
-            return index
-        else:
-            raise ValueError("Velociraptor _index_attr is unset!")
+        assert index is not None  # placate mypy
+        return index
 
     @property
     def _region_centre(self) -> cosmo_array:
@@ -1597,7 +1588,10 @@ class Caesar(_HaloCatalogue):
 
         log_level = logging.getLogger("yt").level  # cache the log level before we start
         yt_logger.set_log_level("warning")  # disable INFO log messages
-        self.caesar_file = caesar_file
+        if caesar_file is not None:
+            self.caesar_file = caesar_file
+        else:
+            raise ValueError("Provide a caesar_file.")
         self._caesar = caesar.load(caesar_file)
         yt_logger.set_log_level(log_level)  # restore old log level
 
@@ -1618,8 +1612,8 @@ class Caesar(_HaloCatalogue):
         super().__init__(extra_mask=extra_mask)
         self._catalogue = getattr(self._caesar, valid_group_types[group_type])
         if self._multi_galaxy:  # set in super().__init__
-            if not isinstance(group_index, int):  # placate mypy
-                self._catalogue = [self._catalogue[gi] for gi in group_index]
+            assert not isinstance(group_index, int)  # placate mypy
+            self._catalogue = [self._catalogue[gi] for gi in group_index]
         else:
             self._catalogue = self._catalogue[group_index]
         return
@@ -1804,12 +1798,10 @@ class Caesar(_HaloCatalogue):
         out : :obj:`int` or :obj:`list`
             The index or indices of the object(s) of interest in the halo catalogue.
         """
-        # a bit of logic to placate mypy
+
         index = self._mask_index()
-        if index is not None:
-            return index
-        else:
-            raise ValueError("Caesar _index_attr is unset!")
+        assert index is not None  # placate mypy
+        return index
 
     @property
     def _region_centre(self) -> cosmo_array:
