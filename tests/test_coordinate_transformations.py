@@ -23,94 +23,94 @@ abstol_v = cosmo_quantity(
 )  # less than this is ~0
 
 expected_xy = {
-    "gas": cosmo_array(
+    "gas": cosmo_quantity(
         reltol * 10,
         units=u.kpc,
         comoving=True,
         cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
     ),
-    "dark_matter": cosmo_array(
+    "dark_matter": cosmo_quantity(
         reltol * 100,
         units=u.kpc,
         comoving=True,
         cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
     ),
-    "stars": cosmo_array(
+    "stars": cosmo_quantity(
         reltol * 5,
         units=u.kpc,
         comoving=True,
         cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
     ),
-    "black_holes": cosmo_array(
+    "black_holes": cosmo_quantity(
         abstol_c, comoving=True, cosmo_factor=cosmo_factor(a**1, scale_factor=1.0)
     ),
 }
 expected_z = {
-    "gas": cosmo_array(
+    "gas": cosmo_quantity(
         reltol,
         units=u.kpc,
         comoving=True,
         cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
     ),
-    "dark_matter": cosmo_array(
+    "dark_matter": cosmo_quantity(
         reltol * 100,
         units=u.kpc,
         comoving=True,
         cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
     ),
-    "stars": cosmo_array(
+    "stars": cosmo_quantity(
         reltol * 500,
         units=u.pc,
         comoving=True,
         cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
     ),
-    "black_holes": cosmo_array(
+    "black_holes": cosmo_quantity(
         abstol_c, comoving=True, cosmo_factor=cosmo_factor(a**1, scale_factor=1.0)
     ),
 }
 expected_vxy = {
-    "gas": cosmo_array(
+    "gas": cosmo_quantity(
         reltol * 100,
         units=u.km / u.s,
         comoving=True,
         cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
     ),
-    "dark_matter": cosmo_array(
+    "dark_matter": cosmo_quantity(
         reltol * 100,
         units=u.km / u.s,
         comoving=True,
         cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
     ),
-    "stars": cosmo_array(
+    "stars": cosmo_quantity(
         reltol * 50,
         units=u.km / u.s,
         comoving=True,
         cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
     ),
-    "black_holes": cosmo_array(
+    "black_holes": cosmo_quantity(
         abstol_v, comoving=True, cosmo_factor=cosmo_factor(a**0, scale_factor=1.0)
     ),
 }
 expected_vz = {
-    "gas": cosmo_array(
+    "gas": cosmo_quantity(
         reltol * 10,
         units=u.km / u.s,
         comoving=True,
         cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
     ),
-    "dark_matter": cosmo_array(
+    "dark_matter": cosmo_quantity(
         reltol * 100,
         units=u.km / u.s,
         comoving=True,
         cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
     ),
-    "stars": cosmo_array(
+    "stars": cosmo_quantity(
         reltol * 10,
         units=u.km / u.s,
         comoving=True,
         cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
     ),
-    "black_holes": cosmo_array(
+    "black_holes": cosmo_quantity(
         abstol_v, comoving=True, cosmo_factor=cosmo_factor(a**0, scale_factor=1.0)
     ),
 }
