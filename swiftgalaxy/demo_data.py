@@ -340,7 +340,7 @@ class ToyHF(_HaloCatalogue):
         out : :obj:`int`
             The position in the catalogue of the target galaxy.
         """
-        return self._mask_index()
+        return self._mask_index
 
     def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         """

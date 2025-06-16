@@ -1003,6 +1003,13 @@ class TestStandalone:
                     spatial_offsets=None,
                 )
 
+    def test_mask_index_is_none(self, sa):
+        """
+        The standalone class has no catalogue rows to be masked so should not define a
+        mask index.
+        """
+        assert sa._mask_index is None
+
 
 class TestSOAP:
     def test_load(self, soap):

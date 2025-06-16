@@ -292,6 +292,7 @@ class _HaloCatalogue(ABC):
                 }
             )
 
+    @property
     def _mask_index(self) -> Optional[Union[int, list[int]]]:
         """
         Get the index into the halo catalogue, applying a mask if needed.
@@ -694,7 +695,7 @@ class SOAP(_HaloCatalogue):
         out : :obj:`int` or :obj:`list`
             The index or indices of the object(s) of interest in the halo catalogue.
         """
-        index = self._mask_index()
+        index = self._mask_index
         assert index is not None  # placate mypy
         squeezed_index = np.squeeze(index)
         return int(squeezed_index) if squeezed_index.ndim == 0 else list(squeezed_index)
@@ -1195,7 +1196,7 @@ class Velociraptor(_HaloCatalogue):
         out : :obj:`int` or :obj:`list`
             The index or indices of the object(s) of interest in the halo catalogue.
         """
-        index = self._mask_index()
+        index = self._mask_index
         assert index is not None  # placate mypy
         return index
 
@@ -1799,7 +1800,7 @@ class Caesar(_HaloCatalogue):
             The index or indices of the object(s) of interest in the halo catalogue.
         """
 
-        index = self._mask_index()
+        index = self._mask_index
         assert index is not None  # placate mypy
         return index
 
