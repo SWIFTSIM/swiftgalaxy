@@ -7,6 +7,7 @@ import numpy as np
 from unyt.testing import assert_allclose_units
 from swiftgalaxy import SWIFTGalaxy, MaskCollection
 from swiftgalaxy.demo_data import (
+    ToyHF,
     _create_toysnap,
     _remove_toysnap,
     _toysnap_filename,
@@ -222,3 +223,23 @@ class TestMaskingNamedColumnDatasets:
         assert_allclose_units(
             fractions_before[mask], fractions, rtol=reltol_nd, atol=abstol_nd
         )
+
+
+class TestMultiModeMask:
+    """
+    Tests particular to masks when handling a halo catalogue with multiple galaxies
+    selected.
+    """
+
+    def test_mask_multi_invalid(self, sg):
+        """
+        When a multi-galaxy halo catalogue object is not masked down to a single object,
+        attempting to request a mask for a single object should raise.
+        """
+        cat = ToyHF(index=[0, 1])
+        assert cat._multi_galaxy  # confirm this is multi-galaxy mode
+        with pytest.raises(
+            RuntimeError,
+            match="Halo catalogue has multiple galaxies and is not currently masked.",
+        ):
+            cat._get_extra_mask(sg)
