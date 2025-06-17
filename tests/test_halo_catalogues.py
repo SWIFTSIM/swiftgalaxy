@@ -40,7 +40,7 @@ from swiftgalaxy.halo_catalogues import (
     Standalone,
     _MaskHelper,
 )
-from swiftsimio.objects import cosmo_array, cosmo_factor, a
+from swiftsimio.objects import cosmo_array
 
 abstol_c = 1 * u.pc  # less than this is ~0
 abstol_v = 10 * u.m / u.s  # less than this is ~0
@@ -101,7 +101,8 @@ class TestHaloCatalogues:
             [[-5, 5], [-5, 5], [-5, 5]],
             u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, 1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )
         hf.extra_mask = None
         sg = SWIFTGalaxy(_toysnap_filename, hf)
@@ -238,7 +239,8 @@ class TestHaloCatalogues:
                 [_centre_1, _centre_1, _centre_1],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -255,7 +257,8 @@ class TestHaloCatalogues:
                 [_vcentre_1, _vcentre_1, _vcentre_1],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             rtol=reltol_nd,
             atol=abstol_v,
@@ -512,7 +515,8 @@ class TestVelociraptor:
                 [expected, expected, expected],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -539,7 +543,8 @@ class TestVelociraptor:
                 [expected, expected, expected],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             rtol=reltol_nd,
             atol=abstol_v,
@@ -549,6 +554,8 @@ class TestVelociraptor:
         """
         Check that exposing the halo properties is working.
         """
+        # do we get a listing
+        assert "Masked velociraptor catalogue at" in vr.__repr__()
         # pick one of the default attributes to check
         assert_allclose_units(
             vr.masses.mvir, 1.0e12 * u.Msun, rtol=reltol_nd, atol=abstol_m
@@ -673,7 +680,8 @@ class TestCaesar:
                 [expected, expected, expected],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -693,7 +701,8 @@ class TestCaesar:
                 [expected, expected, expected],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             rtol=reltol_nd,
             atol=abstol_v,
@@ -703,6 +712,8 @@ class TestCaesar:
         """
         Check that exposing the halo properties is working.
         """
+        # do we get an object statement
+        assert "caesar.loader" in caesar.__repr__()
         # pick one of the default attributes to check
         if hasattr(caesar, "virial_quantities"):
             assert_allclose_units(
@@ -1043,7 +1054,8 @@ class TestSOAP:
                 [expected, expected, expected],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -1071,7 +1083,8 @@ class TestSOAP:
                 [expected, expected, expected],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             rtol=reltol_nd,
             atol=abstol_v,
@@ -1081,6 +1094,8 @@ class TestSOAP:
         """
         Check that exposing the halo properties is working.
         """
+        # do we get a listing
+        assert "Available groups:" in soap.__repr__()
         # pick a couple of attributes to check
         assert_allclose_units(
             soap.input_halos_hbtplus.host_fofid, cosmo_array([1], comoving=False)
@@ -1091,7 +1106,8 @@ class TestSOAP:
                 [[_centre_1, _centre_1, _centre_1]],
                 u.Mpc,
                 comoving=False,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -1115,7 +1131,8 @@ class TestSOAP:
                 ],
                 u.Mpc,
                 comoving=False,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -1170,7 +1187,8 @@ class TestSOAPWithSWIFTGalaxy:
                 [[_centre_1, _centre_1, _centre_1]],
                 u.Mpc,
                 comoving=False,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             rtol=reltol_nd,
             atol=abstol_c,

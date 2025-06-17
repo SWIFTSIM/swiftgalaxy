@@ -17,7 +17,7 @@ import numpy as np
 import unyt as u
 from swiftsimio import SWIFTMask, SWIFTDataset, mask
 from swiftgalaxy.masks import MaskCollection
-from swiftsimio.objects import cosmo_array, cosmo_factor, a
+from swiftsimio.objects import cosmo_array, cosmo_quantity
 
 from typing import Any, Union, Optional, TYPE_CHECKING, List, Set, Dict
 from numpy.typing import NDArray
@@ -1231,7 +1231,8 @@ class Velociraptor(_HaloCatalogue):
                 ],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, length_factor),
+                scale_factor=length_factor,
+                scale_exponent=1,
             ).squeeze()
         else:
             return cosmo_array(
@@ -1245,7 +1246,8 @@ class Velociraptor(_HaloCatalogue):
                 ],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, length_factor),
+                scale_factor=length_factor,
+                scale_exponent=1,
             )
 
     @property
@@ -1276,7 +1278,8 @@ class Velociraptor(_HaloCatalogue):
                 ],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, length_factor),
+                scale_factor=length_factor,
+                scale_exponent=1,
             ).squeeze()
         else:
             return cosmo_array(
@@ -1286,7 +1289,8 @@ class Velociraptor(_HaloCatalogue):
                 / length_factor,
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, length_factor),
+                scale_factor=length_factor,
+                scale_exponent=1,
             )
 
     def _get_preload_fields(self, sg: "SWIFTGalaxy") -> Set[str]:
@@ -1337,7 +1341,8 @@ class Velociraptor(_HaloCatalogue):
                     cosmo_array(
                         getattr(self._catalogue.positions, "{:s}c".format(c)),
                         comoving=self._catalogue.units.comoving,
-                        cosmo_factor=cosmo_factor(a**1, self._catalogue.units.a),
+                        scale_factor=self._catalogue.units.a,
+                        scale_exponent=1,
                     )
                     for c in "xyz"
                 ]
@@ -1349,7 +1354,8 @@ class Velociraptor(_HaloCatalogue):
                 [0.0, 0.0, 0.0],
                 u.Mpc,
                 comoving=False,
-                cosmo_factor=cosmo_factor(a**1, self.scale_factor),
+                scale_factor=self.scale_factor,
+                scale_exponent=1,
             )
         centre = cosmo_array(
             (
@@ -1362,7 +1368,8 @@ class Velociraptor(_HaloCatalogue):
                                 "{:s}c{:s}".format(c, self.centre_type),
                             ),
                             comoving=self._catalogue.units.comoving,
-                            cosmo_factor=cosmo_factor(a**1, self._catalogue.units.a),
+                            scale_factor=self._catalogue.units.a,
+                            scale_exponent=1,
                         )
                         for c in "xyz"
                     ]
@@ -1370,7 +1377,8 @@ class Velociraptor(_HaloCatalogue):
             ).to_value(u.Mpc),
             u.Mpc,
             comoving=False,  # velociraptor gives physical centres!
-            cosmo_factor=cosmo_factor(a**1, self.scale_factor),
+            scale_factor=self.scale_factor,
+            scale_exponent=1,
         ).to_comoving()
         if self._multi_galaxy and self._multi_galaxy_catalogue_mask is None:
             return centre
@@ -1401,7 +1409,8 @@ class Velociraptor(_HaloCatalogue):
                     cosmo_array(
                         getattr(self._catalogue.velocities, "v{:s}c".format(c)),
                         comoving=self._catalogue.units.comoving,
-                        cosmo_factor=cosmo_factor(a**0, self._catalogue.units.a),
+                        scale_factor=self._catalogue.units.a,
+                        scale_exponent=0,
                     )
                     for c in "xyz"
                 ]
@@ -1412,7 +1421,8 @@ class Velociraptor(_HaloCatalogue):
                 [0.0, 0.0, 0.0],
                 u.km / u.s,
                 comoving=False,
-                cosmo_factor=cosmo_factor(a**0, self.scale_factor),
+                scale_factor=self.scale_factor,
+                scale_exponent=0,
             )
         vcentre = cosmo_array(
             (
@@ -1425,7 +1435,8 @@ class Velociraptor(_HaloCatalogue):
                                 "v{:s}c{:s}".format(c, self.centre_type),
                             ),
                             comoving=self._catalogue.units.comoving,
-                            cosmo_factor=cosmo_factor(a**0, self._catalogue.units.a),
+                            scale_factor=self._catalogue.units.a,
+                            scale_exponent=0,
                         )
                         for c in "xyz"
                     ]
@@ -1433,7 +1444,8 @@ class Velociraptor(_HaloCatalogue):
             ).to_value(u.km / u.s),
             u.km / u.s,
             comoving=False,
-            cosmo_factor=cosmo_factor(a**0, self.scale_factor),
+            scale_factor=self.scale_factor,
+            scale_exponent=0,
         ).to_comoving()
         if self._multi_galaxy and self._multi_galaxy_catalogue_mask is None:
             return vcentre
@@ -1652,15 +1664,17 @@ class Caesar(_HaloCatalogue):
                 cat.pos.to_value(u.kpc),  # maybe comoving, ensure physical
                 u.kpc,
                 comoving=False,
-                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+                scale_factor=self._caesar.simulation.scale_factor,
+                scale_exponent=1,
             ).to_comoving()
-            rmax = cosmo_array(
+            rmax = cosmo_quantity(
                 cat.radii["total_rmax"].to_value(
                     u.kpc
                 ),  # maybe comoving, ensure physical
                 u.kpc,
                 comoving=False,
-                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+                scale_factor=self._caesar.simulation.scale_factor,
+                scale_exponent=1,
             ).to_comoving()
             load_region = cosmo_array([pos - rmax, pos + rmax]).T
         else:  # pragma: no cover
@@ -1823,7 +1837,8 @@ class Caesar(_HaloCatalogue):
             return cosmo_array(
                 [cat.pos.to(u.kpc) for cat in cats],  # maybe comoving, ensure physical
                 comoving=False,
-                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+                scale_factor=self._caesar.simulation.scale_factor,
+                scale_exponent=1,
             ).to_comoving()
         else:
             return cosmo_array(
@@ -1831,7 +1846,8 @@ class Caesar(_HaloCatalogue):
                     u.kpc
                 ),  # maybe comoving, ensure physical
                 comoving=False,
-                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+                scale_factor=self._caesar.simulation.scale_factor,
+                scale_exponent=1,
             ).to_comoving()
 
     @property
@@ -1861,9 +1877,8 @@ class Caesar(_HaloCatalogue):
                         cat.radii["total_rmax"].to(u.kpc) for cat in cats
                     ],  # maybe comoving, ensure physical
                     comoving=False,
-                    cosmo_factor=cosmo_factor(
-                        a**1, self._caesar.simulation.scale_factor
-                    ),
+                    scale_factor=self._caesar.simulation.scale_factor,
+                    scale_exponent=1,
                 ).to_comoving()
             else:
                 return cosmo_array(
@@ -1871,9 +1886,8 @@ class Caesar(_HaloCatalogue):
                     .radii["total_rmax"]
                     .to(u.kpc),  # maybe comoving, ensure physical
                     comoving=False,
-                    cosmo_factor=cosmo_factor(
-                        a**1, self._caesar.simulation.scale_factor
-                    ),
+                    scale_factor=self._caesar.simulation.scale_factor,
+                    scale_exponent=1,
                 ).to_comoving()
         else:  # pragma: no cover
             # probably an older caesar output file
@@ -1942,7 +1956,8 @@ class Caesar(_HaloCatalogue):
                     u.kpc
                 ),  # maybe comoving, ensure physical
                 comoving=False,
-                cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+                scale_factor=self._caesar.simulation.scale_factor,
+                scale_exponent=1,
             ).to_comoving()
         cat = [self._catalogue] if not self._multi_galaxy else self._catalogue
         centre = cosmo_array(
@@ -1950,7 +1965,8 @@ class Caesar(_HaloCatalogue):
                 getattr(cat_i, centre_attr).to(u.kpc) for cat_i in cat
             ],  # maybe comoving, ensure physical
             comoving=False,
-            cosmo_factor=cosmo_factor(a**1, self._caesar.simulation.scale_factor),
+            scale_factor=self._caesar.simulation.scale_factor,
+            scale_exponent=1,
         ).to_comoving()
         if not self._multi_galaxy:
             return centre.squeeze()
@@ -1974,13 +1990,15 @@ class Caesar(_HaloCatalogue):
                     self._catalogue[self._multi_galaxy_catalogue_mask], vcentre_attr
                 ).to(u.km / u.s),
                 comoving=False,
-                cosmo_factor=cosmo_factor(a**0, self._caesar.simulation.scale_factor),
+                scale_factor=self._caesar.simulation.scale_factor,
+                scale_exponent=0,
             ).to_comoving()
         cat = [self._catalogue] if not self._multi_galaxy else self._catalogue
         vcentre = cosmo_array(
             [getattr(cat_i, vcentre_attr).to(u.km / u.s) for cat_i in cat],
             comoving=False,
-            cosmo_factor=cosmo_factor(a**0, self._caesar.simulation.scale_factor),
+            scale_factor=self._caesar.simulation.scale_factor,
+            scale_exponent=0,
         ).to_comoving()
         if not self._multi_galaxy:
             return vcentre.squeeze()
