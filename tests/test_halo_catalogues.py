@@ -13,6 +13,8 @@ from swiftgalaxy.demo_data import (
     _toycaesar_filename,
     _toysoap_virtual_snapshot_filename,
     _toysoap_membership_filebase,
+    _create_toycaesar,
+    _remove_toycaesar,
     _n_g_1,
     _n_g_2,
     _n_g_b,
@@ -804,6 +806,13 @@ class TestCaesar:
         ):
             Caesar(_toycaesar_filename, group_type="halo")
 
+    def test_prevent_infinite_attribute_recursion(self, caesar):
+        """
+        Check that we can access the private catalogue object without entering an infinite
+        loop.
+        """
+        caesar._catalogue
+
 
 class TestCaesarWithSWIFTGalaxy:
     """
@@ -869,6 +878,30 @@ class TestCaesarWithSWIFTGalaxy:
                         getattr(sg_from_sgs._extra_mask, ptype)
                         == getattr(sg._extra_mask, ptype)
                     )
+
+    @pytest.mark.parametrize("group_type", ["halo", "galaxy"])
+    def test_incomplete_catalogue(self, toysnap, group_type):
+        """
+        Check that we can tolerate missing particle membership information for arbitrary
+        particle types in a caesar catalogue.
+        """
+        try:
+            _create_toycaesar(
+                include_slist=False,
+                include_glist=False,
+                include_bhlist=False,
+                include_dmlist=False,
+            )
+            sg = SWIFTGalaxy(
+                _toysnap_filename,
+                Caesar(_toycaesar_filename, group_type=group_type, group_index=0),
+            )
+            assert sg._extra_mask.gas == np.s_[:0]
+            assert sg._extra_mask.stars == np.s_[:0]
+            assert sg._extra_mask.dark_matter == np.s_[:0]
+            assert sg._extra_mask.black_holes == np.s_[:0]
+        finally:
+            _remove_toycaesar()
 
 
 class TestStandalone:

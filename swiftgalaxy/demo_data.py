@@ -301,8 +301,9 @@ class ToyHF(_HaloCatalogue):
 
     Parameters
     ----------
-    snapfile : :obj:`str` or :class:`~pathlib._local.Path`
-        The snapshot filename. (Default: ``"demo_data/toysnap.hdf5"``)
+    snapfile : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toysnap.hdf5"``
+        The snapshot filename.
 
     index : :obj:`int` or :obj:`list`, default: ``0``
         The index (position in the catalogue) of the target galaxy.
@@ -538,22 +539,23 @@ def _create_toysnap(
 
     Parameters
     ----------
-    snapfile : :obj:`str` or :class:`~pathlib._local.Path`
-        Filename for snapshot file. (Default: ``"demo_data/toysnap.hdf5"``)
+    snapfile : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toysnap.hdf5"``
+        Filename for snapshot file.
 
-    alt_coord_name : :obj:`str`
+    alt_coord_name : :obj:`str`, default: ``None``
         Intended for continuous integration testing purposes. Create additional
-        coordinate-like data arrays with this name. (Default: ``None``)
+        coordinate-like data arrays with this name.
 
-    alt_vel_name : :obj:`str`
+    alt_vel_name : :obj:`str`, default: ``None``
         Intended for continuous integration testing purposes. Create additional
-        velocity-like data arrays with this name. (Default: ``None``)
+        velocity-like data arrays with this name.
 
-    alt_id_name : :obj:`str`
+    alt_id_name : :obj:`str`, default: ``None``
         Intended for continuous integration testing purposes. Create additional
-        particle ID-like data arrays with this name. (Default: ``None``)
+        particle ID-like data arrays with this name.
 
-    withfof : :obj:`bool`
+    withfof : :obj:`bool`, default: ``False``
         If ``True``, include friends-of-friends (FOF) group identifiers for each
         particle.
     """
@@ -1069,8 +1071,9 @@ def _remove_toysnap(snapfile: Union[str, Path] = _toysnap_filename) -> None:
 
     Parameters
     ----------
-    snapfile : :obj:`str` or :class:`~pathlib._local.Path`
-        Filename for snapshot file. (Default: ``"demo_data/toysnap.hdf5"``)
+    snapfile : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toysnap.hdf5"``
+        Filename for snapshot file.
     """
     Path(snapfile).unlink(missing_ok=True)
     return
@@ -1089,9 +1092,9 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
 
     Parameters
     ----------
-    filebase : :obj:`str` or :class:`~pathlib._local.Path`
+    filebase : :obj:`str` or :class:`~pathlib._local.Path`, default: ``"demo_data/toyvr"``
         The base name for catalogue files (several files ``base.properties``,
-        ``base.catalog_groups``, etc. will be created). (Default: ``"demo_data/toyvr"``)
+        ``base.catalog_groups``, etc. will be created).
     """
     if not Path(f"{_toyvr_filebase}.properties").is_file():
         with h5py.File(f"{_toyvr_filebase}.properties", "w") as f:
@@ -1472,9 +1475,9 @@ def _remove_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
 
     Parameters
     ----------
-    filebase : :obj:`str` or :class:`~pathlib._local.Path`
+    filebase : :obj:`str` or :class:`~pathlib._local.Path`, default: ``"demo_data/toyvr"``
         The base name for catalogue files (several files ``base.properties``,
-        ``base.catalog_groups``, etc. will be removed). (Default: ``"demo_data/toyvr"``)
+        ``base.catalog_groups``, etc. will be removed).
     """
     files_to_remove = (
         f"{_toyvr_filebase}.properties",
@@ -1490,7 +1493,13 @@ def _remove_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
 
 
 @_ensure_demo_data_directory
-def _create_toycaesar(filename: Union[str, Path] = _toycaesar_filename) -> None:
+def _create_toycaesar(
+    filename: Union[str, Path] = _toycaesar_filename,
+    include_glist: bool = True,
+    include_dmlist: bool = True,
+    include_slist: bool = True,
+    include_bhlist: bool = True,
+) -> None:
     """
     Creates a sample Caesar catalogue containing 2 galaxies matching the snapshot
     file created by :func:`~swiftgalaxy.demo_data._create_toysnap`.
@@ -1502,9 +1511,21 @@ def _create_toycaesar(filename: Union[str, Path] = _toycaesar_filename) -> None:
 
     Parameters
     ----------
-    filename : :obj:`str` or :class:`~pathlib._local.Path`
+    filename : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toycaesar.hdf5"``
         The file name for the catalogue file to be created.
-        (Default: ``"demo_data/toycaesar.hdf5"``)
+    include_glist : :obj:`bool`, default: ``True``
+        If ``True``, include information to select bound gas particles in the catalogue,
+        else omit.
+    include_dmlist : :obj:`bool`, default: ``True``
+        If ``True``, include information to select bound dark matter particles in the
+        catalogue, else omit.
+    include_slist : :obj:`bool`, default: ``True``
+        If ``True``, include information to select bound star particles in the catalogue,
+        else omit.
+    include_bhlist : :obj:`bool`, default: ``True``
+        If ``True``, include information to select bound black hole particles in the
+        catalogue, else omit.
     """
     if Path(filename).is_file():
         return
@@ -1517,12 +1538,13 @@ def _create_toycaesar(filename: Union[str, Path] = _toycaesar_filename) -> None:
             f.attrs["unit_registry_json"] = json.read()
         f.create_group("galaxy_data")
         f["/galaxy_data"].create_dataset("GroupID", data=np.array([0, 1], dtype=int))
-        f["/galaxy_data"].create_dataset(
-            "bhlist_end", data=np.array([_n_bh_1, _n_bh_2], dtype=int)
-        )
-        f["/galaxy_data"].create_dataset(
-            "bhlist_start", data=np.array([0, _n_bh_1], dtype=int)
-        )
+        if include_bhlist:
+            f["/galaxy_data"].create_dataset(
+                "bhlist_end", data=np.array([_n_bh_1, _n_bh_2], dtype=int)
+            )
+            f["/galaxy_data"].create_dataset(
+                "bhlist_start", data=np.array([0, _n_bh_1], dtype=int)
+            )
         f["/galaxy_data"].create_dataset(
             "central", data=np.array([True, True], dtype=bool)
         )
@@ -1542,28 +1564,32 @@ def _create_toycaesar(filename: Union[str, Path] = _toycaesar_filename) -> None:
             "radii.total_rmax", data=np.array([100, 100], dtype=float)
         )
         f["/galaxy_data/dicts/radii.total_rmax"].attrs["unit"] = "kpccm"
-        f["/galaxy_data"].create_dataset(
-            "glist_end", data=np.array([_n_g_1, _n_g_1 + _n_g_2], dtype=int)
-        )
-        f["/galaxy_data"].create_dataset(
-            "glist_start", data=np.array([0, _n_g_1], dtype=int)
-        )
+        if include_glist:
+            f["/galaxy_data"].create_dataset(
+                "glist_end", data=np.array([_n_g_1, _n_g_1 + _n_g_2], dtype=int)
+            )
+            f["/galaxy_data"].create_dataset(
+                "glist_start", data=np.array([0, _n_g_1], dtype=int)
+            )
         f["/galaxy_data"].create_group("lists")
-        f["/galaxy_data/lists"].create_dataset(
-            "bhlist", data=np.array([0, 1], dtype=int)
-        )
-        f["/galaxy_data/lists"].create_dataset(
-            "glist",
-            data=np.concatenate(
-                (
-                    np.arange(_n_g_b // 2, _n_g_b // 2 + _n_g_1, dtype=int),
-                    np.arange(_n_g_b + _n_g_1, _n_g_all, dtype=int),
-                )
-            ),
-        )
-        f["/galaxy_data/lists"].create_dataset(
-            "slist", data=np.arange(_n_s_1 + _n_s_2, dtype=int)
-        )
+        if include_bhlist:
+            f["/galaxy_data/lists"].create_dataset(
+                "bhlist", data=np.array([0, 1], dtype=int)
+            )
+        if include_glist:
+            f["/galaxy_data/lists"].create_dataset(
+                "glist",
+                data=np.concatenate(
+                    (
+                        np.arange(_n_g_b // 2, _n_g_b // 2 + _n_g_1, dtype=int),
+                        np.arange(_n_g_b + _n_g_1, _n_g_all, dtype=int),
+                    )
+                ),
+            )
+        if include_slist:
+            f["/galaxy_data/lists"].create_dataset(
+                "slist", data=np.arange(_n_s_1 + _n_s_2, dtype=int)
+            )
         f["/galaxy_data"].create_dataset(
             "minpotpos",
             data=np.array(
@@ -1629,12 +1655,13 @@ def _create_toycaesar(filename: Union[str, Path] = _toycaesar_filename) -> None:
             ),
         )
         f["/galaxy_data/pos"].attrs["unit"] = "kpccm"
-        f["/galaxy_data"].create_dataset(
-            "slist_end", data=np.array([_n_s_1, _n_s_2], dtype=int)
-        )
-        f["/galaxy_data"].create_dataset(
-            "slist_start", data=np.array([0, _n_s_1], dtype=int)
-        )
+        if include_slist:
+            f["/galaxy_data"].create_dataset(
+                "slist_end", data=np.array([_n_s_1, _n_s_2], dtype=int)
+            )
+            f["/galaxy_data"].create_dataset(
+                "slist_start", data=np.array([0, _n_s_1], dtype=int)
+            )
         f["/galaxy_data"].create_dataset(
             "vel",
             data=np.array(
@@ -1647,57 +1674,65 @@ def _create_toycaesar(filename: Union[str, Path] = _toycaesar_filename) -> None:
         )
         f["/galaxy_data/vel"].attrs["unit"] = "km/s"
         f.create_group("global_lists")
-        f["/global_lists"].create_dataset(
-            "galaxy_bhlist",
-            data=np.r_[np.zeros(_n_bh_1, dtype=int), np.ones(_n_bh_2, dtype=int)],
-        )
-        f["/global_lists"].create_dataset(
-            "galaxy_glist",
-            data=np.r_[
-                -np.ones(_n_g_b // 2, dtype=int),
-                np.zeros(_n_g_1, dtype=int),
-                -np.ones(_n_g_b // 2, dtype=int),
-                np.ones(_n_g_2, dtype=int),
-            ],
-        )
-        f["/global_lists"].create_dataset(
-            "galaxy_slist",
-            data=np.r_[np.zeros(_n_s_1, dtype=int), np.ones(_n_s_2, dtype=int)],
-        )
-        f["/global_lists"].create_dataset(
-            "halo_bhlist",
-            data=np.r_[np.zeros(_n_bh_1, dtype=int), np.ones(_n_bh_1, dtype=int)],
-        )
-        f["/global_lists"].create_dataset(
-            "halo_dmlist",
-            data=np.r_[
-                -np.ones(_n_dm_b // 2, dtype=int),
-                np.zeros(_n_dm_1, dtype=int),
-                -np.ones(_n_dm_b // 2, dtype=int),
-                np.ones(_n_dm_2, dtype=int),
-            ],
-        )
-        f["/global_lists"].create_dataset(
-            "halo_glist",
-            data=np.r_[
-                -np.ones(_n_g_b // 2, dtype=int),
-                np.zeros(_n_g_1, dtype=int),
-                -np.ones(_n_g_b // 2, dtype=int),
-                np.ones(_n_g_2, dtype=int),
-            ],
-        )
-        f["/global_lists"].create_dataset(
-            "halo_slist",
-            data=np.r_[np.zeros(_n_s_1, dtype=int), np.ones(_n_s_2, dtype=int)],
-        )
+        if include_bhlist:
+            f["/global_lists"].create_dataset(
+                "galaxy_bhlist",
+                data=np.r_[np.zeros(_n_bh_1, dtype=int), np.ones(_n_bh_2, dtype=int)],
+            )
+        if include_glist:
+            f["/global_lists"].create_dataset(
+                "galaxy_glist",
+                data=np.r_[
+                    -np.ones(_n_g_b // 2, dtype=int),
+                    np.zeros(_n_g_1, dtype=int),
+                    -np.ones(_n_g_b // 2, dtype=int),
+                    np.ones(_n_g_2, dtype=int),
+                ],
+            )
+        if include_slist:
+            f["/global_lists"].create_dataset(
+                "galaxy_slist",
+                data=np.r_[np.zeros(_n_s_1, dtype=int), np.ones(_n_s_2, dtype=int)],
+            )
+        if include_bhlist:
+            f["/global_lists"].create_dataset(
+                "halo_bhlist",
+                data=np.r_[np.zeros(_n_bh_1, dtype=int), np.ones(_n_bh_1, dtype=int)],
+            )
+        if include_dmlist:
+            f["/global_lists"].create_dataset(
+                "halo_dmlist",
+                data=np.r_[
+                    -np.ones(_n_dm_b // 2, dtype=int),
+                    np.zeros(_n_dm_1, dtype=int),
+                    -np.ones(_n_dm_b // 2, dtype=int),
+                    np.ones(_n_dm_2, dtype=int),
+                ],
+            )
+        if include_glist:
+            f["/global_lists"].create_dataset(
+                "halo_glist",
+                data=np.r_[
+                    -np.ones(_n_g_b // 2, dtype=int),
+                    np.zeros(_n_g_1, dtype=int),
+                    -np.ones(_n_g_b // 2, dtype=int),
+                    np.ones(_n_g_2, dtype=int),
+                ],
+            )
+        if include_slist:
+            f["/global_lists"].create_dataset(
+                "halo_slist",
+                data=np.r_[np.zeros(_n_s_1, dtype=int), np.ones(_n_s_2, dtype=int)],
+            )
         f.create_group("halo_data")
         f["/halo_data"].create_dataset("GroupID", data=np.array([0, 1], dtype=int))
-        f["/halo_data"].create_dataset(
-            "bhlist_end", data=np.array([_n_bh_1, _n_bh_1 + _n_bh_2], dtype=int)
-        )
-        f["/halo_data"].create_dataset(
-            "bhlist_start", data=np.array([0, _n_bh_1], dtype=int)
-        )
+        if include_bhlist:
+            f["/halo_data"].create_dataset(
+                "bhlist_end", data=np.array([_n_bh_1, _n_bh_1 + _n_bh_2], dtype=int)
+            )
+            f["/halo_data"].create_dataset(
+                "bhlist_start", data=np.array([0, _n_bh_1], dtype=int)
+            )
         f["/halo_data"].create_dataset(
             "central_galaxy", data=np.array([0, 1], dtype=int)
         )
@@ -1734,46 +1769,54 @@ def _create_toycaesar(filename: Union[str, Path] = _toycaesar_filename) -> None:
             "virial_quantities.m200c", data=np.array([1.0e12, 2.0e12], dtype=float)
         )
         f["/halo_data/dicts/virial_quantities.m200c"].attrs["unit"] = "Msun"
-        f["/halo_data"].create_dataset(
-            "dmlist_end", data=np.array([_n_dm_1, _n_dm_1 + _n_dm_2], dtype=int)
-        )
-        f["/halo_data"].create_dataset(
-            "dmlist_start", data=np.array([0, _n_dm_1], dtype=int)
-        )
+        if include_dmlist:
+            f["/halo_data"].create_dataset(
+                "dmlist_end", data=np.array([_n_dm_1, _n_dm_1 + _n_dm_2], dtype=int)
+            )
+            f["/halo_data"].create_dataset(
+                "dmlist_start", data=np.array([0, _n_dm_1], dtype=int)
+            )
         f["/halo_data"].create_dataset(
             "galaxy_index_list_end", data=np.array([1, 2], dtype=int)
         )
         f["/halo_data"].create_dataset(
             "galaxy_index_list_start", data=np.array([0, 1], dtype=int)
         )
-        f["/halo_data"].create_dataset(
-            "glist_end", data=np.array([_n_g_1, _n_g_1 + _n_g_2], dtype=int)
-        )
-        f["/halo_data"].create_dataset(
-            "glist_start", data=np.array([0, _n_g_1], dtype=int)
-        )
+        if include_glist:
+            f["/halo_data"].create_dataset(
+                "glist_end", data=np.array([_n_g_1, _n_g_1 + _n_g_2], dtype=int)
+            )
+            f["/halo_data"].create_dataset(
+                "glist_start", data=np.array([0, _n_g_1], dtype=int)
+            )
         f["/halo_data"].create_group("lists")
-        f["/halo_data/lists"].create_dataset("bhlist", data=np.array([0, 1], dtype=int))
-        f["/halo_data/lists"].create_dataset(
-            "dmlist",
-            data=np.r_[
-                np.arange(_n_dm_b // 2, _n_dm_b // 2 + _n_dm_1, dtype=int),
-                np.arange(_n_dm_b + _n_dm_1, _n_dm_all, dtype=int),
-            ],
-        )
+        if include_bhlist:
+            f["/halo_data/lists"].create_dataset(
+                "bhlist", data=np.array([0, 1], dtype=int)
+            )
+        if include_dmlist:
+            f["/halo_data/lists"].create_dataset(
+                "dmlist",
+                data=np.r_[
+                    np.arange(_n_dm_b // 2, _n_dm_b // 2 + _n_dm_1, dtype=int),
+                    np.arange(_n_dm_b + _n_dm_1, _n_dm_all, dtype=int),
+                ],
+            )
         f["/halo_data/lists"].create_dataset(
             "galaxy_index_list", data=np.array([0, 1], dtype=int)
         )
-        f["/halo_data/lists"].create_dataset(
-            "glist",
-            data=np.r_[
-                np.arange(_n_g_b // 2, _n_g_b // 2 + _n_g_1, dtype=int),
-                np.arange(_n_g_b + _n_g_1, _n_g_all, dtype=int),
-            ],
-        )
-        f["/halo_data/lists"].create_dataset(
-            "slist", data=np.arange(_n_s_1 + _n_s_2, dtype=int)
-        )
+        if include_glist:
+            f["/halo_data/lists"].create_dataset(
+                "glist",
+                data=np.r_[
+                    np.arange(_n_g_b // 2, _n_g_b // 2 + _n_g_1, dtype=int),
+                    np.arange(_n_g_b + _n_g_1, _n_g_all, dtype=int),
+                ],
+            )
+        if include_slist:
+            f["/halo_data/lists"].create_dataset(
+                "slist", data=np.arange(_n_s_1 + _n_s_2, dtype=int)
+            )
         f["/halo_data"].create_dataset(
             "minpotpos",
             data=np.array(
@@ -1836,12 +1879,13 @@ def _create_toycaesar(filename: Union[str, Path] = _toycaesar_filename) -> None:
             ),
         )
         f["/halo_data/pos"].attrs["unit"] = "kpccm"
-        f["/halo_data"].create_dataset(
-            "slist_end", data=np.array([_n_s_1, _n_s_2], dtype=int)
-        )
-        f["/halo_data"].create_dataset(
-            "slist_start", data=np.array([0, _n_s_1], dtype=int)
-        )
+        if include_slist:
+            f["/halo_data"].create_dataset(
+                "slist_end", data=np.array([_n_s_1, _n_s_2], dtype=int)
+            )
+            f["/halo_data"].create_dataset(
+                "slist_start", data=np.array([0, _n_s_1], dtype=int)
+            )
         f["/halo_data"].create_dataset(
             "vel",
             data=np.array(
@@ -1919,9 +1963,9 @@ def _remove_toycaesar(filename: Union[str, Path] = _toycaesar_filename) -> None:
 
     Parameters
     ----------
-    filename : :obj:`str` or :class:`~pathlib._local.Path`
+    filename : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toycaesar.hdf5"``
         The file name for the catalogue file to be removed.
-        (Default: ``"demo_data/toycaesar.hdf5"``)
     """
     Path(filename).unlink(missing_ok=True)
     return
@@ -1949,29 +1993,31 @@ def _create_toysoap(
 
     Parameters
     ----------
-    filename : :obj:`str` or :class:`~pathlib._local.Path`
+    filename : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toysoap.hdf5"``
         The file name for the catalogue file to be created.
-        (Default: ``"demo_data/toysoap.hdf5"``)
 
-    membership_filebase : :obj:`str` or :class:`~pathlib._local.Path`
+    membership_filebase : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toysoap_membership"``
         The base name for membership files, completed as ``base.N.hdf5`` where ``N`` is
         an integer. Ignored if ``create_membership`` is ``False``.
-        (Default: ``"demo_data/toysoap_membership"``)
 
-    create_membership : :obj:`bool`
-        If ``True``, create membership files. (Default: ``True``)
+    create_membership : :obj:`bool`, default: ``True``
+        If ``True``, create membership files.
 
-    create_virtual_snapshot : :obj:`bool`
+    create_virtual_snapshot : :obj:`bool`, default: ``False``
         If ``True``, create virtual snapshot with real snapshot and membership information
-        as links to other hdf5 files. (Default: ``False``)
+        as links to other hdf5 files.
 
-    create_virtual_snapshot_from : :obj:`str` or :class:`~pathlib._local.Path`
+    create_virtual_snapshot_from : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toysnap.hdf5"``
         Snapshot file to use as the basis for the virtual snapshot file. Ignored if
-        ``create_virtual_snapshot`` is ``False``. (Default: ``"demo_data/toysnap.hdf5"``)
+        ``create_virtual_snapshot`` is ``False``.
 
-    virtual_snapshot_filename : :obj:`str` or :class:`~pathlib._local.Path`
+    virtual_snapshot_filename : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toysnap_virtual.hdf5"``
         Filename for virtual snapshot file. Ignored if ``create_virtual_snapshot`` is
-        ``False``. (Default: ``"demo_data/toysnap_virtual.hdf5"``)
+        ``False``.
     """
     if not Path(filename).is_file():
         with h5py.File(filename, "w") as f:
@@ -3002,17 +3048,18 @@ def _remove_toysoap(
 
     Parameters
     ----------
-    filename : :obj:`str` or :class:`~pathlib._local.Path`
+    filename : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toysoap.hdf5"``
         The file name for the catalogue file to be removed.
-        (Default: ``"demo_data/toysoap.hdf5"``)
 
-    membership_filebase : :obj:`str` or :class:`~pathlib._local.Path`
+    membership_filebase : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toysoap_membership"``
         The base name for membership files, completed as ``base.N.hdf5`` where ``N`` is
-        an integer. (Default: ``"demo_data/toysoap_membership"``)
+        an integer.
 
-    virtual_snapshot_filename : :obj:`str` or :class:`~pathlib._local.Path`
+    virtual_snapshot_filename : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toysnap_virtual.hdf5"``
         Filename for virtual snapshot file.
-        (Default: ``"demo_data/toysnap_virtual.hdf5"``)
     """
     Path(filename).unlink(missing_ok=True)
     for path in Path().glob(f"{membership_filebase}.*.hdf5"):

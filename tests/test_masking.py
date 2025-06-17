@@ -243,3 +243,14 @@ class TestMultiModeMask:
             match="Halo catalogue has multiple galaxies and is not currently masked.",
         ):
             cat._get_extra_mask(sg)
+
+    def test_caesar_mask_catalogue(self, caesar_multi):
+        """
+        If a caesar catalogue is in multi-galaxy mode and is not currently masked then
+        trying to use the helper to select a single row when the catalogue isn't currently
+        restricted to a single galaxy should raise.
+        """
+        with pytest.raises(
+            RuntimeError, match="Tried to mask catalogue without mask index!"
+        ):
+            caesar_multi._mask_catalogue()
