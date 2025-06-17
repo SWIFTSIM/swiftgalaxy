@@ -1282,7 +1282,7 @@ class Velociraptor(_HaloCatalogue):
                 scale_exponent=1,
             ).squeeze()
         else:
-            return cosmo_array(
+            return cosmo_quantity(
                 self._particles[self._multi_galaxy_catalogue_mask].r_size.to_value(
                     u.Mpc
                 )
