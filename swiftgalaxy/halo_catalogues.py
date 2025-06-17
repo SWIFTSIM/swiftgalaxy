@@ -216,20 +216,20 @@ class _HaloCatalogue(ABC):
             The spatial mask to select particles in the region of interest.
         """
         sm = mask(snapshot_filename, spatial_only=True)
-        user_region = self._user_spatial_offsets
-        if user_region is not None:
-            region = [
-                (
-                    [
-                        self.centre[ax] + user_region[ax][0],
-                        self.centre[ax] + user_region[ax][1],
-                    ]
-                    if user_region[ax] is not None
-                    else None
-                )
-                for ax in range(3)
-            ]
-            sm.constrain_spatial(region)
+        # this is only supposed to be called if:
+        assert self._user_spatial_offsets is not None
+        region = [
+            (
+                [
+                    self.centre[ax] + self._user_spatial_offsets[ax][0],
+                    self.centre[ax] + self._user_spatial_offsets[ax][1],
+                ]
+                if self._user_spatial_offsets[ax] is not None
+                else None
+            )
+            for ax in range(3)
+        ]
+        sm.constrain_spatial(region)
         return sm
 
     def _get_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
@@ -385,7 +385,9 @@ class _HaloCatalogue(ABC):
         out : :obj:`object`
             The requested attribute.
         """
-        if attr == "_catalogue":  # guard infinite recursion
+        # guard infinite recursion
+        if attr == "_catalogue":  # pragma: no cover
+            # this definitely runs in testing but coverage doesn't pick it up
             try:
                 return object.__getattribute__(self, "_catalogue")
             except AttributeError:
