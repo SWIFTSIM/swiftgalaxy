@@ -1,4 +1,5 @@
 import pytest
+import re
 import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
@@ -18,7 +19,7 @@ from swiftgalaxy.demo_data import (
     _remove_toycaesar,
 )
 from conftest import hfs
-from swiftsimio.objects import cosmo_array, cosmo_factor, a
+from swiftsimio.objects import cosmo_array
 from swiftgalaxy.reader import SWIFTGalaxy
 from swiftgalaxy.iterator import SWIFTGalaxies
 from swiftgalaxy.halo_catalogues import Standalone, SOAP, Velociraptor, Caesar
@@ -42,19 +43,22 @@ class TestSWIFTGalaxies:
                     [[2.5, 5.0, 5.0], [7.5, 5.0, 5.0]],
                     u.Mpc,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**1, 1.0),
+                    scale_factor=1.0,
+                    scale_exponent=1,
                 ),
                 velocity_centre=cosmo_array(
                     [[0, 0, 0] * 2],
                     u.km / u.s,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**0, 1.0),
+                    scale_factor=1.0,
+                    scale_exponent=0,
                 ),
                 spatial_offsets=cosmo_array(
                     [[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]],
                     u.Mpc,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**1, 1.0),
+                    scale_factor=1.0,
+                    scale_exponent=1,
                 ),
             ),
             preload={  # just to keep warnings quiet
@@ -77,7 +81,8 @@ class TestSWIFTGalaxies:
                 * np.array([[[5], [10], [10]]]),
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             atol=0.0001 * u.Mpc,
         )
@@ -134,19 +139,22 @@ class TestSWIFTGalaxies:
                     ],
                     u.Mpc,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**1, 1.0),
+                    scale_factor=1.0,
+                    scale_exponent=1,
                 ),
                 velocity_centre=cosmo_array(
                     [[0, 0, 0] * 10],
                     u.km / u.s,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**0, 1.0),
+                    scale_factor=1.0,
+                    scale_exponent=0,
                 ),
                 spatial_offsets=cosmo_array(
                     [[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]],
                     u.Mpc,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**1, 1.0),
+                    scale_factor=1.0,
+                    scale_exponent=1,
                 ),
             ),
             preload={  # just to keep warnings quiet
@@ -171,7 +179,8 @@ class TestSWIFTGalaxies:
                 ),
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             atol=0.001 * u.Mpc,
         )
@@ -594,3 +603,101 @@ class TestSWIFTGalaxies:
             assert map_result == [1]
         else:
             assert map_result == [0]  # standalone gets position in own catalogue: 0
+
+    def test_catalogue_not_iterable(self, toysnap):
+        """
+        Check that trying to use a non-iterable catalogue raises.
+        """
+        with pytest.raises(
+            ValueError, match="halo_catalogue target list is not iterable"
+        ):
+            SWIFTGalaxies(_toysnap_filename, ToyHF(index=0))
+
+    def test_invalid_iteration_mode(self, toysnap):
+        """
+        Check that giving an invalid iteration mode raises.
+        """
+        with pytest.raises(ValueError, match="optimize_iteration must be one of"):
+            SWIFTGalaxies(
+                _toysnap_filename,
+                ToyHF(index=[0, 1]),
+                preload=("gas.coordinates",),  # just keep warning quiet
+                optimize_iteration="not_implemented",
+            )
+
+    def test_coordinate_frame_from_and_auto_recentre_invalid(self, toysnap):
+        """
+        Check that inheriting a coordinate frame and auto-recentering are incompatible.
+        """
+        sg = SWIFTGalaxy(_toysnap_filename, ToyHF(index=0))
+        sgs = SWIFTGalaxies(
+            _toysnap_filename,
+            ToyHF(index=[0, 1]),
+            preload=("gas.coordinates",),  # just keep warning quiet
+            auto_recentre=True,
+            coordinate_frame_from=sg,
+        )
+        with pytest.raises(
+            ValueError, match="Cannot use coordinate_frame_from with auto_recentre"
+        ):
+            for sg_i in sgs:
+                pass
+
+    def test_coordinate_frame_from_in_iteration(self, toysnap):
+        """
+        Check that we can borrow a coordinate frame when iterating.
+        """
+        sg = SWIFTGalaxy(_toysnap_filename, ToyHF(index=0))
+        translation = cosmo_array(
+            [1, 0, 0],
+            u.Mpc,
+            comoving=True,
+            scale_factor=sg.metadata.a,
+            scale_exponent=1.0,
+        )
+        sg.translate(translation)
+        sgs = SWIFTGalaxies(
+            _toysnap_filename,
+            ToyHF(index=[0, 1]),
+            preload=("gas.coordinates",),  # just keep warning quiet
+            auto_recentre=False,
+            coordinate_frame_from=sg,
+        )
+        for sg_i in sgs:
+            assert np.allclose(sg.halo_catalogue.centre - translation, sg_i.centre)
+
+    def test_internal_units_mismatch_in_coordinate_frame_from(self, toysnap):
+        """
+        Check that incompatible internal units raises.
+        """
+        sg = SWIFTGalaxy(_toysnap_filename, ToyHF(index=0))
+        sg.metadata.units.length = 1 * u.kpc
+        sgs = SWIFTGalaxies(
+            _toysnap_filename,
+            ToyHF(index=[0, 1]),
+            preload=("gas.coordinates",),  # just keep warning quiet
+            auto_recentre=False,
+            coordinate_frame_from=sg,
+        )
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Internal units (length and time) of coordinate_frame_from don't "
+                "match."
+            ),
+        ):
+            for sg_i in sgs:
+                pass
+
+    def test_auto_recentre_off(self, toysnap):
+        """
+        Check that we can switch of auto-recentering in iteration.
+        """
+        sgs = SWIFTGalaxies(
+            _toysnap_filename,
+            ToyHF(index=[0, 1]),
+            preload=("gas.coordinates",),  # just keep warning quiet
+            auto_recentre=False,
+        )
+        for sg in sgs:
+            assert np.allclose(sg.centre, np.zeros(3))

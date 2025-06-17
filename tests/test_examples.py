@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import pytest
 import unyt as u
 from swiftsimio import cosmo_array, mask
@@ -95,7 +95,7 @@ class TestWebExampleData:
         web_examples.remove()
         for absent_files in web_examples.available_examples.values():
             for absent_file in absent_files:
-                assert not os.path.isfile(absent_file)
+                assert not Path(absent_file).is_file()
 
 
 class TestGeneratedExampleData:
@@ -168,7 +168,7 @@ class TestGeneratedExampleData:
             _toycaesar_filename,
         )
         for absent_file in absent_files:
-            assert not os.path.isfile(absent_file)
+            assert not Path(absent_file).is_file()
 
 
 class TestExampleNotebooks:

@@ -1,12 +1,20 @@
+from pathlib import Path
+import re
 import pytest
 import h5py
 import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
+from swiftsimio import mask
 from swiftgalaxy.demo_data import (
     _toysnap_filename,
+    _toysoap_filename,
+    _toyvr_filebase,
+    _toycaesar_filename,
     _toysoap_virtual_snapshot_filename,
     _toysoap_membership_filebase,
+    _create_toycaesar,
+    _remove_toycaesar,
     _n_g_1,
     _n_g_2,
     _n_g_b,
@@ -27,8 +35,14 @@ from swiftgalaxy.demo_data import (
     _present_particle_types,
 )
 from swiftgalaxy import SWIFTGalaxy, MaskCollection
-from swiftgalaxy.halo_catalogues import Velociraptor, Caesar, SOAP, Standalone
-from swiftsimio.objects import cosmo_array, cosmo_factor, a
+from swiftgalaxy.halo_catalogues import (
+    Velociraptor,
+    Caesar,
+    SOAP,
+    Standalone,
+    _MaskHelper,
+)
+from swiftsimio.objects import cosmo_array
 
 abstol_c = 1 * u.pc  # less than this is ~0
 abstol_v = 10 * u.m / u.s  # less than this is ~0
@@ -89,7 +103,8 @@ class TestHaloCatalogues:
             [[-5, 5], [-5, 5], [-5, 5]],
             u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, 1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )
         hf.extra_mask = None
         sg = SWIFTGalaxy(_toysnap_filename, hf)
@@ -122,26 +137,25 @@ class TestHaloCatalogues:
         """
         hf.extra_mask = "bound_only"
         if hasattr(hf, "soap_file"):
-            import os
             from compression.make_virtual_snapshot import make_virtual_snapshot
             from compression.update_vds_paths import update_virtual_snapshot_paths
 
-            membership_filepattern = _toysoap_membership_filebase + ".{file_nr}.hdf5"
+            membership_filepattern = (
+                str(_toysoap_membership_filebase) + ".{file_nr}.hdf5"
+            )
             make_virtual_snapshot(
                 _toysnap_filename,
                 membership_filepattern,
                 _toysoap_virtual_snapshot_filename,
                 0,  # snapshot number, not used since no pattern in filenames
             )
-            abs_snapshot_dir = os.path.abspath(os.path.dirname(_toysnap_filename))
-            abs_membership_dir = os.path.abspath(
-                os.path.dirname(membership_filepattern.format(file_nr=0))
-            )
-            abs_output_dir = os.path.abspath(
-                os.path.dirname(_toysoap_virtual_snapshot_filename)
-            )
-            rel_snapshot_dir = os.path.relpath(abs_snapshot_dir, abs_output_dir)
-            rel_membership_dir = os.path.relpath(abs_membership_dir, abs_output_dir)
+            abs_snapshot_dir = Path(_toysnap_filename).parent.absolute()
+            abs_membership_dir = Path(
+                membership_filepattern.format(file_nr=0)
+            ).parent.absolute()
+            abs_output_dir = Path(_toysoap_virtual_snapshot_filename).parent.absolute()
+            rel_snapshot_dir = abs_snapshot_dir.relative_to(abs_output_dir)
+            rel_membership_dir = abs_membership_dir.relative_to(abs_output_dir)
             update_virtual_snapshot_paths(
                 _toysoap_virtual_snapshot_filename, rel_snapshot_dir, rel_membership_dir
             )
@@ -227,7 +241,8 @@ class TestHaloCatalogues:
                 [_centre_1, _centre_1, _centre_1],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -244,7 +259,8 @@ class TestHaloCatalogues:
                 [_vcentre_1, _vcentre_1, _vcentre_1],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             rtol=reltol_nd,
             atol=abstol_v,
@@ -355,26 +371,25 @@ class TestHaloCataloguesMulti:
         hf_multi.extra_mask = "bound_only"
         hf_multi._mask_multi_galaxy(0)
         if hasattr(hf_multi, "soap_file"):
-            import os
             from compression.make_virtual_snapshot import make_virtual_snapshot
             from compression.update_vds_paths import update_virtual_snapshot_paths
 
-            membership_filepattern = _toysoap_membership_filebase + ".{file_nr}.hdf5"
+            membership_filepattern = (
+                str(_toysoap_membership_filebase) + ".{file_nr}.hdf5"
+            )
             make_virtual_snapshot(
                 _toysnap_filename,
                 membership_filepattern,
                 _toysoap_virtual_snapshot_filename,
                 0,  # snapshot number, not used since no pattern in filenames
             )
-            abs_snapshot_dir = os.path.abspath(os.path.dirname(_toysnap_filename))
-            abs_membership_dir = os.path.abspath(
-                os.path.dirname(membership_filepattern.format(file_nr=0))
-            )
-            abs_output_dir = os.path.abspath(
-                os.path.dirname(_toysoap_virtual_snapshot_filename)
-            )
-            rel_snapshot_dir = os.path.relpath(abs_snapshot_dir, abs_output_dir)
-            rel_membership_dir = os.path.relpath(abs_membership_dir, abs_output_dir)
+            abs_snapshot_dir = Path(_toysnap_filename).parent.absolute()
+            abs_membership_dir = Path(
+                membership_filepattern.format(file_nr=0)
+            ).parent.absolute()
+            abs_output_dir = Path(_toysoap_virtual_snapshot_filename).parent.absolute()
+            rel_snapshot_dir = abs_snapshot_dir.relative_to(abs_output_dir)
+            rel_membership_dir = abs_membership_dir.relative_to(abs_output_dir)
             update_virtual_snapshot_paths(
                 _toysoap_virtual_snapshot_filename, rel_snapshot_dir, rel_membership_dir
             )
@@ -502,7 +517,8 @@ class TestVelociraptor:
                 [expected, expected, expected],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -529,7 +545,8 @@ class TestVelociraptor:
                 [expected, expected, expected],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             rtol=reltol_nd,
             atol=abstol_v,
@@ -539,6 +556,8 @@ class TestVelociraptor:
         """
         Check that exposing the halo properties is working.
         """
+        # do we get a listing
+        assert "Masked velociraptor catalogue at" in vr.__repr__()
         # pick one of the default attributes to check
         assert_allclose_units(
             vr.masses.mvir, 1.0e12 * u.Msun, rtol=reltol_nd, atol=abstol_m
@@ -566,6 +585,30 @@ class TestVelociraptor:
         """
         for prop in ("energies", "metallicity", "temperature"):
             assert prop in dir(vr)
+
+    def test_required_args(self):
+        """
+        Check that failing to pass valid combinations of required args raises.
+        """
+        with pytest.raises(
+            ValueError,
+            match="Provide either velociraptor_filebase or velociraptor_files",
+        ):
+            Velociraptor(
+                velociraptor_filebase=_toyvr_filebase,
+                velociraptor_files={
+                    "properties": f"{_toyvr_filebase}.properties",
+                    "catalog_groups": f"{_toyvr_filebase}.catalog_groups",
+                },
+                halo_index=0,
+            )
+        with pytest.raises(
+            ValueError,
+            match="Provide one of velociraptor_filebase or velociraptor_files.",
+        ):
+            Velociraptor(halo_index=0)
+        with pytest.raises(ValueError, match="Provide a halo_index."):
+            Velociraptor(velociraptor_filebase=_toyvr_filebase)
 
 
 class TestVelociraptorWithSWIFTGalaxy:
@@ -639,7 +682,8 @@ class TestCaesar:
                 [expected, expected, expected],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -659,7 +703,8 @@ class TestCaesar:
                 [expected, expected, expected],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             rtol=reltol_nd,
             atol=abstol_v,
@@ -669,6 +714,8 @@ class TestCaesar:
         """
         Check that exposing the halo properties is working.
         """
+        # do we get an object statement
+        assert "caesar.loader" in caesar.__repr__()
         # pick one of the default attributes to check
         if hasattr(caesar, "virial_quantities"):
             assert_allclose_units(
@@ -742,6 +789,32 @@ class TestCaesar:
         for prop in ("glist", "pos", "radii"):
             assert prop in dir(caesar)
 
+    def test_required_args(self, caesar):
+        """
+        Check that caesar_file, group_type and group_index are required.
+        """
+        with pytest.raises(ValueError, match="Provide a caesar_file."):
+            Caesar(group_type="halo", group_index=0)
+        with pytest.raises(ValueError, match="group_type required, valid values"):
+            Caesar(_toycaesar_filename, group_index=0)  # missing group_type
+        with pytest.raises(ValueError, match="group_type required, valid values"):
+            Caesar(
+                _toycaesar_filename, group_type="invalid", group_index=0
+            )  # invalid group_type
+        with pytest.raises(
+            ValueError, match=re.escape("group_index (int or list) required.")
+        ):
+            Caesar(_toycaesar_filename, group_type="halo")
+
+    def test_prevent_infinite_attribute_recursion(self, caesar):
+        """
+        Check that we can access the private catalogue object without entering an infinite
+        loop.
+        """
+        # the danger is during initialization before the _catalogue attribute exists
+        del caesar._catalogue
+        assert caesar._catalogue is None
+
 
 class TestCaesarWithSWIFTGalaxy:
     """
@@ -808,6 +881,30 @@ class TestCaesarWithSWIFTGalaxy:
                         == getattr(sg._extra_mask, ptype)
                     )
 
+    @pytest.mark.parametrize("group_type", ["halo", "galaxy"])
+    def test_incomplete_catalogue(self, toysnap, group_type):
+        """
+        Check that we can tolerate missing particle membership information for arbitrary
+        particle types in a caesar catalogue.
+        """
+        try:
+            _create_toycaesar(
+                include_slist=False,
+                include_glist=False,
+                include_bhlist=False,
+                include_dmlist=False,
+            )
+            sg = SWIFTGalaxy(
+                _toysnap_filename,
+                Caesar(_toycaesar_filename, group_type=group_type, group_index=0),
+            )
+            assert sg._extra_mask.gas == np.s_[:0]
+            assert sg._extra_mask.stars == np.s_[:0]
+            assert sg._extra_mask.dark_matter == np.s_[:0]
+            assert sg._extra_mask.black_holes == np.s_[:0]
+        finally:
+            _remove_toycaesar()
+
 
 class TestStandalone:
     def test_spatial_mask_applied(self, sa, toysnap):
@@ -827,6 +924,137 @@ class TestStandalone:
                     black_holes=_n_bh_1,
                 )[particle_type]
             )
+
+    def test_no_spatial_offsets(self, toysnap):
+        """
+        Check that the user is warned if reading all particles.
+        """
+        m = mask(_toysnap_filename)
+        with pytest.warns(
+            UserWarning, match="No spatial_offsets provided. All particles"
+        ):
+            sa = Standalone(
+                centre=cosmo_array(
+                    [2, 2, 2],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=m.metadata.a,
+                    scale_exponent=1.0,
+                ),
+                velocity_centre=cosmo_array(
+                    [0, 0, 0],
+                    u.km / u.s,
+                    comoving=True,
+                    scale_factor=m.metadata.a,
+                    scale_exponent=0,
+                ),
+                spatial_offsets=None,
+            )
+            sg = SWIFTGalaxy(_toysnap_filename, sa)
+            assert sg.gas.particle_ids.size == _n_g_all
+
+    def test_missing_centre_raises(self, toysnap):
+        """
+        Check that failing to provide a (velocity) centre raises an exception.
+        """
+        with pytest.raises(ValueError, match="A centre is required."):
+            Standalone(
+                velocity_centre=cosmo_array(
+                    [0, 0, 0],
+                    u.km / u.s,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=0,
+                ),
+                spatial_offsets=cosmo_array(
+                    [[-1, 1], [-1, 1], [-1, 1]],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1.0,
+                ),
+            )
+        with pytest.raises(ValueError, match="A velocity_centre is required."):
+            Standalone(
+                centre=cosmo_array(
+                    [0, 0, 0],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1.0,
+                ),
+                spatial_offsets=cosmo_array(
+                    [[-1, 1], [-1, 1], [-1, 1]],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1.0,
+                ),
+            )
+
+    def test_other_invalid_input(self):
+        """
+        Check that trying to use a bound_only mask fails, and that omitting
+        spatial_offsets with multiple galaxies fails.
+        """
+        with pytest.raises(
+            ValueError, match="extra_mask='bound_only' is not supported"
+        ):
+            Standalone(
+                centre=cosmo_array(
+                    [0, 0, 0],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1.0,
+                ),
+                velocity_centre=cosmo_array(
+                    [0, 0, 0],
+                    u.km / u.s,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=0,
+                ),
+                spatial_offsets=cosmo_array(
+                    [[-1, 1], [-1, 1], [-1, 1]],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1.0,
+                ),
+                extra_mask="bound_only",
+            )
+        with pytest.raises(
+            ValueError, match="To use `Standalone` with multiple galaxies"
+        ):
+            # this also warns before raising since we omitted spatial_offsets
+            with pytest.warns(
+                UserWarning, match="No spatial_offsets provided. All particles"
+            ):
+                Standalone(
+                    centre=cosmo_array(
+                        [[0, 0, 0], [1, 1, 1]],
+                        u.Mpc,
+                        comoving=True,
+                        scale_factor=1.0,
+                        scale_exponent=1.0,
+                    ),
+                    velocity_centre=cosmo_array(
+                        [[0, 0, 0], [1, 1, 1]],
+                        u.km / u.s,
+                        comoving=True,
+                        scale_factor=1.0,
+                        scale_exponent=0,
+                    ),
+                    spatial_offsets=None,
+                )
+
+    def test_mask_index_is_none(self, sa):
+        """
+        The standalone class has no catalogue rows to be masked so should not define a
+        mask index.
+        """
+        assert sa._mask_index is None
 
 
 class TestSOAP:
@@ -861,7 +1089,8 @@ class TestSOAP:
                 [expected, expected, expected],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -889,7 +1118,8 @@ class TestSOAP:
                 [expected, expected, expected],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             rtol=reltol_nd,
             atol=abstol_v,
@@ -899,6 +1129,8 @@ class TestSOAP:
         """
         Check that exposing the halo properties is working.
         """
+        # do we get a listing
+        assert "Available groups:" in soap.__repr__()
         # pick a couple of attributes to check
         assert_allclose_units(
             soap.input_halos_hbtplus.host_fofid, cosmo_array([1], comoving=False)
@@ -909,7 +1141,8 @@ class TestSOAP:
                 [[_centre_1, _centre_1, _centre_1]],
                 u.Mpc,
                 comoving=False,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -933,7 +1166,8 @@ class TestSOAP:
                 ],
                 u.Mpc,
                 comoving=False,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -953,6 +1187,15 @@ class TestSOAP:
             "spherical_overdensity_bn98",
         ):
             assert prop in dir(soap)
+
+    def test_required_args(self):
+        """
+        Check that the soap_file and soap_index arguments are mandatory.
+        """
+        with pytest.raises(ValueError, match="Provide a soap_file."):
+            SOAP(soap_index=1)
+        with pytest.raises(ValueError, match="Provide a soap_index."):
+            SOAP(soap_file=_toysoap_filename)
 
 
 class TestSOAPWithSWIFTGalaxy:
@@ -979,7 +1222,8 @@ class TestSOAPWithSWIFTGalaxy:
                 [[_centre_1, _centre_1, _centre_1]],
                 u.Mpc,
                 comoving=False,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             rtol=reltol_nd,
             atol=abstol_c,
@@ -1012,3 +1256,23 @@ class TestSOAPWithSWIFTGalaxy:
                     getattr(sg_from_sgs._extra_mask, ptype)
                     == getattr(sg._extra_mask, ptype)
                 )
+
+
+class TestMaskHelper:
+
+    def test_mask_applied(self):
+        """
+        Check that the mask helper applies the mask when getting an attribute.
+        """
+
+        class DummyData(object):
+            pass
+
+        data = DummyData()
+        data.attr = np.arange(10)
+        mask = np.tile(np.arange(2), 5).astype(bool)
+        mh = _MaskHelper(data, mask)
+        # get attribute by dot syntax
+        assert all(mh.attr == data.attr[mask])
+        # or square bracket syntax
+        assert all(mh["attr"] == data.attr[mask])

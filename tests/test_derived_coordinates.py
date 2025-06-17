@@ -4,7 +4,7 @@ import unyt as u
 from unyt.testing import assert_allclose_units
 from swiftgalaxy.demo_data import _present_particle_types
 from scipy.spatial.transform import Rotation
-from swiftsimio.objects import cosmo_array, cosmo_factor, a
+from swiftsimio.objects import cosmo_array
 
 abstol_c = 1 * u.pc  # less than this is ~0
 abstol_v = 10 * u.m / u.s  # less than this is ~0
@@ -365,7 +365,8 @@ class TestInteractionWithCoordinateTransformations:
                     np.zeros(3),
                     units=u.Mpc,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+                    scale_factor=1.0,
+                    scale_exponent=1,
                 ),
             ),
             (
@@ -374,7 +375,8 @@ class TestInteractionWithCoordinateTransformations:
                     np.zeros(3),
                     units=u.km / u.s,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+                    scale_factor=1.0,
+                    scale_exponent=0,
                 ),
             ),
             (
@@ -383,7 +385,8 @@ class TestInteractionWithCoordinateTransformations:
                     np.zeros(3),
                     units=u.Mpc,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+                    scale_factor=1.0,
+                    scale_exponent=1,
                 ),
             ),
             (
@@ -392,7 +395,8 @@ class TestInteractionWithCoordinateTransformations:
                     np.zeros(3),
                     units=u.km / u.s,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+                    scale_factor=1.0,
+                    scale_exponent=0,
                 ),
             ),
             ("rotate", Rotation.from_matrix(np.eye(3))),
@@ -441,7 +445,8 @@ class TestInteractionWithCoordinateTransformations:
                     np.ones(3),
                     units=u.Mpc,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+                    scale_factor=1.0,
+                    scale_exponent=1,
                 ),
             ),
             (
@@ -450,7 +455,8 @@ class TestInteractionWithCoordinateTransformations:
                     100 * np.ones(3),
                     units=u.km / u.s,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+                    scale_factor=1.0,
+                    scale_exponent=0,
                 ),
             ),
             (
@@ -459,7 +465,8 @@ class TestInteractionWithCoordinateTransformations:
                     np.ones(3),
                     units=u.Mpc,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+                    scale_factor=1.0,
+                    scale_exponent=1,
                 ),
             ),
             (
@@ -468,7 +475,8 @@ class TestInteractionWithCoordinateTransformations:
                     100 * np.ones(3),
                     units=u.km / u.s,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+                    scale_factor=1.0,
+                    scale_exponent=0,
                 ),
             ),
             ("rotate", Rotation.from_rotvec(np.pi / 2 * np.array([1, 1, 1]))),

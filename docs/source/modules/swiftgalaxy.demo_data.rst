@@ -1,5 +1,5 @@
-swiftgalaxy.halo\_catalogues module
-===================================
+swiftgalaxy.demo\_data module
+=============================
 
 .. automodule:: swiftgalaxy.demo_data
    :members:

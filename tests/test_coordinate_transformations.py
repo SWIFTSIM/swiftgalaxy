@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
-from swiftsimio.objects import cosmo_array, cosmo_factor, a, cosmo_quantity
+from swiftsimio.objects import cosmo_array, cosmo_quantity
 from scipy.spatial.transform import Rotation
 from swiftgalaxy.demo_data import (
     _present_particle_types,
@@ -16,10 +16,14 @@ from swiftgalaxy.reader import _apply_translation, _apply_4transform
 
 reltol = 1.01  # allow some wiggle room for floating point roundoff
 abstol_c = cosmo_quantity(
-    10, u.pc, comoving=True, cosmo_factor=cosmo_factor(a**1, 1.0)
+    10, u.pc, comoving=True, scale_factor=1.0, scale_exponent=1
 )  # less than this is ~0
 abstol_v = cosmo_quantity(
-    10, u.m / u.s, comoving=True, cosmo_factor=cosmo_factor(a**0, 1.0)
+    10,
+    u.m / u.s,
+    comoving=True,
+    scale_factor=1.0,
+    scale_exponent=0,
 )  # less than this is ~0
 
 expected_xy = {
@@ -27,22 +31,25 @@ expected_xy = {
         reltol * 10,
         units=u.kpc,
         comoving=True,
-        cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        scale_factor=1.0,
+        scale_exponent=1,
     ),
     "dark_matter": cosmo_quantity(
         reltol * 100,
         units=u.kpc,
         comoving=True,
-        cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        scale_factor=1.0,
+        scale_exponent=1,
     ),
     "stars": cosmo_quantity(
         reltol * 5,
         units=u.kpc,
         comoving=True,
-        cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        scale_factor=1.0,
+        scale_exponent=1,
     ),
     "black_holes": cosmo_quantity(
-        abstol_c, comoving=True, cosmo_factor=cosmo_factor(a**1, scale_factor=1.0)
+        abstol_c, comoving=True, scale_factor=1.0, scale_exponent=1
     ),
 }
 expected_z = {
@@ -50,22 +57,25 @@ expected_z = {
         reltol,
         units=u.kpc,
         comoving=True,
-        cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        scale_factor=1.0,
+        scale_exponent=1,
     ),
     "dark_matter": cosmo_quantity(
         reltol * 100,
         units=u.kpc,
         comoving=True,
-        cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        scale_factor=1.0,
+        scale_exponent=1,
     ),
     "stars": cosmo_quantity(
         reltol * 500,
         units=u.pc,
         comoving=True,
-        cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+        scale_factor=1.0,
+        scale_exponent=1,
     ),
     "black_holes": cosmo_quantity(
-        abstol_c, comoving=True, cosmo_factor=cosmo_factor(a**1, scale_factor=1.0)
+        abstol_c, comoving=True, scale_factor=1.0, scale_exponent=1
     ),
 }
 expected_vxy = {
@@ -73,22 +83,25 @@ expected_vxy = {
         reltol * 100,
         units=u.km / u.s,
         comoving=True,
-        cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+        scale_factor=1.0,
+        scale_exponent=0,
     ),
     "dark_matter": cosmo_quantity(
         reltol * 100,
         units=u.km / u.s,
         comoving=True,
-        cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+        scale_factor=1.0,
+        scale_exponent=0,
     ),
     "stars": cosmo_quantity(
         reltol * 50,
         units=u.km / u.s,
         comoving=True,
-        cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+        scale_factor=1.0,
+        scale_exponent=0,
     ),
     "black_holes": cosmo_quantity(
-        abstol_v, comoving=True, cosmo_factor=cosmo_factor(a**0, scale_factor=1.0)
+        abstol_v, comoving=True, scale_factor=1.0, scale_exponent=0
     ),
 }
 expected_vz = {
@@ -96,22 +109,25 @@ expected_vz = {
         reltol * 10,
         units=u.km / u.s,
         comoving=True,
-        cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+        scale_factor=1.0,
+        scale_exponent=0,
     ),
     "dark_matter": cosmo_quantity(
         reltol * 100,
         units=u.km / u.s,
         comoving=True,
-        cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+        scale_factor=1.0,
+        scale_exponent=0,
     ),
     "stars": cosmo_quantity(
         reltol * 10,
         units=u.km / u.s,
         comoving=True,
-        cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+        scale_factor=1.0,
+        scale_exponent=0,
     ),
     "black_holes": cosmo_quantity(
-        abstol_v, comoving=True, cosmo_factor=cosmo_factor(a**0, scale_factor=1.0)
+        abstol_v, comoving=True, scale_factor=1.0, scale_exponent=0
     ),
 }
 
@@ -251,7 +267,7 @@ class TestAutoCoordinateTransformations:
             np.abs(
                 xyz[:, :2]
                 - cosmo_quantity(
-                    2, u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a**1, 1.0)
+                    2, u.Mpc, comoving=True, scale_factor=1.0, scale_exponent=1
                 )
             )
             <= expected_xy
@@ -260,7 +276,7 @@ class TestAutoCoordinateTransformations:
             np.abs(
                 xyz[:, 2]
                 - cosmo_quantity(
-                    2, u.Mpc, comoving=True, cosmo_factor=cosmo_factor(a**1, 1.0)
+                    2, u.Mpc, comoving=True, scale_factor=1.0, scale_exponent=1
                 )
             )
             <= expected_z
@@ -287,7 +303,8 @@ class TestAutoCoordinateTransformations:
                     200,
                     u.km / u.s,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**0, 1.0),
+                    scale_factor=1.0,
+                    scale_exponent=0,
                 )
             )
             <= expected_vxy
@@ -299,7 +316,8 @@ class TestAutoCoordinateTransformations:
                     200,
                     u.km / u.s,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**0, 1.0),
+                    scale_factor=1.0,
+                    scale_exponent=0,
                 )
             )
             <= expected_vz
@@ -325,7 +343,8 @@ class TestManualCoordinateTransformations:
             [1, 1, 1],
             units=u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )
         sg.recentre(new_centre)
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
@@ -349,7 +368,8 @@ class TestManualCoordinateTransformations:
             [100, 100, 100],
             units=u.km / u.s,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=0,
         )
         sg.recentre_velocity(new_centre)
         vxyz = getattr(getattr(sg, particle_name), f"{velocity_name}")
@@ -375,7 +395,8 @@ class TestManualCoordinateTransformations:
             [1, 1, 1],
             units=u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )
         sg.translate(translation)
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
@@ -409,7 +430,8 @@ class TestManualCoordinateTransformations:
             [100, 100, 100],
             u.km / u.s,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=0,
         )
         sg.boost(boost)
         vxyz = getattr(getattr(sg, particle_name), f"{velocity_name}")
@@ -473,7 +495,8 @@ class TestManualCoordinateTransformations:
             [1, 1, 1],
             units=u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )
         transform = np.eye(4)
         transform[:3, :3] = rot
@@ -502,7 +525,8 @@ class TestManualCoordinateTransformations:
             [100, 100, 100],
             units=u.km / u.s,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=0,
         )
         transform = np.eye(4)
         transform[:3, :3] = rot
@@ -529,7 +553,8 @@ class TestSequentialTransformations:
             [1, 1, 1],
             units=u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )
         sg.translate(translation)
         sg.rotate(Rotation.from_matrix(rot))
@@ -553,7 +578,8 @@ class TestSequentialTransformations:
             [1, 1, 1],
             units=u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )
         sg.translate(translation)
         xyz = sg.gas.coordinates
@@ -575,7 +601,8 @@ class TestSequentialTransformations:
             [100, 100, 100],
             units=u.km / u.s,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=0,
         )
         sg.boost(boost)
         sg.rotate(Rotation.from_matrix(rot))
@@ -599,7 +626,8 @@ class TestSequentialTransformations:
             [100, 100, 100],
             units=u.km / u.s,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=0,
         )
         sg.boost(boost)
         vxyz = sg.gas.velocities
@@ -653,7 +681,8 @@ class TestCopyingTransformations:
             [1, 1, 1],
             units=u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )
         sg.translate(translation)
         sg2 = SWIFTGalaxy(
@@ -673,7 +702,8 @@ class TestCopyingTransformations:
             [1, 1, 1],
             units=u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )
         sg.translate(translation)
         sg2 = SWIFTGalaxy(
@@ -696,13 +726,15 @@ class TestApplyTranslation:
             [[1, 2, 3], [4, 5, 6]],
             units=u.Mpc,
             comoving=comoving,
-            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )
         offset = cosmo_array(
             [1, 1, 1],
             units=u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )
         result = _apply_translation(coords, offset)
         assert result.comoving == comoving
@@ -716,7 +748,8 @@ class TestApplyTranslation:
             [[1, 2, 3], [4, 5, 6]],
             units=u.Mpc,
             comoving=comoving,
-            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )
         offset = u.unyt_array(
             [1, 1, 1],
@@ -747,7 +780,8 @@ class TestApply4Transform:
             [[1, 2, 3], [4, 5, 6]],
             units=u.Mpc,
             comoving=comoving,
-            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )
         transform = np.eye(4)  # identity 4transform
         result = _apply_4transform(coords, transform, transform_units=u.Mpc)
@@ -764,7 +798,8 @@ class TestCoordinateProperties:
             [1, 2, 3],
             units=u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         )
         sg.recentre(new_centre)
         assert_allclose_units(
@@ -780,7 +815,8 @@ class TestCoordinateProperties:
             [100, 200, 300],
             units=u.km / u.s,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**0, scale_factor=1.0),
+            scale_factor=1.0,
+            scale_exponent=0,
         )
         sg.recentre_velocity(new_centre)
         assert_allclose_units(

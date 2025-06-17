@@ -7,6 +7,7 @@ import numpy as np
 from unyt.testing import assert_allclose_units
 from swiftgalaxy import SWIFTGalaxy, MaskCollection
 from swiftgalaxy.demo_data import (
+    ToyHF,
     _create_toysnap,
     _remove_toysnap,
     _toysnap_filename,
@@ -222,3 +223,34 @@ class TestMaskingNamedColumnDatasets:
         assert_allclose_units(
             fractions_before[mask], fractions, rtol=reltol_nd, atol=abstol_nd
         )
+
+
+class TestMultiModeMask:
+    """
+    Tests particular to masks when handling a halo catalogue with multiple galaxies
+    selected.
+    """
+
+    def test_mask_multi_invalid(self, sg):
+        """
+        When a multi-galaxy halo catalogue object is not masked down to a single object,
+        attempting to request a mask for a single object should raise.
+        """
+        cat = ToyHF(index=[0, 1])
+        assert cat._multi_galaxy  # confirm this is multi-galaxy mode
+        with pytest.raises(
+            RuntimeError,
+            match="Halo catalogue has multiple galaxies and is not currently masked.",
+        ):
+            cat._get_extra_mask(sg)
+
+    def test_caesar_mask_catalogue(self, caesar_multi):
+        """
+        If a caesar catalogue is in multi-galaxy mode and is not currently masked then
+        trying to use the helper to select a single row when the catalogue isn't currently
+        restricted to a single galaxy should raise.
+        """
+        with pytest.raises(
+            RuntimeError, match="Tried to mask catalogue without mask index!"
+        ):
+            caesar_multi._mask_catalogue()
