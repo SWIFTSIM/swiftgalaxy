@@ -28,7 +28,7 @@ from swiftsimio.reader import (
     __SWIFTNamedColumnDataset,
     __SWIFTGroupDataset,
 )
-from swiftsimio.objects import cosmo_array, cosmo_factor, a
+from swiftsimio.objects import cosmo_array
 from swiftsimio.masks import SWIFTMask
 from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftgalaxy.masks import MaskCollection
@@ -1023,9 +1023,8 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
                 np.where(r == 0, 0, np.arcsin(self.cartesian_coordinates.z / r)),
                 units=unyt.rad,
                 comoving=r.comoving,
-                cosmo_factor=cosmo_factor(
-                    a**0, scale_factor=r.cosmo_factor.scale_factor
-                ),
+                scale_factor=r.cosmo_factor.scale_factor,
+                scale_exponent=0,
             )
             if self._cylindrical_coordinates is not None:
                 phi = self.cylindrical_coordinates.phi
@@ -2101,9 +2100,8 @@ class SWIFTGalaxy(SWIFTDataset):
                     np.zeros((1, 3)),
                     units=transform_units,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(
-                        a**1, scale_factor=self.metadata.scale_factor
-                    ),
+                    scale_factor=self.metadata.scale_factor,
+                    scale_exponent=1,
                 ),
                 transform,
                 transform_units,
@@ -2131,9 +2129,8 @@ class SWIFTGalaxy(SWIFTDataset):
                 np.zeros((1, 3)),
                 units=transform_units,
                 comoving=True,
-                cosmo_factor=cosmo_factor(
-                    a**0, scale_factor=self.metadata.scale_factor
-                ),
+                scale_factor=self.metadata.scale_factor,
+                scale_exponent=0,
             ),
             transform,
             transform_units,

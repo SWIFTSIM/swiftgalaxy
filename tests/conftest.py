@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 import numpy as np
 import unyt as u
-from swiftsimio.objects import cosmo_array, cosmo_factor, a
+from swiftsimio.objects import cosmo_array
 from swiftgalaxy import (
     SWIFTGalaxy,
     SWIFTGalaxies,
@@ -340,19 +340,22 @@ def sa():
             [_centre_1, _centre_1, _centre_1],
             u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, 1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         ),
         velocity_centre=cosmo_array(
             [_vcentre_1, _vcentre_1, _vcentre_1],
             u.km / u.s,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**0, 1.0),
+            scale_factor=1.0,
+            scale_exponent=0,
         ),
         spatial_offsets=cosmo_array(
             [[-1, 1], [-1, 1], [-1, 1]],
             u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, 1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         ),
     )
 
@@ -368,7 +371,8 @@ def sa_multi():
             ],
             u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, 1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         ),
         velocity_centre=cosmo_array(
             [
@@ -377,13 +381,15 @@ def sa_multi():
             ],
             u.km / u.s,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**0, 1.0),
+            scale_factor=1.0,
+            scale_exponent=0,
         ),
         spatial_offsets=cosmo_array(
             [[-1, 1], [-1, 1], [-1, 1]],
             u.Mpc,
             comoving=True,
-            cosmo_factor=cosmo_factor(a**1, 1.0),
+            scale_factor=1.0,
+            scale_exponent=1,
         ),
     )
 
@@ -404,19 +410,22 @@ def sg_sa():
                 [_centre_1, _centre_1, _centre_1],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             velocity_centre=cosmo_array(
                 [_vcentre_1, _vcentre_1, _vcentre_1],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             spatial_offsets=cosmo_array(
                 [[-1, 1], [-1, 1], [-1, 1]],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
         ),
     )
@@ -437,7 +446,8 @@ def sgs_sa():
                 ],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             velocity_centre=cosmo_array(
                 [
@@ -446,13 +456,15 @@ def sgs_sa():
                 ],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             spatial_offsets=cosmo_array(
                 [[-1, 1], [-1, 1], [-1, 1]],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
         ),
         preload={  # just to keep warnings quiet
@@ -514,19 +526,22 @@ def sg_hf(request):
                 [_centre_1, _centre_1, _centre_1],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             velocity_centre=cosmo_array(
                 [_vcentre_1, _vcentre_1, _vcentre_1],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             spatial_offsets=cosmo_array(
                 [[-1, 1], [-1, 1], [-1, 1]],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
         )
     _remove_toysnap()
@@ -571,19 +586,22 @@ def hf(request):
                 [_centre_1, _centre_1, _centre_1],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             velocity_centre=cosmo_array(
                 [_vcentre_1, _vcentre_1, _vcentre_1],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             spatial_offsets=cosmo_array(
                 [[-1, 1], [-1, 1], [-1, 1]],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
         )
 
@@ -625,7 +643,8 @@ def hf_multi(request):
                 ],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             velocity_centre=cosmo_array(
                 [
@@ -634,13 +653,15 @@ def hf_multi(request):
                 ],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             spatial_offsets=cosmo_array(
                 [[-1, 1], [-1, 1], [-1, 1]],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
         )
 
@@ -691,7 +712,8 @@ def hf_multi_forwards_and_backwards(request):
                 ],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             velocity_centre=cosmo_array(
                 [
@@ -700,13 +722,15 @@ def hf_multi_forwards_and_backwards(request):
                 ],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             spatial_offsets=cosmo_array(
                 [[-1, 1], [-1, 1], [-1, 1]],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
         ), Standalone(
             extra_mask=None,
@@ -717,7 +741,8 @@ def hf_multi_forwards_and_backwards(request):
                 ],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             velocity_centre=cosmo_array(
                 [
@@ -726,13 +751,15 @@ def hf_multi_forwards_and_backwards(request):
                 ],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             spatial_offsets=cosmo_array(
                 [[-1, 1], [-1, 1], [-1, 1]],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
         )
 
@@ -773,7 +800,8 @@ def hf_multi_onetarget(request):
                 ],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             velocity_centre=cosmo_array(
                 [
@@ -781,13 +809,15 @@ def hf_multi_onetarget(request):
                 ],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             spatial_offsets=cosmo_array(
                 [[-1, 1], [-1, 1], [-1, 1]],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
         )
 
@@ -826,18 +856,21 @@ def hf_multi_zerotarget(request):
                 [],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             velocity_centre=cosmo_array(
                 [],
                 u.km / u.s,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**0, 1.0),
+                scale_factor=1.0,
+                scale_exponent=0,
             ),
             spatial_offsets=cosmo_array(
                 [[-1, 1], [-1, 1], [-1, 1]],
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
         )

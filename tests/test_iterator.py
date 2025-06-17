@@ -19,7 +19,7 @@ from swiftgalaxy.demo_data import (
     _remove_toycaesar,
 )
 from conftest import hfs
-from swiftsimio.objects import cosmo_array, cosmo_factor, a
+from swiftsimio.objects import cosmo_array
 from swiftgalaxy.reader import SWIFTGalaxy
 from swiftgalaxy.iterator import SWIFTGalaxies
 from swiftgalaxy.halo_catalogues import Standalone, SOAP, Velociraptor, Caesar
@@ -43,19 +43,22 @@ class TestSWIFTGalaxies:
                     [[2.5, 5.0, 5.0], [7.5, 5.0, 5.0]],
                     u.Mpc,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**1, 1.0),
+                    scale_factor=1.0,
+                    scale_exponent=1,
                 ),
                 velocity_centre=cosmo_array(
                     [[0, 0, 0] * 2],
                     u.km / u.s,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**0, 1.0),
+                    scale_factor=1.0,
+                    scale_exponent=0,
                 ),
                 spatial_offsets=cosmo_array(
                     [[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]],
                     u.Mpc,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**1, 1.0),
+                    scale_factor=1.0,
+                    scale_exponent=1,
                 ),
             ),
             preload={  # just to keep warnings quiet
@@ -78,7 +81,8 @@ class TestSWIFTGalaxies:
                 * np.array([[[5], [10], [10]]]),
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             atol=0.0001 * u.Mpc,
         )
@@ -135,19 +139,22 @@ class TestSWIFTGalaxies:
                     ],
                     u.Mpc,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**1, 1.0),
+                    scale_factor=1.0,
+                    scale_exponent=1,
                 ),
                 velocity_centre=cosmo_array(
                     [[0, 0, 0] * 10],
                     u.km / u.s,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**0, 1.0),
+                    scale_factor=1.0,
+                    scale_exponent=0,
                 ),
                 spatial_offsets=cosmo_array(
                     [[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]],
                     u.Mpc,
                     comoving=True,
-                    cosmo_factor=cosmo_factor(a**1, 1.0),
+                    scale_factor=1.0,
+                    scale_exponent=1,
                 ),
             ),
             preload={  # just to keep warnings quiet
@@ -172,7 +179,8 @@ class TestSWIFTGalaxies:
                 ),
                 u.Mpc,
                 comoving=True,
-                cosmo_factor=cosmo_factor(a**1, 1.0),
+                scale_factor=1.0,
+                scale_exponent=1,
             ),
             atol=0.001 * u.Mpc,
         )
