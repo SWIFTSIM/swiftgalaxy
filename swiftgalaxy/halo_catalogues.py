@@ -385,9 +385,7 @@ class _HaloCatalogue(ABC):
         out : :obj:`object`
             The requested attribute.
         """
-        # guard infinite recursion
-        if attr == "_catalogue":  # pragma: no cover
-            # this definitely runs in testing but coverage doesn't pick it up
+        if attr == "_catalogue":  # guard infinite recursion
             try:
                 return object.__getattribute__(self, "_catalogue")
             except AttributeError:
@@ -2029,10 +2027,8 @@ class Caesar(_HaloCatalogue):
             The requested attribute.
         """
         if attr == "_catalogue":  # guard infinite recursion
-            try:
-                return object.__getattribute__(self, "_catalogue")
-            except AttributeError:
-                return None
+            # we got here so self._catalogue doesn't exist
+            return None
         if self._multi_galaxy_catalogue_mask is not None:
             return getattr(self._catalogue[self._multi_galaxy_catalogue_mask], attr)
         elif self._multi_galaxy and self._multi_galaxy_catalogue_mask is None:

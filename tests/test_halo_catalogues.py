@@ -811,7 +811,9 @@ class TestCaesar:
         Check that we can access the private catalogue object without entering an infinite
         loop.
         """
-        caesar._catalogue
+        # the danger is during initialization before the _catalogue attribute exists
+        del caesar._catalogue
+        assert caesar._catalogue is None
 
 
 class TestCaesarWithSWIFTGalaxy:
