@@ -1,5 +1,5 @@
 .. image:: images/swiftgalaxy_banner.png
-   :width: 400
+   :width: 100%
    :alt: Banner with logo showing a swift in a spiral and the text SWIFTGalaxy.
 
 .. include:: ../../README.rst
@@ -36,7 +36,6 @@
         :class-card: sd-p-3
 
         .. button-ref:: community/index
-            :click-parent:
             :color: primary
             :outline:
             :expand:
@@ -44,7 +43,6 @@
             information for developers
 
 	.. button-link:: https://github.com/SWIFTSIM/swiftgalaxy
-            :click-parent:
             :color: primary
             :outline:
             :expand:
