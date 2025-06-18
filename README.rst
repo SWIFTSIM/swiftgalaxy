@@ -1,5 +1,5 @@
 .. image:: https://github.com/SWIFTSIM/swiftgalaxy/raw/main/swiftgalaxy_banner.png
-   :width: 400
+   :width: 100%
    :alt: Banner with logo showing a swift in a spiral and the text SWIFTGalaxy.
 
 |Python version| |PyPI version| |ASCL| |Repostatus| |Zenodo| |Build status| |Documentation status| |codecov|
