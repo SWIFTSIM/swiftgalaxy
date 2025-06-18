@@ -1,5 +1,6 @@
-SWIFTGalaxy
-===========
+.. image:: https://github.com/SWIFTSIM/swiftgalaxy/raw/main/swiftgalaxy_banner.png
+   :width: 400
+   :alt: Banner with logo showing a swift in a spiral and the text SWIFTGalaxy.
 
 |Python version| |PyPI version| |ASCL| |Repostatus| |Zenodo| |Build status| |Documentation status| |codecov|
 
@@ -48,7 +49,7 @@ Installation_ is as simple as ``pip install swiftgalaxy``. Dependencies for usin
 
 .. EXAMPLE_START_LABEL
 
-Once installed, creating a ``SWIFTGalaxy`` object to get started with analysis is simple! For example, for a SWIFT simulation with a SOAP-format halo catalogue (an example - 300 MB - will be automatically downloaded):
+Once installed, creating a ``SWIFTGalaxy`` object to get started with analysis is simple! For instance, for a SWIFT simulation with a SOAP-format halo catalogue (an example - 300 MB - will be automatically downloaded):
 
 .. code-block:: python
 

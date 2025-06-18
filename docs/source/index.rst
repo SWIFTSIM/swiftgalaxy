@@ -1,5 +1,6 @@
-SWIFTGalaxy
-===========
+.. image:: images/swiftgalaxy_banner.png
+   :width: 400
+   :alt: Banner with logo showing a swift in a spiral and the text SWIFTGalaxy.
 
 .. include:: ../../README.rst
    :start-after: INTRO_START_LABEL
