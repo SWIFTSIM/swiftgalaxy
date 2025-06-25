@@ -198,11 +198,16 @@ def _data_read_wrapper(prop: str) -> Callable:
         The wrapper function.
     """
 
-    def wrapper(self) -> cosmo_array:
+    def wrapper(self: "_SWIFTGroupDatasetHelper") -> cosmo_array:
         """
         Read a :mod:`swiftsimio` dataset and apply our masks & transforms.
 
         If the data are already read, just return them.
+
+        Parameters
+        ----------
+        self : :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
+            The instance of the class passed to the wrapped function.
 
         Returns
         -------
@@ -227,7 +232,7 @@ def _data_read_wrapper(prop: str) -> Callable:
     return wrapper
 
 
-def _data_write_wrapper(prop):
+def _data_write_wrapper(prop: str) -> Callable:
     """
     Generator function to wrap :mod:`swiftsimio` data setters.
 
@@ -242,12 +247,15 @@ def _data_write_wrapper(prop):
         The wrapper function.
     """
 
-    def wrapper(self, value):
+    def wrapper(self: "_SWIFTGroupDatasetHelper", value: cosmo_array) -> None:
         """
         Assign to a :mod:`swiftsimio` dataset.
 
         Parameters
         ----------
+        self : :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
+            The instance of the class passed to the wrapped function.
+
         value : :class:`~swiftsimio.objects.cosmo_array`
             The value to assign to the dataset.
         """
@@ -257,7 +265,7 @@ def _data_write_wrapper(prop):
     return wrapper
 
 
-def _data_delete_wrapper(prop):
+def _data_delete_wrapper(prop: str) -> Callable:
     """
     Generator function to wrap :mod:`swiftsimio` data deleters.
 
@@ -272,9 +280,14 @@ def _data_delete_wrapper(prop):
         The wrapper function.
     """
 
-    def wrapper(self):
+    def wrapper(self: "_SWIFTGroupDatasetHelper") -> None:
         """
         Delete a :mod:`swiftsimio` dataset by setting it to ``None``.
+
+        Parameters
+        ----------
+        self : :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
+            The instance of the class passed to the wrapped function.
         """
         setattr(self._internal_dataset, f"_{prop}", None)
         return
