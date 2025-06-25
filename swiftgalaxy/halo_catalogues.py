@@ -146,7 +146,7 @@ class _HaloCatalogue(ABC):
         self._load()
         return
 
-    def _mask_multi_galaxy(self, index) -> None:
+    def _mask_multi_galaxy(self, index: int) -> None:
         """
         Switch on restricting the catalogue to a single row.
 
@@ -700,7 +700,7 @@ class SOAP(_HaloCatalogue):
         squeezed_index = np.squeeze(index)
         return int(squeezed_index) if squeezed_index.ndim == 0 else list(squeezed_index)
 
-    def _mask_multi_galaxy(self, index) -> None:
+    def _mask_multi_galaxy(self, index: int) -> None:
         """
         Switch on restricting the catalogue to a single row.
 

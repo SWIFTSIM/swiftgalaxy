@@ -263,11 +263,7 @@ class SWIFTGalaxies:
             self._solution = (
                 self._sparse_optimized_solution
                 if self._sparse_optimized_solution["cost"]
-                < 0.5
-                * (
-                    self._dense_optimized_solution["cost_min"]
-                    + self._dense_optimized_solution["cost_max"]
-                )
+                < self._dense_optimized_solution["cost"]
                 else self._dense_optimized_solution
             )
         elif optimize_iteration == "dense":
@@ -369,7 +365,7 @@ class SWIFTGalaxies:
             ),
         )
 
-    def _eval_dense_optimized_solution(self):
+    def _eval_dense_optimized_solution(self) -> None:
         """
         Evaluate an iteration scheme optimized for targets densely distributed in space.
 
@@ -385,8 +381,8 @@ class SWIFTGalaxies:
         The result is stored in ``self._dense_optimized_solution``, a dict with
         keys: ``"regions"`` containing the spatial regions that will define the spatial
         masks; ``"region_target_indices"`` containing the indices of the target objects of
-        interest in each of the regions; ``"cost_min"`` and ``"cost_max"`` containing the
-        minimum and maximum cost (in top-level cell read operations) of this iteration
+        interest in each of the regions; ``"cost"`` containing the estimated cost (average
+        of minimum and maximum cost in top-level cell read operations) of this iteration
         scheme. The actual cost depends on how each region aligns with the cell grid. For
         example if the region has a side lengths of 1.8 cells, this could touch either 2
         or 3 cells, depending on where in the grid the vertex lands.
@@ -450,33 +446,34 @@ class SWIFTGalaxies:
         # cost_max is an integer number of cells that will be read during this iteration
         # in the worst case (assuming the regions are near mis-aligned with the cell grid)
         sorter = np.argsort(inv)
+        cost_min = int(
+            np.sum(
+                np.prod(
+                    np.ceil(
+                        np.diff(unique_regions, axis=2).squeeze() / sm.cell_size
+                    ).to_value(u.dimensionless),
+                    axis=1,
+                )
+            )
+        )
+        cost_max = int(
+            np.sum(
+                np.prod(
+                    np.ceil(
+                        np.diff(unique_regions, axis=2).squeeze() / sm.cell_size
+                    ).to_value(u.dimensionless)
+                    + 1,
+                    axis=1,
+                )
+            )
+        )
         self._dense_optimized_solution = _IterationSolution(
             regions=unique_regions,
             region_target_indices=np.split(
                 np.arange(inv.size)[sorter],
                 np.unique(inv[sorter], return_index=True)[1][1:],
             ),
-            cost_min=int(
-                np.sum(
-                    np.prod(
-                        np.ceil(
-                            np.diff(unique_regions, axis=2).squeeze() / sm.cell_size
-                        ).to_value(u.dimensionless),
-                        axis=1,
-                    )
-                )
-            ),
-            cost_max=int(
-                np.sum(
-                    np.prod(
-                        np.ceil(
-                            np.diff(unique_regions, axis=2).squeeze() / sm.cell_size
-                        ).to_value(u.dimensionless)
-                        + 1,
-                        axis=1,
-                    )
-                )
-            ),
+            cost=int(np.ceil(0.5 * (cost_min + cost_max))),  # estimate as the average
         )
 
     def _start_server(self, region_mask: SWIFTMask) -> None:

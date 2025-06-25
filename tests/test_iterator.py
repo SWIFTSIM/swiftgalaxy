@@ -193,8 +193,9 @@ class TestSWIFTGalaxies:
             ],
         ):
             assert np.allclose(ds, expected, atol=0)
-        assert dense_solution["cost_min"] == 9
-        assert dense_solution["cost_max"] == 35
+        # expect cost_min, cost_max = 9, 35
+        # so expect cost = (9 + 35) / 2 = 22
+        assert dense_solution["cost"] == 22
         for k in sgs._solution.keys():
             if isinstance(sgs._solution[k], int):
                 assert sgs._solution[k] == dense_solution[k]

@@ -434,7 +434,11 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
     :class:`_SWIFTGroupDatasetHelper`
     """
 
-    def __init__(self, named_column_dataset, particle_dataset_helper) -> None:
+    def __init__(
+        self,
+        named_column_dataset: "__SWIFTNamedColumnDataset",
+        particle_dataset_helper: "_SWIFTGroupDatasetHelper",
+    ) -> None:
         self._named_column_dataset = named_column_dataset
         self.field_path = self._named_column_dataset.field_path
         self.named_columns = self._named_column_dataset.named_columns
@@ -662,7 +666,9 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
         mygalaxy.gas.cylindrical_velocities.z
     """
 
-    def __init__(self, particle_dataset, swiftgalaxy) -> None:
+    def __init__(
+        self, particle_dataset: "__SWIFTGroupDataset", swiftgalaxy: "SWIFTGalaxy"
+    ) -> None:
         self._particle_dataset = particle_dataset
 
         self.filename = self._particle_dataset.filename
@@ -1695,7 +1701,7 @@ class SWIFTGalaxy(SWIFTDataset):
         _coordinate_like_transform: Optional[np.ndarray] = None,
         _velocity_like_transform: Optional[np.ndarray] = None,
         _warn_on_read: bool = False,
-    ):
+    ) -> "SWIFTGalaxy":
         """
         For internal use in copying a :class:`SWIFTGalaxy`.
 

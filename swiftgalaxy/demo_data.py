@@ -147,7 +147,7 @@ class _WebExamples(object):
         return f"Available examples: {', '.join(self.available_examples.keys())}."
 
     @_ensure_demo_data_directory
-    def _get_webdata_if_not_present(self, filename) -> None:
+    def _get_webdata_if_not_present(self, filename: str) -> None:
         """
         Retrieve a file from the web store.
 
@@ -195,7 +195,7 @@ class _WebExamples(object):
         else:
             raise AttributeError(f"_WebExamples attribute {attr} not found.")
 
-    def remove(self):
+    def remove(self) -> None:
         """
         Remove all downloaded example files.
         """
@@ -280,7 +280,7 @@ class _GeneratedExamples(object):
         else:
             raise AttributeError(f"_GeneratedExamples attribute {attr} not found.")
 
-    def remove(self):
+    def remove(self) -> None:
         """
         Remove all generated example files.
         """
