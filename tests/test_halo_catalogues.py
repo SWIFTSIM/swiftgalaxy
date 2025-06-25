@@ -581,9 +581,12 @@ class TestVelociraptor:
         """
         Check that we add catalogue properties to the namespace directory.
 
-        Just check a couple, don't need to be exhaustive.
+        Just check a couple, don't need to be exhaustive. Also make sure we list the
+        attriubtes of the wrapper class itself.
         """
         for prop in ("energies", "metallicity", "temperature"):
+            assert prop in dir(vr)
+        for prop in ("centre_type", "extra_mask"):
             assert prop in dir(vr)
 
     def test_required_args(self):
@@ -783,10 +786,13 @@ class TestCaesar:
         """
         Check that we add catalogue properties to the namespace directory.
 
-        Just check a couple, don't need to be exhaustive.
+        Just check a couple, don't need to be exhaustive. Also make sure we list the
+        attriubtes of the wrapper class itself.
         """
         # picked these to be common between halo and galaxy catalogues:
         for prop in ("glist", "pos", "radii"):
+            assert prop in dir(caesar)
+        for prop in ("centre_type", "extra_mask"):
             assert prop in dir(caesar)
 
     def test_required_args(self, caesar):
@@ -1056,6 +1062,15 @@ class TestStandalone:
         """
         assert sa._mask_index is None
 
+    def test_dir_for_tab_completion(self, sa):
+        """
+        Check that we can use tab completion.
+
+        Make sure we list the attriubtes of the wrapper class itself.
+        """
+        for prop in ("centre", "extra_mask"):
+            assert prop in dir(sa)
+
 
 class TestSOAP:
     def test_load(self, soap):
@@ -1179,7 +1194,8 @@ class TestSOAP:
         """
         Check that we add catalogue properties to the namespace directory.
 
-        Just check a couple, don't need to be exhaustive.
+        Just check a couple, don't need to be exhaustive. Also make sure we list the
+        attriubtes of the wrapper class itself.
         """
         for prop in (
             "exclusive_sphere_100kpc",
@@ -1187,6 +1203,11 @@ class TestSOAP:
             "spherical_overdensity_bn98",
         ):
             assert prop in dir(soap)
+        assert "halo_centre" in dir(soap.input_halos)
+        for prop in ("centre_type", "extra_mask"):
+            assert prop in dir(soap)
+        # make sure that we didn't trigger lazy loading of everything
+        assert soap.input_halos._halo_centre is None
 
     def test_required_args(self):
         """

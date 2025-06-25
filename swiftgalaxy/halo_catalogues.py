@@ -363,8 +363,8 @@ class _HaloCatalogue(ABC):
         out : list
             The list of catalogue attribute names.
         """
-        # use getattr to default to None, e.g. for Standalone
-        return dir(getattr(self, "_catalogue", None))
+        # use getattr to default to empty list, e.g. for Standalone
+        return list(object.__dir__(self)) + list(dir(getattr(self, "_catalogue", [])))
 
     def __getattr__(self, attr: str) -> Any:
         """
@@ -902,22 +902,6 @@ class SOAP(_HaloCatalogue):
             The string representation of the catalogue.
         """
         return self._catalogue.__repr__()
-
-    def __dir__(self) -> list[str]:
-        """
-        Supply a list of attributes of the halo catalogue.
-
-        The regular ``dir`` behaviour doesn't index the names of catalogue attributes
-        because they're attached to the internally maintained ``_catalogue`` attribute,
-        so we custimize the ``__dir__`` method to list the attribute names. They will
-        then appear in tab completion, for example.
-
-        Returns
-        -------
-        out : list
-            The list of catalogue attribute names.
-        """
-        return list(self._catalogue.metadata.present_group_names)
 
 
 class Velociraptor(_HaloCatalogue):
