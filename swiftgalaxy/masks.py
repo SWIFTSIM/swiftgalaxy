@@ -86,6 +86,9 @@ class MaskCollection(object):
             If we reach calling this function the attribute is not found and we
             return ``None``.
         """
+        if hasattr(self, f"_{attr}"):
+            setattr(self, attr, getattr(self, f"_{attr}")())
+            return getattr(self, attr)
         return None
 
     def __copy__(self) -> "MaskCollection":

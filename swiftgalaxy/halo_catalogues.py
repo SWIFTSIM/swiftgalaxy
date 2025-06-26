@@ -834,18 +834,31 @@ class SOAP(_HaloCatalogue):
             The mask object that selects bound particles from the spatially-masked
             set of particles.
         """
+
+        def generate_lazy_mask(group_name):
+
+            def lazy_mask():
+                mask = getattr(
+                    sg, group_name
+                )._particle_dataset.group_nr_bound.to_value(
+                    u.dimensionless
+                ) == self.input_halos.halo_catalogue_index.to_value(
+                    u.dimensionless
+                )
+                # mask the group_nr_bound array that we loaded
+                getattr(sg, group_name)._particle_dataset._group_nr_bound = getattr(
+                    sg, group_name
+                )._particle_dataset._group_nr_bound[mask]
+                return mask
+
+            return lazy_mask
+
         masks = MaskCollection(
             **{
-                group_name: getattr(
-                    sg, group_name
-                )._particle_dataset.group_nr_bound.to_value(u.dimensionless)
-                == self.input_halos.halo_catalogue_index.to_value(u.dimensionless)
+                f"_{group_name}": generate_lazy_mask(group_name)
                 for group_name in sg.metadata.present_group_names
             }
         )
-        if not self._multi_galaxy:
-            for group_name in sg.metadata.present_group_names:
-                del getattr(sg, group_name)._particle_dataset.group_nr_bound
         return masks
 
     @property
@@ -1155,17 +1168,45 @@ class Velociraptor(_HaloCatalogue):
             The mask object that selects bound particles from the spatially-masked
             set of particles.
         """
-        from velociraptor.swift.swift import generate_bound_mask
+        # we don't use velociraptor.swift.swift.generate_bound_mask
+        # because we need a lazy version and to bypass swiftgalaxy masking on read
+        # while we construct the mask
 
-        return MaskCollection(
-            **generate_bound_mask(
-                sg,
-                (
+        def generate_lazy_mask(group_name):
+
+            def lazy_mask():
+                particles = (
                     self._particles[self._multi_galaxy_catalogue_mask]
                     if self._multi_galaxy_catalogue_mask is not None
                     else self._particles
-                ),
-            )._asdict()
+                )
+                scale_factor = (
+                    particles.groups_instance.catalogue.units.a
+                    if not particles.groups_instance.catalogue.units.comoving
+                    else 1.0
+                )
+                mask = np.in1d(
+                    getattr(sg, group_name)._particle_dataset.particle_ids,
+                    cosmo_array(
+                        particles.particle_ids,
+                        comoving=False,
+                        scale_factor=scale_factor,
+                        scale_exponent=0,
+                    ),
+                )
+                # mask the particle_ids that we loaded
+                getattr(sg, group_name)._particle_dataset._particle_ids = getattr(
+                    sg, group_name
+                )._particle_dataset._particle_ids[mask]
+                return mask
+
+            return lazy_mask
+
+        return MaskCollection(
+            **{
+                f"_{group_name}": generate_lazy_mask(group_name)
+                for group_name in sg.metadata.present_group_names
+            }
         )
 
     @property
@@ -1731,57 +1772,73 @@ class Caesar(_HaloCatalogue):
 
         cat = self._mask_catalogue()
         null_slice = np.s_[:0]  # mask that selects no particles
-        if hasattr(cat, "glist"):
-            gas_mask = cat.glist
-            gas_mask = gas_mask[in_one_of_ranges(gas_mask, sg.mask.gas)]
-            gas_mask = np.isin(
-                np.concatenate([np.arange(start, end) for start, end in sg.mask.gas]),
-                gas_mask,
-            )
-        else:
-            gas_mask = null_slice
-        # seems like name could be dmlist or dlist?
-        if hasattr(cat, "dlist") or hasattr(cat, "dmlist"):
-            dark_matter_mask = getattr(cat, "dlist", cat.dmlist)
-            dark_matter_mask = dark_matter_mask[
-                in_one_of_ranges(dark_matter_mask, sg.mask.dark_matter)
-            ]
-            dark_matter_mask = np.isin(
-                np.concatenate(
-                    [np.arange(start, end) for start, end in sg.mask.dark_matter]
-                ),
-                dark_matter_mask,
-            )
-        else:
-            dark_matter_mask = null_slice
 
-        if hasattr(cat, "slist"):
-            stars_mask = cat.slist
-            stars_mask = stars_mask[in_one_of_ranges(stars_mask, sg.mask.stars)]
-            stars_mask = np.isin(
-                np.concatenate([np.arange(start, end) for start, end in sg.mask.stars]),
-                stars_mask,
-            )
-        else:
-            stars_mask = null_slice
-        if hasattr(cat, "bhlist"):
-            black_holes_mask = cat.bhlist
-            black_holes_mask = black_holes_mask[
-                in_one_of_ranges(black_holes_mask, sg.mask.black_holes)
-            ]
-            black_holes_mask = np.isin(
-                np.concatenate(
-                    [np.arange(start, end) for start, end in sg.mask.black_holes]
-                ),
-                black_holes_mask,
-            )
-        else:
-            black_holes_mask = null_slice
+        def lazy_gas_mask():
+            if hasattr(cat, "glist"):
+                gas_mask = cat.glist
+                gas_mask = gas_mask[in_one_of_ranges(gas_mask, sg.mask.gas)]
+                gas_mask = np.isin(
+                    np.concatenate(
+                        [np.arange(start, end) for start, end in sg.mask.gas]
+                    ),
+                    gas_mask,
+                )
+            else:
+                gas_mask = null_slice
+            return gas_mask
+
+        def lazy_dark_matter_mask():
+            # name could be dmlist or dlist
+            if hasattr(cat, "dlist") or hasattr(cat, "dmlist"):
+                dark_matter_mask = getattr(cat, "dlist", cat.dmlist)
+                dark_matter_mask = dark_matter_mask[
+                    in_one_of_ranges(dark_matter_mask, sg.mask.dark_matter)
+                ]
+                dark_matter_mask = np.isin(
+                    np.concatenate(
+                        [np.arange(start, end) for start, end in sg.mask.dark_matter]
+                    ),
+                    dark_matter_mask,
+                )
+            else:
+                dark_matter_mask = null_slice
+            return dark_matter_mask
+
+        def lazy_stars_mask():
+            if hasattr(cat, "slist"):
+                stars_mask = cat.slist
+                stars_mask = stars_mask[in_one_of_ranges(stars_mask, sg.mask.stars)]
+                stars_mask = np.isin(
+                    np.concatenate(
+                        [np.arange(start, end) for start, end in sg.mask.stars]
+                    ),
+                    stars_mask,
+                )
+            else:
+                stars_mask = null_slice
+            return stars_mask
+
+        def lazy_black_holes_mask():
+            if hasattr(cat, "bhlist"):
+                black_holes_mask = cat.bhlist
+                black_holes_mask = black_holes_mask[
+                    in_one_of_ranges(black_holes_mask, sg.mask.black_holes)
+                ]
+                black_holes_mask = np.isin(
+                    np.concatenate(
+                        [np.arange(start, end) for start, end in sg.mask.black_holes]
+                    ),
+                    black_holes_mask,
+                )
+            else:
+                black_holes_mask = null_slice
+            return black_holes_mask
+
         return MaskCollection(
-            gas=gas_mask,
-            dark_matter=dark_matter_mask,
-            stars=stars_mask,
-            black_holes=black_holes_mask,
+            _gas=lazy_gas_mask,
+            _dark_matter=lazy_dark_matter_mask,
+            _stars=lazy_stars_mask,
+            _black_holes=lazy_black_holes_mask,
         )
 
     @property
