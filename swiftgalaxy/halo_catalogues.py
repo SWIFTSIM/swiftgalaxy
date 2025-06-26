@@ -19,7 +19,7 @@ from swiftsimio import SWIFTMask, SWIFTDataset, mask
 from swiftgalaxy.masks import MaskCollection
 from swiftsimio.objects import cosmo_array, cosmo_quantity
 
-from typing import Any, Union, Optional, TYPE_CHECKING, List, Set, Dict
+from typing import Any, Union, Optional, TYPE_CHECKING, List, Set, Dict, Callable
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -835,9 +835,34 @@ class SOAP(_HaloCatalogue):
             set of particles.
         """
 
-        def generate_lazy_mask(group_name):
+        def generate_lazy_mask(group_name: str) -> Callable:
+            """
+            Generate a function that evaluates a mask for bound particles of a specified
+            particle type. The generated function should have no parameters.
 
-            def lazy_mask():
+            Parameters
+            ----------
+            group_name : :obj:`str`
+                The particle type to evaluate a mask for.
+
+            Returns
+            -------
+            out : Callable
+                The generated function that evaluates a mask.
+            """
+
+            def lazy_mask() -> NDArray:
+                """
+                Evaluate a mask that selects bound particles by comparing the particle
+                group membership dataset ``group_nr_bound`` to the halo catalogue index.
+
+                This function must mask the data (``group_nr_bound``) that is has loaded.
+
+                Returns
+                -------
+                out : :class:`~numpy.ndarray`
+                    The mask that selects bound particles.
+                """
                 mask = getattr(
                     sg, group_name
                 )._particle_dataset.group_nr_bound.to_value(
@@ -853,13 +878,12 @@ class SOAP(_HaloCatalogue):
 
             return lazy_mask
 
-        masks = MaskCollection(
+        return MaskCollection(
             **{
                 f"_{group_name}": generate_lazy_mask(group_name)
                 for group_name in sg.metadata.present_group_names
             }
         )
-        return masks
 
     @property
     def centre(self) -> cosmo_array:
@@ -1172,14 +1196,41 @@ class Velociraptor(_HaloCatalogue):
         # because we need a lazy version and to bypass swiftgalaxy masking on read
         # while we construct the mask
 
-        def generate_lazy_mask(group_name):
+        def generate_lazy_mask(group_name: str) -> Callable:
+            """
+            Generate a function that evaluates a mask for bound particles of a specified
+            particle type. The generated function should have no parameters.
 
-            def lazy_mask():
+            Parameters
+            ----------
+            group_name : :obj:`str`
+                The particle type to evaluate a mask for.
+
+            Returns
+            -------
+            out : Callable
+                The generated function that evaluates a mask.
+            """
+
+            def lazy_mask() -> NDArray:
+                """
+                Evaluate a mask that selects bound particles by comparing the
+                ``particle_ids`` to the list of bound particle IDs.
+
+                This function must mask the data (``particle_ids``) that is has
+                loaded.
+
+                Returns
+                -------
+                out : :class:`~numpy.ndarray`
+                    The mask that selects bound particles.
+                """
                 particles = (
                     self._particles[self._multi_galaxy_catalogue_mask]
                     if self._multi_galaxy_catalogue_mask is not None
                     else self._particles
                 )
+                assert not isinstance(particles, list)  # placate mypy
                 scale_factor = (
                     particles.groups_instance.catalogue.units.a
                     if not particles.groups_instance.catalogue.units.comoving
@@ -1772,73 +1823,67 @@ class Caesar(_HaloCatalogue):
 
         cat = self._mask_catalogue()
         null_slice = np.s_[:0]  # mask that selects no particles
+        list_names = {
+            "gas": "glist",
+            "dark_matter": "dlist" if hasattr(cat, "dlist") else "dmlist",
+            "stars": "slist",
+            "black_holes": "bhlist",
+        }
 
-        def lazy_gas_mask():
-            if hasattr(cat, "glist"):
-                gas_mask = cat.glist
-                gas_mask = gas_mask[in_one_of_ranges(gas_mask, sg.mask.gas)]
-                gas_mask = np.isin(
-                    np.concatenate(
-                        [np.arange(start, end) for start, end in sg.mask.gas]
-                    ),
-                    gas_mask,
-                )
-            else:
-                gas_mask = null_slice
-            return gas_mask
+        def generate_lazy_mask(group_name: str, list_name: str) -> Callable:
+            """
+            Generate a function that evaluates a mask for bound particles of a specified
+            particle type. The generated function should have no parameters.
 
-        def lazy_dark_matter_mask():
-            # name could be dmlist or dlist
-            if hasattr(cat, "dlist") or hasattr(cat, "dmlist"):
-                dark_matter_mask = getattr(cat, "dlist", cat.dmlist)
-                dark_matter_mask = dark_matter_mask[
-                    in_one_of_ranges(dark_matter_mask, sg.mask.dark_matter)
-                ]
-                dark_matter_mask = np.isin(
-                    np.concatenate(
-                        [np.arange(start, end) for start, end in sg.mask.dark_matter]
-                    ),
-                    dark_matter_mask,
-                )
-            else:
-                dark_matter_mask = null_slice
-            return dark_matter_mask
+            Parameters
+            ----------
+            group_name : :obj:`str`
+                The particle type to evaluate a mask for.
 
-        def lazy_stars_mask():
-            if hasattr(cat, "slist"):
-                stars_mask = cat.slist
-                stars_mask = stars_mask[in_one_of_ranges(stars_mask, sg.mask.stars)]
-                stars_mask = np.isin(
-                    np.concatenate(
-                        [np.arange(start, end) for start, end in sg.mask.stars]
-                    ),
-                    stars_mask,
-                )
-            else:
-                stars_mask = null_slice
-            return stars_mask
+            list_name : :obj:`str`
+                The name of the list in the caesar catalogue that stores the membership
+                information.
 
-        def lazy_black_holes_mask():
-            if hasattr(cat, "bhlist"):
-                black_holes_mask = cat.bhlist
-                black_holes_mask = black_holes_mask[
-                    in_one_of_ranges(black_holes_mask, sg.mask.black_holes)
-                ]
-                black_holes_mask = np.isin(
+            Returns
+            -------
+            out : Callable
+                The generated function that evaluates a mask.
+            """
+
+            def lazy_mask() -> Union[NDArray, slice]:
+                """
+                Evaluate a mask that selects bound particles by comparing the lists of
+                bound particle indices to the ranges read in the spatial mask.
+
+                This function must mask the data that is has loaded, but it loads nothing.
+
+                Returns
+                -------
+                out : :class:`~numpy.ndarray`
+                    The mask that selects bound particles.
+                """
+                if not hasattr(cat, list_name):
+                    return null_slice
+                mask = getattr(cat, list_name)
+                mask = mask[in_one_of_ranges(mask, getattr(sg.mask, group_name))]
+                mask = np.isin(
                     np.concatenate(
-                        [np.arange(start, end) for start, end in sg.mask.black_holes]
+                        [
+                            np.arange(start, end)
+                            for start, end in getattr(sg.mask, group_name)
+                        ]
                     ),
-                    black_holes_mask,
+                    mask,
                 )
-            else:
-                black_holes_mask = null_slice
-            return black_holes_mask
+                return mask
+
+            return lazy_mask
 
         return MaskCollection(
-            _gas=lazy_gas_mask,
-            _dark_matter=lazy_dark_matter_mask,
-            _stars=lazy_stars_mask,
-            _black_holes=lazy_black_holes_mask,
+            **{
+                f"_{group_name}": generate_lazy_mask(group_name, list_names[group_name])
+                for group_name in sg.metadata.present_group_names
+            }
         )
 
     @property

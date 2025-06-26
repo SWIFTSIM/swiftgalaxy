@@ -11,7 +11,7 @@ selection of particles of different types for use with
 """
 
 from copy import deepcopy
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 from types import EllipsisType
 from numpy.typing import ArrayLike
 
@@ -61,7 +61,7 @@ class MaskCollection(object):
     # Could use dataclasses module, but requires python 3.7+
 
     def __init__(
-        self, **kwargs: Optional[Union[slice, EllipsisType, ArrayLike]]
+        self, **kwargs: Optional[Union[slice, EllipsisType, ArrayLike, Callable]]
     ) -> None:
         for k, v in kwargs.items():
             setattr(self, k, v)
