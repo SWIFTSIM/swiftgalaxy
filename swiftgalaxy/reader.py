@@ -862,6 +862,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
             elif getattr(self._particle_dataset, f"_{field_name}") is not None:
                 setattr(self, field_name, getattr(self, field_name)[mask])
         self._mask_derived_coordinates(mask)
+        # this will trigger evaluation of lazily-evaluated masks (desired):
         if getattr(self._swiftgalaxy._extra_mask, particle_name) is None:
             setattr(self._swiftgalaxy._extra_mask, particle_name, mask)
         else:
@@ -2295,10 +2296,13 @@ class SWIFTGalaxy(SWIFTDataset):
                     )
                     if data is None:
                         continue
+                    mask = getattr(self._extra_mask, particle_name)
+                    if mask is None:
+                        continue
                     setattr(
                         getattr(self, particle_name)._particle_dataset,
                         f"_{field_name}",
-                        data[getattr(self._extra_mask, particle_name)],
+                        data[mask],
                     )
 
     def mask_particles(self, mask_collection: MaskCollection) -> None:
