@@ -16,10 +16,10 @@ from collections.abc import Sequence
 import numpy as np
 import unyt as u
 from swiftsimio import SWIFTMask, SWIFTDataset, mask
-from swiftgalaxy.masks import MaskCollection
+from swiftgalaxy.masks import MaskCollection, LazyMask
 from swiftsimio.objects import cosmo_array, cosmo_quantity
 
-from typing import Any, Union, Optional, TYPE_CHECKING, List, Set, Dict, Callable
+from typing import Any, Union, Optional, TYPE_CHECKING, List, Set, Dict
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -835,7 +835,7 @@ class SOAP(_HaloCatalogue):
             set of particles.
         """
 
-        def generate_lazy_mask(group_name: str) -> tuple[Callable, "SWIFTGalaxy"]:
+        def generate_lazy_mask(group_name: str) -> LazyMask:
             """
             Generate a function that evaluates a mask for bound particles of a specified
             particle type. The generated function should have no parameters.
@@ -856,6 +856,8 @@ class SOAP(_HaloCatalogue):
                 Evaluate a mask that selects bound particles by comparing the particle
                 group membership dataset ``group_nr_bound`` to the halo catalogue index.
 
+                This function must mask the data (``group_nr_bound``) that is has loaded.
+
                 Returns
                 -------
                 out : :class:`~numpy.ndarray`
@@ -868,13 +870,17 @@ class SOAP(_HaloCatalogue):
                 ) == self.input_halos.halo_catalogue_index.to_value(
                     u.dimensionless
                 )
+                # mask the group_nr_bound array that we loaded
+                getattr(sg, group_name)._particle_dataset._group_nr_bound = getattr(
+                    sg, group_name
+                )._particle_dataset._group_nr_bound[mask]
                 return mask
 
-            return lazy_mask, sg
+            return LazyMask(mask_function=lazy_mask)
 
         return MaskCollection(
             **{
-                f"_{group_name}": generate_lazy_mask(group_name)
+                group_name: generate_lazy_mask(group_name)
                 for group_name in sg.metadata.present_group_names
             }
         )
@@ -1190,7 +1196,7 @@ class Velociraptor(_HaloCatalogue):
         # because we need a lazy version and to bypass swiftgalaxy masking on read
         # while we construct the mask
 
-        def generate_lazy_mask(group_name: str) -> tuple[Callable, "SWIFTGalaxy"]:
+        def generate_lazy_mask(group_name: str) -> LazyMask:
             """
             Generate a function that evaluates a mask for bound particles of a specified
             particle type. The generated function should have no parameters.
@@ -1210,6 +1216,9 @@ class Velociraptor(_HaloCatalogue):
                 """
                 Evaluate a mask that selects bound particles by comparing the
                 ``particle_ids`` to the list of bound particle IDs.
+
+                This function must mask the data (``particle_ids``) that is has
+                loaded.
 
                 Returns
                 -------
@@ -1236,13 +1245,17 @@ class Velociraptor(_HaloCatalogue):
                         scale_exponent=0,
                     ),
                 )
+                # mask the particle_ids that we loaded
+                getattr(sg, group_name)._particle_dataset._particle_ids = getattr(
+                    sg, group_name
+                )._particle_dataset._particle_ids[mask]
                 return mask
 
-            return lazy_mask, sg
+            return LazyMask(mask_function=lazy_mask)
 
         return MaskCollection(
             **{
-                f"_{group_name}": generate_lazy_mask(group_name)
+                group_name: generate_lazy_mask(group_name)
                 for group_name in sg.metadata.present_group_names
             }
         )
@@ -1817,9 +1830,7 @@ class Caesar(_HaloCatalogue):
             "black_holes": "bhlist",
         }
 
-        def generate_lazy_mask(
-            group_name: str, list_name: str
-        ) -> tuple[Callable, "SWIFTGalaxy"]:
+        def generate_lazy_mask(group_name: str, list_name: str) -> LazyMask:
             """
             Generate a function that evaluates a mask for bound particles of a specified
             particle type. The generated function should have no parameters.
@@ -1844,6 +1855,8 @@ class Caesar(_HaloCatalogue):
                 Evaluate a mask that selects bound particles by comparing the lists of
                 bound particle indices to the ranges read in the spatial mask.
 
+                This function must mask the data that is has loaded, but it loads nothing.
+
                 Returns
                 -------
                 out : :class:`~numpy.ndarray`
@@ -1864,11 +1877,11 @@ class Caesar(_HaloCatalogue):
                 )
                 return mask
 
-            return lazy_mask, sg
+            return LazyMask(mask_function=lazy_mask)
 
         return MaskCollection(
             **{
-                f"_{group_name}": generate_lazy_mask(group_name, list_names[group_name])
+                group_name: generate_lazy_mask(group_name, list_names[group_name])
                 for group_name in sg.metadata.present_group_names
             }
         )

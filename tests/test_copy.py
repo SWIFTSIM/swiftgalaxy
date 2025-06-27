@@ -3,7 +3,7 @@ from copy import copy, deepcopy
 import pytest
 import unyt as u
 from unyt.testing import assert_allclose_units
-from swiftgalaxy.masks import MaskCollection
+from swiftgalaxy.masks import MaskCollection, LazyMask
 
 abstol_m = 1e2 * u.solMass
 reltol_m = 1.0e-4
@@ -165,14 +165,15 @@ class TestCopyMaskCollection:
 
     def test_deepcopy_mask_collection(self):
         """
-        Test that masks get copied along with values. Since the object isn't
-        really "deep", shallow copy and deepcopy have the same expectation.
+        Test that masks get copied along with values.
         """
         mc = MaskCollection(
             gas=np.ones(100, dtype=bool),
             dark_matter=np.s_[:20],
             stars=None,
             black_holes=np.arange(3),
+            lazy_evaluated=LazyMask(mask=np.ones(100, dtype=bool)),
+            lazy_unevaluated=LazyMask(mask_function=lambda: np.s_[:20]),
         )
         mc_copy = deepcopy(mc)
         assert set(mc_copy.__dict__.keys()) == set(mc.__dict__.keys())
@@ -182,3 +183,5 @@ class TestCopyMaskCollection:
                 assert comparison
             else:
                 assert all(comparison)
+        assert all(mc.lazy_evaluated.mask == mc_copy.lazy_evaluated.mask)
+        assert mc.lazy_unevaluated.mask == mc_copy.lazy_unevaluated.mask
