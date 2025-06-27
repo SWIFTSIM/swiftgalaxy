@@ -11,9 +11,12 @@ selection of particles of different types for use with
 """
 
 from copy import deepcopy
-from typing import Optional, Union, Callable
+from typing import Optional, Union, Callable, TYPE_CHECKING
 from types import EllipsisType
 from numpy.typing import ArrayLike
+
+if TYPE_CHECKING:
+    from swiftgalaxy import SWIFTGalaxy
 
 
 class MaskCollection(object):
@@ -58,10 +61,11 @@ class MaskCollection(object):
         )
     """
 
-    # Could use dataclasses module, but requires python 3.7+
-
     def __init__(
-        self, **kwargs: Optional[Union[slice, EllipsisType, ArrayLike, Callable]]
+        self,
+        **kwargs: Optional[
+            Union[slice, EllipsisType, ArrayLike, tuple[Callable, "SWIFTGalaxy"]]
+        ],
     ) -> None:
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -87,14 +91,14 @@ class MaskCollection(object):
             return ``None``.
         """
         if attr[0] != "_":
-            # We could be looking for a lazily evaluated mask that hasn't been evaluated
+            # We could be looking for a lazily-evaluated mask that hasn't been evaluated
             # yet. We don't check this via hasattr because
-            # hasattr(self, f"_{attr}") is always True because of this function.
-            # Instead of checking for the attribute, assume that it's a lazy-evaluated
-            # mask and try to call it; if that fails it wasn't a lazy mask.
+            # hasattr(self, f"_{attr}") is always True because of *this* function.
             possible_lazy_mask = getattr(self, f"_{attr}")
             if possible_lazy_mask is not None:
-                setattr(self, attr, possible_lazy_mask())
+                lazy_mask, sg = possible_lazy_mask
+                setattr(self, attr, lazy_mask())
+                sg._apply_extra_mask_to_loaded_data([attr])
                 return getattr(self, attr)
         return None
 

@@ -61,9 +61,9 @@ def _apply_box_wrap(
     current_transform : :class:`~numpy.ndarray`
         The currently active 4x4 transformation matrix.
 
-    offset_frac : :obj:`float`
+    offset_frac : :obj:`float`, default: ``0.5``
         The fraction of the box to offset by. The default it to wrap to [-Lbox/2, Lbox/2].
-        Setting to 0.0 instead wraps to [0, Lbox]. (Default: 0.5)
+        Setting to 0.0 instead wraps to [0, Lbox].
 
     Returns
     -------
@@ -2255,11 +2255,25 @@ class SWIFTGalaxy(SWIFTDataset):
                     setattr(dataset, f"_{field_name}", field_data)
         return
 
-    def _apply_extra_mask_to_loaded_data(self) -> None:
+    def _apply_extra_mask_to_loaded_data(
+        self, particle_names: Optional[list[str]] = None
+    ) -> None:
         """
         Check for data already in memory and apply the extra_mask if any are found.
+
+        This should only be called immediately after evaluating the extra mask and a new
+        evaluation of a lazily-evaluated mask. In the latter case it should only be called
+        on the specific particle type that the mask was evaluated for by using the
+        ``particle_names`` keyword argument.
+
+        Parameters
+        ----------
+        particle_names : list, default: ``None``
+            List of particle types to check for data that need masking.
         """
-        for particle_name in self.metadata.present_group_names:
+        if particle_names is None:
+            particle_names = self.metadata.present_group_names
+        for particle_name in particle_names:
             particle_metadata = getattr(self.metadata, f"{particle_name}_properties")
             for field_name in particle_metadata.field_names:
                 if getattr(self, particle_name)._is_namedcolumns(field_name):

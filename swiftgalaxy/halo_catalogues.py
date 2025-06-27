@@ -835,7 +835,7 @@ class SOAP(_HaloCatalogue):
             set of particles.
         """
 
-        def generate_lazy_mask(group_name: str) -> Callable:
+        def generate_lazy_mask(group_name: str) -> tuple[Callable, "SWIFTGalaxy"]:
             """
             Generate a function that evaluates a mask for bound particles of a specified
             particle type. The generated function should have no parameters.
@@ -870,7 +870,7 @@ class SOAP(_HaloCatalogue):
                 )
                 return mask
 
-            return lazy_mask
+            return lazy_mask, sg
 
         return MaskCollection(
             **{
@@ -1190,7 +1190,7 @@ class Velociraptor(_HaloCatalogue):
         # because we need a lazy version and to bypass swiftgalaxy masking on read
         # while we construct the mask
 
-        def generate_lazy_mask(group_name: str) -> Callable:
+        def generate_lazy_mask(group_name: str) -> tuple[Callable, "SWIFTGalaxy"]:
             """
             Generate a function that evaluates a mask for bound particles of a specified
             particle type. The generated function should have no parameters.
@@ -1238,7 +1238,7 @@ class Velociraptor(_HaloCatalogue):
                 )
                 return mask
 
-            return lazy_mask
+            return lazy_mask, sg
 
         return MaskCollection(
             **{
@@ -1817,7 +1817,9 @@ class Caesar(_HaloCatalogue):
             "black_holes": "bhlist",
         }
 
-        def generate_lazy_mask(group_name: str, list_name: str) -> Callable:
+        def generate_lazy_mask(
+            group_name: str, list_name: str
+        ) -> tuple[Callable, "SWIFTGalaxy"]:
             """
             Generate a function that evaluates a mask for bound particles of a specified
             particle type. The generated function should have no parameters.
@@ -1862,7 +1864,7 @@ class Caesar(_HaloCatalogue):
                 )
                 return mask
 
-            return lazy_mask
+            return lazy_mask, sg
 
         return MaskCollection(
             **{
