@@ -86,9 +86,16 @@ class MaskCollection(object):
             If we reach calling this function the attribute is not found and we
             return ``None``.
         """
-        if hasattr(self, f"_{attr}"):
-            setattr(self, attr, getattr(self, f"_{attr}")())
-            return getattr(self, attr)
+        if attr[0] != "_":
+            # We could be looking for a lazily evaluated mask that hasn't been evaluated
+            # yet. We don't check this via hasattr because
+            # hasattr(self, f"_{attr}") is always True because of this function.
+            # Instead of checking for the attribute, assume that it's a lazy-evaluated
+            # mask and try to call it; if that fails it wasn't a lazy mask.
+            possible_lazy_mask = getattr(self, f"_{attr}")
+            if possible_lazy_mask is not None:
+                setattr(self, attr, possible_lazy_mask())
+                return getattr(self, attr)
         return None
 
     def __copy__(self) -> "MaskCollection":
