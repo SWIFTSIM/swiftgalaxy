@@ -1635,10 +1635,11 @@ class SWIFTGalaxy(SWIFTDataset):
                 )
         if not hasattr(self, "_extra_mask"):
             self._extra_mask = None
-        if (
-            self.halo_catalogue is not None
-        ):  # in server mode we don't have a halo_catalogue yet
+        if self.halo_catalogue is not None:
+            # in server mode we don't have a halo_catalogue yet
             self._extra_mask = self.halo_catalogue._get_extra_mask(self)
+        if self._extra_mask is not None:
+            self._apply_extra_mask_to_loaded_data()
         else:
             self._extra_mask = MaskCollection(
                 **{k: None for k in self.metadata.present_group_names}
@@ -2253,6 +2254,38 @@ class SWIFTGalaxy(SWIFTDataset):
                     )
                     setattr(dataset, f"_{field_name}", field_data)
         return
+
+    def _apply_extra_mask_to_loaded_data(self) -> None:
+        """
+        Check for data already in memory and apply the extra_mask if any are found.
+        """
+        for particle_name in self.metadata.present_group_names:
+            particle_metadata = getattr(self.metadata, f"{particle_name}_properties")
+            for field_name in particle_metadata.field_names:
+                if getattr(self, particle_name)._is_namedcolumns(field_name):
+                    named_column_dataset = getattr(
+                        getattr(self, particle_name), f"{field_name}"
+                    )._named_column_dataset
+                    for column in named_column_dataset.named_columns:
+                        data = getattr(named_column_dataset, f"_{column}")
+                        if data is None:
+                            continue
+                        setattr(
+                            named_column_dataset,
+                            f"_{column}",
+                            data[getattr(self._extra_mask, particle_name)],
+                        )
+                else:
+                    data = getattr(
+                        getattr(self, particle_name)._particle_dataset, f"_{field_name}"
+                    )
+                    if data is None:
+                        continue
+                    setattr(
+                        getattr(self, particle_name)._particle_dataset,
+                        f"_{field_name}",
+                        data[getattr(self._extra_mask, particle_name)],
+                    )
 
     def mask_particles(self, mask_collection: MaskCollection) -> None:
         """
