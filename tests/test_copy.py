@@ -173,7 +173,9 @@ class TestCopyMaskCollection:
             stars=None,
             black_holes=np.arange(3),
             lazy_evaluated=LazyMask(mask=np.ones(100, dtype=bool)),
-            lazy_unevaluated=LazyMask(mask_function=lambda: np.s_[:20]),
+            lazy_unevaluated=LazyMask(
+                mask_function=lambda mask_loaded_data=True: np.s_[:20]
+            ),
         )
         mc_copy = deepcopy(mc)
         assert set(mc_copy.__dict__.keys()) == set(mc.__dict__.keys())

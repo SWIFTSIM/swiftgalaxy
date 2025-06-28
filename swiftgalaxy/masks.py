@@ -59,13 +59,20 @@ class LazyMask(object):
             self._evaluated = True
         return
 
-    def _evaluate(self) -> None:
+    def _evaluate(self, mask_loaded_data: bool = True) -> None:
         """
         Forces evaluation the mask function.
+
+        Parameters
+        ----------
+        mask_loaded_data : bool, default: ``True``
+            If ``True``, mask data arrays that are loaded during mask construction,
+            otherwise omit this step.
         """
-        assert self._mask_function is not None  # placate mypy
-        self._mask = self._mask_function()
-        self._evaluated = True
+        if not self._evaluated:
+            assert self._mask_function is not None  # placate mypy
+            self._mask = self._mask_function(mask_loaded_data=mask_loaded_data)
+            self._evaluated = True
 
     @property
     def mask(self) -> Optional[Union[slice, EllipsisType, ArrayLike]]:
