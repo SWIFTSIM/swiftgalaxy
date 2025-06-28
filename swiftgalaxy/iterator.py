@@ -12,6 +12,7 @@ import unyt as u
 from swiftsimio import mask, cosmo_array
 from .reader import SWIFTGalaxy
 from .halo_catalogues import _HaloCatalogue
+from .masks import LazyMask
 from warnings import warn
 
 from typing import Optional, Set, Any, List, Callable, Dict, Tuple, Generator, TypedDict
@@ -561,9 +562,14 @@ class SWIFTGalaxies:
             self._preload()
             for igalaxy in target_indices:
                 self.halo_catalogue._mask_multi_galaxy(igalaxy)
-                swift_galaxy = self._server[
-                    self.halo_catalogue._get_extra_mask(self._server)
-                ]
+                server_mask = self.halo_catalogue._get_extra_mask(self._server)
+                for preload_type in set(
+                    [preload_field.split(".")[0] for preload_field in self.preload]
+                ):
+                    type_mask = getattr(server_mask, preload_type)
+                    if isinstance(type_mask, LazyMask):
+                        type_mask._evaluate(mask_loaded_data=False)
+                swift_galaxy = self._server[server_mask]
                 swift_galaxy.halo_catalogue = self.halo_catalogue
                 if self.auto_recentre and self.coordinate_frame_from is not None:
                     raise ValueError(

@@ -31,7 +31,7 @@ from swiftsimio.reader import (
 from swiftsimio.objects import cosmo_array
 from swiftsimio.masks import SWIFTMask
 from swiftgalaxy.halo_catalogues import _HaloCatalogue
-from swiftgalaxy.masks import MaskCollection
+from swiftgalaxy.masks import MaskCollection, LazyMask
 
 from typing import Union, Optional, Set, Callable
 
@@ -61,9 +61,9 @@ def _apply_box_wrap(
     current_transform : :class:`~numpy.ndarray`
         The currently active 4x4 transformation matrix.
 
-    offset_frac : :obj:`float`
+    offset_frac : :obj:`float`, default: ``0.5``
         The fraction of the box to offset by. The default it to wrap to [-Lbox/2, Lbox/2].
-        Setting to 0.0 instead wraps to [0, Lbox]. (Default: 0.5)
+        Setting to 0.0 instead wraps to [0, Lbox].
 
     Returns
     -------
@@ -823,10 +823,10 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
                 self._swiftgalaxy._extra_mask, self._particle_dataset.group_name
             )
             if mask is not None:
-                return data[mask]
+                return data[mask.mask]
         return data
 
-    def _mask_dataset(self, mask: slice) -> None:
+    def _mask_dataset(self, mask: LazyMask) -> None:
         """
         Apply a mask to this data set.
 
@@ -857,10 +857,10 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
                         setattr(
                             getattr(self, field_name),
                             named_column,
-                            getattr(getattr(self, field_name), named_column)[mask],
+                            getattr(getattr(self, field_name), named_column)[mask.mask],
                         )
             elif getattr(self._particle_dataset, f"_{field_name}") is not None:
-                setattr(self, field_name, getattr(self, field_name)[mask])
+                setattr(self, field_name, getattr(self, field_name)[mask.mask])
         self._mask_derived_coordinates(mask)
         if getattr(self._swiftgalaxy._extra_mask, particle_name) is None:
             setattr(self._swiftgalaxy._extra_mask, particle_name, mask)
@@ -881,7 +881,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
             setattr(
                 self._swiftgalaxy._extra_mask,
                 particle_name,
-                np.arange(num_part, dtype=int)[old_mask][mask],
+                LazyMask(mask=np.arange(num_part, dtype=int)[old_mask.mask][mask.mask]),
             )
         return
 
@@ -1316,7 +1316,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
             ),
         )
 
-    def _mask_derived_coordinates(self, mask: slice) -> None:
+    def _mask_derived_coordinates(self, mask: LazyMask) -> None:
         """
         Apply a mask to the internally maintained derived coordinates.
 
@@ -1333,21 +1333,21 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
             for coord in ("r", "theta", "phi"):
                 self._spherical_coordinates[f"_{coord}"] = self._spherical_coordinates[
                     f"_{coord}"
-                ][mask]
+                ][mask.mask]
         if self._spherical_velocities is not None:
             for coord in ("v_r", "v_t", "v_p"):
                 self._spherical_velocities[f"_{coord}"] = self._spherical_velocities[
                     f"_{coord}"
-                ][mask]
+                ][mask.mask]
         if self._cylindrical_coordinates is not None:
             for coord in ("rho", "phi", "z"):
                 self._cylindrical_coordinates[f"_{coord}"] = (
-                    self._cylindrical_coordinates[f"_{coord}"][mask]
+                    self._cylindrical_coordinates[f"_{coord}"][mask.mask]
                 )
         if self._cylindrical_velocities is not None:
             for coord in ("v_rho", "v_phi", "v_z"):
                 self._cylindrical_velocities[f"_{coord}"] = (
-                    self._cylindrical_velocities[f"_{coord}"][mask]
+                    self._cylindrical_velocities[f"_{coord}"][mask.mask]
                 )
         return
 
@@ -1635,44 +1635,9 @@ class SWIFTGalaxy(SWIFTDataset):
                 )
         if not hasattr(self, "_extra_mask"):
             self._extra_mask = None
-        if (
-            self.halo_catalogue is not None
-        ):  # in server mode we don't have a halo_catalogue yet
+        if self.halo_catalogue is not None:
+            # in server mode we don't have a halo_catalogue yet
             self._extra_mask = self.halo_catalogue._get_extra_mask(self)
-        if self._extra_mask is not None:
-            # need to mask any already loaded data
-            for particle_name in self.metadata.present_group_names:
-                if getattr(self._extra_mask, particle_name) is None:
-                    continue
-                particle_metadata = getattr(
-                    self.metadata, f"{particle_name}_properties"
-                )
-                for field_name in particle_metadata.field_names:
-                    if getattr(self, particle_name)._is_namedcolumns(field_name):
-                        named_column_dataset = getattr(
-                            getattr(self, particle_name), f"{field_name}"
-                        )._named_column_dataset
-                        for column in named_column_dataset.named_columns:
-                            data = getattr(named_column_dataset, f"_{column}")
-                            if data is None:
-                                continue
-                            setattr(
-                                named_column_dataset,
-                                f"_{column}",
-                                data[getattr(self._extra_mask, particle_name)],
-                            )
-                    else:
-                        data = getattr(
-                            getattr(self, particle_name)._particle_dataset,
-                            f"_{field_name}",
-                        )
-                        if data is None:
-                            continue
-                        setattr(
-                            getattr(self, particle_name)._particle_dataset,
-                            f"_{field_name}",
-                            data[getattr(self._extra_mask, particle_name)],
-                        )
         else:
             self._extra_mask = MaskCollection(
                 **{k: None for k in self.metadata.present_group_names}
@@ -1921,9 +1886,9 @@ class SWIFTGalaxy(SWIFTDataset):
             if mask_collection is not None:
                 mask = getattr(mask_collection, particle_name)
                 if mask is None:
-                    mask = Ellipsis
+                    mask = LazyMask(mask=Ellipsis)
             else:
-                mask = Ellipsis
+                mask = LazyMask(mask=Ellipsis)
             getattr(sg, particle_name)._mask_dataset(mask)
             for field_name in particle_metadata.field_names:
                 if particle_dataset_helper._is_namedcolumns(field_name):
@@ -1940,39 +1905,41 @@ class SWIFTGalaxy(SWIFTDataset):
                             setattr(
                                 new_named_columns_helper._named_column_dataset,
                                 f"_{named_column}",
-                                data[mask],
+                                data[mask.mask],
                             )
                 else:
                     data = getattr(
                         particle_dataset_helper._particle_dataset, f"_{field_name}"
                     )
                     if data is not None:
-                        setattr(new_particle_dataset_helper, field_name, data[mask])
+                        setattr(
+                            new_particle_dataset_helper, field_name, data[mask.mask]
+                        )
             # cartesian_coordinates return a reference to coordinates on-the-fly:
             # no need to initialise here.
             if particle_dataset_helper._spherical_coordinates is not None:
                 new_particle_dataset_helper._spherical_coordinates = dict()
                 for c in ("_r", "_theta", "_phi"):
                     new_particle_dataset_helper._spherical_coordinates[c] = (
-                        particle_dataset_helper._spherical_coordinates[c][mask]
+                        particle_dataset_helper._spherical_coordinates[c][mask.mask]
                     )
             if particle_dataset_helper._spherical_velocities is not None:
                 new_particle_dataset_helper._spherical_velocities = dict()
                 for c in ("_v_r", "_v_t", "_v_p"):
                     new_particle_dataset_helper._spherical_velocities[c] = (
-                        particle_dataset_helper._spherical_velocities[c][mask]
+                        particle_dataset_helper._spherical_velocities[c][mask.mask]
                     )
             if particle_dataset_helper._cylindrical_coordinates is not None:
                 new_particle_dataset_helper._cylindrical_coordinates = dict()
                 for c in ("_rho", "_phi", "_z"):
                     new_particle_dataset_helper._cylindrical_coordinates[c] = (
-                        particle_dataset_helper._cylindrical_coordinates[c][mask]
+                        particle_dataset_helper._cylindrical_coordinates[c][mask.mask]
                     )
             if particle_dataset_helper._cylindrical_velocities is not None:
                 new_particle_dataset_helper._cylindrical_velocities = dict()
                 for c in ("_v_rho", "_v_phi", "_v_z"):
                     new_particle_dataset_helper._cylindrical_velocities[c] = (
-                        particle_dataset_helper._cylindrical_velocities[c][mask]
+                        particle_dataset_helper._cylindrical_velocities[c][mask.mask]
                     )
         return sg
 
