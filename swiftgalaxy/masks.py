@@ -10,6 +10,7 @@ selection of particles of different types for use with
 :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
 """
 
+import numpy as np
 from copy import deepcopy
 from typing import Optional, Union, Callable
 from types import EllipsisType
@@ -52,7 +53,7 @@ class LazyMask(object):
         elif mask_function is not None and mask is None:
             self._mask_function = mask_function
             self._evaluated = False
-            # leave self.mask unset
+            # leave self._mask unset
         else:
             self._mask = mask
             self._mask_function = mask_function
@@ -99,7 +100,10 @@ class LazyMask(object):
             The copy of the :class:`~swiftgalaxy.masks.LazyMask`.
         """
         if self._evaluated:
-            return LazyMask(mask=self._mask, mask_function=self._mask_function)
+            if hasattr(self, "_mask_function"):
+                return LazyMask(mask=self._mask, mask_function=self._mask_function)
+            else:
+                return LazyMask(mask=self._mask)
         else:
             return LazyMask(mask_function=self._mask_function)
 
@@ -129,9 +133,9 @@ class LazyMask(object):
         """
         Check this mask for equality with another.
 
-        If compared with another :class:`~swiftgalaxy.masks.LazyMask` then the two
-        explicitly evaluated masks are compared for equality. If compared to any
-        other object, comparison is attempted with the explicitly evaluated mask.
+        If compared with another :class:`~swiftgalaxy.masks.LazyMask` then the comparison
+        of the two explicitly evaluated masks is returned. If compared to any other
+        object, comparison is attempted with the explicitly evaluated mask.
 
         If the mask has not been evaluated, no evaluation is triggered.
 
@@ -143,7 +147,7 @@ class LazyMask(object):
         Returns
         -------
         out : :obj:`bool`
-            ``True`` if the masks are equal, ``False`` otherwise.
+            Comparison result.
 
         Raises
         ------
@@ -155,8 +159,6 @@ class LazyMask(object):
         if isinstance(other, LazyMask):
             if hasattr(self, "_mask") and hasattr(other, "_mask"):
                 masks_equal = self._mask == other._mask
-                if type(masks_equal) is not bool:
-                    masks_equal = all(masks_equal)
             else:
                 raise ValueError(
                     "Cannot compare when one or more masks are not evaluated."
@@ -164,13 +166,46 @@ class LazyMask(object):
         else:
             if hasattr(self, "_mask"):
                 masks_equal = self._mask == other
-                if type(masks_equal) is not bool:
-                    masks_equal = all(masks_equal)
             else:
                 raise ValueError(
                     "Cannot compare when one or more masks are not evaluated."
                 )
+        if type(masks_equal) is not bool:
+            masks_equal = all(masks_equal)
         return masks_equal
+
+    def __ne__(self, other: object) -> bool:
+        """
+        Check this mask for inequality with another.
+
+        If compared with another :class:`~swiftgalaxy.masks.LazyMask` then the comparison
+        of the two explicitly evaluated masks is returned. If compared to any other
+        object, comparison is attempted with the explicitly evaluated mask.
+
+        If the mask has not been evaluated, no evaluation is triggered.
+
+        Parameters
+        ----------
+        other : :obj:`object`
+            The mask to compare with.
+
+        Returns
+        -------
+        out : :obj:`bool`
+            Comparison result.
+
+        Raises
+        ------
+        ValueError
+            If the internal mask is not already evaluated. Also raised if the compared
+            object is a :class:`~swiftgalaxy.masks.LazyMask` and its mask is not
+            evaluated.
+        """
+        eq = self.__eq__(other)
+        if type(eq) is bool:
+            return not eq
+        else:
+            return np.logical_not(eq)
 
 
 class MaskCollection(object):
