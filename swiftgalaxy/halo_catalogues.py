@@ -838,7 +838,9 @@ class SOAP(_HaloCatalogue):
         def generate_lazy_mask(group_name: str) -> LazyMask:
             """
             Generate a function that evaluates a mask for bound particles of a specified
-            particle type. The generated function should have no parameters.
+            particle type. The generated function should have one parameter, accepting
+            a boolean, that toggles masking the data loaded during the construction of
+            the mask on and off.
 
             Parameters
             ----------
@@ -856,7 +858,8 @@ class SOAP(_HaloCatalogue):
                 Evaluate a mask that selects bound particles by comparing the particle
                 group membership dataset ``group_nr_bound`` to the halo catalogue index.
 
-                This function must mask the data (``group_nr_bound``) that is has loaded.
+                This function must optionally mask the data (``group_nr_bound``) that is
+                has loaded.
 
                 Parameters
                 ----------
@@ -1207,7 +1210,9 @@ class Velociraptor(_HaloCatalogue):
         def generate_lazy_mask(group_name: str) -> LazyMask:
             """
             Generate a function that evaluates a mask for bound particles of a specified
-            particle type. The generated function should have no parameters.
+            particle type. The generated function should have one parameter, accepting
+            a boolean, that toggles masking the data loaded during the construction of
+            the mask on and off.
 
             Parameters
             ----------
@@ -1225,7 +1230,7 @@ class Velociraptor(_HaloCatalogue):
                 Evaluate a mask that selects bound particles by comparing the
                 ``particle_ids`` to the list of bound particle IDs.
 
-                This function must mask the data (``particle_ids``) that is has
+                This function must optionally mask the data (``particle_ids``) that is has
                 loaded.
 
                 Parameters
@@ -1849,7 +1854,9 @@ class Caesar(_HaloCatalogue):
         def generate_lazy_mask(group_name: str, list_name: str) -> LazyMask:
             """
             Generate a function that evaluates a mask for bound particles of a specified
-            particle type. The generated function should have no parameters.
+            particle type. The generated function should have one parameter, accepting
+            a boolean, that toggles masking the data loaded during the construction of
+            the mask on and off.
 
             Parameters
             ----------
@@ -1871,7 +1878,8 @@ class Caesar(_HaloCatalogue):
                 Evaluate a mask that selects bound particles by comparing the lists of
                 bound particle indices to the ranges read in the spatial mask.
 
-                This function must mask the data that is has loaded, but it loads nothing.
+                This function must optionally mask the data that is has loaded, but it
+                loads nothing.
 
                 Parameters
                 ----------

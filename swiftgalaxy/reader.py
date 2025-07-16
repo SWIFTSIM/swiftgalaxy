@@ -834,7 +834,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Parameters
         ----------
-        mask : :obj:`slice`
+        mask : :class:`~swiftgalaxy.masks.LazyMask`
             The mask to apply to all data arrays managed by this
             :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`.
         """
@@ -1325,7 +1325,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Parameters
         ----------
-        mask : :obj:`slice`
+        mask : :class:`~swiftgalaxy.masks.LazyMask`
             Mask to apply to the derived coordinates maintained by this
             :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`.
         """
