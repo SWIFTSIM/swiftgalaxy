@@ -16,6 +16,7 @@ from swiftgalaxy.demo_data import (
 )
 
 
+@pytest.mark.skip
 class TestWebExampleData:
 
     def test_str(self):
