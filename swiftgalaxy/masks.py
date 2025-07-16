@@ -10,7 +10,6 @@ selection of particles of different types for use with
 :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
 """
 
-import numpy as np
 from copy import deepcopy
 from typing import Optional, Union, Callable
 from types import EllipsisType
@@ -100,10 +99,7 @@ class LazyMask(object):
             The copy of the :class:`~swiftgalaxy.masks.LazyMask`.
         """
         if self._evaluated:
-            if hasattr(self, "_mask_function"):
-                return LazyMask(mask=self._mask, mask_function=self._mask_function)
-            else:
-                return LazyMask(mask=self._mask)
+            return LazyMask(mask=self._mask, mask_function=self._mask_function)
         else:
             return LazyMask(mask_function=self._mask_function)
 
@@ -201,11 +197,7 @@ class LazyMask(object):
             object is a :class:`~swiftgalaxy.masks.LazyMask` and its mask is not
             evaluated.
         """
-        eq = self.__eq__(other)
-        if type(eq) is bool:
-            return not eq
-        else:
-            return np.logical_not(eq)
+        return not self.__eq__(other)
 
 
 class MaskCollection(object):
