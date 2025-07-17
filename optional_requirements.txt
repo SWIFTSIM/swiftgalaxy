@@ -9,4 +9,4 @@ h5py
 astropy
 velociraptor
 git+https://github.com/dnarayanan/caesar.git
-git+https://github.com/SWIFTSIM/soap.git@soap_runtime
+git+https://github.com/SWIFTSIM/soap.git
