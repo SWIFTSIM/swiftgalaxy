@@ -173,8 +173,6 @@ def sgs_soap():
         preload={  # just to keep warnings quiet
             "gas.particle_ids",
             "dark_matter.particle_ids",
-            "stars.particle_ids",
-            "black_holes.particle_ids",
         },
     )
 

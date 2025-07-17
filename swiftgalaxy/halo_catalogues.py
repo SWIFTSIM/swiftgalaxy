@@ -782,13 +782,7 @@ class SOAP(_HaloCatalogue):
         out : :obj:`set`
             The ``group_nr_bound`` dataset identifiers for all present particle types.
         """
-        if self.extra_mask == "bound_only":
-            return {
-                f"{group_name}.group_nr_bound"
-                for group_name in sg.metadata.present_group_names
-            }
-        else:
-            return set()
+        return set()
 
     def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         """

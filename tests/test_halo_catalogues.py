@@ -1279,6 +1279,77 @@ class TestSOAPWithSWIFTGalaxy:
                     == getattr(sg._extra_mask, ptype).mask
                 )
 
+    def test_lazy_masking_sg(self, sg_soap):
+        """
+        Check that lazy masks are evaluated only when needed, loading and masking exactly
+        the expected data.
+        """
+        # check that masks aren't evaluated
+        for ptype in sg_soap.metadata.present_group_names:
+            assert getattr(sg_soap._extra_mask, ptype)._evaluated is False
+            particle_dataset = getattr(sg_soap, ptype)._particle_dataset
+            for field_name in getattr(particle_dataset, "group_metadata").field_names:
+                assert getattr(particle_dataset, f"_{field_name}") is None
+        # trigger mask evaluation and application:
+        sg_soap.gas.masses
+        # now check that mask was evaluated and applied for gas:
+        assert sg_soap._extra_mask.gas._evaluated
+        assert sg_soap.gas._particle_dataset._group_nr_bound is not None
+        assert sg_soap.gas.group_nr_bound.shape == sg_soap.gas.masses.shape
+        assert sg_soap._extra_mask.gas._mask.shape != sg_soap.gas.masses.shape
+        # and other masks are still unevaluated, no other data loaded
+        for ptype in sg_soap.metadata.present_group_names:
+            if ptype != "gas":
+                assert getattr(sg_soap._extra_mask, ptype)._evaluated is False
+            particle_dataset = getattr(sg_soap, ptype)._particle_dataset
+            for field_name in getattr(particle_dataset, "group_metadata").field_names:
+                if ptype == "gas" and field_name in ("masses", "group_nr_bound"):
+                    continue
+                assert getattr(particle_dataset, f"_{field_name}") is None
+
+    def test_lazy_masking_sgs(self, sgs_soap):
+        """
+        Check that lazy masks are only evaluated promptly for types in preload list.
+        """
+        some_preloaded, some_not_preloaded = (
+            False,
+            False,
+        )  # to ensure we have both cases
+        for sg in sgs_soap:
+            for ptype in sg.metadata.present_group_names:
+                # if fixture preloaded this type data should be loaded but not masked:
+                if any([ptype in field for field in sgs_soap.preload]):
+                    some_preloaded = True
+                    # loaded the data needed for mask evaluation:
+                    assert (
+                        getattr(
+                            sgs_soap._server, ptype
+                        )._particle_dataset._group_nr_bound
+                        is not None
+                    )
+                    # didn't mask the server data copy, did mask the iterated data copy:
+                    assert (
+                        getattr(
+                            sgs_soap._server, ptype
+                        )._particle_dataset._group_nr_bound.size
+                        > getattr(sg, ptype).group_nr_bound.size
+                    )
+                # if fixture didn't preload this type data should not be loaded and mask
+                # not evaluated:
+                else:
+                    some_not_preloaded = True
+                    # didn't load the data for mask evaluation:
+                    assert (
+                        getattr(
+                            sgs_soap._server, ptype
+                        )._particle_dataset._group_nr_bound
+                        is None
+                    )
+                    # didn't evaluate the mask:
+                    assert getattr(sg._extra_mask, ptype)._evaluated is False
+        assert some_preloaded
+        assert some_not_preloaded
+
 
 class TestMaskHelper:
 
