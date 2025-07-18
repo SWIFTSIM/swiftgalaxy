@@ -19,7 +19,7 @@ from swiftsimio import SWIFTMask, SWIFTDataset, mask
 from swiftgalaxy.masks import MaskCollection, LazyMask
 from swiftsimio.objects import cosmo_array, cosmo_quantity
 
-from typing import Any, Union, Optional, TYPE_CHECKING, List, Set, Dict
+from typing import Any, Union, Optional, TYPE_CHECKING, List, Dict
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -467,31 +467,6 @@ class _HaloCatalogue(ABC):
             set of particles.
         """
 
-    @abstractmethod
-    def _get_preload_fields(self, sg: "SWIFTGalaxy") -> Set[str]:
-        """
-        Abstract method.
-
-        Derived classes should implement a function that specifies which particle
-        properties need to be loaded in order to evaluate masks with the
-        :func:`~swiftgalaxy.halo_catalogues._HaloCatalogue._generate_spatial_mask`
-        and :func:`~swiftgalaxy.halo_catalogues._HaloCatalogue._generate_bound_only_mask`.
-        This is so that the data do not get repeatedly read when iterating over multiple
-        :class:`~swiftgalaxy.reader.SWIFTGalaxy` objects in multi-galaxy mode.
-
-        Parameters
-        ----------
-        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
-            interface is associated to.
-
-        Returns
-        -------
-        out : :obj:`set`
-            A set specifying the data that need to be read as strings, such as
-            ``{"gas.particle_ids", ...}``.
-        """
-
     @property
     @abstractmethod
     def centre(self) -> cosmo_array:
@@ -762,27 +737,6 @@ class SOAP(_HaloCatalogue):
             regions.
         """
         return self.bound_subhalo.enclose_radius.squeeze()
-
-    def _get_preload_fields(self, sg: "SWIFTGalaxy") -> Set[str]:
-        """
-        Preload data needed to evaluate masks when in multi-galaxy mode.
-
-        For SOAP, we need to know the ``gas.group_nr_bound`` values to evaluate
-        masks (and similarly for other particle types), so pre-load these. Only needed
-        in ``bound_only`` mode, so skip otherwise.
-
-        Parameters
-        ----------
-        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
-            interface is associated to.
-
-        Returns
-        -------
-        out : :obj:`set`
-            The ``group_nr_bound`` dataset identifiers for all present particle types.
-        """
-        return set()
 
     def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         """
@@ -1384,33 +1338,6 @@ class Velociraptor(_HaloCatalogue):
                 scale_exponent=1,
             )
 
-    def _get_preload_fields(self, sg: "SWIFTGalaxy") -> Set[str]:
-        """
-        Preload data needed to evaluate masks when in multi-galaxy mode.
-
-        For Velociraptor, we need to know the ``gas.particle_ids`` values to evaluate
-        masks (and similarly for other particle types), so pre-load these. Only
-        needed in ``bound_only`` mode, so skip otherwise.
-
-        Parameters
-        ----------
-        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
-            interface is associated to.
-
-        Returns
-        -------
-        out : :obj:`set`
-            The ``particle_ids`` dataset identifiers for all present particle types.
-        """
-        if self.extra_mask == "bound_only":
-            return {
-                f"{group_name}.particle_ids"
-                for group_name in sg.metadata.present_group_names
-            }
-        else:
-            return set()
-
     @property
     def centre(self) -> cosmo_array:
         """
@@ -2007,25 +1934,6 @@ class Caesar(_HaloCatalogue):
                 "an old file. See https://github.com/dnarayanan/caesar/issues/92"
             )
 
-    def _get_preload_fields(self, sg: "SWIFTGalaxy") -> Set[str]:
-        """
-        Preload data needed to evaluate masks when in multi-galaxy mode.
-
-        In Caesar we don't need to preload anything so return an empty set.
-
-        Parameters
-        ----------
-        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
-            interface is associated to.
-
-        Returns
-        -------
-        out : :obj:`set`
-            The empty set.
-        """
-        return set()
-
     def _mask_catalogue(self) -> Union["CaesarHalo", "CaesarGalaxy"]:
         """
         Helper to select an item from the Caesar lists.
@@ -2391,25 +2299,6 @@ class Standalone(_HaloCatalogue):
             )
         else:
             return np.max(np.abs(self._user_spatial_offsets))
-
-    def _get_preload_fields(self, sg: "SWIFTGalaxy") -> Set[str]:
-        """
-        Preload data needed to evaluate masks when in multi-galaxy mode.
-
-        For Standalone, we don't need any data, so return the empty set.
-
-        Parameters
-        ----------
-        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
-            interface is associated to.
-
-        Returns
-        -------
-        out : :obj:`set`
-            The empty set.
-        """
-        return set()
 
     @property
     def centre(self) -> cosmo_array:

@@ -275,7 +275,7 @@ class TestSWIFTGalaxies:
         region_mask.constrain_spatial(sgs._solution["regions"][0])
         sgs._start_server(region_mask)
         sgs._preload()
-        for preload_field in sgs.halo_catalogue._get_preload_fields(sgs._server):
+        for preload_field in sgs.preload:
             ptype, field = preload_field.split(".")
             assert (
                 getattr(getattr(sgs._server, ptype)._particle_dataset, f"_{field}")

@@ -209,8 +209,6 @@ def sgs_vr():
         preload={  # just to keep warnings quiet
             "gas.particle_ids",
             "dark_matter.particle_ids",
-            "stars.particle_ids",
-            "black_holes.particle_ids",
         },
     )
 
@@ -253,8 +251,6 @@ def sgs_caesar(request):
         preload={  # just to keep warnings quiet
             "gas.particle_ids",
             "dark_matter.particle_ids",
-            "stars.particle_ids",
-            "black_holes.particle_ids",
         },
     )
 
@@ -469,8 +465,6 @@ def sgs_sa():
         preload={  # just to keep warnings quiet
             "gas.particle_ids",
             "dark_matter.particle_ids",
-            "stars.particle_ids",
-            "black_holes.particle_ids",
         },
     )
     _remove_toysnap()

@@ -503,22 +503,6 @@ class ToyHF(_HaloCatalogue):
             scale_exponent=1,
         )[(self.index,)]
 
-    def _get_preload_fields(self, server: SWIFTGalaxy) -> set:
-        """
-        Preload data needed to evaluate masks when in multi-galaxy mode.
-
-        Parameters
-        ----------
-        server : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The server object spawned by :class:`swiftgalaxy.iterator.SWIFTGalaxies`.
-
-        Returns
-        -------
-        out : :obj:`set`
-            The set of fields to preload.
-        """
-        return set()
-
 
 @_ensure_demo_data_directory
 def _create_toysnap(

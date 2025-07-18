@@ -514,9 +514,7 @@ class SWIFTGalaxies:
         objects must be initialized with a list of fields to be "pre-loaded". This
         function carries out these read operations.
         """
-        for preload_field in self.preload | self.halo_catalogue._get_preload_fields(
-            self._server
-        ):
+        for preload_field in self.preload:
             obj = self._server
             for attr in preload_field.split("."):
                 with warnings.catch_warnings():
