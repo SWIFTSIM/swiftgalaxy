@@ -844,6 +844,12 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
         particle_metadata = getattr(
             self._particle_dataset.metadata, f"{particle_name}_properties"
         )
+        # force old mask evaluation to ensure any data loaded during evaluation
+        # are in memory and have the old mask applied, if any:
+        old_mask = getattr(self._swiftgalaxy._extra_mask, particle_name)
+        if old_mask is not None:
+            old_mask._evaluate()
+        # apply the new mask to any data already in memory:
         for field_name in particle_metadata.field_names:
             if self._is_namedcolumns(field_name):
                 for named_column in getattr(self, field_name).named_columns:
@@ -861,6 +867,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
                         )
             elif getattr(self._particle_dataset, f"_{field_name}") is not None:
                 setattr(self, field_name, getattr(self, field_name)[mask.mask])
+        # also the derived coordinates, if any:
         self._mask_derived_coordinates(mask)
         if getattr(self._swiftgalaxy._extra_mask, particle_name) is None:
             setattr(self._swiftgalaxy._extra_mask, particle_name, mask)
@@ -875,7 +882,6 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
                         particle_name
                     ]
                 )
-            old_mask = getattr(self._swiftgalaxy._extra_mask, particle_name)
             # need to convert to an integer mask to combine
             # (boolean is insufficient in case of re-ordering masks)
             setattr(

@@ -35,6 +35,8 @@ class TestMaskingSWIFTGalaxy:
         ids_before = getattr(sg, particle_name).particle_ids
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
+            del getattr(sg._extra_mask, particle_name)._mask
+            getattr(sg._extra_mask, particle_name)._evaluated = False
         sg.mask_particles(MaskCollection(**{particle_name: mask}))
         ids = getattr(sg, particle_name).particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -54,6 +56,8 @@ class TestMaskingSWIFTGalaxy:
         mask = mask[: mask.size // 2]
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
+            del getattr(sg._extra_mask, particle_name)._mask
+            getattr(sg._extra_mask, particle_name)._evaluated = False
         sg.mask_particles(MaskCollection(**{particle_name: mask}))
         ids = getattr(sg, particle_name).particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -69,6 +73,8 @@ class TestMaskingSWIFTGalaxy:
         mask = np.random.rand(ids_before.size) > 0.5
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
+            del getattr(sg._extra_mask, particle_name)._mask
+            getattr(sg._extra_mask, particle_name)._evaluated = False
         sg.mask_particles(MaskCollection(**{particle_name: mask}))
         ids = getattr(sg, particle_name).particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -82,6 +88,8 @@ class TestMaskingSWIFTGalaxy:
         mask = np.random.rand(neutral_before.size) > 0.5
         if before_load:
             sg.gas.hydrogen_ionization_fractions._named_column_dataset._neutral = None
+            del sg._extra_mask.gas._mask
+            sg._extra_mask.gas._evaluated = False
         sg.mask_particles(MaskCollection(**{"gas": mask}))
         neutral = sg.gas.hydrogen_ionization_fractions.neutral
         assert_allclose_units(
@@ -135,6 +143,8 @@ class TestMaskingParticleDatasets:
         ids_before = getattr(sg, particle_name).particle_ids
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
+            del getattr(sg._extra_mask, particle_name)._mask
+            getattr(sg._extra_mask, particle_name)._evaluated = False
         masked_dataset = getattr(sg, particle_name)[mask]
         ids = masked_dataset.particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -154,6 +164,8 @@ class TestMaskingParticleDatasets:
         mask = mask[: mask.size // 2]
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
+            del getattr(sg._extra_mask, particle_name)._mask
+            getattr(sg._extra_mask, particle_name)._evaluated = False
         masked_dataset = getattr(sg, particle_name)[mask]
         ids = masked_dataset.particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -169,6 +181,8 @@ class TestMaskingParticleDatasets:
         mask = np.random.rand(ids_before.size) > 0.5
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
+            del getattr(sg._extra_mask, particle_name)._mask
+            getattr(sg._extra_mask, particle_name)._evaluated = False
         masked_dataset = getattr(sg, particle_name)[mask]
         ids = masked_dataset.particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -184,6 +198,8 @@ class TestMaskingNamedColumnDatasets:
         fractions_before = sg.gas.hydrogen_ionization_fractions.neutral
         if before_load:
             sg.gas.hydrogen_ionization_fractions._neutral = None
+            del sg._extra_mask.gas._mask
+            sg._extra_mask.gas._evaluated = False
         masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
         fractions = masked_namedcolumnsdataset.neutral
         assert_allclose_units(
@@ -204,6 +220,8 @@ class TestMaskingNamedColumnDatasets:
         mask = mask[: mask.size // 2]
         if before_load:
             sg.gas.hydrogen_ionization_fractions._neutral = None
+            del sg._extra_mask.gas._mask
+            sg._extra_mask.gas._mask = False
         masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
         fractions = masked_namedcolumnsdataset.neutral
         assert_allclose_units(
@@ -220,6 +238,8 @@ class TestMaskingNamedColumnDatasets:
         mask = np.random.rand(fractions_before.size) > 0.5
         if before_load:
             sg.gas.hydrogen_ionization_fractions._neutral = None
+            del sg._extra_mask.gas._mask
+            sg._extra_mask.gas._evaluated = False
         masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
         fractions = masked_namedcolumnsdataset.neutral
         assert_allclose_units(

@@ -806,7 +806,7 @@ class SOAP(_HaloCatalogue):
                 Evaluate a mask that selects bound particles by comparing the particle
                 group membership dataset ``group_nr_bound`` to the halo catalogue index.
 
-                This function must optionally mask the data (``group_nr_bound``) that is
+                This function must optionally mask the data (``group_nr_bound``) that it
                 has loaded.
 
                 Parameters
@@ -1178,7 +1178,7 @@ class Velociraptor(_HaloCatalogue):
                 Evaluate a mask that selects bound particles by comparing the
                 ``particle_ids`` to the list of bound particle IDs.
 
-                This function must optionally mask the data (``particle_ids``) that is has
+                This function must optionally mask the data (``particle_ids``) that it has
                 loaded.
 
                 Parameters
@@ -1799,7 +1799,7 @@ class Caesar(_HaloCatalogue):
                 Evaluate a mask that selects bound particles by comparing the lists of
                 bound particle indices to the ranges read in the spatial mask.
 
-                This function must optionally mask the data that is has loaded, but it
+                This function must optionally mask the data that it has loaded, but it
                 loads nothing.
 
                 Parameters
