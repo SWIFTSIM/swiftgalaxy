@@ -16,10 +16,10 @@ from collections.abc import Sequence
 import numpy as np
 import unyt as u
 from swiftsimio import SWIFTMask, SWIFTDataset, mask
-from swiftgalaxy.masks import MaskCollection
+from swiftgalaxy.masks import MaskCollection, LazyMask
 from swiftsimio.objects import cosmo_array, cosmo_quantity
 
-from typing import Any, Union, Optional, TYPE_CHECKING, List, Set, Dict
+from typing import Any, Union, Optional, TYPE_CHECKING, List, Dict
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -467,31 +467,6 @@ class _HaloCatalogue(ABC):
             set of particles.
         """
 
-    @abstractmethod
-    def _get_preload_fields(self, sg: "SWIFTGalaxy") -> Set[str]:
-        """
-        Abstract method.
-
-        Derived classes should implement a function that specifies which particle
-        properties need to be loaded in order to evaluate masks with the
-        :func:`~swiftgalaxy.halo_catalogues._HaloCatalogue._generate_spatial_mask`
-        and :func:`~swiftgalaxy.halo_catalogues._HaloCatalogue._generate_bound_only_mask`.
-        This is so that the data do not get repeatedly read when iterating over multiple
-        :class:`~swiftgalaxy.reader.SWIFTGalaxy` objects in multi-galaxy mode.
-
-        Parameters
-        ----------
-        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
-            interface is associated to.
-
-        Returns
-        -------
-        out : :obj:`set`
-            A set specifying the data that need to be read as strings, such as
-            ``{"gas.particle_ids", ...}``.
-        """
-
     @property
     @abstractmethod
     def centre(self) -> cosmo_array:
@@ -763,33 +738,6 @@ class SOAP(_HaloCatalogue):
         """
         return self.bound_subhalo.enclose_radius.squeeze()
 
-    def _get_preload_fields(self, sg: "SWIFTGalaxy") -> Set[str]:
-        """
-        Preload data needed to evaluate masks when in multi-galaxy mode.
-
-        For SOAP, we need to know the ``gas.group_nr_bound`` values to evaluate
-        masks (and similarly for other particle types), so pre-load these. Only needed
-        in ``bound_only`` mode, so skip otherwise.
-
-        Parameters
-        ----------
-        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
-            interface is associated to.
-
-        Returns
-        -------
-        out : :obj:`set`
-            The ``group_nr_bound`` dataset identifiers for all present particle types.
-        """
-        if self.extra_mask == "bound_only":
-            return {
-                f"{group_name}.group_nr_bound"
-                for group_name in sg.metadata.present_group_names
-            }
-        else:
-            return set()
-
     def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         """
         Evaluate the spatial mask.
@@ -834,19 +782,67 @@ class SOAP(_HaloCatalogue):
             The mask object that selects bound particles from the spatially-masked
             set of particles.
         """
-        masks = MaskCollection(
-            **{
-                group_name: getattr(
+
+        def generate_lazy_mask(group_name: str) -> LazyMask:
+            """
+            Generate a function that evaluates a mask for bound particles of a specified
+            particle type. The generated function should have one parameter, accepting
+            a boolean, that toggles masking the data loaded during the construction of
+            the mask on and off.
+
+            Parameters
+            ----------
+            group_name : :obj:`str`
+                The particle type to evaluate a mask for.
+
+            Returns
+            -------
+            out : Callable
+                The generated function that evaluates a mask.
+            """
+
+            def lazy_mask(mask_loaded_data: bool = True) -> NDArray:
+                """
+                Evaluate a mask that selects bound particles by comparing the particle
+                group membership dataset ``group_nr_bound`` to the halo catalogue index.
+
+                This function must optionally mask the data (``group_nr_bound``) that it
+                has loaded.
+
+                Parameters
+                ----------
+                mask_loaded_data : :obj:`bool`, default ``True``
+                    If ``True``, data loaded while constructing the mask is masked
+                    during this function call. Set ``False`` when called from
+                    a :class:`~swiftgalaxy.iterator.SWIFTGalaxies` "server".
+
+                Returns
+                -------
+                out : :class:`~numpy.ndarray`
+                    The mask that selects bound particles.
+                """
+                mask = getattr(
                     sg, group_name
-                )._particle_dataset.group_nr_bound.to_value(u.dimensionless)
-                == self.input_halos.halo_catalogue_index.to_value(u.dimensionless)
+                )._particle_dataset.group_nr_bound.to_value(
+                    u.dimensionless
+                ) == self.input_halos.halo_catalogue_index.to_value(
+                    u.dimensionless
+                )
+                if mask_loaded_data:
+                    # mask the group_nr_bound array that we loaded
+                    getattr(sg, group_name)._particle_dataset._group_nr_bound = getattr(
+                        sg, group_name
+                    )._particle_dataset._group_nr_bound[mask]
+                return mask
+
+            return LazyMask(mask_function=lazy_mask)
+
+        return MaskCollection(
+            **{
+                group_name: generate_lazy_mask(group_name)
                 for group_name in sg.metadata.present_group_names
             }
         )
-        if not self._multi_galaxy:
-            for group_name in sg.metadata.present_group_names:
-                del getattr(sg, group_name)._particle_dataset.group_nr_bound
-        return masks
 
     @property
     def centre(self) -> cosmo_array:
@@ -1155,17 +1151,82 @@ class Velociraptor(_HaloCatalogue):
             The mask object that selects bound particles from the spatially-masked
             set of particles.
         """
-        from velociraptor.swift.swift import generate_bound_mask
+        # we don't use velociraptor.swift.swift.generate_bound_mask
+        # because we need a lazy version and to bypass swiftgalaxy masking on read
+        # while we construct the mask
 
-        return MaskCollection(
-            **generate_bound_mask(
-                sg,
-                (
+        def generate_lazy_mask(group_name: str) -> LazyMask:
+            """
+            Generate a function that evaluates a mask for bound particles of a specified
+            particle type. The generated function should have one parameter, accepting
+            a boolean, that toggles masking the data loaded during the construction of
+            the mask on and off.
+
+            Parameters
+            ----------
+            group_name : :obj:`str`
+                The particle type to evaluate a mask for.
+
+            Returns
+            -------
+            out : Callable
+                The generated function that evaluates a mask.
+            """
+
+            def lazy_mask(mask_loaded_data: bool = True) -> NDArray:
+                """
+                Evaluate a mask that selects bound particles by comparing the
+                ``particle_ids`` to the list of bound particle IDs.
+
+                This function must optionally mask the data (``particle_ids``) that it has
+                loaded.
+
+                Parameters
+                ----------
+                mask_loaded_data : :obj:`bool`, default ``True``
+                    If ``True``, data loaded while constructing the mask is masked
+                    during this function call. Set ``False`` when called from
+                    a :class:`~swiftgalaxy.iterator.SWIFTGalaxies` "server".
+
+                Returns
+                -------
+                out : :class:`~numpy.ndarray`
+                    The mask that selects bound particles.
+                """
+                particles = (
                     self._particles[self._multi_galaxy_catalogue_mask]
                     if self._multi_galaxy_catalogue_mask is not None
                     else self._particles
-                ),
-            )._asdict()
+                )
+                assert not isinstance(particles, list)  # placate mypy
+                scale_factor = (
+                    particles.groups_instance.catalogue.units.a
+                    if not particles.groups_instance.catalogue.units.comoving
+                    else 1.0
+                )
+                mask = np.in1d(
+                    getattr(sg, group_name)._particle_dataset.particle_ids,
+                    cosmo_array(
+                        particles.particle_ids,
+                        comoving=False,
+                        scale_factor=scale_factor,
+                        scale_exponent=0,
+                    ),
+                )
+                if mask_loaded_data:
+                    # mask the particle_ids that we loaded
+                    getattr(sg, group_name)._particle_dataset._particle_ids = getattr(
+                        sg, group_name
+                    )._particle_dataset._particle_ids[mask]
+                return mask
+
+            return LazyMask(mask_function=lazy_mask)
+
+        return MaskCollection(
+            **{
+                group_name: generate_lazy_mask(group_name)
+                for group_name in sg.metadata.present_group_names
+            }
         )
 
     @property
@@ -1276,33 +1337,6 @@ class Velociraptor(_HaloCatalogue):
                 scale_factor=length_factor,
                 scale_exponent=1,
             )
-
-    def _get_preload_fields(self, sg: "SWIFTGalaxy") -> Set[str]:
-        """
-        Preload data needed to evaluate masks when in multi-galaxy mode.
-
-        For Velociraptor, we need to know the ``gas.particle_ids`` values to evaluate
-        masks (and similarly for other particle types), so pre-load these. Only
-        needed in ``bound_only`` mode, so skip otherwise.
-
-        Parameters
-        ----------
-        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
-            interface is associated to.
-
-        Returns
-        -------
-        out : :obj:`set`
-            The ``particle_ids`` dataset identifiers for all present particle types.
-        """
-        if self.extra_mask == "bound_only":
-            return {
-                f"{group_name}.particle_ids"
-                for group_name in sg.metadata.present_group_names
-            }
-        else:
-            return set()
 
     @property
     def centre(self) -> cosmo_array:
@@ -1731,57 +1765,77 @@ class Caesar(_HaloCatalogue):
 
         cat = self._mask_catalogue()
         null_slice = np.s_[:0]  # mask that selects no particles
-        if hasattr(cat, "glist"):
-            gas_mask = cat.glist
-            gas_mask = gas_mask[in_one_of_ranges(gas_mask, sg.mask.gas)]
-            gas_mask = np.isin(
-                np.concatenate([np.arange(start, end) for start, end in sg.mask.gas]),
-                gas_mask,
-            )
-        else:
-            gas_mask = null_slice
-        # seems like name could be dmlist or dlist?
-        if hasattr(cat, "dlist") or hasattr(cat, "dmlist"):
-            dark_matter_mask = getattr(cat, "dlist", cat.dmlist)
-            dark_matter_mask = dark_matter_mask[
-                in_one_of_ranges(dark_matter_mask, sg.mask.dark_matter)
-            ]
-            dark_matter_mask = np.isin(
-                np.concatenate(
-                    [np.arange(start, end) for start, end in sg.mask.dark_matter]
-                ),
-                dark_matter_mask,
-            )
-        else:
-            dark_matter_mask = null_slice
+        list_names = {
+            "gas": "glist",
+            "dark_matter": "dlist" if hasattr(cat, "dlist") else "dmlist",
+            "stars": "slist",
+            "black_holes": "bhlist",
+        }
 
-        if hasattr(cat, "slist"):
-            stars_mask = cat.slist
-            stars_mask = stars_mask[in_one_of_ranges(stars_mask, sg.mask.stars)]
-            stars_mask = np.isin(
-                np.concatenate([np.arange(start, end) for start, end in sg.mask.stars]),
-                stars_mask,
-            )
-        else:
-            stars_mask = null_slice
-        if hasattr(cat, "bhlist"):
-            black_holes_mask = cat.bhlist
-            black_holes_mask = black_holes_mask[
-                in_one_of_ranges(black_holes_mask, sg.mask.black_holes)
-            ]
-            black_holes_mask = np.isin(
-                np.concatenate(
-                    [np.arange(start, end) for start, end in sg.mask.black_holes]
-                ),
-                black_holes_mask,
-            )
-        else:
-            black_holes_mask = null_slice
+        def generate_lazy_mask(group_name: str, list_name: str) -> LazyMask:
+            """
+            Generate a function that evaluates a mask for bound particles of a specified
+            particle type. The generated function should have one parameter, accepting
+            a boolean, that toggles masking the data loaded during the construction of
+            the mask on and off.
+
+            Parameters
+            ----------
+            group_name : :obj:`str`
+                The particle type to evaluate a mask for.
+
+            list_name : :obj:`str`
+                The name of the list in the caesar catalogue that stores the membership
+                information.
+
+            Returns
+            -------
+            out : Callable
+                The generated function that evaluates a mask.
+            """
+
+            def lazy_mask(mask_loaded_data: bool = True) -> Union[NDArray, slice]:
+                """
+                Evaluate a mask that selects bound particles by comparing the lists of
+                bound particle indices to the ranges read in the spatial mask.
+
+                This function must optionally mask the data that it has loaded, but it
+                loads nothing.
+
+                Parameters
+                ----------
+                mask_loaded_data : :obj:`bool`, default ``True``
+                    If ``True``, data loaded while constructing the mask is masked
+                    during this function call. Set ``False`` when called from
+                    a :class:`~swiftgalaxy.iterator.SWIFTGalaxies` "server".
+
+                Returns
+                -------
+                out : :class:`~numpy.ndarray`
+                    The mask that selects bound particles.
+                """
+                if not hasattr(cat, list_name):
+                    return null_slice
+                mask = getattr(cat, list_name)
+                mask = mask[in_one_of_ranges(mask, getattr(sg.mask, group_name))]
+                mask = np.isin(
+                    np.concatenate(
+                        [
+                            np.arange(start, end)
+                            for start, end in getattr(sg.mask, group_name)
+                        ]
+                    ),
+                    mask,
+                )
+                return mask
+
+            return LazyMask(mask_function=lazy_mask)
+
         return MaskCollection(
-            gas=gas_mask,
-            dark_matter=dark_matter_mask,
-            stars=stars_mask,
-            black_holes=black_holes_mask,
+            **{
+                group_name: generate_lazy_mask(group_name, list_names[group_name])
+                for group_name in sg.metadata.present_group_names
+            }
         )
 
     @property
@@ -1879,25 +1933,6 @@ class Caesar(_HaloCatalogue):
                 "CAESAR catalogue does not contain group extent information, is probably "
                 "an old file. See https://github.com/dnarayanan/caesar/issues/92"
             )
-
-    def _get_preload_fields(self, sg: "SWIFTGalaxy") -> Set[str]:
-        """
-        Preload data needed to evaluate masks when in multi-galaxy mode.
-
-        In Caesar we don't need to preload anything so return an empty set.
-
-        Parameters
-        ----------
-        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
-            interface is associated to.
-
-        Returns
-        -------
-        out : :obj:`set`
-            The empty set.
-        """
-        return set()
 
     def _mask_catalogue(self) -> Union["CaesarHalo", "CaesarGalaxy"]:
         """
@@ -2264,25 +2299,6 @@ class Standalone(_HaloCatalogue):
             )
         else:
             return np.max(np.abs(self._user_spatial_offsets))
-
-    def _get_preload_fields(self, sg: "SWIFTGalaxy") -> Set[str]:
-        """
-        Preload data needed to evaluate masks when in multi-galaxy mode.
-
-        For Standalone, we don't need any data, so return the empty set.
-
-        Parameters
-        ----------
-        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
-            interface is associated to.
-
-        Returns
-        -------
-        out : :obj:`set`
-            The empty set.
-        """
-        return set()
 
     @property
     def centre(self) -> cosmo_array:

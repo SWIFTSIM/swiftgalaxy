@@ -3,6 +3,7 @@ Tests for applying masks to swiftgalaxy, datasets and named columns.
 """
 
 import pytest
+from copy import copy, deepcopy
 import numpy as np
 from unyt.testing import assert_allclose_units
 from swiftgalaxy import SWIFTGalaxy, MaskCollection
@@ -17,6 +18,7 @@ from swiftgalaxy.demo_data import (
     _n_s_all,
     _n_bh_all,
 )
+from swiftgalaxy.masks import LazyMask
 
 abstol_nd = 1.0e-4
 reltol_nd = 1.0e-4
@@ -33,6 +35,8 @@ class TestMaskingSWIFTGalaxy:
         ids_before = getattr(sg, particle_name).particle_ids
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
+            del getattr(sg._extra_mask, particle_name)._mask
+            getattr(sg._extra_mask, particle_name)._evaluated = False
         sg.mask_particles(MaskCollection(**{particle_name: mask}))
         ids = getattr(sg, particle_name).particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -52,6 +56,8 @@ class TestMaskingSWIFTGalaxy:
         mask = mask[: mask.size // 2]
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
+            del getattr(sg._extra_mask, particle_name)._mask
+            getattr(sg._extra_mask, particle_name)._evaluated = False
         sg.mask_particles(MaskCollection(**{particle_name: mask}))
         ids = getattr(sg, particle_name).particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -67,6 +73,8 @@ class TestMaskingSWIFTGalaxy:
         mask = np.random.rand(ids_before.size) > 0.5
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
+            del getattr(sg._extra_mask, particle_name)._mask
+            getattr(sg._extra_mask, particle_name)._evaluated = False
         sg.mask_particles(MaskCollection(**{particle_name: mask}))
         ids = getattr(sg, particle_name).particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -80,6 +88,8 @@ class TestMaskingSWIFTGalaxy:
         mask = np.random.rand(neutral_before.size) > 0.5
         if before_load:
             sg.gas.hydrogen_ionization_fractions._named_column_dataset._neutral = None
+            del sg._extra_mask.gas._mask
+            sg._extra_mask.gas._evaluated = False
         sg.mask_particles(MaskCollection(**{"gas": mask}))
         neutral = sg.gas.hydrogen_ionization_fractions.neutral
         assert_allclose_units(
@@ -133,6 +143,8 @@ class TestMaskingParticleDatasets:
         ids_before = getattr(sg, particle_name).particle_ids
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
+            del getattr(sg._extra_mask, particle_name)._mask
+            getattr(sg._extra_mask, particle_name)._evaluated = False
         masked_dataset = getattr(sg, particle_name)[mask]
         ids = masked_dataset.particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -152,6 +164,8 @@ class TestMaskingParticleDatasets:
         mask = mask[: mask.size // 2]
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
+            del getattr(sg._extra_mask, particle_name)._mask
+            getattr(sg._extra_mask, particle_name)._evaluated = False
         masked_dataset = getattr(sg, particle_name)[mask]
         ids = masked_dataset.particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -167,6 +181,8 @@ class TestMaskingParticleDatasets:
         mask = np.random.rand(ids_before.size) > 0.5
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
+            del getattr(sg._extra_mask, particle_name)._mask
+            getattr(sg._extra_mask, particle_name)._evaluated = False
         masked_dataset = getattr(sg, particle_name)[mask]
         ids = masked_dataset.particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -182,6 +198,8 @@ class TestMaskingNamedColumnDatasets:
         fractions_before = sg.gas.hydrogen_ionization_fractions.neutral
         if before_load:
             sg.gas.hydrogen_ionization_fractions._neutral = None
+            del sg._extra_mask.gas._mask
+            sg._extra_mask.gas._evaluated = False
         masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
         fractions = masked_namedcolumnsdataset.neutral
         assert_allclose_units(
@@ -202,6 +220,8 @@ class TestMaskingNamedColumnDatasets:
         mask = mask[: mask.size // 2]
         if before_load:
             sg.gas.hydrogen_ionization_fractions._neutral = None
+            del sg._extra_mask.gas._mask
+            sg._extra_mask.gas._mask = False
         masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
         fractions = masked_namedcolumnsdataset.neutral
         assert_allclose_units(
@@ -218,6 +238,8 @@ class TestMaskingNamedColumnDatasets:
         mask = np.random.rand(fractions_before.size) > 0.5
         if before_load:
             sg.gas.hydrogen_ionization_fractions._neutral = None
+            del sg._extra_mask.gas._mask
+            sg._extra_mask.gas._evaluated = False
         masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
         fractions = masked_namedcolumnsdataset.neutral
         assert_allclose_units(
@@ -254,3 +276,196 @@ class TestMultiModeMask:
             RuntimeError, match="Tried to mask catalogue without mask index!"
         ):
             caesar_multi._mask_catalogue()
+
+
+class TestLazyMask:
+    """
+    Unit tests for the LazyMask class itself.
+    """
+
+    def test_init_lazy(self, lm):
+        """
+        Check that initializing in lazy mode works.
+        """
+        assert lm._evaluated is False
+        assert lm._mask_function is not None  # also implies it exists
+        assert not hasattr(lm, "_mask")
+
+    def test_init_concrete(self):
+        """
+        Check that initializing with a concrete mask works.
+        """
+        m = np.ones(10, dtype=bool)
+        lm = LazyMask(mask=m)
+        assert lm._evaluated
+        assert lm._mask is m
+        assert lm._mask_function is None
+
+    def test_init_none(self):
+        """
+        Check that initializing with ``None`` works (i.e. no mask).
+        """
+        lm = LazyMask(mask=None)
+        assert lm._evaluated
+        assert lm._mask is None
+        assert not hasattr(lm, "_mask_function")
+
+    def test_trigger_eval(self, lm):
+        """
+        Check that accessing mask triggers evaluation if lazy.
+        """
+        assert lm._evaluated is False
+        assert not hasattr(lm, "_mask")
+        assert (lm.mask == lm._mask_function()).all()
+        assert lm._evaluated
+        assert (lm._mask == lm._mask_function()).all()
+
+    def test_access_not_lazy(self):
+        """
+        Check that accessing the mask works for a non-lazy mask.
+        """
+        m = np.ones(10, dtype=bool)
+        lm = LazyMask(mask=m)
+        assert lm._evaluated
+        assert (lm.mask == m).all()
+
+    def test_manual_trigger_eval(self, lm):
+        """
+        Check that accessing mask triggers evaluation if lazy.
+        """
+
+        assert lm._evaluated is False
+        assert not hasattr(lm, "_mask")
+        lm._evaluate()
+        assert lm._evaluated
+        assert (lm.mask == lm._mask_function()).all()
+        assert (lm._mask == lm._mask_function()).all()
+
+    def test_trigger_eval_once_only(self):
+        """
+        Check that we can't trigger mask evaluation repeatedly.
+        """
+
+        class MF(object):
+            """
+            A simple class that behaves as a mask generator and counts how many times its
+            ``__call__`` is called.
+            """
+
+            call_counter: int = 0
+
+            def __call__(self, mask_loaded_data=None):
+                """
+                Call the class to behave like a simple mask function.
+
+                Parameters
+                ----------
+                mask_loaded_data : bool
+                    For toggling masking data as it is loaded. Ignored in this test case.
+
+                Returns
+                -------
+                out : ndarray
+                    A simple mask array.
+                """
+
+                self.call_counter += 1
+                return np.ones(10, dtype=bool)
+
+        mf = MF()
+        lm = LazyMask(mask_function=mf)
+        assert lm._evaluated is False
+        # trigger a mask evaluation:
+        lm.mask
+        assert lm._evaluated is True
+        assert mf.call_counter == 1
+        # we shouldn't be able to trigger or force another mask evaluation:
+        lm.mask
+        lm._evaluate(mask_loaded_data=None)
+        assert mf.call_counter == 1
+
+    def test_copy(self, lm):
+        """
+        Check copying behaviour of ``LazyMask`` objects.
+        """
+        # first copy before evaluating
+        lm_unevaluated_copy = copy(lm)
+        assert lm_unevaluated_copy._evaluated is False
+        assert not hasattr(lm_unevaluated_copy, "_mask")
+        assert lm_unevaluated_copy._mask_function is lm._mask_function
+        # trigger evaluated
+        lm._evaluate()
+        assert lm._evaluated
+        # now copy after evaluating
+        lm_evaluated_copy = copy(lm)
+        assert lm_evaluated_copy._evaluated
+        assert (lm_evaluated_copy._mask == lm._mask_function()).all()
+        assert lm_evaluated_copy._mask_function is lm._mask_function
+        # and test a non-lazy mask
+        m = np.ones(10, dtype=bool)
+        nlm = LazyMask(mask=m)
+        nlm_copy = copy(nlm)
+        assert nlm_copy._evaluated
+        assert (nlm_copy._mask == m).all()
+        assert nlm_copy._mask_function is None
+
+    def test_deepcopy(self, lm):
+        """
+        Check deep copying behaviour of ``LazyMask`` objects.
+        """
+        # first copy before evaluating
+        lm_unevaluated_copy = deepcopy(lm)
+        assert lm_unevaluated_copy._evaluated is False
+        assert not hasattr(lm_unevaluated_copy, "_mask")
+        assert lm_unevaluated_copy._mask_function is lm._mask_function
+        # trigger evaluated
+        lm._evaluate()
+        assert lm._evaluated
+        # now copy after evaluating
+        lm_evaluated_copy = deepcopy(lm)
+        assert lm_evaluated_copy._evaluated
+        assert (lm_evaluated_copy._mask == lm._mask_function()).all()
+        assert lm_evaluated_copy._mask_function is lm._mask_function
+        # and test a non-lazy mask
+        m = np.ones(10, dtype=bool)
+        nlm = LazyMask(mask=m)
+        nlm_copy = copy(nlm)
+        assert nlm_copy._evaluated
+        assert (nlm_copy._mask == m).all()
+        assert nlm_copy._mask_function is None
+
+    def test_compare_lazymask(self, lm):
+        """
+        Check comparison behaviour between two ``LazyMask`` objects.
+        """
+        lm2 = copy(lm)
+        with pytest.raises(
+            ValueError, match="Cannot compare when one or more masks are not evaluated."
+        ):
+            lm == lm2
+        lm._evaluate()
+        lm2._evaluate()
+        assert lm == lm2
+        lmn = LazyMask(mask=None)
+        assert lm != lmn
+
+    def test_compare_nonlazymask(self, lm):
+        """
+        Check comparison behaviour between a ``LazyMask`` and other objects.
+        """
+        m = np.ones(10, dtype=bool)
+        with pytest.raises(
+            ValueError, match="Cannot compare when one or more masks are not evaluated."
+        ):
+            lm == m
+        lm._evaluate()
+        assert lm == m
+        assert lm != np.zeros(10, dtype=bool)
+
+    def test_compare_nonemask(self):
+        """
+        Check comparison behaviour between null masks.
+        """
+        lm = LazyMask(mask=None)
+        assert lm == lm
+        assert not lm != lm

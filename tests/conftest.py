@@ -12,6 +12,7 @@ from swiftgalaxy import (
     Standalone,
     MaskCollection,
 )
+from swiftgalaxy.masks import LazyMask
 from swiftgalaxy.demo_data import (
     _create_toysnap,
     _remove_toysnap,
@@ -172,8 +173,6 @@ def sgs_soap():
         preload={  # just to keep warnings quiet
             "gas.particle_ids",
             "dark_matter.particle_ids",
-            "stars.particle_ids",
-            "black_holes.particle_ids",
         },
     )
 
@@ -210,8 +209,6 @@ def sgs_vr():
         preload={  # just to keep warnings quiet
             "gas.particle_ids",
             "dark_matter.particle_ids",
-            "stars.particle_ids",
-            "black_holes.particle_ids",
         },
     )
 
@@ -254,8 +251,6 @@ def sgs_caesar(request):
         preload={  # just to keep warnings quiet
             "gas.particle_ids",
             "dark_matter.particle_ids",
-            "stars.particle_ids",
-            "black_holes.particle_ids",
         },
     )
 
@@ -470,8 +465,6 @@ def sgs_sa():
         preload={  # just to keep warnings quiet
             "gas.particle_ids",
             "dark_matter.particle_ids",
-            "stars.particle_ids",
-            "black_holes.particle_ids",
         },
     )
     _remove_toysnap()
@@ -874,3 +867,26 @@ def hf_multi_zerotarget(request):
                 scale_exponent=1,
             ),
         )
+
+
+@pytest.fixture(scope="function")
+def lm():
+
+    def mf(mask_loaded_data=None):
+        """
+        A simple mask function.
+
+        Parameters
+        ----------
+        mask_loaded_data : bool
+            For toggling masking data as it is loaded. Ignored in this test case.
+
+        Returns
+        -------
+        out : ndarray
+            A simple mask array.
+        """
+        return np.ones(10, dtype=bool)
+
+    lm = LazyMask(mask_function=mf)
+    yield lm

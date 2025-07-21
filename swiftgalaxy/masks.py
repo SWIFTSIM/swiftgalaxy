@@ -11,9 +11,193 @@ selection of particles of different types for use with
 """
 
 from copy import deepcopy
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 from types import EllipsisType
 from numpy.typing import ArrayLike
+
+
+class LazyMask(object):
+    """
+    A class to hold a function to evaluate a mask until it is needed.
+
+    This class can contain either an explicitly evaluated mask (boolean array,
+    slice, etc.) or a reference to a function that returns such a mask when
+    called. When the ``mask`` property is accessed, if the mask is already
+    evaluated it is returned, otherwise it is evaluated and returned.
+
+    The ``_evaluated`` attribute tracks whether the explicitly evaluated
+    mask is available.
+
+    Parameters
+    ----------
+    mask : slice, default: ``None``
+        An object that can be used to mask an array (could be a slice, boolean array, etc)
+
+    mask_function : Callable, default: ``None``
+        A reference to a function that returns a mask when called.
+    """
+
+    _mask_function: Optional[Callable]
+    _mask: Optional[Union[slice, EllipsisType, ArrayLike]]
+    _evaluated: bool
+
+    def __init__(
+        self,
+        mask: Optional[Union[slice, EllipsisType, ArrayLike]] = None,
+        mask_function: Optional[Callable] = None,
+    ):
+        if mask_function is None and mask is None:
+            self._mask = None
+            self._evaluated = True
+        elif mask_function is not None and mask is None:
+            self._mask_function = mask_function
+            self._evaluated = False
+            # leave self._mask unset
+        else:
+            self._mask = mask
+            self._mask_function = mask_function
+            self._evaluated = True
+        return
+
+    def _evaluate(self, mask_loaded_data: bool = True) -> None:
+        """
+        Forces evaluation the mask function.
+
+        Parameters
+        ----------
+        mask_loaded_data : bool, default: ``True``
+            If ``True``, mask data arrays that are loaded during mask construction,
+            otherwise omit this step.
+        """
+        if not self._evaluated:
+            assert self._mask_function is not None  # placate mypy
+            self._mask = self._mask_function(mask_loaded_data=mask_loaded_data)
+            self._evaluated = True
+
+    @property
+    def mask(self) -> Optional[Union[slice, EllipsisType, ArrayLike]]:
+        """
+        Get the explicitly evaluated mask, evaluating it if necessary.
+
+        Returns
+        -------
+        out : slice
+            The explicitly evaluated mask.
+        """
+        if not self._evaluated:
+            self._evaluate()
+        return self._mask
+
+    def __copy__(self) -> "LazyMask":
+        """
+        Make a copy of the :class:`~swiftgalaxy.masks.LazyMask` without copying
+        data (a "shallow" copy).
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.masks.LazyMask`
+            The copy of the :class:`~swiftgalaxy.masks.LazyMask`.
+        """
+        if self._evaluated:
+            return LazyMask(mask=self._mask, mask_function=self._mask_function)
+        else:
+            return LazyMask(mask_function=self._mask_function)
+
+    def __deepcopy__(self, memo: Optional[dict] = None) -> "LazyMask":
+        """
+        Make a copy of the :class:`~swiftgalaxy.masks.LazyMask`, copying data
+        (a "deep" copy).
+
+        Parameters
+        ----------
+        memo : :obj:`dict` (optional), default: ``None``
+            For the copy operation to keep a record of already copied objects.
+
+        Returns
+        -------
+        out : :class:`~swiftgalaxy.masks.LazyMask`
+            The copy of the :class:`~swiftgalaxy.masks.LazyMask`.
+        """
+        if self._evaluated:
+            return LazyMask(
+                mask=deepcopy(self._mask), mask_function=deepcopy(self._mask_function)
+            )
+        else:
+            return LazyMask(mask_function=deepcopy(self._mask_function))
+
+    def __eq__(self, other: object) -> bool:
+        """
+        Check this mask for equality with another.
+
+        If compared with another :class:`~swiftgalaxy.masks.LazyMask` then the comparison
+        of the two explicitly evaluated masks is returned. If compared to any other
+        object, comparison is attempted with the explicitly evaluated mask.
+
+        If the mask has not been evaluated, no evaluation is triggered.
+
+        Parameters
+        ----------
+        other : :obj:`object`
+            The mask to compare with.
+
+        Returns
+        -------
+        out : :obj:`bool`
+            Comparison result.
+
+        Raises
+        ------
+        ValueError
+            If the internal mask is not already evaluated. Also raised if the compared
+            object is a :class:`~swiftgalaxy.masks.LazyMask` and its mask is not
+            evaluated.
+        """
+        if isinstance(other, LazyMask):
+            if hasattr(self, "_mask") and hasattr(other, "_mask"):
+                masks_equal = self._mask == other._mask
+            else:
+                raise ValueError(
+                    "Cannot compare when one or more masks are not evaluated."
+                )
+        else:
+            if hasattr(self, "_mask"):
+                masks_equal = self._mask == other
+            else:
+                raise ValueError(
+                    "Cannot compare when one or more masks are not evaluated."
+                )
+        if type(masks_equal) is not bool:
+            masks_equal = all(masks_equal)
+        return masks_equal
+
+    def __ne__(self, other: object) -> bool:
+        """
+        Check this mask for inequality with another.
+
+        If compared with another :class:`~swiftgalaxy.masks.LazyMask` then the comparison
+        of the two explicitly evaluated masks is returned. If compared to any other
+        object, comparison is attempted with the explicitly evaluated mask.
+
+        If the mask has not been evaluated, no evaluation is triggered.
+
+        Parameters
+        ----------
+        other : :obj:`object`
+            The mask to compare with.
+
+        Returns
+        -------
+        out : :obj:`bool`
+            Comparison result.
+
+        Raises
+        ------
+        ValueError
+            If the internal mask is not already evaluated. Also raised if the compared
+            object is a :class:`~swiftgalaxy.masks.LazyMask` and its mask is not
+            evaluated.
+        """
+        return not self.__eq__(other)
 
 
 class MaskCollection(object):
@@ -58,13 +242,17 @@ class MaskCollection(object):
         )
     """
 
-    # Could use dataclasses module, but requires python 3.7+
-
     def __init__(
-        self, **kwargs: Optional[Union[slice, EllipsisType, ArrayLike]]
+        self,
+        **kwargs: Optional[Union[slice, EllipsisType, ArrayLike, LazyMask]],
     ) -> None:
         for k, v in kwargs.items():
-            setattr(self, k, v)
+            if isinstance(v, LazyMask):
+                setattr(self, k, v)
+            elif v is None:
+                pass
+            else:
+                setattr(self, k, LazyMask(mask=v))
         return
 
     def __getattr__(self, attr: str) -> None:

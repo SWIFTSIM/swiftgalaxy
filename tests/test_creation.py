@@ -3,14 +3,6 @@ Tests checking that we can create objects, if these fail something
 fundamental has gone wrong.
 """
 
-from swiftgalaxy import SWIFTGalaxy
-from swiftgalaxy.demo_data import (
-    _create_toysnap,
-    _remove_toysnap,
-    _toysnap_filename,
-    _n_g_1,
-)
-
 
 class TestSWIFTGalaxyCreation:
     def test_sg_creation(self, sg):
@@ -82,43 +74,6 @@ class TestSWIFTGalaxyCreation:
         assert "generate_empty_properties" in dir(sg.gas)
         # finally, check that we didn't lazy-load everything!
         assert sg.gas._particle_dataset._coordinates is None
-
-    def test_mask_preloaded_namedcolumn(self):
-        """
-        If namedcolumn data was loaded during evaluation of a mask, it needs to be masked
-        during initialization.
-        """
-        from swiftgalaxy.demo_data import ToyHF
-
-        def load_namedcolumn(method):
-
-            def wrapper(self, sg):
-                sg.gas.hydrogen_ionization_fractions.neutral
-                return method(self, sg)
-
-            return wrapper
-
-        # decorate the mask evaluation to load an (unused) namedcolumn
-        # preserving old version to be resotred at end of test
-        # (otherwise it carries over into other tests!)
-        old_generate_bound_only_mask = ToyHF._generate_bound_only_mask
-        ToyHF._generate_bound_only_mask = load_namedcolumn(
-            ToyHF._generate_bound_only_mask
-        )
-
-        try:
-            _create_toysnap()
-            sg = SWIFTGalaxy(_toysnap_filename, ToyHF())
-            # confirm that we loaded a namedcolumn during initialization:
-            assert (
-                sg.gas.hydrogen_ionization_fractions._internal_dataset._neutral
-                is not None
-            )
-            # confirm that it got masked:
-            assert sg.gas.hydrogen_ionization_fractions.neutral.size == _n_g_1
-        finally:
-            _remove_toysnap()
-            ToyHF._generate_bound_only_mask = old_generate_bound_only_mask
 
 
 class TestSWIFTGalaxiesCreation:

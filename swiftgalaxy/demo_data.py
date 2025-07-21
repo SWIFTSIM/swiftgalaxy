@@ -7,13 +7,16 @@ import h5py
 import numpy as np
 import unyt as u
 import subprocess
-from typing import Optional, Callable, Any, Union, Sequence
+from types import EllipsisType
+from typing import Optional, Callable, Any, Union, List, Sequence
+from numpy.typing import NDArray
 from astropy.cosmology import LambdaCDM
 from astropy import units as U
 from swiftsimio.objects import cosmo_array
 import swiftsimio
 from swiftsimio import Writer, SWIFTMask
-from swiftgalaxy import MaskCollection, SWIFTGalaxy
+from swiftgalaxy import SWIFTGalaxy
+from swiftgalaxy.masks import MaskCollection, LazyMask
 from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftsimio.units import cosmo_units
 
@@ -314,7 +317,7 @@ class ToyHF(_HaloCatalogue):
     def __init__(
         self,
         snapfile: Union[str, Path] = _toysnap_filename,
-        index: Union[int, Sequence[int]] = 0,
+        index: Union[int, List[int]] = 0,
     ) -> None:
         self.snapfile = snapfile
         if isinstance(index, Sequence):
@@ -394,23 +397,87 @@ class ToyHF(_HaloCatalogue):
         out : :class:`~swiftgalaxy.masks.MaskCollection`
             The extra mask.
         """
-        # the two objects are in different cells, remember we're masking cell particles
-        if self.index == 0:
-            extra_mask = MaskCollection(
-                gas=np.s_[-_n_g_1:],
-                dark_matter=np.s_[-_n_dm_1:],
-                stars=np.s_[...],
-                black_holes=np.s_[...],
-            )
-        else:  # self.index == 1
-            extra_mask = MaskCollection(
-                gas=np.s_[-_n_g_2:],
-                dark_matter=np.s_[-_n_dm_2:],
-                stars=np.s_[...],
-                black_holes=np.s_[...],
-            )
 
-        return extra_mask
+        def generate_lazy_mask(group_name: str) -> LazyMask:
+            """
+            Generate a function that evaluates a mask for bound particles of a specified
+            particle type. The generated function should have one parameter, accepting a
+            boolean, that toggles masking the data loaded during the construction of the
+            mask on and off.
+
+            Parameters
+            ----------
+            group_name : :obj:`str`
+                The particle type to evaluate a mask for.
+
+            Returns
+            -------
+            out : Callable
+                The generated function that evaluates a mask.
+            """
+
+            def lazy_mask(
+                mask_loaded_data: bool = True,
+            ) -> Union[NDArray, slice, EllipsisType]:
+                """
+                "Evaluate" a mask that selects bound particles. In reality we know what
+                the mask is a priori. We pretend that we need to load the particle ids
+                so that we can test the behaviour of a dataset loaded while constructing
+                the mask.
+
+                This function must optionally mask the data (``particle_ids``) that it
+                has loaded.
+
+                Parameters
+                ----------
+                mask_loaded_data : :obj:`bool`, default ``True``
+                    If ``True``, data loaded while constructing the mask is masked
+                    during this function call. Set ``False`` when called from
+                    a :class:`~swiftgalaxy.iterator.SWIFTGalaxies` "server".
+
+                Returns
+                -------
+                out : :class:`~numpy.ndarray`, :obj:`slice` or :obj:`Ellipsis`
+                    The mask that selects bound particles.
+                """
+                getattr(
+                    getattr(sg, group_name)._particle_dataset,
+                    sg.id_particle_dataset_name,
+                )  # load the ids
+                assert isinstance(self._mask_index, int)  # placate mypy
+                mask = {
+                    "gas": (np.s_[-_n_g_1:], np.s_[-_n_g_2:])[self._mask_index],
+                    "dark_matter": (np.s_[-_n_dm_1:], np.s_[-_n_dm_2:])[
+                        self._mask_index
+                    ],
+                    "stars": np.s_[...],
+                    "black_holes": np.s_[...],
+                }[group_name]
+                if mask_loaded_data:
+                    # mask the particle_ids
+                    setattr(
+                        getattr(sg, group_name)._particle_dataset,
+                        f"_{sg.id_particle_dataset_name}",
+                        getattr(
+                            getattr(sg, group_name)._particle_dataset,
+                            f"_{sg.id_particle_dataset_name}",
+                        )[mask],
+                    )
+                assert (
+                    isinstance(mask, np.ndarray)
+                    or isinstance(mask, slice)
+                    or (mask is Ellipsis)
+                )  # placate mypy
+                return mask
+
+            return LazyMask(mask_function=lazy_mask)
+
+        return MaskCollection(
+            **{
+                group_name: generate_lazy_mask(group_name)
+                for group_name in sg.metadata.present_group_names
+            }
+        )
 
     @property
     def centre(self) -> cosmo_array:
@@ -502,22 +569,6 @@ class ToyHF(_HaloCatalogue):
             scale_factor=1.0,
             scale_exponent=1,
         )[(self.index,)]
-
-    def _get_preload_fields(self, server: SWIFTGalaxy) -> set:
-        """
-        Preload data needed to evaluate masks when in multi-galaxy mode.
-
-        Parameters
-        ----------
-        server : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The server object spawned by :class:`swiftgalaxy.iterator.SWIFTGalaxies`.
-
-        Returns
-        -------
-        out : :obj:`set`
-            The set of fields to preload.
-        """
-        return set()
 
 
 @_ensure_demo_data_directory
