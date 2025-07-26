@@ -1009,8 +1009,12 @@ class TestCaesarWithSWIFTGalaxy:
         Check that we can tolerate missing particle membership information for arbitrary
         particle types in a caesar catalogue.
         """
+        toycaesar_filename = (
+            toysnap["toysnap_filename"].parent / _toycaesar_filename.name
+        )
         try:
             _create_toycaesar(
+                filename=toycaesar_filename,
                 include_slist=False,
                 include_glist=False,
                 include_bhlist=False,
@@ -1018,14 +1022,14 @@ class TestCaesarWithSWIFTGalaxy:
             )
             sg = SWIFTGalaxy(
                 toysnap["toysnap_filename"],
-                Caesar(_toycaesar_filename, group_type=group_type, group_index=0),
+                Caesar(toycaesar_filename, group_type=group_type, group_index=0),
             )
             assert sg._extra_mask.gas.mask == np.s_[:0]
             assert sg._extra_mask.stars.mask == np.s_[:0]
             assert sg._extra_mask.dark_matter.mask == np.s_[:0]
             assert sg._extra_mask.black_holes.mask == np.s_[:0]
         finally:
-            _remove_toycaesar()
+            _remove_toycaesar(filename=toycaesar_filename)
 
     def test_lazy_masking_sg(self, sg_caesar):
         """

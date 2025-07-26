@@ -190,7 +190,7 @@ class TestGeneratedExampleData:
 
 class TestExampleNotebooks:
 
-    def test_generated_example_notebook(self, generated_examples_tmpdir):
+    def test_generated_example_notebook(self):
         """
         Check that the example notebook with data generated on the fly runs without error.
         """
@@ -199,13 +199,8 @@ class TestExampleNotebooks:
         )
         from nbmake.nb_run import NotebookRun
         from nbmake.pytest_items import NotebookFailedException
-        import pathlib
 
-        generated_examples_tmpdir.remove()
-        nbr = NotebookRun(pathlib.Path("examples/SWIFTGalaxy_demo.ipynb"), 300)
-        try:
-            result = nbr.execute()
-            if result.error is not None:
-                raise NotebookFailedException(result)
-        finally:
-            generated_examples_tmpdir.remove()
+        nbr = NotebookRun(Path("examples/SWIFTGalaxy_demo.ipynb"), 300)
+        result = nbr.execute()
+        if result.error is not None:
+            raise NotebookFailedException(result)
