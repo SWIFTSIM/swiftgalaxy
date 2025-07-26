@@ -95,7 +95,18 @@ def _ensure_demo_data_directory(func: Callable) -> Callable:
         **kwargs : :obj:`dict`
             Keyword arguments for wrapped function.
         """
-        Path(_demo_data_dir).mkdir(exist_ok=True)
+        if len(args) > 0 and isinstance(args[0], _GeneratedExamples):
+            using_demo_data_dirs = [object.__getattribute__(args[0], "_demo_data_dir")]
+        else:
+            using_demo_data_dirs = []
+            for arg in args:
+                if isinstance(arg, Path):
+                    using_demo_data_dirs.append(arg.parent)
+            for val in kwargs.values():
+                if isinstance(val, Path):
+                    using_demo_data_dirs.append(val.parent)
+        for dd in using_demo_data_dirs:
+            Path(dd).mkdir(exist_ok=True)
         return func(*args, **kwargs)
 
     return wrapper
@@ -134,6 +145,7 @@ class _WebExamples(object):
             ),
         },
     }
+    _demo_data_dir = _demo_data_dir  # so that we can manipulate in tests
 
     def __init__(self) -> None:
         return
@@ -159,7 +171,7 @@ class _WebExamples(object):
         filename : :obj:`str`
             Name of the file to fetch from the web store.
         """
-        file_location = _demo_data_dir / filename
+        file_location = self._demo_data_dir / filename
         if file_location.exists():
             ret = 0
         else:
@@ -194,7 +206,7 @@ class _WebExamples(object):
             files_required = self.available_examples[attr]["files"]
             for file_required in files_required:
                 self._get_webdata_if_not_present(file_required)
-            return _demo_data_dir / str(self.available_examples[attr]["handle"])
+            return self._demo_data_dir / str(self.available_examples[attr]["handle"])
         else:
             raise AttributeError(f"_WebExamples attribute {attr} not found.")
 
@@ -205,7 +217,7 @@ class _WebExamples(object):
         for example_dict in self.available_examples.values():
             filenames = example_dict["files"]
             for filename in filenames:
-                (_demo_data_dir / filename).unlink(missing_ok=True)
+                (self._demo_data_dir / filename).unlink(missing_ok=True)
 
 
 web_examples = _WebExamples()
@@ -223,6 +235,7 @@ class _GeneratedExamples(object):
         "soap",
         "virtual_snapshot",
     )
+    _demo_data_dir = _demo_data_dir  # so that we can manipulate in tests
 
     def __init__(self) -> None:
         return
@@ -238,7 +251,6 @@ class _GeneratedExamples(object):
         """
         return f"Available examples: {', '.join(self.available_examples)}."
 
-    @_ensure_demo_data_directory
     def __getattr__(self, attr: str) -> Path:
         """
         If the attribute is in the list of available examples, create the needed file(s)
@@ -258,28 +270,55 @@ class _GeneratedExamples(object):
             The path to the requested example file.
         """
         if attr == "snapshot":
-            _create_toysnap(withfof=True)
-            return _toysnap_filename
+            toysnap_filename = self._demo_data_dir / _toysnap_filename.name
+            _create_toysnap(snapfile=toysnap_filename, withfof=True)
+            return toysnap_filename
         if attr == "velociraptor":
-            _create_toyvr()
-            return _toyvr_filebase
+            toyvr_filebase = self._demo_data_dir / _toyvr_filebase.name
+            _create_toyvr(filebase=toyvr_filebase)
+            return toyvr_filebase
         if attr == "caesar":
-            _create_toycaesar()
-            return _toycaesar_filename
+            toycaesar_filename = self._demo_data_dir / _toycaesar_filename.name
+            _create_toycaesar(filename=toycaesar_filename)
+            return toycaesar_filename
         if attr == "soap":
-            _create_toysnap(withfof=True)
+            toysnap_filename = self._demo_data_dir / _toysnap_filename.name
+            toysoap_filename = self._demo_data_dir / _toysoap_filename.name
+            membership_filebase = (
+                self._demo_data_dir / _toysoap_membership_filebase.name
+            )
+            toysoap_virtual_snapshot_filename = (
+                self._demo_data_dir / _toysoap_virtual_snapshot_filename.name
+            )
+            _create_toysnap(snapfile=toysnap_filename, withfof=True)
             _create_toysoap(
+                filename=toysoap_filename,
+                membership_filebase=membership_filebase,
                 create_membership=True,
                 create_virtual_snapshot=True,
+                create_virtual_snapshot_from=toysnap_filename,
+                virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
             )
-            return _toysoap_filename
+            return toysoap_filename
         if attr == "virtual_snapshot":
-            _create_toysnap(withfof=True)
+            toysnap_filename = self._demo_data_dir / _toysnap_filename.name
+            toysoap_filename = self._demo_data_dir / _toysoap_filename.name
+            membership_filebase = (
+                self._demo_data_dir / _toysoap_membership_filebase.name
+            )
+            toysoap_virtual_snapshot_filename = (
+                self._demo_data_dir / _toysoap_virtual_snapshot_filename.name
+            )
+            _create_toysnap(snapfile=toysnap_filename, withfof=True)
             _create_toysoap(
+                filename=toysoap_filename,
+                membership_filebase=membership_filebase,
                 create_membership=True,
                 create_virtual_snapshot=True,
+                create_virtual_snapshot_from=toysnap_filename,
+                virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
             )
-            return _toysoap_virtual_snapshot_filename
+            return toysoap_virtual_snapshot_filename
         else:
             raise AttributeError(f"_GeneratedExamples attribute {attr} not found.")
 
@@ -287,10 +326,15 @@ class _GeneratedExamples(object):
         """
         Remove all generated example files.
         """
-        _remove_toysnap()
-        _remove_toyvr()
-        _remove_toycaesar()
-        _remove_toysoap()
+        _remove_toysnap(snapfile=self._demo_data_dir / _toysnap_filename.name)
+        _remove_toyvr(filebase=self._demo_data_dir / _toyvr_filebase.name)
+        _remove_toycaesar(filename=self._demo_data_dir / _toycaesar_filename.name)
+        _remove_toysoap(
+            filename=self._demo_data_dir / _toysoap_filename.name,
+            membership_filebase=self._demo_data_dir / _toysoap_membership_filebase.name,
+            virtual_snapshot_filename=self._demo_data_dir
+            / _toysoap_virtual_snapshot_filename.name,
+        )
         return
 
 
