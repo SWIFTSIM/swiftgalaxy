@@ -29,7 +29,7 @@ class _IterationSolution(TypedDict):
     cost: int
 
 
-class SWIFTGalaxies:
+class SWIFTGalaxies(object):
     """
     Facilitates efficiently iterating over many objects of interest from a simulation.
 

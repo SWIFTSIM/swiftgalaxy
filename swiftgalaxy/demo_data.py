@@ -1147,8 +1147,8 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
         The base name for catalogue files (several files ``base.properties``,
         ``base.catalog_groups``, etc. will be created).
     """
-    if not Path(f"{_toyvr_filebase}.properties").is_file():
-        with h5py.File(f"{_toyvr_filebase}.properties", "w") as f:
+    if not Path(f"{filebase}.properties").is_file():
+        with h5py.File(f"{filebase}.properties", "w") as f:
             f.create_group("SimulationInfo")
             f["SimulationInfo"].attrs["ScaleFactor"] = 1.0
             f["SimulationInfo"].attrs["Cosmological_Sim"] = 1
@@ -1320,8 +1320,8 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
             f["numSubStruct"].attrs["Dimension_Mass"] = 0.0
             f["numSubStruct"].attrs["Dimension_Time"] = 0.0
             f["numSubStruct"].attrs["Dimension_Velocity"] = 0.0
-    if not Path(f"{_toyvr_filebase}.catalog_groups").is_file():
-        with h5py.File(f"{_toyvr_filebase}.catalog_groups", "w") as f:
+    if not Path(f"{filebase}.catalog_groups").is_file():
+        with h5py.File(f"{filebase}.catalog_groups", "w") as f:
             f.create_dataset("File_id", data=np.array([0, 0], dtype=int))
             f.create_dataset(
                 "Group_Size",
@@ -1348,8 +1348,8 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
             )
             f.create_dataset("Parent_halo_ID", data=np.array([-1, -1], dtype=int))
             f.create_dataset("Total_num_of_groups", data=np.array([2], dtype=int))
-    if not Path(f"{_toyvr_filebase}.catalog_particles").is_file():
-        with h5py.File(f"{_toyvr_filebase}.catalog_particles", "w") as f:
+    if not Path(f"{filebase}.catalog_particles").is_file():
+        with h5py.File(f"{filebase}.catalog_particles", "w") as f:
             f.create_dataset("File_id", data=np.array([0], dtype=int))
             f.create_dataset("Num_of_files", data=np.array([1], dtype=int))
             f.create_dataset(
@@ -1425,8 +1425,8 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
                     dtype=int,
                 ),
             )
-    if not Path(f"{_toyvr_filebase}.catalog_particles.unbound").is_file():
-        with h5py.File(f"{_toyvr_filebase}.catalog_particles.unbound", "w") as f:
+    if not Path(f"{filebase}.catalog_particles.unbound").is_file():
+        with h5py.File(f"{filebase}.catalog_particles.unbound", "w") as f:
             f.create_dataset("File_id", data=np.array([0], dtype=int))
             f.create_dataset("Num_of_files", data=np.array([1], dtype=int))
             f.create_dataset(
@@ -1452,8 +1452,8 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
                 "Total_num_of_particles_in_all_groups",
                 data=np.array([_n_g_b + _n_dm_b], dtype=int),
             )
-    if not Path(f"{_toyvr_filebase}.catalog_parttypes").is_file():
-        with h5py.File(f"{_toyvr_filebase}.catalog_parttypes", "w") as f:
+    if not Path(f"{filebase}.catalog_parttypes").is_file():
+        with h5py.File(f"{filebase}.catalog_parttypes", "w") as f:
             f.create_dataset("File_id", data=np.array([0], dtype=int))
             f.create_dataset("Num_of_files", data=np.array([1], dtype=int))
             f.create_dataset(
@@ -1497,8 +1497,8 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
                     dtype=int,
                 ),
             )
-    if not Path(f"{_toyvr_filebase}.catalog_parttypes.unbound").is_file():
-        with h5py.File(f"{_toyvr_filebase}.catalog_parttypes.unbound", "w") as f:
+    if not Path(f"{filebase}.catalog_parttypes.unbound").is_file():
+        with h5py.File(f"{filebase}.catalog_parttypes.unbound", "w") as f:
             f.create_dataset("File_id", data=np.array([0], dtype=int))
             f.create_dataset("Num_of_files", data=np.array([1], dtype=int))
             f.create_dataset(
@@ -1531,12 +1531,12 @@ def _remove_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
         ``base.catalog_groups``, etc. will be removed).
     """
     files_to_remove = (
-        f"{_toyvr_filebase}.properties",
-        f"{_toyvr_filebase}.catalog_groups",
-        f"{_toyvr_filebase}.catalog_particles",
-        f"{_toyvr_filebase}.catalog_particles.unbound",
-        f"{_toyvr_filebase}.catalog_parttypes",
-        f"{_toyvr_filebase}.catalog_parttypes.unbound",
+        f"{filebase}.properties",
+        f"{filebase}.catalog_groups",
+        f"{filebase}.catalog_particles",
+        f"{filebase}.catalog_particles.unbound",
+        f"{filebase}.catalog_parttypes",
+        f"{filebase}.catalog_parttypes.unbound",
     )
     for file_to_remove in files_to_remove:
         Path(file_to_remove).unlink(missing_ok=True)
@@ -2918,6 +2918,7 @@ def _create_toysoap(
 
     if create_membership:
         if not Path(f"{membership_filebase}.0.hdf5").is_file():
+            Path(membership_filebase).parent.mkdir(exist_ok=True)
             with h5py.File(f"{membership_filebase}.0.hdf5", "w") as f:
                 fof_ids = {
                     0: np.concatenate(
@@ -3113,6 +3114,7 @@ def _remove_toysoap(
         Filename for virtual snapshot file.
     """
     Path(filename).unlink(missing_ok=True)
-    for path in Path().glob(f"{membership_filebase}.*.hdf5"):
+    membership_path = Path(membership_filebase)
+    for path in membership_path.parent.glob(f"{membership_path.name}.*.hdf5"):
         path.unlink(missing_ok=True)
     Path(virtual_snapshot_filename).unlink(missing_ok=True)

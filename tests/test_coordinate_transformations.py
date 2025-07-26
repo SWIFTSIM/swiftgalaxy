@@ -6,10 +6,7 @@ from swiftsimio.objects import cosmo_array, cosmo_quantity
 from scipy.spatial.transform import Rotation
 from swiftgalaxy.demo_data import (
     _present_particle_types,
-    _toysnap_filename,
     ToyHF,
-    _create_toysnap,
-    _remove_toysnap,
 )
 from swiftgalaxy import SWIFTGalaxy
 from swiftgalaxy.reader import _apply_translation, _apply_4transform
@@ -647,7 +644,10 @@ class TestCopyingTransformations:
             match="Cannot use coordinate_frame_from with auto_recentre=True.",
         ):
             SWIFTGalaxy(
-                _toysnap_filename, ToyHF(), auto_recentre=True, coordinate_frame_from=sg
+                sg.filename,
+                ToyHF(snapfile=sg.filename),
+                auto_recentre=True,
+                coordinate_frame_from=sg,
             )
 
     def test_invalid_coordinate_frame_from(self, sg):
@@ -657,19 +657,13 @@ class TestCopyingTransformations:
         new_time_unit = u.s
         assert sg.metadata.units.time != new_time_unit
         sg.metadata.units.time = new_time_unit
-        try:
-            _create_toysnap()
-            with pytest.raises(
-                ValueError, match="Internal units \\(length and time\\) of"
-            ):
-                SWIFTGalaxy(
-                    _toysnap_filename,
-                    ToyHF(),
-                    coordinate_frame_from=sg,
-                    auto_recentre=False,
-                )
-        finally:
-            _remove_toysnap()
+        with pytest.raises(ValueError, match="Internal units \\(length and time\\) of"):
+            SWIFTGalaxy(
+                sg.filename,
+                ToyHF(snapfile=sg.filename),
+                coordinate_frame_from=sg,
+                auto_recentre=False,
+            )
 
     def test_copied_coordinate_transform(self, sg):
         """
@@ -686,7 +680,10 @@ class TestCopyingTransformations:
         )
         sg.translate(translation)
         sg2 = SWIFTGalaxy(
-            _toysnap_filename, ToyHF(), auto_recentre=False, coordinate_frame_from=sg
+            sg.filename,
+            ToyHF(snapfile=sg.filename),
+            auto_recentre=False,
+            coordinate_frame_from=sg,
         )
         assert_allclose_units(
             sg.gas.coordinates, sg2.gas.coordinates, rtol=1.0e-4, atol=abstol_c
@@ -707,7 +704,10 @@ class TestCopyingTransformations:
         )
         sg.translate(translation)
         sg2 = SWIFTGalaxy(
-            _toysnap_filename, ToyHF(), auto_recentre=False, coordinate_frame_from=sg
+            sg.filename,
+            ToyHF(snapfile=sg.filename),
+            auto_recentre=False,
+            coordinate_frame_from=sg,
         )
         assert_allclose_units(
             sg.gas.velocities, sg2.gas.velocities, rtol=1.0e-4, atol=abstol_v

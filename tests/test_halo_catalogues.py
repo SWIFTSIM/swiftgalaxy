@@ -13,6 +13,8 @@ from swiftgalaxy.demo_data import (
     _toycaesar_filename,
     _toysoap_virtual_snapshot_filename,
     _toysoap_membership_filebase,
+    _create_toysnap,
+    _remove_toysnap,
     _create_toycaesar,
     _remove_toycaesar,
     _n_g_1,
@@ -57,8 +59,8 @@ class TestHaloCatalogues:
         """
         # don't use sg fixture here, just need the snapshot file
         # so don't want overhead of a SWIFTGalaxy
-        spatial_mask = hf._get_spatial_mask(_toysnap_filename)
-        with h5py.File(_toysnap_filename, "r") as snap:
+        spatial_mask = hf._get_spatial_mask(toysnap["toysnap_filename"])
+        with h5py.File(toysnap["toysnap_filename"], "r") as snap:
             n_g_firstcell = snap["/Cells/Counts/PartType0"][0]
             n_dm_firstcell = snap["/Cells/Counts/PartType1"][0]
             n_s_firstcell = snap["/Cells/Counts/PartType4"][0]
@@ -107,9 +109,9 @@ class TestHaloCatalogues:
             scale_exponent=1,
         )
         hf.extra_mask = None
-        sg = SWIFTGalaxy(_toysnap_filename, hf)
+        sg = SWIFTGalaxy(toysnap["toysnap_filename"], hf)
         generated_spatial_mask = sg._spatial_mask
-        with h5py.File(_toysnap_filename, "r") as snap:
+        with h5py.File(toysnap["toysnap_filename"], "r") as snap:
             n_g_firstcell = snap["/Cells/Counts/PartType0"][0]
             n_dm_firstcell = snap["/Cells/Counts/PartType1"][0]
             n_s_firstcell = snap["/Cells/Counts/PartType4"][0]
@@ -131,7 +133,7 @@ class TestHaloCatalogues:
             np.array([[0, n_bh_firstcell], [n_bh_firstcell, _n_bh_1 + _n_bh_2]]),
         )
 
-    def test_get_bound_only_extra_mask(self, hf, toysnap_withfof):
+    def test_get_bound_only_extra_mask(self, tmp_path_factory, hf):
         """
         Check that bound_only extra mask has the right shape.
         """
@@ -140,36 +142,55 @@ class TestHaloCatalogues:
             from compression.make_virtual_snapshot import make_virtual_snapshot
             from compression.update_vds_paths import update_virtual_snapshot_paths
 
-            membership_filepattern = (
-                str(_toysoap_membership_filebase) + ".{file_nr}.hdf5"
+            tp = hf.soap_file.parent
+            toysnap_filename = tp / _toysnap_filename.name
+            _create_toysnap(snapfile=toysnap_filename, withfof=True)
+            membership_filepattern = tp / (
+                str(_toysoap_membership_filebase.name) + ".{file_nr}.hdf5"
+            )
+            toysoap_virtual_snapshot_filename = (
+                tp / _toysoap_virtual_snapshot_filename.name
             )
             make_virtual_snapshot(
-                _toysnap_filename,
-                membership_filepattern,
-                _toysoap_virtual_snapshot_filename,
+                toysnap_filename,
+                str(membership_filepattern),
+                toysoap_virtual_snapshot_filename,
                 0,  # snapshot number, not used since no pattern in filenames
             )
-            abs_snapshot_dir = Path(_toysnap_filename).parent.absolute()
+            abs_snapshot_dir = Path(toysnap_filename).parent.absolute()
             abs_membership_dir = Path(
-                membership_filepattern.format(file_nr=0)
+                str(membership_filepattern).format(file_nr=0)
             ).parent.absolute()
-            abs_output_dir = Path(_toysoap_virtual_snapshot_filename).parent.absolute()
+            abs_output_dir = Path(toysoap_virtual_snapshot_filename).parent.absolute()
             rel_snapshot_dir = abs_snapshot_dir.relative_to(abs_output_dir)
             rel_membership_dir = abs_membership_dir.relative_to(abs_output_dir)
             update_virtual_snapshot_paths(
-                _toysoap_virtual_snapshot_filename, rel_snapshot_dir, rel_membership_dir
+                toysoap_virtual_snapshot_filename, rel_snapshot_dir, rel_membership_dir
             )
-            sg = SWIFTGalaxy(_toysoap_virtual_snapshot_filename, hf)
+            sg = SWIFTGalaxy(toysoap_virtual_snapshot_filename, hf)
+        elif hasattr(hf, "caesar_file"):
+            tp = hf.caesar_file.parent
+            toysnap_filename = tp / _toysnap_filename.name
+            _create_toysnap(snapfile=toysnap_filename)
+            sg = SWIFTGalaxy(toysnap_filename, hf)
+        elif hasattr(hf, "velociraptor_files"):
+            tp = Path(hf.velociraptor_files["properties"]).parent
+            toysnap_filename = tp / _toysnap_filename.name
+            _create_toysnap(snapfile=toysnap_filename)
+            sg = SWIFTGalaxy(toysnap_filename, hf)
         else:
             try:
-                sg = SWIFTGalaxy(_toysnap_filename, hf)
+                tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+                toysnap_filename = tp / _toysnap_filename.name
+                _create_toysnap(snapfile=toysnap_filename)
+                sg = SWIFTGalaxy(toysnap_filename, hf)
             except NotImplementedError:
                 # expected for Standalone
                 return
         generated_extra_mask = sg._extra_mask
         expected_shape = dict()
         for particle_type in _present_particle_types.values():
-            with h5py.File(_toysnap_filename, "r") as snap:
+            with h5py.File(toysnap_filename, "r") as snap:
                 expected_shape[particle_type] = snap[
                     "Cells/Counts/PartType"
                     f"{dict(gas=0, dark_matter=1, stars=4, black_holes=5)[particle_type]}"
@@ -191,13 +212,14 @@ class TestHaloCatalogues:
                         black_holes=_n_bh_1,
                     )[particle_type]
                 )
+        _remove_toysnap(snapfile=toysnap_filename)
 
     def test_get_void_extra_mask(self, hf, toysnap):
         """
         Check that None extra mask gives expected result.
         """
         hf.extra_mask = None
-        sg = SWIFTGalaxy(_toysnap_filename, hf)
+        sg = SWIFTGalaxy(toysnap["toysnap_filename"], hf)
         generated_extra_mask = sg._extra_mask
         for particle_type in _present_particle_types.values():
             assert getattr(generated_extra_mask, particle_type) is None
@@ -212,7 +234,7 @@ class TestHaloCatalogues:
             stars=np.r_[np.ones(100, dtype=bool), np.zeros(_n_s_1 - 100, dtype=bool)],
             black_holes=np.ones(_n_bh_1, dtype=bool),
         )
-        sg = SWIFTGalaxy(_toysnap_filename, hf)
+        sg = SWIFTGalaxy(toysnap["toysnap_filename"], hf)
         generated_extra_mask = sg._extra_mask
         for particle_type in _present_particle_types.values():
             if getattr(generated_extra_mask, particle_type) is None:
@@ -327,10 +349,10 @@ class TestHaloCataloguesMulti:
         Check that we get spatial masks that we expect.
         """
         with pytest.raises(RuntimeError, match="not currently masked"):
-            hf_multi._get_spatial_mask(_toysnap_filename)
+            hf_multi._get_spatial_mask(toysnap["toysnap_filename"])
         hf_multi._mask_multi_galaxy(0)
-        spatial_mask = hf_multi._get_spatial_mask(_toysnap_filename)
-        with h5py.File(_toysnap_filename, "r") as snap:
+        spatial_mask = hf_multi._get_spatial_mask(toysnap["toysnap_filename"])
+        with h5py.File(toysnap["toysnap_filename"], "r") as snap:
             n_g_firstcell = snap["/Cells/Counts/PartType0"][0]
             n_dm_firstcell = snap["/Cells/Counts/PartType1"][0]
             n_s_firstcell = snap["/Cells/Counts/PartType4"][0]
@@ -364,7 +386,7 @@ class TestHaloCataloguesMulti:
                 np.array([[0, n_bh_firstcell], [n_bh_firstcell, _n_bh_1 + _n_bh_2]]),
             )
 
-    def test_generate_extra_mask(self, hf_multi, toysnap_withfof):
+    def test_generate_extra_mask(self, hf_multi, tmp_path_factory):
         """
         Check that bound_only extra mask has the right shape.
         """
@@ -374,36 +396,55 @@ class TestHaloCataloguesMulti:
             from compression.make_virtual_snapshot import make_virtual_snapshot
             from compression.update_vds_paths import update_virtual_snapshot_paths
 
-            membership_filepattern = (
-                str(_toysoap_membership_filebase) + ".{file_nr}.hdf5"
+            tp = hf_multi.soap_file.parent
+            toysnap_filename = tp / _toysnap_filename.name
+            _create_toysnap(snapfile=toysnap_filename, withfof=True)
+            membership_filepattern = tp / (
+                str(_toysoap_membership_filebase.name) + ".{file_nr}.hdf5"
+            )
+            toysoap_virtual_snapshot_filename = (
+                tp / _toysoap_virtual_snapshot_filename.name
             )
             make_virtual_snapshot(
-                _toysnap_filename,
-                membership_filepattern,
-                _toysoap_virtual_snapshot_filename,
+                toysnap_filename,
+                str(membership_filepattern),
+                toysoap_virtual_snapshot_filename,
                 0,  # snapshot number, not used since no pattern in filenames
             )
-            abs_snapshot_dir = Path(_toysnap_filename).parent.absolute()
+            abs_snapshot_dir = Path(toysnap_filename).parent.absolute()
             abs_membership_dir = Path(
-                membership_filepattern.format(file_nr=0)
+                str(membership_filepattern).format(file_nr=0)
             ).parent.absolute()
-            abs_output_dir = Path(_toysoap_virtual_snapshot_filename).parent.absolute()
+            abs_output_dir = Path(toysoap_virtual_snapshot_filename).parent.absolute()
             rel_snapshot_dir = abs_snapshot_dir.relative_to(abs_output_dir)
             rel_membership_dir = abs_membership_dir.relative_to(abs_output_dir)
             update_virtual_snapshot_paths(
-                _toysoap_virtual_snapshot_filename, rel_snapshot_dir, rel_membership_dir
+                toysoap_virtual_snapshot_filename, rel_snapshot_dir, rel_membership_dir
             )
-            sg = SWIFTGalaxy(_toysoap_virtual_snapshot_filename, hf_multi)
+            sg = SWIFTGalaxy(toysoap_virtual_snapshot_filename, hf_multi)
+        elif hasattr(hf_multi, "caesar_file"):
+            tp = hf_multi.caesar_file.parent
+            toysnap_filename = tp / _toysnap_filename.name
+            _create_toysnap(snapfile=toysnap_filename)
+            sg = SWIFTGalaxy(toysnap_filename, hf_multi)
+        elif hasattr(hf_multi, "velociraptor_files"):
+            tp = Path(hf_multi.velociraptor_files["properties"]).parent
+            toysnap_filename = tp / _toysnap_filename.name
+            _create_toysnap(snapfile=toysnap_filename)
+            sg = SWIFTGalaxy(toysnap_filename, hf_multi)
         else:
             try:
-                sg = SWIFTGalaxy(_toysnap_filename, hf_multi)
+                tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+                toysnap_filename = tp / _toysnap_filename.name
+                _create_toysnap(snapfile=toysnap_filename)
+                sg = SWIFTGalaxy(toysnap_filename, hf_multi)
             except NotImplementedError:
                 # expected for Standalone
                 return
         generated_extra_mask = sg._extra_mask
         expected_shape = dict()
         for particle_type in _present_particle_types.values():
-            with h5py.File(_toysnap_filename, "r") as snap:
+            with h5py.File(toysnap_filename, "r") as snap:
                 expected_shape[particle_type] = snap[
                     "Cells/Counts/PartType"
                     f"{dict(gas=0, dark_matter=1, stars=4, black_holes=5)[particle_type]}"
@@ -425,6 +466,7 @@ class TestHaloCataloguesMulti:
                         black_holes=_n_bh_1,
                     )[particle_type]
                 )
+        _remove_toysnap(snapfile=toysnap_filename)
 
     def test_mask_index_list(self, hf_multi):
         """
@@ -843,7 +885,7 @@ class TestCaesar:
         applied.
         """
         caesar.extra_mask = None  # apply only the spatial mask
-        sg = SWIFTGalaxy(_toysnap_filename, caesar)
+        sg = SWIFTGalaxy(toysnap["toysnap_filename"], caesar)
         for particle_type in _present_particle_types.values():
             assert (
                 getattr(sg, particle_type).masses.size
@@ -875,15 +917,15 @@ class TestCaesar:
         with pytest.raises(ValueError, match="Provide a caesar_file."):
             Caesar(group_type="halo", group_index=0)
         with pytest.raises(ValueError, match="group_type required, valid values"):
-            Caesar(_toycaesar_filename, group_index=0)  # missing group_type
+            Caesar(caesar.caesar_file, group_index=0)  # missing group_type
         with pytest.raises(ValueError, match="group_type required, valid values"):
             Caesar(
-                _toycaesar_filename, group_type="invalid", group_index=0
+                caesar.caesar_file, group_type="invalid", group_index=0
             )  # invalid group_type
         with pytest.raises(
             ValueError, match=re.escape("group_index (int or list) required.")
         ):
-            Caesar(_toycaesar_filename, group_type="halo")
+            Caesar(caesar.caesar_file, group_type="halo")
 
     def test_prevent_infinite_attribute_recursion(self, caesar):
         """
@@ -975,7 +1017,7 @@ class TestCaesarWithSWIFTGalaxy:
                 include_dmlist=False,
             )
             sg = SWIFTGalaxy(
-                _toysnap_filename,
+                toysnap["toysnap_filename"],
                 Caesar(_toycaesar_filename, group_type=group_type, group_index=0),
             )
             assert sg._extra_mask.gas.mask == np.s_[:0]
@@ -1051,7 +1093,7 @@ class TestStandalone:
         applied.
         """
         sa.extra_mask = None  # apply only the spatial mask
-        sg = SWIFTGalaxy(_toysnap_filename, sa)
+        sg = SWIFTGalaxy(toysnap["toysnap_filename"], sa)
         for particle_type in _present_particle_types.values():
             assert (
                 getattr(sg, particle_type).masses.size
@@ -1067,7 +1109,7 @@ class TestStandalone:
         """
         Check that the user is warned if reading all particles.
         """
-        m = mask(_toysnap_filename)
+        m = mask(toysnap["toysnap_filename"])
         with pytest.warns(
             UserWarning, match="No spatial_offsets provided. All particles"
         ):
@@ -1088,7 +1130,7 @@ class TestStandalone:
                 ),
                 spatial_offsets=None,
             )
-            sg = SWIFTGalaxy(_toysnap_filename, sa)
+            sg = SWIFTGalaxy(toysnap["toysnap_filename"], sa)
             assert sg.gas.particle_ids.size == _n_g_all
 
     def test_missing_centre_raises(self, toysnap):

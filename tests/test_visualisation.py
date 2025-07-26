@@ -5,16 +5,20 @@ from swiftsimio import cosmo_array, cosmo_quantity
 from swiftsimio.visualisation.projection import project_gas
 from swiftsimio.visualisation.slice import slice_gas
 from swiftsimio.visualisation.volume_render import render_gas
+from swiftgalaxy import SWIFTGalaxy
 
 
 @pytest.mark.parametrize("periodic", [False, True])
 class TestRecenteredVisualisation:
 
     @pytest.mark.parametrize("z_cut", [False, True])
-    def test_recentered_projection(self, sg, sg_autorecentre_off, z_cut, periodic):
+    def test_recentered_projection(self, sg_autorecentre_off, z_cut, periodic):
         """
         We should be able to make the same projections whether we recentered or not.
         """
+        sg = SWIFTGalaxy(
+            sg_autorecentre_off.snapshot_filename, sg_autorecentre_off.halo_catalogue
+        )
         z_limits = [1.9, 2.1] if z_cut else []
         recentered_z_limits = [-0.1, 0.1] if z_cut else []
         kwargs = {
@@ -48,10 +52,13 @@ class TestRecenteredVisualisation:
         assert (ref_img > 0).any()
         assert np.allclose(ref_img, recentered_img)
 
-    def test_recentered_slice(self, sg, sg_autorecentre_off, periodic):
+    def test_recentered_slice(self, sg_autorecentre_off, periodic):
         """
         We should be able to make the same slice whether we recentered or not.
         """
+        sg = SWIFTGalaxy(
+            sg_autorecentre_off.snapshot_filename, sg_autorecentre_off.halo_catalogue
+        )
         z_slice = cosmo_quantity(
             1.95, u.Mpc, comoving=True, scale_factor=1, scale_exponent=1
         )
@@ -91,10 +98,13 @@ class TestRecenteredVisualisation:
         assert (ref_img > 0).any()
         assert np.allclose(ref_img, recentered_img)
 
-    def test_recentered_volume_render(self, sg, sg_autorecentre_off, periodic):
+    def test_recentered_volume_render(self, sg_autorecentre_off, periodic):
         """
         We should be able to make the same rendering whether we recentered or not.
         """
+        sg = SWIFTGalaxy(
+            sg_autorecentre_off.snapshot_filename, sg_autorecentre_off.halo_catalogue
+        )
         kwargs = {
             "resolution": 4,
             "project": "masses",
