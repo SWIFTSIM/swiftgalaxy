@@ -35,6 +35,8 @@ from swiftgalaxy.demo_data import (
     _centre_2,
     _vcentre_1,
     _vcentre_2,
+    generated_examples,
+    web_examples,
 )
 
 hfs = ("vr", "caesar_halo", "caesar_galaxy", "sa", "soap")
@@ -1100,3 +1102,15 @@ def lm():
 
     lm = LazyMask(mask_function=mf)
     yield lm
+
+
+@pytest.fixture(scope="function")
+def generated_examples_tmpdir(tmp_path_factory):
+    generated_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
+    return generated_examples
+
+
+@pytest.fixture(scope="function")
+def web_examples_tmpdir(tmp_path_factory):
+    web_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
+    return web_examples

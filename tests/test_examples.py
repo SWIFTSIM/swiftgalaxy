@@ -4,8 +4,6 @@ import unyt as u
 from swiftsimio import cosmo_array, mask
 from swiftgalaxy import SWIFTGalaxy, Velociraptor, Caesar, SOAP, Standalone
 from swiftgalaxy.demo_data import (
-    web_examples,
-    generated_examples,
     ToyHF,
     _toysnap_filename,
     _toyvr_filebase,
@@ -14,18 +12,6 @@ from swiftgalaxy.demo_data import (
     _toysoap_virtual_snapshot_filename,
     _toycaesar_filename,
 )
-
-
-@pytest.fixture(scope="session")
-def generated_examples_tmpdir(tmp_path_factory):
-    generated_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
-    return generated_examples
-
-
-@pytest.fixture(scope="session")
-def web_examples_tmpdir(tmp_path_factory):
-    web_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
-    return web_examples
 
 
 class TestWebExampleData:
