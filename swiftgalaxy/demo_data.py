@@ -212,12 +212,19 @@ class _WebExamples(object):
 
     def remove(self) -> None:
         """
-        Remove all downloaded example files.
+        Remove all downloaded example files. Also removes the example data directory, if
+        it is empty after the files have been removed.
         """
         for example_dict in self.available_examples.values():
             filenames = example_dict["files"]
             for filename in filenames:
                 (self._demo_data_dir / filename).unlink(missing_ok=True)
+        try:
+            self._demo_data_dir.rmdir()
+        except OSError:
+            # it wasn't empty, doesn't exist or is not a directory by the time we got here
+            pass
+        return
 
 
 web_examples = _WebExamples()
@@ -324,7 +331,8 @@ class _GeneratedExamples(object):
 
     def remove(self) -> None:
         """
-        Remove all generated example files.
+        Remove all generated example files. Also removes the example data directory, if
+        it is empty after the files have been removed.
         """
         _remove_toysnap(snapfile=self._demo_data_dir / _toysnap_filename.name)
         _remove_toyvr(filebase=self._demo_data_dir / _toyvr_filebase.name)
@@ -335,6 +343,11 @@ class _GeneratedExamples(object):
             virtual_snapshot_filename=self._demo_data_dir
             / _toysoap_virtual_snapshot_filename.name,
         )
+        try:
+            self._demo_data_dir.rmdir()
+        except OSError:
+            # it wasn't empty, doesn't exist or is not a directory by the time we got here
+            pass
         return
 
 
