@@ -818,12 +818,9 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
         out : :class:`~swiftsimio.objects.cosmo_array`
             The data with any masks applied.
         """
-        if self._swiftgalaxy._extra_mask is not None:
-            mask = getattr(
-                self._swiftgalaxy._extra_mask, self._particle_dataset.group_name
-            )
-            if mask is not None:
-                return data[mask.mask]
+        mask = getattr(self._swiftgalaxy._extra_mask, self._particle_dataset.group_name)
+        if mask is not None:
+            return data[mask.mask]
         return data
 
     def _mask_dataset(self, mask: LazyMask) -> None:
@@ -1639,8 +1636,6 @@ class SWIFTGalaxy(SWIFTDataset):
                         named_columns, getattr(self, particle_name)
                     ),
                 )
-        if not hasattr(self, "_extra_mask"):
-            self._extra_mask = None
         if self.halo_catalogue is not None:
             # in server mode we don't have a halo_catalogue yet
             self._extra_mask = self.halo_catalogue._get_extra_mask(self)

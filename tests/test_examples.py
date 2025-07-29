@@ -92,10 +92,20 @@ class TestWebExampleData:
         # download all the example data (if not present)
         for example in web_examples_tmpdir.available_examples.keys():
             getattr(web_examples_tmpdir, example)
+
+        tp = web_examples_tmpdir._demo_data_dir
+
+        # create an additional file so that we can test empty/non-empty directory removal
+        open(tp / "extra_file", "a").close()
+
         web_examples_tmpdir.remove()
         for absent_files in web_examples_tmpdir.available_examples.values():
             for absent_file in absent_files:
                 assert not Path(absent_file).is_file()
+        assert tp.is_dir()  # not yet empty
+        (tp / "extra_file").unlink()
+        web_examples_tmpdir.remove()
+        assert not tp.is_dir()
 
 
 class TestGeneratedExampleData:
@@ -155,8 +165,12 @@ class TestGeneratedExampleData:
         # create all the example data (if not present)
         for example in generated_examples_tmpdir.available_examples:
             getattr(generated_examples_tmpdir, example)
-        generated_examples_tmpdir.remove()
+
         tp = generated_examples_tmpdir._demo_data_dir
+        # create an additional file so that we can test empty/non-empty directory removal
+        open(tp / "extra_file", "a").close()
+
+        generated_examples_tmpdir.remove()
         absent_files = (
             tp / _toysnap_filename.name,
             tp / f"{_toyvr_filebase.name}.properties",
@@ -172,6 +186,10 @@ class TestGeneratedExampleData:
         )
         for absent_file in absent_files:
             assert not Path(absent_file).is_file()
+        assert tp.is_dir()  # not empty yet
+        (tp / "extra_file").unlink()
+        generated_examples_tmpdir.remove()
+        assert not tp.is_dir()
 
 
 class TestExampleNotebooks:

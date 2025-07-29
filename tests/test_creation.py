@@ -3,6 +3,9 @@ Tests checking that we can create objects, if these fail something
 fundamental has gone wrong.
 """
 
+from pathlib import Path
+from swiftgalaxy.demo_data import _create_toyvr, _create_toycaesar, _create_toysoap
+
 
 class TestSWIFTGalaxyCreation:
     def test_sg_creation(self, sg):
@@ -17,17 +20,61 @@ class TestSWIFTGalaxyCreation:
         """
         pass  # fixture created SOAP interface
 
+    def test_soap_recreation(self, toysoap_with_virtual_snapshot):
+        """
+        Make sure we can try to create a soap file set when one already
+        exists (from the fixture) without issue (should skip making files).
+        """
+        assert toysoap_with_virtual_snapshot["toysoap_filename"].is_file()
+        assert Path(
+            str(toysoap_with_virtual_snapshot["membership_filebase"]) + ".0.hdf5"
+        ).is_file()
+        assert toysoap_with_virtual_snapshot["toysnap_filename"].is_file()
+        assert toysoap_with_virtual_snapshot[
+            "toysoap_virtual_snapshot_filename"
+        ].is_file()
+        _create_toysoap(
+            filename=toysoap_with_virtual_snapshot["toysoap_filename"],
+            membership_filebase=toysoap_with_virtual_snapshot["membership_filebase"],
+            create_membership=True,
+            create_virtual_snapshot=True,
+            create_virtual_snapshot_from=toysoap_with_virtual_snapshot[
+                "toysnap_filename"
+            ],
+            virtual_snapshot_filename=toysoap_with_virtual_snapshot[
+                "toysoap_virtual_snapshot_filename"
+            ],
+        )
+
     def test_vr_creation(self, vr):
         """
         Make sure we can create a Velociraptor without error.
         """
         pass  # fixture created Velociraptor interface
 
+    def test_vr_recreation(self, vr):
+        """
+        Make sure we can try to create a velociraptor file set when one already
+        exists (from the fixture) without issue (should skip making files).
+        """
+        for f in vr.velociraptor_files.values():
+            assert Path(f).is_file()
+        filebase = vr.velociraptor_files["properties"].split(".")[0]
+        _create_toyvr(filebase=filebase)
+
     def test_caesar_creation(self, caesar):
         """
         Make sure we can create a Caesar without error.
         """
         pass  # fixture created Caesar interface
+
+    def test_caesar_recreation(self, caesar):
+        """
+        Make sure we can try to create a caesar file when one already exists (from
+        the fixture) without issue (should skip making the file).
+        """
+        assert caesar.caesar_file.is_file()
+        _create_toycaesar(filename=caesar.caesar_file)
 
     def test_sa_creation(self, sa):
         """

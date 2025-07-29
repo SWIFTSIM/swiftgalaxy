@@ -95,18 +95,15 @@ def _ensure_demo_data_directory(func: Callable) -> Callable:
         **kwargs : :obj:`dict`
             Keyword arguments for wrapped function.
         """
-        if len(args) > 0 and isinstance(args[0], _GeneratedExamples):
-            using_demo_data_dirs = [object.__getattribute__(args[0], "_demo_data_dir")]
-        else:
-            using_demo_data_dirs = []
-            for arg in args:
-                if isinstance(arg, Path):
-                    using_demo_data_dirs.append(arg.parent)
-            for val in kwargs.values():
-                if isinstance(val, Path):
-                    using_demo_data_dirs.append(val.parent)
+        using_demo_data_dirs: list[Path] = []
+        for arg in args:
+            if isinstance(arg, Path):
+                using_demo_data_dirs.append(arg.parent)
+        for val in kwargs.values():
+            if isinstance(val, Path):
+                using_demo_data_dirs.append(val.parent)
         for dd in using_demo_data_dirs:
-            Path(dd).mkdir(exist_ok=True)
+            dd.mkdir(exist_ok=True)
         return func(*args, **kwargs)
 
     return wrapper
