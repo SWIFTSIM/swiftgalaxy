@@ -96,16 +96,19 @@ class TestMaskingSWIFTGalaxy:
             neutral_before[mask], neutral, rtol=reltol_nd, atol=abstol_nd
         )
 
-    def test_mask_without_spatial_mask(self):
+    def test_mask_without_spatial_mask(self, tmp_path_factory):
         """
         Check that if we have no masks we read everything in the box (and warn about it).
         Then that we can still apply an extra mask, and a second one (there's specific
         logic for applying two consecutively).
         """
+        toysnap_filename = (
+            tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
+        )
         try:
-            _create_toysnap()
+            _create_toysnap(snapfile=toysnap_filename)
             sg = SWIFTGalaxy(
-                _toysnap_filename,
+                toysnap_filename,
                 None,  # no halo_catalogue is easiest way to get no mask
                 transforms_like_coordinates={"coordinates", "extra_coordinates"},
                 transforms_like_velocities={"velocities", "extra_velocities"},
@@ -129,7 +132,7 @@ class TestMaskingSWIFTGalaxy:
             sg.mask_particles(MaskCollection(gas=np.s_[:100]))
             assert sg.gas.masses.size == 100
         finally:
-            _remove_toysnap()
+            _remove_toysnap(snapfile=toysnap_filename)
 
 
 class TestMaskingParticleDatasets:

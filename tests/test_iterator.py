@@ -1,5 +1,6 @@
 import pytest
 import re
+from pathlib import Path
 import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
@@ -8,9 +9,12 @@ from swiftgalaxy.demo_data import (
     ToyHF,
     _present_particle_types,
     _toysoap_virtual_snapshot_filename,
+    _toysoap_membership_filebase,
     _toysoap_filename,
     _toyvr_filebase,
     _toycaesar_filename,
+    _create_toysnap,
+    _remove_toysnap,
     _create_toysoap,
     _create_toyvr,
     _create_toycaesar,
@@ -37,7 +41,7 @@ class TestSWIFTGalaxies:
         # this should make sparse iteration optimal
         # at a cost of 2 cell reads
         sgs = SWIFTGalaxies(
-            _toysnap_filename,
+            toysnap["toysnap_filename"],
             Standalone(
                 centre=cosmo_array(
                     [[2.5, 5.0, 5.0], [7.5, 5.0, 5.0]],
@@ -122,7 +126,7 @@ class TestSWIFTGalaxies:
         # copies if the target region is larger than ~0.5 the
         # box size in any dimension.
         sgs = SWIFTGalaxies(
-            _toysnap_filename,
+            toysnap["toysnap_filename"],
             Standalone(
                 centre=cosmo_array(
                     [
@@ -238,9 +242,10 @@ class TestSWIFTGalaxies:
         count = 0
         for sg_from_sgs in sgs:
             sg = SWIFTGalaxy(
-                _toysnap_filename,
+                sgs.snapshot_filename,
                 ToyHF(
-                    snapfile=_toysnap_filename, index=sg_from_sgs.halo_catalogue.index
+                    snapfile=sgs.snapshot_filename,
+                    index=sg_from_sgs.halo_catalogue.index,
                 ),
             )
             for ptype in _present_particle_types.values():
@@ -252,17 +257,23 @@ class TestSWIFTGalaxies:
         assert count == len(sgs.halo_catalogue.index)
 
     @pytest.mark.parametrize("extra_mask", ["bound_only", None])
-    def test_preload(self, toysnap_withfof, hf_multi, extra_mask):
+    def test_preload(self, tmp_path_factory, hf_multi, extra_mask):
         """
         Make sure that data that we ask to have pre-loaded is actually pre-loaded.
         """
+        if isinstance(hf_multi, SOAP):
+            tp = hf_multi.soap_file.parent
+        elif isinstance(hf_multi, Caesar):
+            tp = hf_multi.caesar_file.parent
+        elif isinstance(hf_multi, Velociraptor):
+            tp = Path(hf_multi.velociraptor_files["properties"]).parent
+        else:
+            tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+        toysnap_filename = tp / _toysnap_filename.name
+        _create_toysnap(snapfile=toysnap_filename, withfof=isinstance(hf_multi, SOAP))
         hf_multi.extra_mask = extra_mask
         sgs = SWIFTGalaxies(
-            (
-                _toysoap_virtual_snapshot_filename
-                if isinstance(hf_multi, SOAP)
-                else _toysnap_filename
-            ),
+            toysnap_filename,
             hf_multi,
             preload={
                 "gas.particle_ids",
@@ -271,7 +282,7 @@ class TestSWIFTGalaxies:
                 "black_holes.particle_ids",
             },
         )
-        region_mask = mask(_toysnap_filename)
+        region_mask = mask(toysnap_filename)
         region_mask.constrain_spatial(sgs._solution["regions"][0])
         sgs._start_server(region_mask)
         sgs._preload()
@@ -281,6 +292,7 @@ class TestSWIFTGalaxies:
                 getattr(getattr(sgs._server, ptype)._particle_dataset, f"_{field}")
                 is not None
             )
+        _remove_toysnap(snapfile=toysnap_filename)
 
     def test_warn_on_no_preload(self, toysnap):
         """
@@ -289,8 +301,8 @@ class TestSWIFTGalaxies:
         """
         with pytest.warns(RuntimeWarning, match="No data specified to preload"):
             SWIFTGalaxies(
-                _toysnap_filename,
-                ToyHF(index=[0, 1]),
+                toysnap["toysnap_filename"],
+                ToyHF(toysnap["toysnap_filename"], index=[0, 1]),
             )
 
     def test_warn_on_read_not_preloaded(self, sgs):
@@ -311,21 +323,31 @@ class TestSWIFTGalaxies:
         """
         with pytest.raises(ValueError, match="must not contain duplicates"):
             SWIFTGalaxies(
-                _toysnap_filename,
-                ToyHF(index=[0, 0]),
+                toysnap["toysnap_filename"],
+                ToyHF(toysnap["toysnap_filename"], index=[0, 0]),
             )
 
-    def test_map(self, toysnap_withfof, hf_multi):
+    def test_map(self, tmp_path_factory, hf_multi):
         """
         Check that the map method returns results in the same order as the input target
         list. We're careful in this test to make sure that the iteration order is
         different from the input list order.
         """
+        if isinstance(hf_multi, SOAP):
+            tp = hf_multi.soap_file.parent
+        elif isinstance(hf_multi, Caesar):
+            tp = hf_multi.caesar_file.parent
+        elif isinstance(hf_multi, Velociraptor):
+            tp = Path(hf_multi.velociraptor_files["properties"]).parent
+        else:
+            tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+            _create_toysnap(snapfile=tp / _toysnap_filename.name)
+        toysnap_filename = tp / _toysnap_filename.name
         sgs = SWIFTGalaxies(
             (
-                _toysoap_virtual_snapshot_filename
+                tp / _toysoap_virtual_snapshot_filename.name
                 if isinstance(hf_multi, SOAP)
-                else _toysnap_filename
+                else toysnap_filename
             ),
             hf_multi,
             preload={  # just to keep warnings quiet
@@ -364,9 +386,11 @@ class TestSWIFTGalaxies:
         assert sgs.map(f) == getattr(
             sgs.halo_catalogue, sgs.halo_catalogue._index_attr[1:]
         )
+        if isinstance(hf_multi, Standalone):
+            _remove_toysnap(snapfile=toysnap_filename)
 
     def test_arbitrary_index_ordering(
-        self, toysnap_withfof, hf_multi_forwards_and_backwards
+        self, tmp_path_factory, hf_multi_forwards_and_backwards
     ):
         """
         Check that SWIFTGalaxies gives consistent results for any order of target objects.
@@ -375,15 +399,25 @@ class TestSWIFTGalaxies:
         hdf5 complaining about an unsorted list of indices to read from file.
         """
         hf_multi, hf_multi_backwards = hf_multi_forwards_and_backwards
+        if isinstance(hf_multi, SOAP):
+            tp = hf_multi.soap_file.parent
+        elif isinstance(hf_multi, Caesar):
+            tp = hf_multi.caesar_file.parent
+        elif isinstance(hf_multi, Velociraptor):
+            tp = Path(hf_multi.velociraptor_files["properties"]).parent
+        else:
+            tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+            _create_toysnap(snapfile=tp / _toysnap_filename.name)
+        toysnap_filename = tp / _toysnap_filename.name
 
         def f(sg):
             return sg.halo_catalogue.centre
 
         sgs_forwards = SWIFTGalaxies(
             (
-                _toysoap_virtual_snapshot_filename
+                tp / _toysoap_virtual_snapshot_filename.name
                 if isinstance(hf_multi, SOAP)
-                else _toysnap_filename
+                else toysnap_filename
             ),
             hf_multi,
             preload={  # just to keep warnings quiet
@@ -396,9 +430,9 @@ class TestSWIFTGalaxies:
         map_forwards = sgs_forwards.map(f)
         sgs_backwards = SWIFTGalaxies(
             (
-                _toysoap_virtual_snapshot_filename
+                tp / _toysoap_virtual_snapshot_filename.name
                 if isinstance(hf_multi, SOAP)
-                else _toysnap_filename
+                else toysnap_filename
             ),
             hf_multi_backwards,
             preload={  # just to keep warnings quiet
@@ -410,6 +444,8 @@ class TestSWIFTGalaxies:
         )
         map_backwards = sgs_backwards.map(f)
         assert np.allclose(map_forwards, map_backwards[::-1])
+        if isinstance(hf_multi, Standalone):
+            _remove_toysnap(snapfile=toysnap_filename)
 
     def test_args_kwargs_to_map(self, sgs):
         """
@@ -424,9 +460,7 @@ class TestSWIFTGalaxies:
         result = sgs.map(f, args=extra_arg, kwargs=extra_kwarg)
         assert result == [("foo", "spam"), ("bar", "eggs")]
 
-    def test_soap_target_order_consistency(
-        self, toysnap_withfof, toysoap_with_virtual_snapshot
-    ):
+    def test_soap_target_order_consistency(self, toysoap_with_virtual_snapshot):
         """
         SOAP implicitly sorts the target mask (when getting things from the catalogue
         we get them masked in the order that they appear in the catalogue, rather
@@ -437,15 +471,27 @@ class TestSWIFTGalaxies:
         in the order that they appear in the catalogue.
         """
         soaps = [
-            SOAP(soap_file=_toysoap_filename, soap_index=0),
-            SOAP(soap_file=_toysoap_filename, soap_index=1),
+            SOAP(
+                soap_file=toysoap_with_virtual_snapshot["toysoap_filename"],
+                soap_index=0,
+            ),
+            SOAP(
+                soap_file=toysoap_with_virtual_snapshot["toysoap_filename"],
+                soap_index=1,
+            ),
         ]
-        soap_both = SOAP(soap_file=_toysoap_filename, soap_index=[1, 0])
+        soap_both = SOAP(
+            soap_file=toysoap_with_virtual_snapshot["toysoap_filename"],
+            soap_index=[1, 0],
+        )
         sgs_individual = [
-            SWIFTGalaxy(_toysoap_virtual_snapshot_filename, soap) for soap in soaps
+            SWIFTGalaxy(
+                toysoap_with_virtual_snapshot["toysoap_virtual_snapshot_filename"], soap
+            )
+            for soap in soaps
         ]
         sgs = SWIFTGalaxies(
-            _toysoap_virtual_snapshot_filename,
+            toysoap_with_virtual_snapshot["toysoap_virtual_snapshot_filename"],
             soap_both,
             preload={"black_holes.masses"},  # just keep warnings quiet
         )
@@ -474,12 +520,27 @@ class TestSWIFTGalaxies:
         Check if we can initialize a halo_catalogue in multi-galaxy mode with
         ordered containers that are not a list.
         """
+        toysnap_filename = toysnap_withfof["toysnap_filename"]
+        tp = toysnap_filename.parent
         if hf_type == "soap":
-            _create_toysoap(create_virtual_snapshot=True)
+            membership_filebase = tp / _toysoap_membership_filebase.name
+            toysoap_filename = tp / _toysoap_filename.name
+            toysoap_virtual_snapshot_filename = (
+                tp / _toysoap_virtual_snapshot_filename.name
+            )
+            _create_toysoap(
+                filename=toysoap_filename,
+                membership_filebase=membership_filebase,
+                create_virtual_snapshot=True,
+                create_virtual_snapshot_from=toysnap_filename,
+                virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+            )
         elif hf_type == "vr":
-            _create_toyvr()
+            toyvr_filebase = tp / _toyvr_filebase.name
+            _create_toyvr(filebase=toyvr_filebase)
         elif "caesar" in hf_type:
-            _create_toycaesar()
+            toycaesar_filename = tp / _toycaesar_filename.name
+            _create_toycaesar(filename=toycaesar_filename)
         elif hf_type == "sa":
             return  # doesn't take an index list, nothing to test
         else:
@@ -490,23 +551,23 @@ class TestSWIFTGalaxies:
         ):
             if hf_type == "soap":
                 sgs = SWIFTGalaxies(
-                    _toysoap_virtual_snapshot_filename,
-                    SOAP(_toysoap_filename, soap_index=init_indices),
+                    toysoap_virtual_snapshot_filename,
+                    SOAP(toysoap_filename, soap_index=init_indices),
                     preload={"gas.masses"},  # just to keep warnings quiet
                 )
             elif hf_type == "vr":
                 sgs = SWIFTGalaxies(
-                    _toysnap_filename,
+                    toysnap_filename,
                     Velociraptor(
-                        velociraptor_filebase=_toyvr_filebase, halo_index=init_indices
+                        velociraptor_filebase=toyvr_filebase, halo_index=init_indices
                     ),
                     preload={"gas.masses"},
                 )
             elif hf_type == "caesar_galaxy":
                 sgs = SWIFTGalaxies(
-                    _toysnap_filename,
+                    toysnap_filename,
                     Caesar(
-                        _toycaesar_filename,
+                        toycaesar_filename,
                         group_type="galaxy",
                         group_index=init_indices,
                     ),
@@ -514,30 +575,44 @@ class TestSWIFTGalaxies:
                 )
             elif hf_type == "caesar_halo":
                 sgs = SWIFTGalaxies(
-                    _toysnap_filename,
+                    toysnap_filename,
                     Caesar(
-                        _toycaesar_filename, group_type="halo", group_index=init_indices
+                        toycaesar_filename, group_type="halo", group_index=init_indices
                     ),
                     preload={"gas.masses"},
                 )
             for sg in sgs:
                 pass  # just go through the iteration
         if hf_type == "soap":
-            _remove_toysoap()
+            _remove_toysoap(
+                filename=toysoap_filename,
+                membership_filebase=membership_filebase,
+                virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+            )
         elif hf_type == "vr":
-            _remove_toyvr()
+            _remove_toyvr(filebase=toyvr_filebase)
         elif "caesar" in hf_type:
-            _remove_toycaesar()
+            _remove_toycaesar(filename=toycaesar_filename)
 
-    def test_zero_targets(self, toysnap_withfof, hf_multi_zerotarget):
+    def test_zero_targets(self, tmp_path_factory, hf_multi_zerotarget):
         """
         Make sure we don't crash with zero targets. Instead iterate over zero elements.
         """
+        if isinstance(hf_multi_zerotarget, SOAP):
+            tp = hf_multi_zerotarget.soap_file.parent
+        elif isinstance(hf_multi_zerotarget, Caesar):
+            tp = hf_multi_zerotarget.caesar_file.parent
+        elif isinstance(hf_multi_zerotarget, Velociraptor):
+            tp = Path(hf_multi_zerotarget.velociraptor_files["properties"]).parent
+        else:
+            tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+            _create_toysnap(snapfile=tp / _toysnap_filename.name)
+        toysnap_filename = tp / _toysnap_filename.name
         sgs = SWIFTGalaxies(
             (
-                _toysoap_virtual_snapshot_filename
+                tp / _toysoap_virtual_snapshot_filename.name
                 if isinstance(hf_multi_zerotarget, SOAP)
-                else _toysnap_filename
+                else toysnap_filename
             ),
             hf_multi_zerotarget,
             preload={  # just to keep warnings quiet
@@ -557,15 +632,25 @@ class TestSWIFTGalaxies:
         map_result = sgs.map(f)
         assert len(map_result) == 0
 
-    def test_one_target(self, toysnap_withfof, hf_multi_onetarget):
+    def test_one_target(self, tmp_path_factory, hf_multi_onetarget):
         """
         Make sure that we don't crash with a single target. Instead iterate over it.
         """
+        if isinstance(hf_multi_onetarget, SOAP):
+            tp = hf_multi_onetarget.soap_file.parent
+        elif isinstance(hf_multi_onetarget, Caesar):
+            tp = hf_multi_onetarget.caesar_file.parent
+        elif isinstance(hf_multi_onetarget, Velociraptor):
+            tp = Path(hf_multi_onetarget.velociraptor_files["properties"]).parent
+        else:
+            tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+            _create_toysnap(snapfile=tp / _toysnap_filename.name)
+        toysnap_filename = tp / _toysnap_filename.name
         sgs = SWIFTGalaxies(
             (
-                _toysoap_virtual_snapshot_filename
+                tp / _toysoap_virtual_snapshot_filename.name
                 if isinstance(hf_multi_onetarget, SOAP)
-                else _toysnap_filename
+                else toysnap_filename
             ),
             hf_multi_onetarget,
             preload={  # just to keep warnings quiet
@@ -612,7 +697,10 @@ class TestSWIFTGalaxies:
         with pytest.raises(
             ValueError, match="halo_catalogue target list is not iterable"
         ):
-            SWIFTGalaxies(_toysnap_filename, ToyHF(index=0))
+            SWIFTGalaxies(
+                toysnap["toysnap_filename"],
+                ToyHF(snapfile=toysnap["toysnap_filename"], index=0),
+            )
 
     def test_invalid_iteration_mode(self, toysnap):
         """
@@ -620,8 +708,8 @@ class TestSWIFTGalaxies:
         """
         with pytest.raises(ValueError, match="optimize_iteration must be one of"):
             SWIFTGalaxies(
-                _toysnap_filename,
-                ToyHF(index=[0, 1]),
+                toysnap["toysnap_filename"],
+                ToyHF(snapfile=toysnap["toysnap_filename"], index=[0, 1]),
                 preload=("gas.coordinates",),  # just keep warning quiet
                 optimize_iteration="not_implemented",
             )
@@ -630,10 +718,13 @@ class TestSWIFTGalaxies:
         """
         Check that inheriting a coordinate frame and auto-recentering are incompatible.
         """
-        sg = SWIFTGalaxy(_toysnap_filename, ToyHF(index=0))
+        sg = SWIFTGalaxy(
+            toysnap["toysnap_filename"],
+            ToyHF(snapfile=toysnap["toysnap_filename"], index=0),
+        )
         sgs = SWIFTGalaxies(
-            _toysnap_filename,
-            ToyHF(index=[0, 1]),
+            toysnap["toysnap_filename"],
+            ToyHF(snapfile=toysnap["toysnap_filename"], index=[0, 1]),
             preload=("gas.coordinates",),  # just keep warning quiet
             auto_recentre=True,
             coordinate_frame_from=sg,
@@ -648,7 +739,10 @@ class TestSWIFTGalaxies:
         """
         Check that we can borrow a coordinate frame when iterating.
         """
-        sg = SWIFTGalaxy(_toysnap_filename, ToyHF(index=0))
+        sg = SWIFTGalaxy(
+            toysnap["toysnap_filename"],
+            ToyHF(snapfile=toysnap["toysnap_filename"], index=0),
+        )
         translation = cosmo_array(
             [1, 0, 0],
             u.Mpc,
@@ -658,8 +752,8 @@ class TestSWIFTGalaxies:
         )
         sg.translate(translation)
         sgs = SWIFTGalaxies(
-            _toysnap_filename,
-            ToyHF(index=[0, 1]),
+            toysnap["toysnap_filename"],
+            ToyHF(snapfile=toysnap["toysnap_filename"], index=[0, 1]),
             preload=("gas.coordinates",),  # just keep warning quiet
             auto_recentre=False,
             coordinate_frame_from=sg,
@@ -671,11 +765,14 @@ class TestSWIFTGalaxies:
         """
         Check that incompatible internal units raises.
         """
-        sg = SWIFTGalaxy(_toysnap_filename, ToyHF(index=0))
+        sg = SWIFTGalaxy(
+            toysnap["toysnap_filename"],
+            ToyHF(snapfile=toysnap["toysnap_filename"], index=0),
+        )
         sg.metadata.units.length = 1 * u.kpc
         sgs = SWIFTGalaxies(
-            _toysnap_filename,
-            ToyHF(index=[0, 1]),
+            toysnap["toysnap_filename"],
+            ToyHF(snapfile=toysnap["toysnap_filename"], index=[0, 1]),
             preload=("gas.coordinates",),  # just keep warning quiet
             auto_recentre=False,
             coordinate_frame_from=sg,
@@ -695,8 +792,8 @@ class TestSWIFTGalaxies:
         Check that we can switch of auto-recentering in iteration.
         """
         sgs = SWIFTGalaxies(
-            _toysnap_filename,
-            ToyHF(index=[0, 1]),
+            toysnap["toysnap_filename"],
+            ToyHF(snapfile=toysnap["toysnap_filename"], index=[0, 1]),
             preload=("gas.coordinates",),  # just keep warning quiet
             auto_recentre=False,
         )

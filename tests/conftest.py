@@ -25,6 +25,7 @@ from swiftgalaxy.demo_data import (
     ToyHF,
     _toysnap_filename,
     _toysoap_filename,
+    _toysoap_membership_filebase,
     _toysoap_virtual_snapshot_filename,
     _toyvr_filebase,
     _toycaesar_filename,
@@ -34,58 +35,94 @@ from swiftgalaxy.demo_data import (
     _centre_2,
     _vcentre_1,
     _vcentre_2,
+    generated_examples,
+    web_examples,
 )
 
 hfs = ("vr", "caesar_halo", "caesar_galaxy", "sa", "soap")
 
 
 @pytest.fixture(scope="function")
-def toysnap():
-    _create_toysnap()
+def toysnap(tmp_path_factory):
+    toysnap_filename = (
+        tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
+    )
+    _create_toysnap(snapfile=toysnap_filename)
 
-    yield
+    yield {"toysnap_filename": toysnap_filename}
 
-    _remove_toysnap()
-
-
-@pytest.fixture(scope="function")
-def toysnap_withfof():
-    _create_toysnap(withfof=True)
-
-    yield
-
-    _remove_toysnap()
+    _remove_toysnap(snapfile=toysnap_filename)
 
 
 @pytest.fixture(scope="function")
-def toysoap_with_virtual_snapshot():
-    _create_toysoap(create_virtual_snapshot=True)
+def toysnap_withfof(tmp_path_factory):
+    toysnap_filename = (
+        tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
+    )
+    _create_toysnap(snapfile=toysnap_filename, withfof=True)
 
-    yield
+    yield {"toysnap_filename": toysnap_filename}
 
-    _remove_toysoap()
+    _remove_toysnap(snapfile=toysnap_filename)
 
 
 @pytest.fixture(scope="function")
-def sg(request):
-    _create_toysnap()
+def toysoap_with_virtual_snapshot(tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysoap_filename.parent)
+    toysoap_filename = tp / _toysoap_filename.name
+    membership_filebase = tp / _toysoap_membership_filebase.name
+    toysnap_filename = tp / _toysnap_filename.name
+    toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
+    _create_toysnap(toysnap_filename, withfof=True)
+    _create_toysoap(
+        filename=toysoap_filename,
+        membership_filebase=membership_filebase,
+        create_virtual_snapshot=True,
+        create_virtual_snapshot_from=toysnap_filename,
+        virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+    )
+
+    yield {
+        "toysoap_filename": toysoap_filename,
+        "membership_filebase": membership_filebase,
+        "toysnap_filename": toysnap_filename,
+        "toysoap_virtual_snapshot_filename": toysoap_virtual_snapshot_filename,
+    }
+
+    _remove_toysoap(
+        filename=toysoap_filename,
+        membership_filebase=membership_filebase,
+        virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+    )
+    _remove_toysnap(snapfile=toysnap_filename)
+
+
+@pytest.fixture(scope="function")
+def sg(request, tmp_path_factory):
+    toysnap_filename = (
+        tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
+    )
+    _create_toysnap(snapfile=toysnap_filename)
 
     yield SWIFTGalaxy(
-        _toysnap_filename,
-        ToyHF(),
+        toysnap_filename,
+        ToyHF(snapfile=toysnap_filename),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
     )
 
-    _remove_toysnap()
+    _remove_toysnap(snapfile=toysnap_filename)
 
 
 @pytest.fixture(scope="function")
-def sgs(request):
-    _create_toysnap()
+def sgs(request, tmp_path_factory):
+    toysnap_filename = (
+        tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
+    )
+    _create_toysnap(snapfile=toysnap_filename)
     yield SWIFTGalaxies(
-        _toysnap_filename,
-        ToyHF(index=[0, 1]),
+        toysnap_filename,
+        ToyHF(snapfile=toysnap_filename, index=[0, 1]),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
         preload={  # just to keep warnings quiet
@@ -95,12 +132,13 @@ def sgs(request):
             "black_holes.particle_ids",
         },
     )
-    _remove_toysnap()
+    _remove_toysnap(snapfile=toysnap_filename)
 
 
 @pytest.fixture(scope="function")
-def sg_custom_names():
-    toysnap_custom_names_filename = "toysnap_custom_names.hdf5"
+def sg_custom_names(tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_custom_names_filename = tp / "toysnap_custom_names.hdf5"
     alt_coord_name, alt_vel_name, alt_id_name = "my_coords", "my_vels", "my_ids"
 
     _create_toysnap(
@@ -124,48 +162,77 @@ def sg_custom_names():
 
 
 @pytest.fixture(scope="function")
-def sg_autorecentre_off():
-    _create_toysnap()
+def sg_autorecentre_off(tmp_path_factory):
+    toysnap_filename = (
+        tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
+    )
+    _create_toysnap(snapfile=toysnap_filename)
 
     yield SWIFTGalaxy(
-        _toysnap_filename,
-        ToyHF(snapfile=_toysnap_filename),
+        toysnap_filename,
+        ToyHF(snapfile=toysnap_filename),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
         auto_recentre=False,
     )
 
-    _remove_toysnap(snapfile=_toysnap_filename)
+    _remove_toysnap(snapfile=toysnap_filename)
 
 
 @pytest.fixture(scope="function")
-def sg_soap():
-    _create_toysnap(withfof=True)
-    _create_toysoap(create_virtual_snapshot=True)
+def sg_soap(tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    toysoap_filename = tp / _toysoap_filename.name
+    membership_filebase = tp / _toysoap_membership_filebase.name
+    toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
+    _create_toysnap(snapfile=toysnap_filename, withfof=True)
+    _create_toysoap(
+        filename=toysoap_filename,
+        membership_filebase=membership_filebase,
+        create_virtual_snapshot=True,
+        create_virtual_snapshot_from=toysnap_filename,
+        virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+    )
 
     yield SWIFTGalaxy(
-        _toysoap_virtual_snapshot_filename,
+        toysoap_virtual_snapshot_filename,
         SOAP(
-            soap_file=_toysoap_filename,
+            soap_file=toysoap_filename,
             soap_index=0,
         ),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
     )
 
-    _remove_toysnap()
-    _remove_toysoap()
+    _remove_toysnap(snapfile=toysnap_filename)
+    _remove_toysoap(
+        filename=toysoap_filename,
+        membership_filebase=membership_filebase,
+        virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+    )
 
 
 @pytest.fixture(scope="function")
-def sgs_soap():
-    _create_toysnap(withfof=True)
-    _create_toysoap(create_virtual_snapshot=True)
+def sgs_soap(tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    membership_filebase = tp / _toysoap_membership_filebase.name
+    toysoap_filename = tp / _toysoap_filename.name
+    toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
+    _create_toysnap(snapfile=toysnap_filename, withfof=True)
+    _create_toysoap(
+        filename=toysoap_filename,
+        membership_filebase=membership_filebase,
+        create_virtual_snapshot=True,
+        create_virtual_snapshot_from=toysnap_filename,
+        virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+    )
 
     yield SWIFTGalaxies(
-        _toysoap_virtual_snapshot_filename,
+        toysoap_virtual_snapshot_filename,
         SOAP(
-            soap_file=_toysoap_filename,
+            soap_file=toysoap_filename,
             soap_index=[0, 1],
         ),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
@@ -176,34 +243,44 @@ def sgs_soap():
         },
     )
 
-    _remove_toysnap()
-    _remove_toysoap()
+    _remove_toysnap(snapfile=toysnap_filename)
+    _remove_toysoap(
+        filename=toysoap_filename,
+        membership_filebase=membership_filebase,
+        virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+    )
 
 
 @pytest.fixture(scope="function")
-def sg_vr():
-    _create_toysnap()
-    _create_toyvr()
+def sg_vr(tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    toyvr_filebase = tp / _toyvr_filebase.name
+    _create_toysnap(snapfile=toysnap_filename)
+    _create_toyvr(filebase=toyvr_filebase)
 
     yield SWIFTGalaxy(
-        _toysnap_filename,
-        Velociraptor(velociraptor_filebase=_toyvr_filebase, halo_index=0),
+        toysnap_filename,
+        Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=0),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
     )
 
-    _remove_toysnap()
-    _remove_toyvr()
+    _remove_toysnap(snapfile=toysnap_filename)
+    _remove_toyvr(filebase=toyvr_filebase)
 
 
 @pytest.fixture(scope="function")
-def sgs_vr():
-    _create_toysnap()
-    _create_toyvr()
+def sgs_vr(tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    toyvr_filebase = tp / _toyvr_filebase.name
+    _create_toysnap(snapfile=toysnap_filename)
+    _create_toyvr(filebase=toyvr_filebase)
 
     yield SWIFTGalaxies(
-        _toysnap_filename,
-        Velociraptor(velociraptor_filebase=_toyvr_filebase, halo_index=[0, 1]),
+        toysnap_filename,
+        Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[0, 1]),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
         preload={  # just to keep warnings quiet
@@ -212,37 +289,41 @@ def sgs_vr():
         },
     )
 
-    _remove_toysnap()
-    _remove_toyvr()
+    _remove_toysnap(snapfile=toysnap_filename)
+    _remove_toyvr(filebase=toyvr_filebase)
 
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
-def sg_caesar(request):
-    _create_toysnap()
-    _create_toycaesar()
+def sg_caesar(request, tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    toycaesar_filename = tp / _toycaesar_filename.name
+    _create_toysnap(snapfile=toysnap_filename)
+    _create_toycaesar(filename=toycaesar_filename)
 
     yield SWIFTGalaxy(
-        _toysnap_filename,
-        Caesar(
-            caesar_file=_toycaesar_filename, group_type=request.param, group_index=0
-        ),
+        toysnap_filename,
+        Caesar(caesar_file=toycaesar_filename, group_type=request.param, group_index=0),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
     )
 
-    _remove_toysnap()
-    _remove_toycaesar()
+    _remove_toysnap(snapfile=toysnap_filename)
+    _remove_toycaesar(filename=toycaesar_filename)
 
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
-def sgs_caesar(request):
-    _create_toysnap()
-    _create_toycaesar()
+def sgs_caesar(request, tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    toycaesar_filename = tp / _toycaesar_filename.name
+    _create_toysnap(snapfile=toysnap_filename)
+    _create_toycaesar(filename=toycaesar_filename)
 
     yield SWIFTGalaxies(
-        _toysnap_filename,
+        toysnap_filename,
         Caesar(
-            caesar_file=_toycaesar_filename,
+            caesar_file=toycaesar_filename,
             group_type=request.param,
             group_index=[0, 1],
         ),
@@ -254,76 +335,99 @@ def sgs_caesar(request):
         },
     )
 
-    _remove_toysnap()
-    _remove_toycaesar()
+    _remove_toysnap(snapfile=toysnap_filename)
+    _remove_toycaesar(filename=toycaesar_filename)
 
 
 @pytest.fixture(scope="function")
-def soap():
-    _create_toysoap(create_membership=False)
+def soap(tmp_path_factory):
+    toysoap_filename = (
+        tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysoap_filename.name
+    )
+    _create_toysoap(filename=toysoap_filename, create_membership=False)
 
     yield SOAP(
-        soap_file=_toysoap_filename,
+        soap_file=toysoap_filename,
         soap_index=0,
     )
 
-    _remove_toysoap()
+    _remove_toysoap(
+        filename=toysoap_filename,
+    )
 
 
 @pytest.fixture(scope="function")
-def soap_multi():
-    _create_toysoap()
+def soap_multi(tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysoap_filename = tp / _toysoap_filename.name
+    membership_filebase = tp / _toysoap_membership_filebase
+    _create_toysoap(filename=toysoap_filename, membership_filebase=membership_filebase)
 
     yield SOAP(
-        soap_file=_toysoap_filename,
+        soap_file=toysoap_filename,
         soap_index=[0, 1],
     )
 
-    _remove_toysoap()
+    _remove_toysoap(
+        filename=toysoap_filename,
+        membership_filebase=membership_filebase,
+    )
 
 
 @pytest.fixture(scope="function")
-def vr():
-    _create_toyvr()
+def vr(tmp_path_factory):
+    toyvr_filebase = (
+        tmp_path_factory.mktemp(_toyvr_filebase.parent) / _toyvr_filebase.name
+    )
+    _create_toyvr(filebase=toyvr_filebase)
 
-    yield Velociraptor(velociraptor_filebase=_toyvr_filebase, halo_index=0)
+    yield Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=0)
 
-    _remove_toyvr()
+    _remove_toyvr(filebase=toyvr_filebase)
 
 
 @pytest.fixture(scope="function")
-def vr_multi():
-    _create_toyvr()
+def vr_multi(tmp_path_factory):
+    toyvr_filebase = (
+        tmp_path_factory.mktemp(_toyvr_filebase.parent) / _toyvr_filebase.name
+    )
+    _create_toyvr(filebase=toyvr_filebase)
 
-    yield Velociraptor(velociraptor_filebase=_toyvr_filebase, halo_index=[0, 1])
+    yield Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[0, 1])
 
-    _remove_toyvr()
+    _remove_toyvr(filebase=toyvr_filebase)
 
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
-def caesar(request):
-    _create_toycaesar()
+def caesar(request, tmp_path_factory):
+    toycaesar_filename = (
+        tmp_path_factory.mktemp(_toycaesar_filename.parent) / _toycaesar_filename.name
+    )
+    _create_toycaesar(filename=toycaesar_filename)
 
     yield Caesar(
-        caesar_file=_toycaesar_filename, group_type=request.param, group_index=0
+        caesar_file=toycaesar_filename, group_type=request.param, group_index=0
     )
 
-    _remove_toycaesar()
+    _remove_toycaesar(filename=toycaesar_filename)
 
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
-def caesar_multi(request):
-    _create_toycaesar()
+def caesar_multi(request, tmp_path_factory):
+    toycaesar_filename = (
+        tmp_path_factory.mktemp(_toycaesar_filename.parent) / _toycaesar_filename.name
+    )
+    _create_toycaesar(filename=toycaesar_filename)
 
     yield Caesar(
-        caesar_file=_toycaesar_filename, group_type=request.param, group_index=[0, 1]
+        caesar_file=toycaesar_filename, group_type=request.param, group_index=[0, 1]
     )
 
-    _remove_toycaesar()
+    _remove_toycaesar(filename=toycaesar_filename)
 
 
 @pytest.fixture(scope="function")
-def sa():
+def sa(tmp_path_factory):
     yield Standalone(
         extra_mask=MaskCollection(
             gas=np.s_[_n_g_b // 2 :],
@@ -356,7 +460,7 @@ def sa():
 
 
 @pytest.fixture(scope="function")
-def sa_multi():
+def sa_multi(tmp_path_factory):
     yield Standalone(
         extra_mask=None,
         centre=cosmo_array(
@@ -390,10 +494,12 @@ def sa_multi():
 
 
 @pytest.fixture(scope="function")
-def sg_sa():
-    _create_toysnap()
+def sg_sa(tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    _create_toysnap(snapfile=toysnap_filename)
     yield SWIFTGalaxy(
-        _toysnap_filename,
+        toysnap_filename,
         Standalone(
             extra_mask=MaskCollection(
                 gas=np.s_[_n_g_b // 2 :],
@@ -424,14 +530,16 @@ def sg_sa():
             ),
         ),
     )
-    _remove_toysnap()
+    _remove_toysnap(snapfile=toysnap_filename)
 
 
 @pytest.fixture(scope="function")
-def sgs_sa():
-    _create_toysnap()
+def sgs_sa(tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    _create_toysnap(snapfile=toysnap_filename)
     yield SWIFTGalaxies(
-        _toysnap_filename,
+        toysnap_filename,
         Standalone(
             extra_mask=None,
             centre=cosmo_array(
@@ -467,46 +575,63 @@ def sgs_sa():
             "dark_matter.particle_ids",
         },
     )
-    _remove_toysnap()
+    _remove_toysnap(snapfile=toysnap_filename)
 
 
 @pytest.fixture(scope="function", params=hfs)
-def sg_hf(request):
-    _create_toysnap(withfof=request.param == "soap")
+def sg_hf(request, tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
     if request.param in {"caesar_halo", "caesar_galaxy"}:
-        _create_toycaesar()
+        toycaesar_filename = tp / _toycaesar_filename.name
+        _create_toycaesar(filename=toycaesar_filename)
         yield SWIFTGalaxy(
-            _toysnap_filename,
+            toysnap_filename,
             Caesar(
-                caesar_file=_toycaesar_filename,
+                caesar_file=toycaesar_filename,
                 group_type=request.param.split("_")[-1],
                 group_index=0,
             ),
             transforms_like_coordinates={"coordinates", "extra_coordinates"},
             transforms_like_velocities={"velocities", "extra_velocities"},
         )
-        _remove_toycaesar()
+        _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
-        _create_toysoap(create_virtual_snapshot=True)
+        toysoap_filename = tp / _toysoap_filename.name
+        membership_filebase = tp / _toysoap_membership_filebase.name
+        toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
+        _create_toysoap(
+            filename=toysoap_filename,
+            membership_filebase=membership_filebase,
+            create_virtual_snapshot=True,
+            create_virtual_snapshot_from=toysnap_filename,
+            virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+        )
         yield SWIFTGalaxy(
-            _toysoap_virtual_snapshot_filename,
+            toysoap_virtual_snapshot_filename,
             SOAP(
-                soap_file=_toysoap_filename,
+                soap_file=toysoap_filename,
                 soap_index=0,
             ),
             transforms_like_coordinates={"coordinates", "extra_coordinates"},
             transforms_like_velocities={"velocities", "extra_velocities"},
         )
-        _remove_toysoap()
+        _remove_toysoap(
+            filename=toysoap_filename,
+            membership_filebase=membership_filebase,
+            virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+        )
     elif request.param == "vr":
-        _create_toyvr()
+        toyvr_filebase = tp / _toyvr_filebase.name
+        _create_toyvr(filebase=toyvr_filebase)
         yield SWIFTGalaxy(
-            _toysnap_filename,
-            Velociraptor(velociraptor_filebase=_toyvr_filebase, halo_index=0),
+            toysnap_filename,
+            Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=0),
             transforms_like_coordinates={"coordinates", "extra_coordinates"},
             transforms_like_velocities={"velocities", "extra_velocities"},
         )
-        _remove_toyvr()
+        _remove_toyvr(filebase=toyvr_filebase)
     elif request.param == "sa":
         yield Standalone(
             extra_mask=MaskCollection(
@@ -537,36 +662,46 @@ def sg_hf(request):
                 scale_exponent=1,
             ),
         )
-    _remove_toysnap()
+        _remove_toysnap(snapfile=toysnap_filename)
 
 
 @pytest.fixture(scope="function", params=hfs)
-def hf(request):
+def hf(request, tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     if request.param in {"caesar_halo", "caesar_galaxy"}:
-        _create_toycaesar()
+        toycaesar_filename = tp / _toycaesar_filename.name
+        _create_toycaesar(filename=toycaesar_filename)
 
         yield Caesar(
-            caesar_file=_toycaesar_filename,
+            caesar_file=toycaesar_filename,
             group_type=request.param.split("_")[-1],
             group_index=0,
         )
 
-        _remove_toycaesar()
+        _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
-        _create_toysoap()
+        toysoap_filename = tp / _toysoap_filename.name
+        membership_filebase = tp / _toysoap_membership_filebase.name
+        _create_toysoap(
+            filename=toysoap_filename, membership_filebase=membership_filebase
+        )
 
         yield SOAP(
-            soap_file=_toysoap_filename,
+            soap_file=toysoap_filename,
             soap_index=0,
         )
 
-        _remove_toysoap()
+        _remove_toysoap(
+            filename=toysoap_filename,
+            membership_filebase=membership_filebase,
+        )
     elif request.param == "vr":
-        _create_toyvr()
+        toyvr_filebase = tp / _toyvr_filebase.name
+        _create_toyvr(filebase=toyvr_filebase)
 
-        yield Velociraptor(velociraptor_filebase=_toyvr_filebase, halo_index=0)
+        yield Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=0)
 
-        _remove_toyvr()
+        _remove_toyvr(filebase=toyvr_filebase)
     elif request.param == "sa":
         yield Standalone(
             extra_mask=MaskCollection(
@@ -600,32 +735,51 @@ def hf(request):
 
 
 @pytest.fixture(scope="function", params=hfs)
-def hf_multi(request):
+def hf_multi(request, tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
     if request.param in {"caesar_halo", "caesar_galaxy"}:
-        _create_toycaesar()
+        toycaesar_filename = tp / _toycaesar_filename.name
+        _create_toycaesar(filename=toycaesar_filename)
 
         yield Caesar(
-            caesar_file=_toycaesar_filename,
+            caesar_file=toycaesar_filename,
             group_type=request.param.split("_")[-1],
             group_index=[0, 1],
         )
 
-        _remove_toycaesar()
+        _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
-        _create_toysoap(create_virtual_snapshot=Path(_toysnap_filename).is_file())
+        toysoap_filename = tp / _toysoap_filename.name
+        membership_filebase = tp / _toysoap_membership_filebase.name
+        toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
+        _create_toysoap(
+            filename=toysoap_filename,
+            membership_filebase=membership_filebase,
+            create_virtual_snapshot=Path(toysnap_filename).is_file(),
+            create_virtual_snapshot_from=toysnap_filename,
+            virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+        )
 
         yield SOAP(
-            soap_file=_toysoap_filename,
+            soap_file=toysoap_filename,
             soap_index=[0, 1],
         )
 
-        _remove_toysoap()
+        _remove_toysoap(
+            filename=toysoap_filename,
+            membership_filebase=membership_filebase,
+            virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+        )
+
     elif request.param == "vr":
-        _create_toyvr()
+        toyvr_filebase = tp / _toyvr_filebase.name
+        _create_toyvr(filebase=toyvr_filebase)
 
-        yield Velociraptor(velociraptor_filebase=_toyvr_filebase, halo_index=[0, 1])
+        yield Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[0, 1])
 
-        _remove_toyvr()
+        _remove_toyvr(filebase=toyvr_filebase)
     elif request.param == "sa":
         yield Standalone(
             extra_mask=None,
@@ -657,44 +811,63 @@ def hf_multi(request):
                 scale_exponent=1,
             ),
         )
+    _remove_toysnap(snapfile=toysnap_filename)
 
 
 @pytest.fixture(scope="function", params=hfs)
-def hf_multi_forwards_and_backwards(request):
+def hf_multi_forwards_and_backwards(request, tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
     if request.param in {"caesar_halo", "caesar_galaxy"}:
-        _create_toycaesar()
+        toycaesar_filename = tp / _toycaesar_filename.name
+        _create_toycaesar(filename=toycaesar_filename)
 
         yield Caesar(
-            caesar_file=_toycaesar_filename,
+            caesar_file=toycaesar_filename,
             group_type=request.param.split("_")[-1],
             group_index=[0, 1],
         ), Caesar(
-            caesar_file=_toycaesar_filename,
+            caesar_file=toycaesar_filename,
             group_type=request.param.split("_")[-1],
             group_index=[1, 0],
         )
 
-        _remove_toycaesar()
+        _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
-        _create_toysoap(create_virtual_snapshot=Path(_toysnap_filename).is_file())
+        toysoap_filename = tp / _toysoap_filename.name
+        membership_filebase = tp / _toysoap_membership_filebase.name
+        toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
+        _create_toysoap(
+            filename=toysoap_filename,
+            membership_filebase=membership_filebase,
+            create_virtual_snapshot=Path(toysnap_filename).is_file(),
+            create_virtual_snapshot_from=toysnap_filename,
+            virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+        )
 
         yield SOAP(
-            soap_file=_toysoap_filename,
+            soap_file=toysoap_filename,
             soap_index=[0, 1],
         ), SOAP(
-            soap_file=_toysoap_filename,
+            soap_file=toysoap_filename,
             soap_index=[1, 0],
         )
 
-        _remove_toysoap()
+        _remove_toysoap(
+            filename=toysoap_filename,
+            membership_filebase=membership_filebase,
+            virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+        )
     elif request.param == "vr":
-        _create_toyvr()
+        toyvr_filebase = tp / _toyvr_filebase.name
+        _create_toyvr(filebase=toyvr_filebase)
 
         yield Velociraptor(
-            velociraptor_filebase=_toyvr_filebase, halo_index=[0, 1]
-        ), Velociraptor(velociraptor_filebase=_toyvr_filebase, halo_index=[1, 0])
+            velociraptor_filebase=toyvr_filebase, halo_index=[0, 1]
+        ), Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[1, 0])
 
-        _remove_toyvr()
+        _remove_toyvr(filebase=toyvr_filebase)
     elif request.param == "sa":
         yield Standalone(
             extra_mask=None,
@@ -755,35 +928,54 @@ def hf_multi_forwards_and_backwards(request):
                 scale_exponent=1,
             ),
         )
+    _remove_toysnap(snapfile=toysnap_filename)
 
 
 @pytest.fixture(scope="function", params=hfs)
-def hf_multi_onetarget(request):
+def hf_multi_onetarget(request, tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
     if request.param in {"caesar_halo", "caesar_galaxy"}:
-        _create_toycaesar()
+        toycaesar_filename = tp / _toycaesar_filename.name
+        _create_toycaesar(filename=toycaesar_filename)
 
         yield Caesar(
-            caesar_file=_toycaesar_filename,
+            caesar_file=toycaesar_filename,
             group_type=request.param.split("_")[-1],
             group_index=[1],
         )
 
-        _remove_toycaesar()
+        _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
-        _create_toysoap(create_virtual_snapshot=Path(_toysnap_filename).is_file())
+        toysoap_filename = tp / _toysoap_filename.name
+        membership_filebase = tp / _toysoap_membership_filebase.name
+        toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
+        _create_toysoap(
+            filename=toysoap_filename,
+            membership_filebase=membership_filebase,
+            create_virtual_snapshot=Path(toysnap_filename).is_file(),
+            create_virtual_snapshot_from=toysnap_filename,
+            virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+        )
 
         yield SOAP(
-            soap_file=_toysoap_filename,
+            soap_file=toysoap_filename,
             soap_index=[1],
         )
 
-        _remove_toysoap()
+        _remove_toysoap(
+            filename=toysoap_filename,
+            membership_filebase=membership_filebase,
+            virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+        )
     elif request.param == "vr":
-        _create_toyvr()
+        toyvr_filebase = tp / _toyvr_filebase.name
+        _create_toyvr(filebase=toyvr_filebase)
 
-        yield Velociraptor(velociraptor_filebase=_toyvr_filebase, halo_index=[1])
+        yield Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[1])
 
-        _remove_toyvr()
+        _remove_toyvr(filebase=toyvr_filebase)
     elif request.param == "sa":
         yield Standalone(
             extra_mask=None,
@@ -813,35 +1005,54 @@ def hf_multi_onetarget(request):
                 scale_exponent=1,
             ),
         )
+    _remove_toysnap(snapfile=toysnap_filename)
 
 
 @pytest.fixture(scope="function", params=hfs)
-def hf_multi_zerotarget(request):
+def hf_multi_zerotarget(request, tmp_path_factory):
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
     if request.param in {"caesar_halo", "caesar_galaxy"}:
-        _create_toycaesar()
+        toycaesar_filename = tp / _toycaesar_filename.name
+        _create_toycaesar(filename=toycaesar_filename)
 
         yield Caesar(
-            caesar_file=_toycaesar_filename,
+            caesar_file=toycaesar_filename,
             group_type=request.param.split("_")[-1],
             group_index=[],
         )
 
-        _remove_toycaesar()
+        _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
-        _create_toysoap(create_virtual_snapshot=Path(_toysnap_filename).is_file())
+        toysoap_filename = tp / _toysoap_filename.name
+        membership_filebase = tp / _toysoap_membership_filebase.name
+        toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
+        _create_toysoap(
+            filename=toysoap_filename,
+            membership_filebase=membership_filebase,
+            create_virtual_snapshot=Path(toysnap_filename).is_file(),
+            create_virtual_snapshot_from=toysnap_filename,
+            virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+        )
 
         yield SOAP(
-            soap_file=_toysoap_filename,
+            soap_file=toysoap_filename,
             soap_index=[],
         )
 
-        _remove_toysoap()
+        _remove_toysoap(
+            filename=toysoap_filename,
+            membership_filebase=membership_filebase,
+            virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
+        )
     elif request.param == "vr":
-        _create_toyvr()
+        toyvr_filebase = tp / _toyvr_filebase.name
+        _create_toyvr(filebase=toyvr_filebase)
 
-        yield Velociraptor(velociraptor_filebase=_toyvr_filebase, halo_index=[])
+        yield Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[])
 
-        _remove_toyvr()
+        _remove_toyvr(filebase=toyvr_filebase)
     elif request.param == "sa":
         yield Standalone(
             extra_mask=None,
@@ -867,6 +1078,7 @@ def hf_multi_zerotarget(request):
                 scale_exponent=1,
             ),
         )
+    _remove_toysnap(snapfile=toysnap_filename)
 
 
 @pytest.fixture(scope="function")
@@ -890,3 +1102,15 @@ def lm():
 
     lm = LazyMask(mask_function=mf)
     yield lm
+
+
+@pytest.fixture(scope="function")
+def generated_examples_tmpdir(tmp_path_factory):
+    generated_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
+    return generated_examples
+
+
+@pytest.fixture(scope="function")
+def web_examples_tmpdir(tmp_path_factory):
+    web_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
+    return web_examples

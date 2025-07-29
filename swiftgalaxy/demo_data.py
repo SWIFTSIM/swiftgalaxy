@@ -95,7 +95,15 @@ def _ensure_demo_data_directory(func: Callable) -> Callable:
         **kwargs : :obj:`dict`
             Keyword arguments for wrapped function.
         """
-        Path(_demo_data_dir).mkdir(exist_ok=True)
+        using_demo_data_dirs: list[Path] = []
+        for arg in args:
+            if isinstance(arg, Path):
+                using_demo_data_dirs.append(arg.parent)
+        for val in kwargs.values():
+            if isinstance(val, Path):
+                using_demo_data_dirs.append(val.parent)
+        for dd in using_demo_data_dirs:
+            dd.mkdir(exist_ok=True)
         return func(*args, **kwargs)
 
     return wrapper
@@ -134,6 +142,7 @@ class _WebExamples(object):
             ),
         },
     }
+    _demo_data_dir = _demo_data_dir  # so that we can manipulate in tests
 
     def __init__(self) -> None:
         return
@@ -159,7 +168,7 @@ class _WebExamples(object):
         filename : :obj:`str`
             Name of the file to fetch from the web store.
         """
-        file_location = _demo_data_dir / filename
+        file_location = self._demo_data_dir / filename
         if file_location.exists():
             ret = 0
         else:
@@ -194,18 +203,25 @@ class _WebExamples(object):
             files_required = self.available_examples[attr]["files"]
             for file_required in files_required:
                 self._get_webdata_if_not_present(file_required)
-            return _demo_data_dir / str(self.available_examples[attr]["handle"])
+            return self._demo_data_dir / str(self.available_examples[attr]["handle"])
         else:
             raise AttributeError(f"_WebExamples attribute {attr} not found.")
 
     def remove(self) -> None:
         """
-        Remove all downloaded example files.
+        Remove all downloaded example files. Also removes the example data directory, if
+        it is empty after the files have been removed.
         """
         for example_dict in self.available_examples.values():
             filenames = example_dict["files"]
             for filename in filenames:
-                (_demo_data_dir / filename).unlink(missing_ok=True)
+                (self._demo_data_dir / filename).unlink(missing_ok=True)
+        try:
+            self._demo_data_dir.rmdir()
+        except OSError:
+            # it wasn't empty, doesn't exist or is not a directory by the time we got here
+            pass
+        return
 
 
 web_examples = _WebExamples()
@@ -223,6 +239,7 @@ class _GeneratedExamples(object):
         "soap",
         "virtual_snapshot",
     )
+    _demo_data_dir = _demo_data_dir  # so that we can manipulate in tests
 
     def __init__(self) -> None:
         return
@@ -238,7 +255,6 @@ class _GeneratedExamples(object):
         """
         return f"Available examples: {', '.join(self.available_examples)}."
 
-    @_ensure_demo_data_directory
     def __getattr__(self, attr: str) -> Path:
         """
         If the attribute is in the list of available examples, create the needed file(s)
@@ -258,39 +274,77 @@ class _GeneratedExamples(object):
             The path to the requested example file.
         """
         if attr == "snapshot":
-            _create_toysnap(withfof=True)
-            return _toysnap_filename
+            toysnap_filename = self._demo_data_dir / _toysnap_filename.name
+            _create_toysnap(snapfile=toysnap_filename, withfof=True)
+            return toysnap_filename
         if attr == "velociraptor":
-            _create_toyvr()
-            return _toyvr_filebase
+            toyvr_filebase = self._demo_data_dir / _toyvr_filebase.name
+            _create_toyvr(filebase=toyvr_filebase)
+            return toyvr_filebase
         if attr == "caesar":
-            _create_toycaesar()
-            return _toycaesar_filename
+            toycaesar_filename = self._demo_data_dir / _toycaesar_filename.name
+            _create_toycaesar(filename=toycaesar_filename)
+            return toycaesar_filename
         if attr == "soap":
-            _create_toysnap(withfof=True)
+            toysnap_filename = self._demo_data_dir / _toysnap_filename.name
+            toysoap_filename = self._demo_data_dir / _toysoap_filename.name
+            membership_filebase = (
+                self._demo_data_dir / _toysoap_membership_filebase.name
+            )
+            toysoap_virtual_snapshot_filename = (
+                self._demo_data_dir / _toysoap_virtual_snapshot_filename.name
+            )
+            _create_toysnap(snapfile=toysnap_filename, withfof=True)
             _create_toysoap(
+                filename=toysoap_filename,
+                membership_filebase=membership_filebase,
                 create_membership=True,
                 create_virtual_snapshot=True,
+                create_virtual_snapshot_from=toysnap_filename,
+                virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
             )
-            return _toysoap_filename
+            return toysoap_filename
         if attr == "virtual_snapshot":
-            _create_toysnap(withfof=True)
+            toysnap_filename = self._demo_data_dir / _toysnap_filename.name
+            toysoap_filename = self._demo_data_dir / _toysoap_filename.name
+            membership_filebase = (
+                self._demo_data_dir / _toysoap_membership_filebase.name
+            )
+            toysoap_virtual_snapshot_filename = (
+                self._demo_data_dir / _toysoap_virtual_snapshot_filename.name
+            )
+            _create_toysnap(snapfile=toysnap_filename, withfof=True)
             _create_toysoap(
+                filename=toysoap_filename,
+                membership_filebase=membership_filebase,
                 create_membership=True,
                 create_virtual_snapshot=True,
+                create_virtual_snapshot_from=toysnap_filename,
+                virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
             )
-            return _toysoap_virtual_snapshot_filename
+            return toysoap_virtual_snapshot_filename
         else:
             raise AttributeError(f"_GeneratedExamples attribute {attr} not found.")
 
     def remove(self) -> None:
         """
-        Remove all generated example files.
+        Remove all generated example files. Also removes the example data directory, if
+        it is empty after the files have been removed.
         """
-        _remove_toysnap()
-        _remove_toyvr()
-        _remove_toycaesar()
-        _remove_toysoap()
+        _remove_toysnap(snapfile=self._demo_data_dir / _toysnap_filename.name)
+        _remove_toyvr(filebase=self._demo_data_dir / _toyvr_filebase.name)
+        _remove_toycaesar(filename=self._demo_data_dir / _toycaesar_filename.name)
+        _remove_toysoap(
+            filename=self._demo_data_dir / _toysoap_filename.name,
+            membership_filebase=self._demo_data_dir / _toysoap_membership_filebase.name,
+            virtual_snapshot_filename=self._demo_data_dir
+            / _toysoap_virtual_snapshot_filename.name,
+        )
+        try:
+            self._demo_data_dir.rmdir()
+        except OSError:
+            # it wasn't empty, doesn't exist or is not a directory by the time we got here
+            pass
         return
 
 
@@ -1147,8 +1201,8 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
         The base name for catalogue files (several files ``base.properties``,
         ``base.catalog_groups``, etc. will be created).
     """
-    if not Path(f"{_toyvr_filebase}.properties").is_file():
-        with h5py.File(f"{_toyvr_filebase}.properties", "w") as f:
+    if not Path(f"{filebase}.properties").is_file():
+        with h5py.File(f"{filebase}.properties", "w") as f:
             f.create_group("SimulationInfo")
             f["SimulationInfo"].attrs["ScaleFactor"] = 1.0
             f["SimulationInfo"].attrs["Cosmological_Sim"] = 1
@@ -1320,8 +1374,8 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
             f["numSubStruct"].attrs["Dimension_Mass"] = 0.0
             f["numSubStruct"].attrs["Dimension_Time"] = 0.0
             f["numSubStruct"].attrs["Dimension_Velocity"] = 0.0
-    if not Path(f"{_toyvr_filebase}.catalog_groups").is_file():
-        with h5py.File(f"{_toyvr_filebase}.catalog_groups", "w") as f:
+    if not Path(f"{filebase}.catalog_groups").is_file():
+        with h5py.File(f"{filebase}.catalog_groups", "w") as f:
             f.create_dataset("File_id", data=np.array([0, 0], dtype=int))
             f.create_dataset(
                 "Group_Size",
@@ -1348,8 +1402,8 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
             )
             f.create_dataset("Parent_halo_ID", data=np.array([-1, -1], dtype=int))
             f.create_dataset("Total_num_of_groups", data=np.array([2], dtype=int))
-    if not Path(f"{_toyvr_filebase}.catalog_particles").is_file():
-        with h5py.File(f"{_toyvr_filebase}.catalog_particles", "w") as f:
+    if not Path(f"{filebase}.catalog_particles").is_file():
+        with h5py.File(f"{filebase}.catalog_particles", "w") as f:
             f.create_dataset("File_id", data=np.array([0], dtype=int))
             f.create_dataset("Num_of_files", data=np.array([1], dtype=int))
             f.create_dataset(
@@ -1425,8 +1479,8 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
                     dtype=int,
                 ),
             )
-    if not Path(f"{_toyvr_filebase}.catalog_particles.unbound").is_file():
-        with h5py.File(f"{_toyvr_filebase}.catalog_particles.unbound", "w") as f:
+    if not Path(f"{filebase}.catalog_particles.unbound").is_file():
+        with h5py.File(f"{filebase}.catalog_particles.unbound", "w") as f:
             f.create_dataset("File_id", data=np.array([0], dtype=int))
             f.create_dataset("Num_of_files", data=np.array([1], dtype=int))
             f.create_dataset(
@@ -1452,8 +1506,8 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
                 "Total_num_of_particles_in_all_groups",
                 data=np.array([_n_g_b + _n_dm_b], dtype=int),
             )
-    if not Path(f"{_toyvr_filebase}.catalog_parttypes").is_file():
-        with h5py.File(f"{_toyvr_filebase}.catalog_parttypes", "w") as f:
+    if not Path(f"{filebase}.catalog_parttypes").is_file():
+        with h5py.File(f"{filebase}.catalog_parttypes", "w") as f:
             f.create_dataset("File_id", data=np.array([0], dtype=int))
             f.create_dataset("Num_of_files", data=np.array([1], dtype=int))
             f.create_dataset(
@@ -1497,8 +1551,8 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
                     dtype=int,
                 ),
             )
-    if not Path(f"{_toyvr_filebase}.catalog_parttypes.unbound").is_file():
-        with h5py.File(f"{_toyvr_filebase}.catalog_parttypes.unbound", "w") as f:
+    if not Path(f"{filebase}.catalog_parttypes.unbound").is_file():
+        with h5py.File(f"{filebase}.catalog_parttypes.unbound", "w") as f:
             f.create_dataset("File_id", data=np.array([0], dtype=int))
             f.create_dataset("Num_of_files", data=np.array([1], dtype=int))
             f.create_dataset(
@@ -1531,12 +1585,12 @@ def _remove_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
         ``base.catalog_groups``, etc. will be removed).
     """
     files_to_remove = (
-        f"{_toyvr_filebase}.properties",
-        f"{_toyvr_filebase}.catalog_groups",
-        f"{_toyvr_filebase}.catalog_particles",
-        f"{_toyvr_filebase}.catalog_particles.unbound",
-        f"{_toyvr_filebase}.catalog_parttypes",
-        f"{_toyvr_filebase}.catalog_parttypes.unbound",
+        f"{filebase}.properties",
+        f"{filebase}.catalog_groups",
+        f"{filebase}.catalog_particles",
+        f"{filebase}.catalog_particles.unbound",
+        f"{filebase}.catalog_parttypes",
+        f"{filebase}.catalog_parttypes.unbound",
     )
     for file_to_remove in files_to_remove:
         Path(file_to_remove).unlink(missing_ok=True)
@@ -2918,6 +2972,7 @@ def _create_toysoap(
 
     if create_membership:
         if not Path(f"{membership_filebase}.0.hdf5").is_file():
+            Path(membership_filebase).parent.mkdir(exist_ok=True)
             with h5py.File(f"{membership_filebase}.0.hdf5", "w") as f:
                 fof_ids = {
                     0: np.concatenate(
@@ -3113,6 +3168,7 @@ def _remove_toysoap(
         Filename for virtual snapshot file.
     """
     Path(filename).unlink(missing_ok=True)
-    for path in Path().glob(f"{membership_filebase}.*.hdf5"):
+    membership_path = Path(membership_filebase)
+    for path in membership_path.parent.glob(f"{membership_path.name}.*.hdf5"):
         path.unlink(missing_ok=True)
     Path(virtual_snapshot_filename).unlink(missing_ok=True)

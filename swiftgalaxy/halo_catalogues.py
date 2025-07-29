@@ -1019,7 +1019,6 @@ class Velociraptor(_HaloCatalogue):
         unyt_array(14.73875777, '10000000000.0*Msun')
     """
 
-    velociraptor_filebase: str
     velociraptor_files: Dict[str, str]
     _halo_index: Union[int, Sequence[int]]
     centre_type: str
