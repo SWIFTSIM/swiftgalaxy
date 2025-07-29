@@ -109,9 +109,25 @@ def _ensure_demo_data_directory(func: Callable) -> Callable:
     return wrapper
 
 
-class _WebExamples(object):
+class WebExamples(object):
     """
     Helper class to fetch example data from the web storage on demand.
+
+    An instantiated helper is available using
+    ``from swiftgalaxy.demo_data import web_examples``. The available examples are
+    then:
+
+    ::
+
+        web_examples.snapshot
+        web_examples.velociraptor
+        web_examples.caesar
+        web_examples.soap
+        web_examples.virtual_snapshot
+
+    Examples
+    --------
+    For usage examples see :doc:`/demonstration_data/index`.
     """
 
     webstorage_location = (
@@ -205,7 +221,7 @@ class _WebExamples(object):
                 self._get_webdata_if_not_present(file_required)
             return self._demo_data_dir / str(self.available_examples[attr]["handle"])
         else:
-            raise AttributeError(f"_WebExamples attribute {attr} not found.")
+            raise AttributeError(f"WebExamples attribute {attr} not found.")
 
     def remove(self) -> None:
         """
@@ -224,12 +240,28 @@ class _WebExamples(object):
         return
 
 
-web_examples = _WebExamples()
+web_examples = WebExamples()
 
 
-class _GeneratedExamples(object):
+class GeneratedExamples(object):
     """
     Helper class to generate example data on demand.
+
+    An instantiated helper is available using
+    ``from swiftgalaxy.demo_data import generated_examples``. The available examples are
+    then:
+
+    ::
+
+        generated_examples.snapshot
+        generated_examples.velociraptor
+        generated_examples.caesar
+        generated_examples.soap
+        generated_examples.virtual_snapshot
+
+    Examples
+    --------
+    For usage examples see :doc:`/demonstration_data/index`.
     """
 
     available_examples = (
@@ -324,7 +356,7 @@ class _GeneratedExamples(object):
             )
             return toysoap_virtual_snapshot_filename
         else:
-            raise AttributeError(f"_GeneratedExamples attribute {attr} not found.")
+            raise AttributeError(f"GeneratedExamples attribute {attr} not found.")
 
     def remove(self) -> None:
         """
@@ -348,7 +380,7 @@ class _GeneratedExamples(object):
         return
 
 
-generated_examples = _GeneratedExamples()
+generated_examples = GeneratedExamples()
 
 
 class ToyHF(_HaloCatalogue):
