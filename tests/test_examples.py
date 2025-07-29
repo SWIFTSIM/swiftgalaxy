@@ -186,7 +186,24 @@ class TestExampleNotebooks:
         from nbmake.nb_run import NotebookRun
         from nbmake.pytest_items import NotebookFailedException
 
+        # Currently impractical to pass values or fixtures to/from the notebook kernel.
+        # Can't practically use a temporary directory for test data for the notebook.
+        # So we use a somewhat ugly workaround. We set the demo data directory to a non-
+        # default name to avoid colliding with user data. Then we use the `remove`
+        # method to clear the directory before running the notebook to ensure we start
+        # cleanly. The notebook should clean up after itself, but in case there was
+        # some notebook error we tidy up afterwards.
+        from swiftgalaxy.demo_data import generated_examples
+
+        # The name set here must match the "post_cell_execute" assignment in the notebook
+        # xml metadata. See https://github.com/treebeardtech/nbmake for post_cell_execute
+        # explanation.
+        generated_examples._demo_data_dir = Path("_pytest_notebook_demo_data")
+        generated_examples.remove()
+
         nbr = NotebookRun(Path("examples/SWIFTGalaxy_demo.ipynb"), 300)
         result = nbr.execute()
         if result.error is not None:
             raise NotebookFailedException(result)
+
+        generated_examples.remove()
