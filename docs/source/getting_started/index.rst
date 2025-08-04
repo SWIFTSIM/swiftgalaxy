@@ -90,7 +90,7 @@ You can check that the installation and your environment is ready for developmen
    flake8
    black --check .
    mypy
-   python -m numpydoc lint swiftgalaxy**/*.py
+   python -m numpydoc lint swiftgalaxy/*.py
    pytest --cov --cov-branch
 
 You may wish to set up the following `pre-commit hook`_:
@@ -102,7 +102,7 @@ You may wish to set up the following `pre-commit hook`_:
    flake8 || exit 1
    black --check . || exit 1
    mypy || exit 1
-   python -m numpydoc lint swiftgalaxy**/*.py || exit 1
+   python -m numpydoc lint swiftgalaxy/*.py || exit 1
 
    exit 0
 
@@ -118,7 +118,7 @@ and `pre-push hook`_:
    flake8 || exit 1
    black --check . || exit 1
    mypy || exit 1
-   python -m numpydoc lint swiftgalaxy**/*.py || exit 1
+   python -m numpydoc lint swiftgalaxy/*.py || exit 1
    pytest || exit 1
 
    exit 0
