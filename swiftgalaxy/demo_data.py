@@ -6,7 +6,6 @@ from pathlib import Path
 import h5py
 import numpy as np
 import unyt as u
-import subprocess
 from types import EllipsisType
 from typing import Optional, Callable, Any, Union, List, Sequence
 from numpy.typing import NDArray
@@ -175,27 +174,56 @@ class WebExamples(object):
         return f"Available examples: {', '.join(self.available_examples.keys())}."
 
     @_ensure_demo_data_directory
-    def _get_webdata_if_not_present(self, filename: str) -> None:
+    def _get_webdata_if_not_present(self, file_location: Path) -> None:
         """
         Retrieve a file from the web store.
 
         Parameters
         ----------
-        filename : :obj:`str`
-            Name of the file to fetch from the web store.
+        file_location : :class:`~pathlib._local.Path`
+            Location of the file to fetch from the web store.
         """
-        file_location = self._demo_data_dir / filename
-        if file_location.exists():
-            ret = 0
+        import requests
+        from requests.exceptions import HTTPError
+
+        try:
+            from tqdm.notebook import tqdm_notebook
+            from tqdm import tqdm as tqdm_standard
+
+            # figure out which progressbar style to use
+            try:
+                tqdm_notebook(leave=False).close()
+            except ImportError:
+                tqdm = tqdm_standard
+            else:  # pragma: no cover
+                tqdm = tqdm_notebook
+        except ImportError:  # pragma: no cover
+            show_progressbar = False
         else:
-            ret = subprocess.call(
-                ["wget", f"{self.webstorage_location}{filename}", "-O", file_location]
-            )
-        if ret != 0:  # pragma: no cover
-            Path(file_location).unlink(
-                missing_ok=True
-            )  # (if) it wrote an empty file, kill it
-            raise RuntimeError(f"Unable to download file at {filename}")
+            show_progressbar = True
+
+        if file_location.exists():
+            return
+        url = f"{self.webstorage_location}{file_location.name}"
+        with requests.get(url, stream=True) as r:
+            r.raise_for_status()
+            total_size_in_bytes = int(r.headers.get("content-length", 0))
+            chunk_size = 8192
+            if show_progressbar:
+                progressbar = tqdm(
+                    total=total_size_in_bytes, unit="iB", unit_scale=True
+                )
+            try:
+                with open(file_location, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=chunk_size):
+                        if show_progressbar:
+                            progressbar.update(len(chunk))
+                        f.write(chunk)
+            except HTTPError:  # pragma: no cover
+                Path(file_location).unlink(
+                    missing_ok=True
+                )  # (if) it wrote an empty file, kill it
+                raise
 
     def __getattr__(self, attr: str) -> Path:
         """
@@ -218,7 +246,7 @@ class WebExamples(object):
         if attr in self.available_examples:
             files_required = self.available_examples[attr]["files"]
             for file_required in files_required:
-                self._get_webdata_if_not_present(file_required)
+                self._get_webdata_if_not_present(self._demo_data_dir / file_required)
             return self._demo_data_dir / str(self.available_examples[attr]["handle"])
         else:
             raise AttributeError(f"WebExamples attribute {attr} not found.")

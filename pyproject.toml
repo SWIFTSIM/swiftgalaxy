@@ -30,7 +30,7 @@ dependencies = [
 "Documentation" = "https://swiftgalaxy.readthedocs.io/en/latest"
 
 [project.optional-dependencies]
-velociraptor = ["velociraptor"]
+velociraptor = ["velociraptor", "tqdm"]
 
 [tool.numpydoc_validation]
 checks = [
