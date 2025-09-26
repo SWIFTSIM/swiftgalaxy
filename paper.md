@@ -42,7 +42,7 @@ A core design principle of SWIFTGalaxy is that only operations with an unambiguo
 
 Despite being tailored for use with SWIFT simulations, SWIFTGalaxy is modular: it has interchangeable interfaces to different halo catalogue formats. In addition to the preferred SOAP format, the Velociraptor [@Elahi2019] and [Caesar](https://github.com/dnarayanan/caesar) formats are also supported, and adding support for other formats is straightforward by design. A "standalone" mode is also available so that the other features of SWIFTGalaxy can be used on arbitrary collections of particles even if no halo catalogue is available or desired.
 
-SWIFTGalaxy is hosted on [GitHub](https://github.com/SWIFTSIM/swiftgalaxy) and has documentation available through [ReadTheDocs](https://swiftgalaxy.readthedocs.io). The first research article using the package has recently appeared [@Trayford2025]; many more projects using it are currently ongoing, especially in the context of the COLIBRE simulations project (Schaye et al., in preparation; Chaikin et al., in preparation).
+SWIFTGalaxy is hosted on [GitHub](https://github.com/SWIFTSIM/swiftgalaxy) and has documentation available through [ReadTheDocs](https://swiftgalaxy.readthedocs.io). The first research article using the package has recently appeared [@Trayford2025]; many more projects using it are currently ongoing, especially in the context of the COLIBRE simulations project [@Schaye2025; @Chaikin2025].
 
 # Acknowledgements
 
