@@ -125,8 +125,6 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Cache pip
-      uses: actions/cache@v4
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -154,8 +152,6 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Cache pip
-      uses: actions/cache@v4
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
