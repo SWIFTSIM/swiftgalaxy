@@ -183,6 +183,9 @@ class WebExamples(object):
         file_location : :class:`~pathlib._local.Path`
             Location of the file to fetch from the web store.
         """
+        if file_location.exists():
+            return
+
         import requests
         from requests.exceptions import HTTPError
 
@@ -202,23 +205,26 @@ class WebExamples(object):
         else:
             show_progressbar = True
 
-        if file_location.exists():
-            return
         url = f"{self.webstorage_location}{file_location.name}"
         with requests.get(url, stream=True) as r:
             r.raise_for_status()
             total_size_in_bytes = int(r.headers.get("content-length", 0))
             chunk_size = 8192
-            if show_progressbar:
-                progressbar = tqdm(
-                    total=total_size_in_bytes, unit="iB", unit_scale=True
-                )
             try:
                 with open(file_location, "wb") as f:
+                    if show_progressbar:  # pragma: no branch
+                        progressbar = tqdm(
+                            total=total_size_in_bytes,
+                            unit="iB",
+                            unit_scale=True,
+                            leave=False,
+                        )
                     for chunk in r.iter_content(chunk_size=chunk_size):
-                        if show_progressbar:
+                        if show_progressbar:  # pragma: no branch
                             progressbar.update(len(chunk))
                         f.write(chunk)
+                    if show_progressbar:  # pragma: no branch
+                        progressbar.close()
             except HTTPError:  # pragma: no cover
                 Path(file_location).unlink(
                     missing_ok=True
