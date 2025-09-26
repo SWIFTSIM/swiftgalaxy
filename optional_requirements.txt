@@ -5,7 +5,7 @@ black[jupyter]
 mypy
 numpydoc
 nbmake
-h5py
+tqdm
 astropy
 velociraptor
 git+https://github.com/dnarayanan/caesar.git
