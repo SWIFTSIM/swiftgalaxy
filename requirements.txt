@@ -1,5 +1,6 @@
 numpy>=2.0.0
 scipy
 unyt
-swiftsimio>=10.0.0
+#swiftsimio>=10.0.0
+git+https://github.com/SWIFTSIM/swiftsimio.git@close_handle
 requests
