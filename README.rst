@@ -2,10 +2,7 @@
    :width: 100%
    :alt: Banner with logo showing a swift in a spiral and the text SWIFTGalaxy.
 
-.. raw:: html
-
 |Python version| |PyPI version| |pyOpenSci| |ASCL| |Repostatus| |Zenodo| |Build status| |Documentation status| |codecov| |Black|
-
 
 .. |Build status| image:: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml/badge.svg
     :target: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml
