@@ -1,5 +1,5 @@
 ---
-title: "SWIFTGalaxy"
+title: "SWIFTGalaxy: a python package to work with particle groups from SWIFT simulations"
 tags:
   - Python
   - astronomy
