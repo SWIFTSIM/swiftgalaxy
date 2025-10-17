@@ -6,6 +6,7 @@
 
     <a href="https://github.com/SWIFTSIM/swiftgalaxy/blob/main/pyproject.toml" target="_blank"><img src="https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FSWIFTSIM%2Fswiftgalaxy%2Fmain%2Fpyproject.toml" alt="Python Version from PEP 621 TOML"></a>
     <a href="https://pypi.org/project/swiftgalaxy" target="_blank"><img src="https://img.shields.io/pypi/v/swiftgalaxy" alt="PyPI - Version"></a>
+    <a href="https://github.com/pyOpenSci/software-submission/issues/244" target="_blank"><img src="https://pyopensci.org/badges/peer-reviewed.svg" alt="pyOpenSci Peer-Reviewed"></a>
     <a href="https://ascl.net/2505.002" target="_blank"><img src="https://img.shields.io/badge/ascl-2505.002-blue.svg?colorB=262255" alt="Astrophysics Source Code Library - 2505.002"></a>
     <a href="https://www.repostatus.org/#active" target="_blank"><img src="https://www.repostatus.org/badges/latest/active.svg" alt="Project Status: Active – The project has reached a stable, usable state and is being actively developed."></a>
     <a href="https://doi.org/10.5281/zenodo.15502355" target="_blank"><img src="https://zenodo.org/badge/488271795.svg" alt="Code archiving - Zenodo"></a>
