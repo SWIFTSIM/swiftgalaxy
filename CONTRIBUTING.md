@@ -3,6 +3,8 @@ Contributing to SWIFTGalaxy
 
 Contributions for SWIFTGalaxy should come as pull requests submitted to our [GitHub repository](https://github.com/SWIFTSIM/swiftgalaxy).
 
+Please see the documentation pages on [setting up your development environment](https://swiftgalaxy.readthedocs.io/en/latest/getting_started/index.html#installation-for-development).
+
 Contributions are always welcome, but you should make sure of the following:
 
 + Your contributions include type hints (in function and method declarations).
