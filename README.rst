@@ -4,16 +4,36 @@
 
 .. raw:: html
 
-    <a href="https://github.com/SWIFTSIM/swiftgalaxy/blob/main/pyproject.toml" target="_blank"><img src="https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FSWIFTSIM%2Fswiftgalaxy%2Fmain%2Fpyproject.toml" alt="Python Version from PEP 621 TOML"></a>
-    <a href="https://pypi.org/project/swiftgalaxy" target="_blank"><img src="https://img.shields.io/pypi/v/swiftgalaxy" alt="PyPI - Version"></a>
-    <a href="https://github.com/pyOpenSci/software-submission/issues/244" target="_blank"><img src="https://pyopensci.org/badges/peer-reviewed.svg" alt="pyOpenSci Peer-Reviewed"></a>
-    <a href="https://ascl.net/2505.002" target="_blank"><img src="https://img.shields.io/badge/ascl-2505.002-blue.svg?colorB=262255" alt="Astrophysics Source Code Library - 2505.002"></a>
-    <a href="https://www.repostatus.org/#active" target="_blank"><img src="https://www.repostatus.org/badges/latest/active.svg" alt="Project Status: Active – The project has reached a stable, usable state and is being actively developed."></a>
-    <a href="https://doi.org/10.5281/zenodo.15502355" target="_blank"><img src="https://zenodo.org/badge/488271795.svg" alt="Code archiving - Zenodo"></a>
-    <a href="https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml" target="_blank"><img src="https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml/badge.svg" alt="Build Status"></a>
-    <a href="https://swiftgalaxy.readthedocs.io/en/latest/?badge=latest" target="_blank"><img src="https://readthedocs.org/projects/swiftgalaxy/badge/?version=latest" alt="Documentation Status"></a>
-    <a href="https://codecov.io/gh/SWIFTSIM/swiftgalaxy" target="_blank"><img src="https://codecov.io/gh/SWIFTSIM/swiftgalaxy/graph/badge.svg?token=YV3YYEK78Z" alt="Test coverage - Codecov"></a>
-    <a href="https://github.com/psf/black" target="_blank"><img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Code style - Black"></a>
+|Python version| |PyPI version| |pyOpenSci| |ASCL| |Repostatus| |Zenodo| |Build status| |Documentation status| |codecov| |Black|
+
+
+.. |Build status| image:: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml/badge.svg
+    :target: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml
+    :alt: Build Status
+.. |Documentation status| image:: https://readthedocs.org/projects/swiftgalaxy/badge/?version=latest
+    :target: https://swiftgalaxy.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+.. |Python version| image:: https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FSWIFTSIM%2Fswiftgalaxy%2Fmain%2Fpyproject.toml
+   :alt: Python Version from PEP 621 TOML
+.. |PyPI version| image:: https://img.shields.io/pypi/v/swiftgalaxy
+   :target: https://pypi.org/project/swiftgalaxy/
+   :alt: PyPI - Version
+.. |Repostatus| image:: https://www.repostatus.org/badges/latest/active.svg
+   :alt: Project Status: Active – The project has reached a stable, usable state and is being actively developed.
+   :target: https://www.repostatus.org/#active
+.. |codecov| image:: https://codecov.io/gh/SWIFTSIM/swiftgalaxy/graph/badge.svg?token=YV3YYEK78Z 
+   :target: https://codecov.io/gh/SWIFTSIM/swiftgalaxy
+.. |Zenodo| image:: https://zenodo.org/badge/488271795.svg
+   :target: https://doi.org/10.5281/zenodo.15502355
+.. |ASCL| image:: https://img.shields.io/badge/ascl-2505.002-blue.svg?colorB=262255
+   :alt: ascl:2505.002
+   :target: https://ascl.net/2505.002
+.. |pyOpenSci| image:: https://pyopensci.org/badges/peer-reviewed.svg
+   :alt: pyOpenSci Peer-Reviewed
+   :target: https://github.com/pyOpenSci/software-submission/issues/244
+.. |Black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :alt: Code style - Black
+   :target: https://github.com/psf/black
 
 .. INTRO_START_LABEL
 
