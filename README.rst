@@ -2,7 +2,7 @@
    :width: 100%
    :alt: Banner with logo showing a swift in a spiral and the text SWIFTGalaxy.
 
-|Python version| |PyPI version| |pyOpenSci| |ASCL| |Repostatus| |Zenodo| |Build status| |Documentation status| |codecov| |Black|
+|Python version| |PyPI version| |JOSS| |pyOpenSci| |ASCL| |Repostatus| |Zenodo| |Build status| |Documentation status| |codecov| |Black|
 
 .. |Build status| image:: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml/badge.svg
     :target: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml
@@ -31,6 +31,8 @@
 .. |Black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :alt: Code style - Black
    :target: https://github.com/psf/black
+.. |JOSS| image:: https://joss.theoj.org/papers/10.21105/joss.09278/status.svg
+   :target: https://doi.org/10.21105/joss.09278
 
 .. INTRO_START_LABEL
 
@@ -126,10 +128,26 @@ Citing SWIFTGalaxy
 
 .. CITING_START_LABEL
 
-If your use of SWIFTGalaxy leads to a publication, please cite the `swiftgalaxy entry`_ in the ASCL_ (`indexed on ADS`_). Ideally specify the version used (`Zenodo DOI`_, git commit ID and/or version number) and link to the github repository. A PyOpenSci_ review leading to a JOSS_ submission is `in progress`_, please check back for updated citation information.
+If your use of SWIFTGalaxy leads to a publication, please cite the `JOSS paper`_ (`ADS listing`_). You may also cite the `swiftgalaxy entry`_ in the ASCL_ (`indexed on ADS`_). Ideally specify the version used (`Zenodo DOI`_, git commit ID and/or version number) and link to the github repository.
 
 .. code-block:: bibtex
 
+    @ARTICLE{2025JOSS...10.9278O,
+        author = {{Oman}, Kyle A.},
+        title = "{SWIFTGalaxy: a Python package to work with particle groups from SWIFT simulations}",
+        journal = {The Journal of Open Source Software},
+        keywords = {astronomy, simulations},
+        year = 2025,
+        month = oct,
+        volume = {10},
+        number = {114},
+        eid = {9278},
+        pages = {9278},
+        doi = {10.21105/joss.09278},
+        adsurl = {https://ui.adsabs.harvard.edu/abs/2025JOSS...10.9278O},
+        adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+    }
+    
     @MISC{
         2025ascl.soft05002O,
      	author = {{Oman}, Kyle A.},
@@ -148,11 +166,10 @@ If your use of SWIFTGalaxy leads to a publication, please cite the `swiftgalaxy 
 
 Please also consider the `citations requested for SWIFTSimIO <citeSWIFTSimIO>`_.
 
+.. _JOSS paper: https://doi.org/10.21105/joss.09278
+.. _ADS listing: https://ui.adsabs.harvard.edu/abs/2025JOSS...10.9278O
 .. _swiftgalaxy entry: https://ascl.net/2505.002
 .. _ASCL: https://ascl.net
-.. _JOSS: https://joss.theoj.org/
-.. _PyOpenSci: https://www.pyopensci.org/
-.. _in progress: https://github.com/pyOpenSci/software-submission/issues/244#issuecomment-2912506097
 .. _indexed on ADS: https://ui.adsabs.harvard.edu/abs/2025ascl.soft05002O
 .. _Zenodo DOI: https://zenodo.org/records/15502385
 .. _citeSWIFTSimIO: https://swiftsimio.readthedocs.io/en/latest/index.html#citing-swiftsimio
