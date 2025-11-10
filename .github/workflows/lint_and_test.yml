@@ -128,6 +128,8 @@ jobs:
         if ( Test-Path requirements.txt -PathType Leaf ) { pip install -r requirements.txt }
         if ( Test-Path optional_requirements.txt -PathType Leaf ) { pip install -r optional_requirements.txt }
         pip install -e .
+      env:
+        CMAKE_Fortran_COMPILER: gfortran
     - name: Test with pytest
       run: |
         pytest -n 2
