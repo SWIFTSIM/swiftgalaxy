@@ -60,6 +60,8 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-${{ runner.os }}-
+    - name: Setup fortran compiler for dependencies
+      uses: fortran-lang/setup-fortran@v1
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
