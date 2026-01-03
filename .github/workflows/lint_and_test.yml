@@ -121,6 +121,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Setup fortran compiler for dependencies
       uses: fortran-lang/setup-fortran@v1
+      with:
+        compiler: gcc
+        version: latest
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -129,6 +132,7 @@ jobs:
         if ( Test-Path optional_requirements.txt -PathType Leaf ) { pip install -r optional_requirements.txt }
         pip install -e .
       env:
+        FC: gfortran
         CMAKE_Fortran_COMPILER: gfortran
     - name: Test with pytest
       run: |
