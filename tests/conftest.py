@@ -68,6 +68,7 @@ def toysnap_withfof(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def toysoap_with_virtual_snapshot(tmp_path_factory):
+    pytest.importorskip("compression")
     tp = tmp_path_factory.mktemp(_toysoap_filename.parent)
     toysoap_filename = tp / _toysoap_filename.name
     membership_filebase = tp / _toysoap_membership_filebase.name
@@ -181,6 +182,7 @@ def sg_autorecentre_off(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sg_soap(tmp_path_factory):
+    pytest.importorskip("compression")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     toysoap_filename = tp / _toysoap_filename.name
@@ -215,6 +217,7 @@ def sg_soap(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sgs_soap(tmp_path_factory):
+    pytest.importorskip("compression")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     membership_filebase = tp / _toysoap_membership_filebase.name
@@ -253,6 +256,7 @@ def sgs_soap(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sg_vr(tmp_path_factory):
+    pytest.importorskip("velociraptor")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     toyvr_filebase = tp / _toyvr_filebase.name
@@ -272,6 +276,7 @@ def sg_vr(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sgs_vr(tmp_path_factory):
+    pytest.importorskip("velociraptor")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     toyvr_filebase = tp / _toyvr_filebase.name
@@ -295,6 +300,7 @@ def sgs_vr(tmp_path_factory):
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
 def sg_caesar(request, tmp_path_factory):
+    pytest.importorskip("caesar")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     toycaesar_filename = tp / _toycaesar_filename.name
@@ -314,6 +320,7 @@ def sg_caesar(request, tmp_path_factory):
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
 def sgs_caesar(request, tmp_path_factory):
+    pytest.importorskip("caesar")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     toycaesar_filename = tp / _toycaesar_filename.name
@@ -341,6 +348,7 @@ def sgs_caesar(request, tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def soap(tmp_path_factory):
+    # no virtual snapshot needed, don't need importorskip("compression")
     toysoap_filename = (
         tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysoap_filename.name
     )
@@ -358,6 +366,7 @@ def soap(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def soap_multi(tmp_path_factory):
+    # no virtual snapshot needed, don't need importorskip("compression")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysoap_filename = tp / _toysoap_filename.name
     membership_filebase = tp / _toysoap_membership_filebase
@@ -376,6 +385,7 @@ def soap_multi(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def vr(tmp_path_factory):
+    pytest.importorskip("velociraptor")
     toyvr_filebase = (
         tmp_path_factory.mktemp(_toyvr_filebase.parent) / _toyvr_filebase.name
     )
@@ -388,6 +398,7 @@ def vr(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def vr_multi(tmp_path_factory):
+    pytest.importorskip("velociraptor")
     toyvr_filebase = (
         tmp_path_factory.mktemp(_toyvr_filebase.parent) / _toyvr_filebase.name
     )
@@ -400,6 +411,7 @@ def vr_multi(tmp_path_factory):
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
 def caesar(request, tmp_path_factory):
+    pytest.importorskip("caesar")
     toycaesar_filename = (
         tmp_path_factory.mktemp(_toycaesar_filename.parent) / _toycaesar_filename.name
     )
@@ -414,6 +426,7 @@ def caesar(request, tmp_path_factory):
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
 def caesar_multi(request, tmp_path_factory):
+    pytest.importorskip("caesar")
     toycaesar_filename = (
         tmp_path_factory.mktemp(_toycaesar_filename.parent) / _toycaesar_filename.name
     )
@@ -584,6 +597,7 @@ def sg_hf(request, tmp_path_factory):
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
     if request.param in {"caesar_halo", "caesar_galaxy"}:
+        pytest.importorskip("caesar")
         toycaesar_filename = tp / _toycaesar_filename.name
         _create_toycaesar(filename=toycaesar_filename)
         yield SWIFTGalaxy(
@@ -598,6 +612,7 @@ def sg_hf(request, tmp_path_factory):
         )
         _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
+        pytest.importorskip("compression")
         toysoap_filename = tp / _toysoap_filename.name
         membership_filebase = tp / _toysoap_membership_filebase.name
         toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
@@ -669,6 +684,7 @@ def sg_hf(request, tmp_path_factory):
 def hf(request, tmp_path_factory):
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     if request.param in {"caesar_halo", "caesar_galaxy"}:
+        pytest.importorskip("caesar")
         toycaesar_filename = tp / _toycaesar_filename.name
         _create_toycaesar(filename=toycaesar_filename)
 
@@ -680,6 +696,7 @@ def hf(request, tmp_path_factory):
 
         _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
+        # no virtual snapshot needed, don't need pytest.importorskip("compression")
         toysoap_filename = tp / _toysoap_filename.name
         membership_filebase = tp / _toysoap_membership_filebase.name
         _create_toysoap(
@@ -696,6 +713,7 @@ def hf(request, tmp_path_factory):
             membership_filebase=membership_filebase,
         )
     elif request.param == "vr":
+        pytest.importorskip("velociraptor")
         toyvr_filebase = tp / _toyvr_filebase.name
         _create_toyvr(filebase=toyvr_filebase)
 
@@ -740,6 +758,7 @@ def hf_multi(request, tmp_path_factory):
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
     if request.param in {"caesar_halo", "caesar_galaxy"}:
+        pytest.importorskip("caesar")
         toycaesar_filename = tp / _toycaesar_filename.name
         _create_toycaesar(filename=toycaesar_filename)
 
@@ -751,13 +770,16 @@ def hf_multi(request, tmp_path_factory):
 
         _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
+        create_virtual_snapshot = Path(toysnap_filename).is_file()
+        if create_virtual_snapshot:
+            pytest.importorskip("compression")
         toysoap_filename = tp / _toysoap_filename.name
         membership_filebase = tp / _toysoap_membership_filebase.name
         toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
         _create_toysoap(
             filename=toysoap_filename,
             membership_filebase=membership_filebase,
-            create_virtual_snapshot=Path(toysnap_filename).is_file(),
+            create_virtual_snapshot=create_virtual_snapshot,
             create_virtual_snapshot_from=toysnap_filename,
             virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
         )
@@ -774,6 +796,7 @@ def hf_multi(request, tmp_path_factory):
         )
 
     elif request.param == "vr":
+        pytest.importorskip("velociraptor")
         toyvr_filebase = tp / _toyvr_filebase.name
         _create_toyvr(filebase=toyvr_filebase)
 
@@ -820,6 +843,7 @@ def hf_multi_forwards_and_backwards(request, tmp_path_factory):
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
     if request.param in {"caesar_halo", "caesar_galaxy"}:
+        pytest.importorskip("caesar")
         toycaesar_filename = tp / _toycaesar_filename.name
         _create_toycaesar(filename=toycaesar_filename)
 
@@ -835,6 +859,7 @@ def hf_multi_forwards_and_backwards(request, tmp_path_factory):
 
         _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
+        pytest.importorskip("compression")
         toysoap_filename = tp / _toysoap_filename.name
         membership_filebase = tp / _toysoap_membership_filebase.name
         toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
@@ -860,6 +885,7 @@ def hf_multi_forwards_and_backwards(request, tmp_path_factory):
             virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
         )
     elif request.param == "vr":
+        pytest.importorskip("velociraptor")
         toyvr_filebase = tp / _toyvr_filebase.name
         _create_toyvr(filebase=toyvr_filebase)
 
@@ -937,6 +963,7 @@ def hf_multi_onetarget(request, tmp_path_factory):
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
     if request.param in {"caesar_halo", "caesar_galaxy"}:
+        pytest.importorskip("caesar")
         toycaesar_filename = tp / _toycaesar_filename.name
         _create_toycaesar(filename=toycaesar_filename)
 
@@ -948,6 +975,7 @@ def hf_multi_onetarget(request, tmp_path_factory):
 
         _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
+        pytest.importorskip("compression")
         toysoap_filename = tp / _toysoap_filename.name
         membership_filebase = tp / _toysoap_membership_filebase.name
         toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
@@ -970,6 +998,7 @@ def hf_multi_onetarget(request, tmp_path_factory):
             virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
         )
     elif request.param == "vr":
+        pytest.importorskip("velociraptor")
         toyvr_filebase = tp / _toyvr_filebase.name
         _create_toyvr(filebase=toyvr_filebase)
 
@@ -1014,6 +1043,7 @@ def hf_multi_zerotarget(request, tmp_path_factory):
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
     if request.param in {"caesar_halo", "caesar_galaxy"}:
+        pytest.importorskip("caesar")
         toycaesar_filename = tp / _toycaesar_filename.name
         _create_toycaesar(filename=toycaesar_filename)
 
@@ -1025,13 +1055,16 @@ def hf_multi_zerotarget(request, tmp_path_factory):
 
         _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
+        create_virtual_snapshot = Path(toysnap_filename).is_file()
+        if create_virtual_snapshot:
+            pytest.importorskip("compression")
         toysoap_filename = tp / _toysoap_filename.name
         membership_filebase = tp / _toysoap_membership_filebase.name
         toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
         _create_toysoap(
             filename=toysoap_filename,
             membership_filebase=membership_filebase,
-            create_virtual_snapshot=Path(toysnap_filename).is_file(),
+            create_virtual_snapshot=create_virtual_snapshot,
             create_virtual_snapshot_from=toysnap_filename,
             virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
         )
@@ -1047,6 +1080,7 @@ def hf_multi_zerotarget(request, tmp_path_factory):
             virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
         )
     elif request.param == "vr":
+        pytest.importorskip("velociraptor")
         toyvr_filebase = tp / _toyvr_filebase.name
         _create_toyvr(filebase=toyvr_filebase)
 

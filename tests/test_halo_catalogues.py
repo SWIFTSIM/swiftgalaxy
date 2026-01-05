@@ -139,6 +139,7 @@ class TestHaloCatalogues:
         """
         hf.extra_mask = "bound_only"
         if hasattr(hf, "soap_file"):
+            pytest.importorskip("compression")
             from compression.make_virtual_snapshot import make_virtual_snapshot
             from compression.update_vds_paths import update_virtual_snapshot_paths
 
@@ -393,6 +394,7 @@ class TestHaloCataloguesMulti:
         hf_multi.extra_mask = "bound_only"
         hf_multi._mask_multi_galaxy(0)
         if hasattr(hf_multi, "soap_file"):
+            pytest.importorskip("compression")
             from compression.make_virtual_snapshot import make_virtual_snapshot
             from compression.update_vds_paths import update_virtual_snapshot_paths
 
@@ -1009,6 +1011,7 @@ class TestCaesarWithSWIFTGalaxy:
         Check that we can tolerate missing particle membership information for arbitrary
         particle types in a caesar catalogue.
         """
+        pytest.importorskip("caesar")
         toycaesar_filename = (
             toysnap["toysnap_filename"].parent / _toycaesar_filename.name
         )

@@ -523,6 +523,7 @@ class TestSWIFTGalaxies:
         toysnap_filename = toysnap_withfof["toysnap_filename"]
         tp = toysnap_filename.parent
         if hf_type == "soap":
+            pytest.importorskip("compression")
             membership_filebase = tp / _toysoap_membership_filebase.name
             toysoap_filename = tp / _toysoap_filename.name
             toysoap_virtual_snapshot_filename = (
@@ -536,9 +537,11 @@ class TestSWIFTGalaxies:
                 virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
             )
         elif hf_type == "vr":
+            pytest.importorskip("velociraptor")
             toyvr_filebase = tp / _toyvr_filebase.name
             _create_toyvr(filebase=toyvr_filebase)
         elif "caesar" in hf_type:
+            pytest.importorskip("caesar")
             toycaesar_filename = tp / _toycaesar_filename.name
             _create_toycaesar(filename=toycaesar_filename)
         elif hf_type == "sa":
