@@ -167,6 +167,7 @@ class TestGeneratedExampleData:
         """
         Check that examples get cleaned up on request.
         """
+        pytest.importorskip("compression")
         # create all the example data (if not present)
         for example in generated_examples_tmpdir.available_examples:
             getattr(generated_examples_tmpdir, example)
