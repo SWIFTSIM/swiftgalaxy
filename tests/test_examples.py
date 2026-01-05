@@ -60,6 +60,7 @@ class TestWebExampleData:
         Check that we can create a swiftgalaxy, retrieving a sample snapshot file and
         caesar catalogue.
         """
+        pytest.importorskip("caesar")
         SWIFTGalaxy(
             web_examples_tmpdir.snapshot,
             Caesar(web_examples_tmpdir.caesar, group_type=group_type, group_index=0),
@@ -80,6 +81,7 @@ class TestWebExampleData:
         Check that we can create a swiftgalaxy, retrieving a sample snapshot file
         and velociraptor catalogue.
         """
+        pytest.importorskip("velociraptor")
         SWIFTGalaxy(
             web_examples_tmpdir.snapshot,
             Velociraptor(web_examples_tmpdir.velociraptor, halo_index=0),
@@ -130,6 +132,7 @@ class TestGeneratedExampleData:
         Check that we can create a swiftgalaxy using the helper for a generated
         velociraptor catalogue.
         """
+        pytest.importorskip("velociraptor")
         SWIFTGalaxy(
             generated_examples_tmpdir.snapshot,
             Velociraptor(generated_examples_tmpdir.velociraptor, halo_index=0),
@@ -141,6 +144,7 @@ class TestGeneratedExampleData:
         Check that we can create a swiftgalaxy using the helper for a generated caesar
         catalogue.
         """
+        pytest.importorskip("caesar")
         SWIFTGalaxy(
             generated_examples_tmpdir.snapshot,
             Caesar(
@@ -153,6 +157,7 @@ class TestGeneratedExampleData:
         Check that we can create a swiftgalaxy using the helper for a generated soap
         catalogue.
         """
+        pytest.importorskip("compression")
         SWIFTGalaxy(
             generated_examples_tmpdir.virtual_snapshot,
             SOAP(generated_examples_tmpdir.soap, soap_index=0),
@@ -162,6 +167,7 @@ class TestGeneratedExampleData:
         """
         Check that examples get cleaned up on request.
         """
+        pytest.importorskip("compression")
         # create all the example data (if not present)
         for example in generated_examples_tmpdir.available_examples:
             getattr(generated_examples_tmpdir, example)
