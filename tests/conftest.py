@@ -126,12 +126,6 @@ def sgs(request, tmp_path_factory):
         ToyHF(snapfile=toysnap_filename, index=[0, 1]),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
-        preload={  # just to keep warnings quiet
-            "gas.particle_ids",
-            "dark_matter.particle_ids",
-            "stars.particle_ids",
-            "black_holes.particle_ids",
-        },
     )
     _remove_toysnap(snapfile=toysnap_filename)
 
@@ -240,10 +234,6 @@ def sgs_soap(tmp_path_factory):
         ),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
-        preload={  # just to keep warnings quiet
-            "gas.particle_ids",
-            "dark_matter.particle_ids",
-        },
     )
 
     _remove_toysnap(snapfile=toysnap_filename)
@@ -288,10 +278,6 @@ def sgs_vr(tmp_path_factory):
         Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[0, 1]),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
-        preload={  # just to keep warnings quiet
-            "gas.particle_ids",
-            "dark_matter.particle_ids",
-        },
     )
 
     _remove_toysnap(snapfile=toysnap_filename)
@@ -336,10 +322,6 @@ def sgs_caesar(request, tmp_path_factory):
         ),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
-        preload={  # just to keep warnings quiet
-            "gas.particle_ids",
-            "dark_matter.particle_ids",
-        },
     )
 
     _remove_toysnap(snapfile=toysnap_filename)
@@ -583,10 +565,6 @@ def sgs_sa(tmp_path_factory):
                 scale_exponent=1,
             ),
         ),
-        preload={  # just to keep warnings quiet
-            "gas.particle_ids",
-            "dark_matter.particle_ids",
-        },
     )
     _remove_toysnap(snapfile=toysnap_filename)
 

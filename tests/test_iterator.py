@@ -27,7 +27,6 @@ from swiftsimio.objects import cosmo_array
 from swiftgalaxy.reader import SWIFTGalaxy
 from swiftgalaxy.iterator import SWIFTGalaxies
 from swiftgalaxy.halo_catalogues import Standalone, SOAP, Velociraptor, Caesar
-from swiftsimio import mask
 
 
 class TestSWIFTGalaxies:
@@ -65,12 +64,6 @@ class TestSWIFTGalaxies:
                     scale_exponent=1,
                 ),
             ),
-            preload={  # just to keep warnings quiet
-                "gas.particle_ids",
-                "dark_matter.particle_ids",
-                "stars.particle_ids",
-                "black_holes.particle_ids",
-            },
         )
         sparse_solution = sgs._sparse_optimized_solution
         assert_allclose_units(
@@ -161,12 +154,6 @@ class TestSWIFTGalaxies:
                     scale_exponent=1,
                 ),
             ),
-            preload={  # just to keep warnings quiet
-                "gas.particle_ids",
-                "dark_matter.particle_ids",
-                "stars.particle_ids",
-                "black_holes.particle_ids",
-            },
             # force this - with our 2-cell test snapshot we can't contrive for this
             # approach to be automatically determined to be optimal:
             optimize_iteration="dense",
@@ -256,64 +243,16 @@ class TestSWIFTGalaxies:
             count += 1
         assert count == len(sgs.halo_catalogue.index)
 
-    @pytest.mark.parametrize("extra_mask", ["bound_only", None])
-    def test_preload(self, tmp_path_factory, hf_multi, extra_mask):
-        """
-        Make sure that data that we ask to have pre-loaded is actually pre-loaded.
-        """
-        if isinstance(hf_multi, SOAP):
-            tp = hf_multi.soap_file.parent
-        elif isinstance(hf_multi, Caesar):
-            tp = hf_multi.caesar_file.parent
-        elif isinstance(hf_multi, Velociraptor):
-            tp = Path(hf_multi.velociraptor_files["properties"]).parent
-        else:
-            tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
-        toysnap_filename = tp / _toysnap_filename.name
-        _create_toysnap(snapfile=toysnap_filename, withfof=isinstance(hf_multi, SOAP))
-        hf_multi.extra_mask = extra_mask
-        sgs = SWIFTGalaxies(
-            toysnap_filename,
-            hf_multi,
-            preload={
-                "gas.particle_ids",
-                "dark_matter.particle_ids",
-                "stars.particle_ids",
-                "black_holes.particle_ids",
-            },
-        )
-        region_mask = mask(toysnap_filename)
-        region_mask.constrain_spatial(sgs._solution["regions"][0])
-        sgs._start_server(region_mask)
-        sgs._preload()
-        for preload_field in sgs.preload:
-            ptype, field = preload_field.split(".")
-            assert (
-                getattr(getattr(sgs._server, ptype)._particle_dataset, f"_{field}")
-                is not None
-            )
-        _remove_toysnap(snapfile=toysnap_filename)
-
     def test_warn_on_no_preload(self, toysnap):
         """
-        Check that we warn users if they don't specify anything to pre-load since this
-        probably indicates that they're using the SWIFTGalaxies class inefficiently.
+        Check that we warn users if they specify anything to pre-load (deprecated).
         """
-        with pytest.warns(RuntimeWarning, match="No data specified to preload"):
+        with pytest.warns(DeprecationWarning, match="Preloading is no longer required"):
             SWIFTGalaxies(
                 toysnap["toysnap_filename"],
                 ToyHF(toysnap["toysnap_filename"], index=[0, 1]),
+                preload={"gas.coordinates"},
             )
-
-    def test_warn_on_read_not_preloaded(self, sgs):
-        """
-        Check that we warn users when data is loaded while iterating over a SWIFTGalaxies
-        since this probably indicates that they're using the class inefficiently.
-        """
-        assert "gas.coordinates" not in sgs.preload
-        for sg in sgs:
-            with pytest.warns(RuntimeWarning, match="should it be preloaded"):
-                sg.gas.coordinates
 
     def test_exception_on_repeated_targets(self, toysnap):
         """
@@ -350,12 +289,6 @@ class TestSWIFTGalaxies:
                 else toysnap_filename
             ),
             hf_multi,
-            preload={  # just to keep warnings quiet
-                "gas.particle_ids",
-                "dark_matter.particle_ids",
-                "stars.particle_ids",
-                "black_holes.particle_ids",
-            },
         )
 
         def f(sg):
@@ -420,12 +353,6 @@ class TestSWIFTGalaxies:
                 else toysnap_filename
             ),
             hf_multi,
-            preload={  # just to keep warnings quiet
-                "gas.particle_ids",
-                "dark_matter.particle_ids",
-                "stars.particle_ids",
-                "black_holes.particle_ids",
-            },
         )
         map_forwards = sgs_forwards.map(f)
         sgs_backwards = SWIFTGalaxies(
@@ -435,12 +362,6 @@ class TestSWIFTGalaxies:
                 else toysnap_filename
             ),
             hf_multi_backwards,
-            preload={  # just to keep warnings quiet
-                "gas.particle_ids",
-                "dark_matter.particle_ids",
-                "stars.particle_ids",
-                "black_holes.particle_ids",
-            },
         )
         map_backwards = sgs_backwards.map(f)
         assert np.allclose(map_forwards, map_backwards[::-1])
@@ -493,7 +414,6 @@ class TestSWIFTGalaxies:
         sgs = SWIFTGalaxies(
             toysoap_with_virtual_snapshot["toysoap_virtual_snapshot_filename"],
             soap_both,
-            preload={"black_holes.masses"},  # just keep warnings quiet
         )
         for i, sg in enumerate(sgs):
             sg_single = sgs_individual[sgs.iteration_order[i]]
@@ -556,7 +476,6 @@ class TestSWIFTGalaxies:
                 sgs = SWIFTGalaxies(
                     toysoap_virtual_snapshot_filename,
                     SOAP(toysoap_filename, soap_index=init_indices),
-                    preload={"gas.masses"},  # just to keep warnings quiet
                 )
             elif hf_type == "vr":
                 sgs = SWIFTGalaxies(
@@ -564,7 +483,6 @@ class TestSWIFTGalaxies:
                     Velociraptor(
                         velociraptor_filebase=toyvr_filebase, halo_index=init_indices
                     ),
-                    preload={"gas.masses"},
                 )
             elif hf_type == "caesar_galaxy":
                 sgs = SWIFTGalaxies(
@@ -574,7 +492,6 @@ class TestSWIFTGalaxies:
                         group_type="galaxy",
                         group_index=init_indices,
                     ),
-                    preload={"gas.masses"},
                 )
             elif hf_type == "caesar_halo":
                 sgs = SWIFTGalaxies(
@@ -582,7 +499,6 @@ class TestSWIFTGalaxies:
                     Caesar(
                         toycaesar_filename, group_type="halo", group_index=init_indices
                     ),
-                    preload={"gas.masses"},
                 )
             for sg in sgs:
                 pass  # just go through the iteration
@@ -618,12 +534,6 @@ class TestSWIFTGalaxies:
                 else toysnap_filename
             ),
             hf_multi_zerotarget,
-            preload={  # just to keep warnings quiet
-                "gas.particle_ids",
-                "dark_matter.particle_ids",
-                "stars.particle_ids",
-                "black_holes.particle_ids",
-            },
         )
         for sg in sgs:  # should not crash by iterating
             # but should not reach this:
@@ -656,12 +566,6 @@ class TestSWIFTGalaxies:
                 else toysnap_filename
             ),
             hf_multi_onetarget,
-            preload={  # just to keep warnings quiet
-                "gas.particle_ids",
-                "dark_matter.particle_ids",
-                "stars.particle_ids",
-                "black_holes.particle_ids",
-            },
         )
 
         def f(sg):
@@ -713,7 +617,6 @@ class TestSWIFTGalaxies:
             SWIFTGalaxies(
                 toysnap["toysnap_filename"],
                 ToyHF(snapfile=toysnap["toysnap_filename"], index=[0, 1]),
-                preload=("gas.coordinates",),  # just keep warning quiet
                 optimize_iteration="not_implemented",
             )
 
@@ -728,7 +631,6 @@ class TestSWIFTGalaxies:
         sgs = SWIFTGalaxies(
             toysnap["toysnap_filename"],
             ToyHF(snapfile=toysnap["toysnap_filename"], index=[0, 1]),
-            preload=("gas.coordinates",),  # just keep warning quiet
             auto_recentre=True,
             coordinate_frame_from=sg,
         )
@@ -757,7 +659,6 @@ class TestSWIFTGalaxies:
         sgs = SWIFTGalaxies(
             toysnap["toysnap_filename"],
             ToyHF(snapfile=toysnap["toysnap_filename"], index=[0, 1]),
-            preload=("gas.coordinates",),  # just keep warning quiet
             auto_recentre=False,
             coordinate_frame_from=sg,
         )
@@ -776,7 +677,6 @@ class TestSWIFTGalaxies:
         sgs = SWIFTGalaxies(
             toysnap["toysnap_filename"],
             ToyHF(snapfile=toysnap["toysnap_filename"], index=[0, 1]),
-            preload=("gas.coordinates",),  # just keep warning quiet
             auto_recentre=False,
             coordinate_frame_from=sg,
         )
@@ -797,7 +697,6 @@ class TestSWIFTGalaxies:
         sgs = SWIFTGalaxies(
             toysnap["toysnap_filename"],
             ToyHF(snapfile=toysnap["toysnap_filename"], index=[0, 1]),
-            preload=("gas.coordinates",),  # just keep warning quiet
             auto_recentre=False,
         )
         for sg in sgs:

@@ -215,13 +215,6 @@ def _data_read_wrapper(prop: str) -> Callable:
             The data with any needed transformations and masks applied.
         """
         if getattr(self._internal_dataset, f"_{prop}") is None:
-            if self._swiftgalaxy._warn_on_read:
-                msg = (
-                    f"Reading {self._fullname}.{prop} from snapshot file, this may be "
-                    "unintended (should it be preloaded if using SWIFTGalaxies to iterate"
-                    " over objects of interest?)."
-                )
-                warn(msg, RuntimeWarning)
             # going to read from file: apply masks, transforms
             data = getattr(self._internal_dataset, prop)  # raw data loaded
             data = self._apply_data_mask(data)
@@ -1511,7 +1504,6 @@ class SWIFTGalaxy(SWIFTDataset):
     velocities_dataset_name: str
     _spatial_mask: SWIFTMask
     _extra_mask: Optional[MaskCollection]
-    _warn_on_read: bool
 
     def __init__(
         self,
@@ -1536,7 +1528,6 @@ class SWIFTGalaxy(SWIFTDataset):
         self.id_particle_dataset_name = id_particle_dataset_name
         self.coordinates_dataset_name = coordinates_dataset_name
         self.velocities_dataset_name = velocities_dataset_name
-        self._warn_on_read = False
         if not hasattr(self, "_coordinate_like_transform"):
             self._coordinate_like_transform = np.eye(4)
         if not hasattr(self, "_velocity_like_transform"):
@@ -1666,7 +1657,6 @@ class SWIFTGalaxy(SWIFTDataset):
         _extra_mask: Optional[MaskCollection] = None,
         _coordinate_like_transform: Optional[np.ndarray] = None,
         _velocity_like_transform: Optional[np.ndarray] = None,
-        _warn_on_read: bool = False,
     ) -> "SWIFTGalaxy":
         """
         For internal use in copying a :class:`SWIFTGalaxy`.
@@ -1736,10 +1726,6 @@ class SWIFTGalaxy(SWIFTDataset):
         _velocity_like_transform : :class:`~numpy.ndarray` (optional), default: ``None``
             Directly set the internal representation of the velocity frame boosts and
             rotations (intended for internal use only).
-
-        _warn_on_read : :obj:`bool` (optional), default: ``False``
-            If ``True``, warn the user when data is read from disk (e.g. should have been
-            included in ``preload`` when using ``SWIFTGalaxies``.
         """
         sg = cls.__new__(cls)
         sg._spatial_mask = _spatial_mask
@@ -1748,7 +1734,6 @@ class SWIFTGalaxy(SWIFTDataset):
             sg._coordinate_like_transform = _coordinate_like_transform
         if _velocity_like_transform is not None:
             sg._velocity_like_transform = _velocity_like_transform
-        sg._warn_on_read = _warn_on_read
         SWIFTGalaxy.__init__(
             sg,
             snapshot_filename,
@@ -1761,7 +1746,6 @@ class SWIFTGalaxy(SWIFTDataset):
             velocities_dataset_name=velocities_dataset_name,
             coordinate_frame_from=coordinate_frame_from,
         )
-        sg._warn_on_read = _warn_on_read  # was set False in __init__ so do this after
         return sg
 
     def __str__(self) -> str:
@@ -1825,7 +1809,6 @@ class SWIFTGalaxy(SWIFTDataset):
             _extra_mask=self._extra_mask,
             _coordinate_like_transform=self._coordinate_like_transform,
             _velocity_like_transform=self._velocity_like_transform,
-            _warn_on_read=self._warn_on_read,
         )
         return sg
 
@@ -1878,7 +1861,6 @@ class SWIFTGalaxy(SWIFTDataset):
             _extra_mask=deepcopy(self._extra_mask),
             _coordinate_like_transform=deepcopy(self._coordinate_like_transform),
             _velocity_like_transform=deepcopy(self._velocity_like_transform),
-            _warn_on_read=deepcopy(self._warn_on_read),
         )
         for particle_name in sg.metadata.present_group_names:
             particle_metadata = getattr(sg.metadata, f"{particle_name}_properties")
