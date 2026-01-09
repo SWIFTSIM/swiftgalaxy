@@ -534,9 +534,7 @@ class ToyHF(_HaloCatalogue):
                 The generated function that evaluates a mask.
             """
 
-            def lazy_mask(
-                mask_loaded_data: bool = True,
-            ) -> Union[NDArray, slice, EllipsisType]:
+            def lazy_mask() -> Union[NDArray, slice, EllipsisType]:
                 """
                 "Evaluate" a mask that selects bound particles. In reality we know what
                 the mask is a priori. We pretend that we need to load the particle ids
@@ -545,13 +543,6 @@ class ToyHF(_HaloCatalogue):
 
                 This function must optionally mask the data (``particle_ids``) that it
                 has loaded.
-
-                Parameters
-                ----------
-                mask_loaded_data : :obj:`bool`, default ``True``
-                    If ``True``, data loaded while constructing the mask is masked
-                    during this function call. Set ``False`` when called from
-                    a :class:`~swiftgalaxy.iterator.SWIFTGalaxies` "server".
 
                 Returns
                 -------
@@ -571,16 +562,15 @@ class ToyHF(_HaloCatalogue):
                     "stars": np.s_[...],
                     "black_holes": np.s_[...],
                 }[group_name]
-                if mask_loaded_data:
-                    # mask the particle_ids
-                    setattr(
+                # mask the particle_ids
+                setattr(
+                    getattr(sg, group_name)._particle_dataset,
+                    f"_{sg.id_particle_dataset_name}",
+                    getattr(
                         getattr(sg, group_name)._particle_dataset,
                         f"_{sg.id_particle_dataset_name}",
-                        getattr(
-                            getattr(sg, group_name)._particle_dataset,
-                            f"_{sg.id_particle_dataset_name}",
-                        )[mask],
-                    )
+                    )[mask],
+                )
                 assert (
                     isinstance(mask, np.ndarray)
                     or isinstance(mask, slice)

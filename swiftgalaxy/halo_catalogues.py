@@ -801,20 +801,12 @@ class SOAP(_HaloCatalogue):
                 The generated function that evaluates a mask.
             """
 
-            def lazy_mask(mask_loaded_data: bool = True) -> NDArray:
+            def lazy_mask() -> NDArray:
                 """
                 Evaluate a mask that selects bound particles by comparing the particle
                 group membership dataset ``group_nr_bound`` to the halo catalogue index.
 
-                This function must optionally mask the data (``group_nr_bound``) that it
-                has loaded.
-
-                Parameters
-                ----------
-                mask_loaded_data : :obj:`bool`, default ``True``
-                    If ``True``, data loaded while constructing the mask is masked
-                    during this function call. Set ``False`` when called from
-                    a :class:`~swiftgalaxy.iterator.SWIFTGalaxies` "server".
+                This function must mask the data (``group_nr_bound``) that it has loaded.
 
                 Returns
                 -------
@@ -828,11 +820,10 @@ class SOAP(_HaloCatalogue):
                 ) == self.input_halos.halo_catalogue_index.to_value(
                     u.dimensionless
                 )
-                if mask_loaded_data:
-                    # mask the group_nr_bound array that we loaded
-                    getattr(sg, group_name)._particle_dataset._group_nr_bound = getattr(
-                        sg, group_name
-                    )._particle_dataset._group_nr_bound[mask]
+                # mask the group_nr_bound array that we loaded
+                getattr(sg, group_name)._particle_dataset._group_nr_bound = getattr(
+                    sg, group_name
+                )._particle_dataset._group_nr_bound[mask]
                 return mask
 
             return LazyMask(mask_function=lazy_mask)
@@ -1172,20 +1163,12 @@ class Velociraptor(_HaloCatalogue):
                 The generated function that evaluates a mask.
             """
 
-            def lazy_mask(mask_loaded_data: bool = True) -> NDArray:
+            def lazy_mask() -> NDArray:
                 """
                 Evaluate a mask that selects bound particles by comparing the
                 ``particle_ids`` to the list of bound particle IDs.
 
-                This function must optionally mask the data (``particle_ids``) that it has
-                loaded.
-
-                Parameters
-                ----------
-                mask_loaded_data : :obj:`bool`, default ``True``
-                    If ``True``, data loaded while constructing the mask is masked
-                    during this function call. Set ``False`` when called from
-                    a :class:`~swiftgalaxy.iterator.SWIFTGalaxies` "server".
+                This function must mask the data (``particle_ids``) that it has loaded.
 
                 Returns
                 -------
@@ -1212,11 +1195,10 @@ class Velociraptor(_HaloCatalogue):
                         scale_exponent=0,
                     ),
                 )
-                if mask_loaded_data:
-                    # mask the particle_ids that we loaded
-                    getattr(sg, group_name)._particle_dataset._particle_ids = getattr(
-                        sg, group_name
-                    )._particle_dataset._particle_ids[mask]
+                # mask the particle_ids that we loaded
+                getattr(sg, group_name)._particle_dataset._particle_ids = getattr(
+                    sg, group_name
+                )._particle_dataset._particle_ids[mask]
                 return mask
 
             return LazyMask(mask_function=lazy_mask)
@@ -1793,20 +1775,12 @@ class Caesar(_HaloCatalogue):
                 The generated function that evaluates a mask.
             """
 
-            def lazy_mask(mask_loaded_data: bool = True) -> Union[NDArray, slice]:
+            def lazy_mask() -> Union[NDArray, slice]:
                 """
                 Evaluate a mask that selects bound particles by comparing the lists of
                 bound particle indices to the ranges read in the spatial mask.
 
-                This function must optionally mask the data that it has loaded, but it
-                loads nothing.
-
-                Parameters
-                ----------
-                mask_loaded_data : :obj:`bool`, default ``True``
-                    If ``True``, data loaded while constructing the mask is masked
-                    during this function call. Set ``False`` when called from
-                    a :class:`~swiftgalaxy.iterator.SWIFTGalaxies` "server".
+                This function must mask the data that it has loaded, but it loads nothing.
 
                 Returns
                 -------

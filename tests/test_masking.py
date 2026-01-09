@@ -370,14 +370,9 @@ class TestLazyMask:
 
             call_counter: int = 0
 
-            def __call__(self, mask_loaded_data=None):
+            def __call__(self):
                 """
                 Call the class to behave like a simple mask function.
-
-                Parameters
-                ----------
-                mask_loaded_data : bool
-                    For toggling masking data as it is loaded. Ignored in this test case.
 
                 Returns
                 -------
@@ -397,7 +392,7 @@ class TestLazyMask:
         assert mf.call_counter == 1
         # we shouldn't be able to trigger or force another mask evaluation:
         lm.mask
-        lm._evaluate(mask_loaded_data=None)
+        lm._evaluate()
         assert mf.call_counter == 1
 
     def test_copy(self, lm):

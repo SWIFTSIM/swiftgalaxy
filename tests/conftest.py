@@ -1105,14 +1105,9 @@ def hf_multi_zerotarget(request, tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def lm():
-    def mf(mask_loaded_data=None):
+    def mf():
         """
         A simple mask function.
-
-        Parameters
-        ----------
-        mask_loaded_data : bool
-            For toggling masking data as it is loaded. Ignored in this test case.
 
         Returns
         -------
