@@ -730,7 +730,7 @@ class TestSWIFTGalaxies:
         )
         assert not np.all(server.gas._internal_dataset._masses == 0)
         # set cached data to new values (0's) so that we can make sure that we used it
-        server.gas._internal_dataset._masses *= 0
+        server.gas._internal_dataset._masses[...] = 0
         assert client2._data_server is server
         assert client2.gas._internal_dataset._masses is None
         assert server.gas._internal_dataset._masses is not None
