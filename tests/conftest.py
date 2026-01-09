@@ -126,12 +126,6 @@ def sgs(request, tmp_path_factory):
         ToyHF(snapfile=toysnap_filename, index=[0, 1]),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
-        preload={  # just to keep warnings quiet
-            "gas.particle_ids",
-            "dark_matter.particle_ids",
-            "stars.particle_ids",
-            "black_holes.particle_ids",
-        },
     )
     _remove_toysnap(snapfile=toysnap_filename)
 
@@ -240,10 +234,6 @@ def sgs_soap(tmp_path_factory):
         ),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
-        preload={  # just to keep warnings quiet
-            "gas.particle_ids",
-            "dark_matter.particle_ids",
-        },
     )
 
     _remove_toysnap(snapfile=toysnap_filename)
@@ -288,10 +278,6 @@ def sgs_vr(tmp_path_factory):
         Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[0, 1]),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
-        preload={  # just to keep warnings quiet
-            "gas.particle_ids",
-            "dark_matter.particle_ids",
-        },
     )
 
     _remove_toysnap(snapfile=toysnap_filename)
@@ -336,10 +322,6 @@ def sgs_caesar(request, tmp_path_factory):
         ),
         transforms_like_coordinates={"coordinates", "extra_coordinates"},
         transforms_like_velocities={"velocities", "extra_velocities"},
-        preload={  # just to keep warnings quiet
-            "gas.particle_ids",
-            "dark_matter.particle_ids",
-        },
     )
 
     _remove_toysnap(snapfile=toysnap_filename)
@@ -583,10 +565,6 @@ def sgs_sa(tmp_path_factory):
                 scale_exponent=1,
             ),
         ),
-        preload={  # just to keep warnings quiet
-            "gas.particle_ids",
-            "dark_matter.particle_ids",
-        },
     )
     _remove_toysnap(snapfile=toysnap_filename)
 
@@ -847,14 +825,17 @@ def hf_multi_forwards_and_backwards(request, tmp_path_factory):
         toycaesar_filename = tp / _toycaesar_filename.name
         _create_toycaesar(filename=toycaesar_filename)
 
-        yield Caesar(
-            caesar_file=toycaesar_filename,
-            group_type=request.param.split("_")[-1],
-            group_index=[0, 1],
-        ), Caesar(
-            caesar_file=toycaesar_filename,
-            group_type=request.param.split("_")[-1],
-            group_index=[1, 0],
+        yield (
+            Caesar(
+                caesar_file=toycaesar_filename,
+                group_type=request.param.split("_")[-1],
+                group_index=[0, 1],
+            ),
+            Caesar(
+                caesar_file=toycaesar_filename,
+                group_type=request.param.split("_")[-1],
+                group_index=[1, 0],
+            ),
         )
 
         _remove_toycaesar(filename=toycaesar_filename)
@@ -871,12 +852,15 @@ def hf_multi_forwards_and_backwards(request, tmp_path_factory):
             virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
         )
 
-        yield SOAP(
-            soap_file=toysoap_filename,
-            soap_index=[0, 1],
-        ), SOAP(
-            soap_file=toysoap_filename,
-            soap_index=[1, 0],
+        yield (
+            SOAP(
+                soap_file=toysoap_filename,
+                soap_index=[0, 1],
+            ),
+            SOAP(
+                soap_file=toysoap_filename,
+                soap_index=[1, 0],
+            ),
         )
 
         _remove_toysoap(
@@ -889,69 +873,73 @@ def hf_multi_forwards_and_backwards(request, tmp_path_factory):
         toyvr_filebase = tp / _toyvr_filebase.name
         _create_toyvr(filebase=toyvr_filebase)
 
-        yield Velociraptor(
-            velociraptor_filebase=toyvr_filebase, halo_index=[0, 1]
-        ), Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[1, 0])
+        yield (
+            Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[0, 1]),
+            Velociraptor(velociraptor_filebase=toyvr_filebase, halo_index=[1, 0]),
+        )
 
         _remove_toyvr(filebase=toyvr_filebase)
     elif request.param == "sa":
-        yield Standalone(
-            extra_mask=None,
-            centre=cosmo_array(
-                [
-                    [_centre_1, _centre_1, _centre_1],
-                    [_centre_2, _centre_2, _centre_2],
-                ],
-                u.Mpc,
-                comoving=True,
-                scale_factor=1.0,
-                scale_exponent=1,
+        yield (
+            Standalone(
+                extra_mask=None,
+                centre=cosmo_array(
+                    [
+                        [_centre_1, _centre_1, _centre_1],
+                        [_centre_2, _centre_2, _centre_2],
+                    ],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1,
+                ),
+                velocity_centre=cosmo_array(
+                    [
+                        [_vcentre_1, _vcentre_1, _vcentre_1],
+                        [_vcentre_2, _vcentre_2, _vcentre_2],
+                    ],
+                    u.km / u.s,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=0,
+                ),
+                spatial_offsets=cosmo_array(
+                    [[-1, 1], [-1, 1], [-1, 1]],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1,
+                ),
             ),
-            velocity_centre=cosmo_array(
-                [
-                    [_vcentre_1, _vcentre_1, _vcentre_1],
-                    [_vcentre_2, _vcentre_2, _vcentre_2],
-                ],
-                u.km / u.s,
-                comoving=True,
-                scale_factor=1.0,
-                scale_exponent=0,
-            ),
-            spatial_offsets=cosmo_array(
-                [[-1, 1], [-1, 1], [-1, 1]],
-                u.Mpc,
-                comoving=True,
-                scale_factor=1.0,
-                scale_exponent=1,
-            ),
-        ), Standalone(
-            extra_mask=None,
-            centre=cosmo_array(
-                [
-                    [_centre_2, _centre_2, _centre_2],
-                    [_centre_1, _centre_1, _centre_1],
-                ],
-                u.Mpc,
-                comoving=True,
-                scale_factor=1.0,
-                scale_exponent=1,
-            ),
-            velocity_centre=cosmo_array(
-                [
-                    [_vcentre_2, _vcentre_2, _vcentre_2],
-                    [_vcentre_1, _vcentre_1, _vcentre_1],
-                ],
-                u.km / u.s,
-                comoving=True,
-                scale_factor=1.0,
-                scale_exponent=0,
-            ),
-            spatial_offsets=cosmo_array(
-                [[-1, 1], [-1, 1], [-1, 1]],
-                u.Mpc,
-                comoving=True,
-                scale_factor=1.0,
-                scale_exponent=1,
+            Standalone(
+                extra_mask=None,
+                centre=cosmo_array(
+                    [
+                        [_centre_2, _centre_2, _centre_2],
+                        [_centre_1, _centre_1, _centre_1],
+                    ],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1,
+                ),
+                velocity_centre=cosmo_array(
+                    [
+                        [_vcentre_2, _vcentre_2, _vcentre_2],
+                        [_vcentre_1, _vcentre_1, _vcentre_1],
+                    ],
+                    u.km / u.s,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=0,
+                ),
+                spatial_offsets=cosmo_array(
+                    [[-1, 1], [-1, 1], [-1, 1]],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1,
+                ),
             ),
         )
     _remove_toysnap(snapfile=toysnap_filename)
@@ -1117,15 +1105,9 @@ def hf_multi_zerotarget(request, tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def lm():
-
-    def mf(mask_loaded_data=None):
+    def mf():
         """
         A simple mask function.
-
-        Parameters
-        ----------
-        mask_loaded_data : bool
-            For toggling masking data as it is loaded. Ignored in this test case.
 
         Returns
         -------

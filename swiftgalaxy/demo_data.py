@@ -190,16 +190,7 @@ class WebExamples(object):
         from requests.exceptions import HTTPError
 
         try:
-            from tqdm.notebook import tqdm_notebook
-            from tqdm import tqdm as tqdm_standard
-
-            # figure out which progressbar style to use
-            try:
-                tqdm_notebook(leave=False).close()
-            except ImportError:
-                tqdm = tqdm_standard
-            else:  # pragma: no cover
-                tqdm = tqdm_notebook
+            from tqdm.autonotebook import tqdm
         except ImportError:  # pragma: no cover
             show_progressbar = False
         else:
@@ -430,6 +421,12 @@ class ToyHF(_HaloCatalogue):
 
     index : :obj:`int` or :obj:`list`, default: ``0``
         The index (position in the catalogue) of the target galaxy.
+
+    extra_mask : :obj:`str` or :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
+    default: ``"bound_only"``
+        The "extra" mask to apply to data when it is read (extra in the sense of in
+        addition to the spatial mask applied by the
+        :class:`~swiftgalaxy.reader.SWIFTGalaxy`).
     """
 
     _index_attr = "_index"
@@ -438,6 +435,7 @@ class ToyHF(_HaloCatalogue):
         self,
         snapfile: Union[str, Path] = _toysnap_filename,
         index: Union[int, List[int]] = 0,
+        extra_mask: Optional[str] = "bound_only",
     ) -> None:
         self.snapfile = snapfile
         if isinstance(index, Sequence):
@@ -445,7 +443,7 @@ class ToyHF(_HaloCatalogue):
         else:
             assert index in {0, 1}
         self._index = index
-        super().__init__()
+        super().__init__(extra_mask=extra_mask)
         return
 
     def _load(self) -> None:
@@ -536,9 +534,7 @@ class ToyHF(_HaloCatalogue):
                 The generated function that evaluates a mask.
             """
 
-            def lazy_mask(
-                mask_loaded_data: bool = True,
-            ) -> Union[NDArray, slice, EllipsisType]:
+            def lazy_mask() -> Union[NDArray, slice, EllipsisType]:
                 """
                 "Evaluate" a mask that selects bound particles. In reality we know what
                 the mask is a priori. We pretend that we need to load the particle ids
@@ -547,13 +543,6 @@ class ToyHF(_HaloCatalogue):
 
                 This function must optionally mask the data (``particle_ids``) that it
                 has loaded.
-
-                Parameters
-                ----------
-                mask_loaded_data : :obj:`bool`, default ``True``
-                    If ``True``, data loaded while constructing the mask is masked
-                    during this function call. Set ``False`` when called from
-                    a :class:`~swiftgalaxy.iterator.SWIFTGalaxies` "server".
 
                 Returns
                 -------
@@ -573,16 +562,15 @@ class ToyHF(_HaloCatalogue):
                     "stars": np.s_[...],
                     "black_holes": np.s_[...],
                 }[group_name]
-                if mask_loaded_data:
-                    # mask the particle_ids
-                    setattr(
+                # mask the particle_ids
+                setattr(
+                    getattr(sg, group_name)._particle_dataset,
+                    f"_{sg.id_particle_dataset_name}",
+                    getattr(
                         getattr(sg, group_name)._particle_dataset,
                         f"_{sg.id_particle_dataset_name}",
-                        getattr(
-                            getattr(sg, group_name)._particle_dataset,
-                            f"_{sg.id_particle_dataset_name}",
-                        )[mask],
-                    )
+                    )[mask],
+                )
                 assert (
                     isinstance(mask, np.ndarray)
                     or isinstance(mask, slice)
@@ -1163,10 +1151,10 @@ def _create_toysnap(
             data=np.array([f_neutral, f_ion], dtype=float).T,
         )
         hifd.attrs[
-            "Conversion factor to CGS" " (not including cosmological corrections)"
+            "Conversion factor to CGS (not including cosmological corrections)"
         ] = np.array([1.0], dtype=float)
         hifd.attrs[
-            "Conversion factor to physical CGS" " (including cosmological corrections)"
+            "Conversion factor to physical CGS (including cosmological corrections)"
         ] = np.array([1.0], dtype=float)
         hifd.attrs["U_I exponent"] = np.array([0.0], dtype=float)
         hifd.attrs["U_L exponent"] = np.array([0.0], dtype=float)
@@ -1195,8 +1183,7 @@ def _create_toysnap(
                     dtype=int,
                 )
                 f[f"PartType{ptype}/FOFGroupIDs"].attrs[
-                    "Conversion factor to CGS "
-                    "(not including cosmological corrections)"
+                    "Conversion factor to CGS (not including cosmological corrections)"
                 ] = np.array([1.0])
                 f[f"PartType{ptype}/FOFGroupIDs"].attrs[
                     "Conversion factor to physical CGS "
@@ -2578,11 +2565,10 @@ def _create_toysoap(
                 "HostHaloIndex", data=np.array([-1, -1]), dtype=int
             )
             soap_hhi.attrs[
-                "Conversion factor to CGS " "(not including cosmological corrections)"
+                "Conversion factor to CGS (not including cosmological corrections)"
             ] = np.array([1.0])
             soap_hhi.attrs[
-                "Conversion factor to physical CGS "
-                "(including cosmological corrections)"
+                "Conversion factor to physical CGS (including cosmological corrections)"
             ] = np.array([1.0])
             soap_hhi.attrs["Description"] = (
                 "Index (within the SOAP arrays) of the top level "
@@ -2708,11 +2694,10 @@ def _create_toysoap(
                 "EncloseRadius", data=np.array([0.1, 0.1]), dtype=float
             )
             er.attrs[
-                "Conversion factor to CGS " "(not including cosmological corrections)"
+                "Conversion factor to CGS (not including cosmological corrections)"
             ] = np.array([3.08567758e24])
             er.attrs[
-                "Conversion factor to physical CGS "
-                "(including cosmological corrections)"
+                "Conversion factor to physical CGS (including cosmological corrections)"
             ] = np.array([3.08567758e24])
             er.attrs["Description"] = (
                 "Radius of the particle furthest from the halo centre"
@@ -2766,11 +2751,10 @@ def _create_toysoap(
                 dtype=float,
             )
             fof_c.attrs[
-                "Conversion factor to CGS " "(not including cosmological corrections)"
+                "Conversion factor to CGS (not including cosmological corrections)"
             ] = np.array([3.08567758e24])
             fof_c.attrs[
-                "Conversion factor to physical CGS "
-                "(including cosmological corrections)"
+                "Conversion factor to physical CGS (including cosmological corrections)"
             ] = np.array([3.08567758e24])
             fof_c.attrs["Description"] = (
                 "Centre of mass of the host FOF halo of this subhalo. "
@@ -2809,11 +2793,10 @@ def _create_toysoap(
                 dtype=float,
             )
             fof_m.attrs[
-                "Conversion factor to CGS " "(not including cosmological corrections)"
+                "Conversion factor to CGS (not including cosmological corrections)"
             ] = np.array([1.98841e43])
             fof_m.attrs[
-                "Conversion factor to physical CGS "
-                "(including cosmological corrections)"
+                "Conversion factor to physical CGS (including cosmological corrections)"
             ] = np.array([1.98841e43])
             fof_m.attrs["Description"] = (
                 "Mass of the host FOF halo of this subhalo. "
@@ -2842,11 +2825,10 @@ def _create_toysoap(
                 dtype=int,
             )
             fof_s.attrs[
-                "Conversion factor to CGS " "(not including cosmological corrections)"
+                "Conversion factor to CGS (not including cosmological corrections)"
             ] = np.array([1.0])
             fof_s.attrs[
-                "Conversion factor to physical CGS "
-                "(including cosmological corrections)"
+                "Conversion factor to physical CGS (including cosmological corrections)"
             ] = np.array([1.0])
             fof_s.attrs["Description"] = (
                 "Number of particles in the host FOF halo of this subhalo. "
@@ -2868,11 +2850,10 @@ def _create_toysoap(
                 "HostFOFId", data=np.array([1, 2]), dtype=int
             )
             hbt_hostfof.attrs[
-                "Conversion factor to CGS " "(not including cosmological corrections)"
+                "Conversion factor to CGS (not including cosmological corrections)"
             ] = np.array([1.0])
             hbt_hostfof.attrs[
-                "Conversion factor to physical CGS "
-                "(including cosmological corrections)"
+                "Conversion factor to physical CGS (including cosmological corrections)"
             ] = np.array([1.0])
             hbt_hostfof.attrs["Description"] = (
                 "ID of the host FOF halo of this subhalo. "
@@ -2894,11 +2875,10 @@ def _create_toysoap(
                 "HaloCatalogueIndex", data=np.array([1111, 2222]), dtype=int
             )
             hci.attrs[
-                "Conversion factor to CGS " "(not including cosmological corrections)"
+                "Conversion factor to CGS (not including cosmological corrections)"
             ] = np.array([1.0])
             hci.attrs[
-                "Conversion factor to physical CGS "
-                "(including cosmological corrections)"
+                "Conversion factor to physical CGS (including cosmological corrections)"
             ] = np.array([1.0])
             hci.attrs["Description"] = (
                 "Index of this halo in the original halo finder catalogue "
@@ -2927,11 +2907,10 @@ def _create_toysoap(
                 dtype=float,
             )
             hcentre.attrs[
-                "Conversion factor to CGS " "(not including cosmological corrections)"
+                "Conversion factor to CGS (not including cosmological corrections)"
             ] = np.array([3.08567758e24])
             hcentre.attrs[
-                "Conversion factor to physical CGS "
-                "(including cosmological corrections)"
+                "Conversion factor to physical CGS (including cosmological corrections)"
             ] = np.array([3.08567758e24])
             hcentre.attrs["Description"] = (
                 "The centre of the subhalo as given by the halo finder. "
@@ -2955,11 +2934,10 @@ def _create_toysoap(
                 "IsCentral", data=np.array([1, 1]), dtype=int
             )
             iscent.attrs[
-                "Conversion factor to CGS " "(not including cosmological corrections)"
+                "Conversion factor to CGS (not including cosmological corrections)"
             ] = np.array([1.0])
             iscent.attrs[
-                "Conversion factor to physical CGS "
-                "(including cosmological corrections)"
+                "Conversion factor to physical CGS (including cosmological corrections)"
             ] = np.array([1.0])
             iscent.attrs["Description"] = (
                 "Whether the halo finder flagged the halo as "
@@ -2988,11 +2966,10 @@ def _create_toysoap(
                 dtype=int,
             )
             nbp.attrs[
-                "Conversion factor to CGS " "(not including cosmological corrections)"
+                "Conversion factor to CGS (not including cosmological corrections)"
             ] = np.array([1.0])
             nbp.attrs[
-                "Conversion factor to physical CGS "
-                "(including cosmological corrections)"
+                "Conversion factor to physical CGS (including cosmological corrections)"
             ] = np.array([1.0])
             nbp.attrs["Description"] = "Total number of particles bound to the subhalo."
             nbp.attrs["Is Compressed"] = np.True_
@@ -3013,11 +2990,10 @@ def _create_toysoap(
                 dtype=float,
             )
             r200.attrs[
-                "Conversion factor to CGS " "(not including cosmological corrections)"
+                "Conversion factor to CGS (not including cosmological corrections)"
             ] = np.array([3.08567758e24])
             r200.attrs[
-                "Conversion factor to physical CGS "
-                "(including cosmological corrections)"
+                "Conversion factor to physical CGS (including cosmological corrections)"
             ] = np.array([3.08567758e24])
             r200.attrs["Description"] = (
                 "Radius of a sphere within which the density is 200 times the critical "
@@ -3130,8 +3106,7 @@ def _create_toysoap(
                         "Rank_bound", data=ranks[ptype], dtype=int
                     )
                     ds_fof.attrs[
-                        "Conversion factor to CGS "
-                        "(including cosmological corrections)"
+                        "Conversion factor to CGS (including cosmological corrections)"
                     ] = np.array([1.0])
                     ds_fof.attrs[
                         "Conversion factor to CGS "

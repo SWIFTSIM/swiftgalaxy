@@ -26,6 +26,19 @@ reltol_nd = 1.0e-4
 
 class TestMaskingSWIFTGalaxy:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
+    def test_getattr_masking(self, sg, particle_name):
+        """
+        Test that we can mask with square bracket notation. Use an order reversing mask.
+        """
+        getattr(sg, particle_name).particle_ids
+        mask = np.s_[::-1]
+        new_sg = sg[MaskCollection(**{particle_name: mask})]
+        assert (
+            getattr(new_sg, particle_name).particle_ids[::-1]
+            == getattr(sg, particle_name).particle_ids
+        ).all()
+
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_slice_mask(self, sg, particle_name, before_load):
         """
@@ -357,14 +370,9 @@ class TestLazyMask:
 
             call_counter: int = 0
 
-            def __call__(self, mask_loaded_data=None):
+            def __call__(self):
                 """
                 Call the class to behave like a simple mask function.
-
-                Parameters
-                ----------
-                mask_loaded_data : bool
-                    For toggling masking data as it is loaded. Ignored in this test case.
 
                 Returns
                 -------
@@ -384,7 +392,7 @@ class TestLazyMask:
         assert mf.call_counter == 1
         # we shouldn't be able to trigger or force another mask evaluation:
         lm.mask
-        lm._evaluate(mask_loaded_data=None)
+        lm._evaluate()
         assert mf.call_counter == 1
 
     def test_copy(self, lm):

@@ -3,10 +3,7 @@ Iterating SWIFTGalaxies
 
 When similar operations need to be applied to multiple :class:`~swiftgalaxy.reader.SWIFTGalaxy` objects it often makes sense to iterate over them (possibly in parallel, see below). The :class:`~swiftgalaxy.iterator.SWIFTGalaxies` class aims to make this convenient and efficient, mostly by internally managing the order of iteration to avoid re-reading data from disk as much as possible - most often when two objects of interest share a common top-level cell in a SWIFT simulation.
 
-Setting up a :class:`~swiftgalaxy.iterator.SWIFTGalaxies` instance is deliberately designed to be as similar to creating a :class:`~swiftgalaxy.reader.SWIFTGalaxy` as possible. There are two differences:
-
- - The halo catalogue helper class is initialized with a list of targets instead of a single target identifier.
- - To minimize I/O operations, the :class:`~swiftgalaxy.iterator.SWIFTGalaxies` class needs to know what particle data fields will be accessed, using the ``preload`` argument.
+Setting up a :class:`~swiftgalaxy.iterator.SWIFTGalaxies` instance is deliberately designed to be as similar to creating a :class:`~swiftgalaxy.reader.SWIFTGalaxy` as possible. There is one difference: the halo catalogue helper class is initialized with a list of targets instead of a single target identifier.
 
 The :class:`~swiftgalaxy.iterator.SWIFTGalaxies` class otherwise broadly accepts the same initialization arguments as the :class:`~swiftgalaxy.reader.SWIFTGalaxy` class, such as ``auto_recentre``.
 
@@ -34,29 +31,6 @@ Once iteration over the targets contained in a :class:`~swiftgalaxy.iterator.SWI
       m200 = sg.halo_catalogue.spherical_overdensity_200_crit.total_mass
       
 Then on each iteration the value of ``m200`` will look similar to ``cosmo_array([1.2e+12], dtype=float32, units='1.98841586e+30*kg', comoving=False)``.
-      
-Preloading particle data fields
--------------------------------
-
-Unfortunately :class:`~swiftgalaxy.iterator.SWIFTGalaxies` is not prescient (or not yet sufficiently introspective...) to know what data will need to be accessed during iteration. However, to keep I/O operations to a minimum, relevant data needs to be pre-loaded for all targets that share a top level cell (or group of cells) in a SWIFT snapshot. The :class:`~swiftgalaxy.iterator.SWIFTGalaxies` class therefore accepts an argument at initialization called ``preload`` where the data to be used can be specified with a convenient syntax mimicking the attribute lookup syntax from the :class:`~swiftsimio.reader.SWIFTDataset`. The set of fields to pre-load is expected as a :obj:`set`, but other collections (like :obj:`list`) that can be cast to a :obj:`set` are also acceptable. As a schematic example:
-
-.. code-block:: python
-
-   SWIFTGalaxies(
-      "my_snapshot.hdf5",
-      SOAP(
-         "my_soap_catalogue.hdf5",
-	 soap_index=[11, 22, 33],
-      )
-      preload={
-         "gas.coordinates",
-	 "dark_matter.masses",
-	 "stars.element_abundances.carbon",
-	 "black_holes.velocities",
-      }
-   )
-
-If nothing is specified in the ``preload`` argument, a warning will be generated as a reminder that some fields probably should be specified here. In this case the :class:`~swiftgalaxy.iterator.SWIFTGalaxies` can still be used but will be likely to duplicate I/O operations, so this warning should not be ignored. Similarly, if particle data field is accessed and it has not been pre-loaded, a warning will be generated as a hint that this field should probably be added to the ``preload`` set; these warnings should similarly not be ignored.
 
 Order of iteration
 ------------------
@@ -88,7 +62,6 @@ The :func:`swiftgalaxy.iterator.SWIFTGalaxies.map` function can be used to apply
        SOAP(
            "my_soap.hdf5",
            soap_index=[11, 22, 33],
-           preload={"dark_matter.coordinates"},
        ),
    )
    my_result = sgs.map(dm_median_position)

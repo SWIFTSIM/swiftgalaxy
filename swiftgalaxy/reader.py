@@ -215,15 +215,8 @@ def _data_read_wrapper(prop: str) -> Callable:
             The data with any needed transformations and masks applied.
         """
         if getattr(self._internal_dataset, f"_{prop}") is None:
-            if self._swiftgalaxy._warn_on_read:
-                msg = (
-                    f"Reading {self._fullname}.{prop} from snapshot file, this may be "
-                    "unintended (should it be preloaded if using SWIFTGalaxies to iterate"
-                    " over objects of interest?)."
-                )
-                warn(msg, RuntimeWarning)
             # going to read from file: apply masks, transforms
-            data = getattr(self._internal_dataset, prop)  # raw data loaded
+            data = getattr(self._data_server._internal_dataset, prop)  # raw data loaded
             data = self._apply_data_mask(data)
             data = self._apply_transforms(data, prop)
             setattr(self._internal_dataset, f"_{prop}", data)
@@ -421,29 +414,37 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
 
     Parameters
     ----------
-    named_column_dataset : :class:`swiftsimio.reader.__SWIFTNamedColumnDataset`
+    named_column_dataset : :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset`
         The named column dataset to be wrapped.
 
-    particle_dataset_helper : :class:`_SWIFTGroupDatasetHelper`
+    particle_dataset_helper : :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
         Used to store a reference to the parent
         :class:`_SWIFTGroupDatasetHelper` object.
 
+    _data_server : :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper` \
+    (optional), default: ``None``
+        :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper` to use for data read
+        operations. For example :class:`~swiftgalaxy.iterator.SWIFTGalaxies` uses this to
+        share read data between grouped objects.
+
     See Also
     --------
-    :class:`SWIFTGalaxy`
-    :class:`_SWIFTGroupDatasetHelper`
+    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+    :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
     """
 
     def __init__(
         self,
         named_column_dataset: "__SWIFTNamedColumnDataset",
         particle_dataset_helper: "_SWIFTGroupDatasetHelper",
+        _data_server: Optional["_SWIFTNamedColumnDatasetHelper"] = None,
     ) -> None:
         self._named_column_dataset = named_column_dataset
         self.field_path = self._named_column_dataset.field_path
         self.named_columns = self._named_column_dataset.named_columns
         self.name = self._named_column_dataset.name
         self._particle_dataset_helper = particle_dataset_helper
+        self._data_server = _data_server if _data_server is not None else self
         return
 
     @property
@@ -627,11 +628,17 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     Parameters
     ----------
-    particle_dataset : :class:`swiftsimio.reader.__SWIFTGroupDataset`
+    particle_dataset : :class:`~swiftsimio.reader.__SWIFTGroupDataset`
         The particle dataset to be wrapped.
 
-    swiftgalaxy : :class:`SWIFTGalaxy`
+    swiftgalaxy : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
         Used to store a reference to the parent :class:`SWIFTGalaxy`.
+
+    _data_server : :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper` (optional), \
+    default: ``None``
+        :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper` to use for data read
+        operations. For example :class:`~swiftgalaxy.iterator.SWIFTGalaxies` uses this to
+        share read data between grouped objects.
 
     See Also
     --------
@@ -667,7 +674,10 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
     """
 
     def __init__(
-        self, particle_dataset: "__SWIFTGroupDataset", swiftgalaxy: "SWIFTGalaxy"
+        self,
+        particle_dataset: "__SWIFTGroupDataset",
+        swiftgalaxy: "SWIFTGalaxy",
+        _data_server: Optional["_SWIFTGroupDatasetHelper"] = None,
     ) -> None:
         self._particle_dataset = particle_dataset
 
@@ -683,6 +693,8 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
         self._cylindrical_coordinates: Optional[dict] = None
         self._spherical_velocities: Optional[dict] = None
         self._cylindrical_velocities: Optional[dict] = None
+
+        self._data_server = _data_server if _data_server is not None else self
         return
 
     @property
@@ -1434,6 +1446,11 @@ class SWIFTGalaxy(SWIFTDataset):
         Another :class:`~swiftgalaxy.reader.SWIFTGalaxy` to copy the coordinate frame
         (centre and rotation) and velocity coordinate frame (boost and rotation) from.
 
+    _data_server : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        :class:`~swiftgalaxy.reader.SWIFTGalaxy` to use for data read operations.
+        For example :class:`~swiftgalaxy.iterator.SWIFTGalaxies` uses this to share
+        read data between grouped objects.
+
     See Also
     --------
     :class:`_SWIFTGroupDatasetHelper`
@@ -1511,7 +1528,7 @@ class SWIFTGalaxy(SWIFTDataset):
     velocities_dataset_name: str
     _spatial_mask: SWIFTMask
     _extra_mask: Optional[MaskCollection]
-    _warn_on_read: bool
+    _data_server: "SWIFTGalaxy"
 
     def __init__(
         self,
@@ -1524,6 +1541,7 @@ class SWIFTGalaxy(SWIFTDataset):
         coordinates_dataset_name: str = "coordinates",
         velocities_dataset_name: str = "velocities",
         coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
+        _data_server: Optional["SWIFTGalaxy"] = None,
     ):
         self.snapshot_filename = snapshot_filename
         self.halo_catalogue = halo_catalogue
@@ -1536,7 +1554,6 @@ class SWIFTGalaxy(SWIFTDataset):
         self.id_particle_dataset_name = id_particle_dataset_name
         self.coordinates_dataset_name = coordinates_dataset_name
         self.velocities_dataset_name = velocities_dataset_name
-        self._warn_on_read = False
         if not hasattr(self, "_coordinate_like_transform"):
             self._coordinate_like_transform = np.eye(4)
         if not hasattr(self, "_velocity_like_transform"):
@@ -1552,6 +1569,7 @@ class SWIFTGalaxy(SWIFTDataset):
             self._spatial_mask = self.halo_catalogue._get_spatial_mask(
                 self.snapshot_filename
             )
+        self._data_server = _data_server if _data_server is not None else self
         super().__init__(snapshot_filename, mask=self._spatial_mask)
         if auto_recentre is True and coordinate_frame_from is not None:
             raise ValueError(
@@ -1600,10 +1618,19 @@ class SWIFTGalaxy(SWIFTDataset):
                         _data_delete_wrapper(prop),
                     ),
                 )
+            data_server = (
+                getattr(self._data_server, particle_name)
+                if self._data_server is not self
+                else None
+            )
             setattr(
                 self,
                 particle_name,
-                TypeDatasetHelper(getattr(self, particle_name), self),
+                TypeDatasetHelper(
+                    getattr(self, particle_name),
+                    self,
+                    _data_server=data_server,
+                ),
             )
             for prop in named_columns_names:
                 # This is the named_columns instance to wrap:
@@ -1629,11 +1656,18 @@ class SWIFTGalaxy(SWIFTDataset):
                             _data_delete_wrapper(column_name),
                         ),
                     )
+                data_server = (
+                    getattr(getattr(self._data_server, particle_name), prop)
+                    if self._data_server is not self
+                    else None
+                )
                 setattr(
                     TypeDatasetHelper,
                     prop,
                     TypeNamedColumnDatasetHelper(
-                        named_columns, getattr(self, particle_name)
+                        named_columns,
+                        getattr(self, particle_name),
+                        _data_server=data_server,
                     ),
                 )
         if self.halo_catalogue is not None:
@@ -1666,7 +1700,7 @@ class SWIFTGalaxy(SWIFTDataset):
         _extra_mask: Optional[MaskCollection] = None,
         _coordinate_like_transform: Optional[np.ndarray] = None,
         _velocity_like_transform: Optional[np.ndarray] = None,
-        _warn_on_read: bool = False,
+        _data_server: Optional["SWIFTGalaxy"] = None,
     ) -> "SWIFTGalaxy":
         """
         For internal use in copying a :class:`SWIFTGalaxy`.
@@ -1737,9 +1771,10 @@ class SWIFTGalaxy(SWIFTDataset):
             Directly set the internal representation of the velocity frame boosts and
             rotations (intended for internal use only).
 
-        _warn_on_read : :obj:`bool` (optional), default: ``False``
-            If ``True``, warn the user when data is read from disk (e.g. should have been
-            included in ``preload`` when using ``SWIFTGalaxies``.
+        _data_server : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            :class:`~swiftgalaxy.reader.SWIFTGalaxy` to use for data read operations.
+            For example :class:`~swiftgalaxy.iterator.SWIFTGalaxies` uses this to share
+            read data between grouped objects.
         """
         sg = cls.__new__(cls)
         sg._spatial_mask = _spatial_mask
@@ -1748,7 +1783,6 @@ class SWIFTGalaxy(SWIFTDataset):
             sg._coordinate_like_transform = _coordinate_like_transform
         if _velocity_like_transform is not None:
             sg._velocity_like_transform = _velocity_like_transform
-        sg._warn_on_read = _warn_on_read
         SWIFTGalaxy.__init__(
             sg,
             snapshot_filename,
@@ -1760,8 +1794,8 @@ class SWIFTGalaxy(SWIFTDataset):
             coordinates_dataset_name=coordinates_dataset_name,
             velocities_dataset_name=velocities_dataset_name,
             coordinate_frame_from=coordinate_frame_from,
+            _data_server=_data_server,
         )
-        sg._warn_on_read = _warn_on_read  # was set False in __init__ so do this after
         return sg
 
     def __str__(self) -> str:
@@ -1825,7 +1859,6 @@ class SWIFTGalaxy(SWIFTDataset):
             _extra_mask=self._extra_mask,
             _coordinate_like_transform=self._coordinate_like_transform,
             _velocity_like_transform=self._velocity_like_transform,
-            _warn_on_read=self._warn_on_read,
         )
         return sg
 
@@ -1847,7 +1880,9 @@ class SWIFTGalaxy(SWIFTDataset):
         return self._data_copy()
 
     def _data_copy(
-        self, mask_collection: Optional[MaskCollection] = None
+        self,
+        mask_collection: Optional[MaskCollection] = None,
+        _data_server: Optional["SWIFTGalaxy"] = None,
     ) -> "SWIFTGalaxy":
         """
         Create a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` including copying
@@ -1858,6 +1893,11 @@ class SWIFTGalaxy(SWIFTDataset):
         mask_collection : :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
         default: ``None``
             Copy only the subset of the data corresponding to the ``mask_collection``.
+
+        _data_server : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            :class:`~swiftgalaxy.reader.SWIFTGalaxy` that the copy will use for data read
+            operations. For example :class:`~swiftgalaxy.iterator.SWIFTGalaxies` uses this
+            to share read data between grouped objects.
 
         Returns
         -------
@@ -1878,7 +1918,7 @@ class SWIFTGalaxy(SWIFTDataset):
             _extra_mask=deepcopy(self._extra_mask),
             _coordinate_like_transform=deepcopy(self._coordinate_like_transform),
             _velocity_like_transform=deepcopy(self._velocity_like_transform),
-            _warn_on_read=deepcopy(self._warn_on_read),
+            _data_server=_data_server,
         )
         for particle_name in sg.metadata.present_group_names:
             particle_metadata = getattr(sg.metadata, f"{particle_name}_properties")

@@ -6,13 +6,11 @@ interest within a single simulation snapshot.
 Parallelization is not yet implemented but is prioritized for future release.
 """
 
-import warnings
 import numpy as np
 import unyt as u
 from swiftsimio import mask, cosmo_array
 from .reader import SWIFTGalaxy
 from .halo_catalogues import _HaloCatalogue
-from .masks import LazyMask
 from warnings import warn
 
 from typing import Optional, Set, Any, List, Callable, Dict, Tuple, Generator, TypedDict
@@ -43,22 +41,12 @@ class SWIFTGalaxies(object):
     overhead by managing the order of iteration to group together target objects that
     occupy common top-level cells and only reading the data once.
 
-    There are two important consequences to be aware of:
-
-     - The iteration order is not controlled by the user because it must be chosen to
-       group objects in the same top-level cell(s) together. The iteration order is
-       available as the :attr:`iteration_order` attribute of a
-       :class:`~swiftgalaxy.iterator.SWIFTGalaxies` object. Alternatively, output of
-       a function applied to a list of target objects in the same order as the input
-       list can be obtained using the :meth:`~swiftgalaxy.iterator.SWIFTGalaxies.map`
-       method.
-     - To avoid duplicating I/O, the :class:`~swiftgalaxy.iterator.SWIFTGalaxies` class
-       needs to be aware of what particle data fields will be accessed during analysis
-       so that it can read them in for all target objects in a group before iterating
-       over them. The set of fields to read should be specified with the ``preload``
-       initialization argument. Omitting fields in this list that are accessed during
-       the iteration over the target objects largely defeats the purpose of using this
-       efficient iteration class in the first place.
+    An important consequence to be aware of is that the iteration order is not controlled
+    by the user because it must be chosen to group objects in the same top-level cell(s)
+    together. The iteration order is available as the :attr:`iteration_order` attribute of
+    a :class:`~swiftgalaxy.iterator.SWIFTGalaxies` object. Alternatively, output of a
+    function applied to a list of target objects in the same order as the input list can
+    be obtained using the :meth:`~swiftgalaxy.iterator.SWIFTGalaxies.map` method.
 
     There is an obvious opportunity to parallelize the iteration process by passing each
     region (potentially each containing multiple target objects) to worker processes as
@@ -81,11 +69,8 @@ class SWIFTGalaxies(object):
         If ``True``, the coordinate system will be automatically recentred on the
         position and velocity centres defined by the ``halo_catalogue``.
 
-    preload : :obj:`set` (optional), default: ``set()``
-        A :obj:`set` containing strings specifying fields that will be accessed while
-        the :class:`~swiftgalaxy.reader.SWIFTGalaxy`'s managed by this class are being
-        iterated over. For example:
-        ``{"gas.element_abundances.carbon", "dark_matter.coordinates, stars.velocities}``.
+    preload : set (optional), default: ``set()``
+        Deprecated and ignored.
 
     transforms_like_coordinates : :obj:`set` (optional), default: ``set()``
         Names of fields that behave as velocities. It is assumed that these
@@ -131,8 +116,7 @@ class SWIFTGalaxies(object):
     --------
     Using :class:`~swiftgalaxy.iterator.SWIFTGalaxies` is almost the same as using the
     main :class:`~swiftgalaxy.reader.SWIFTGalaxy` class, except that (i) the halo
-    catalogue is initialized with multiple target objects, (ii) the data to be used needs
-    to be specified with the ``preload`` argument and (iii) the
+    catalogue is initialized with multiple target objects and (ii) the
     :class:`~swiftgalaxy.iterator.SWIFTGalaxies` class provides an iteration method
     (``__iter__``), and determines its own iteration order. For example:
 
@@ -145,11 +129,6 @@ class SWIFTGalaxies(object):
                 "soap.hdf5",
                 soap_index=[0, 123, 456],  # multiple target indices
             ),
-            preload={
-                        "gas.element_abundances.carbon",
-                        "dark_matter.coordinates",
-                        "stars.velocities",
-                    },
         )
         iteration_order = sgs.iteration_order  # be aware of the order of iteration
         for sg in sgs:
@@ -171,11 +150,6 @@ class SWIFTGalaxies(object):
                 "soap.hdf5",
                 soap_index=[0, 123, 456],  # multiple target indices
             ),
-            preload={
-                        "gas.element_abundances.carbon",
-                        "dark_matter.coordinates",
-                        "stars.velocities",
-                    },
         )
 
         def analysis(sg):
@@ -213,16 +187,15 @@ class SWIFTGalaxies(object):
                 "an iterable list of targets even if there is only one (or use "
                 "SWIFTGalaxy instead of SWIFTGalaxies)."
             )
-        if len(preload) == 0:
+        if len(preload) > 0:
             warn(
-                "No data specified to preload, this probably defeats the purpose of using"
-                " SWIFTGalaxies for iteration!",
-                RuntimeWarning,
+                "Preloading is no longer required, `preload` argument will be removed in "
+                "a future version.",
+                DeprecationWarning,
             )
         self.halo_catalogue = halo_catalogue
         self.snapshot_filename = snapshot_filename
         self.auto_recentre = auto_recentre
-        self.preload = set(preload)
         self.transforms_like_coordinates = transforms_like_coordinates
         self.transforms_like_velocities = transforms_like_velocities
         self.id_particle_dataset_name = id_particle_dataset_name
@@ -502,28 +475,7 @@ class SWIFTGalaxies(object):
             velocities_dataset_name=self.velocities_dataset_name,
             _spatial_mask=region_mask,
             _extra_mask=None,
-            _warn_on_read=True,
         )
-        return
-
-    def _preload(self) -> None:
-        """
-        Pre-load any data that a user will want to access for each object of interest.
-
-        To avoid repeating I/O operations, :class:`~swiftgalaxy.iterator.SWIFTGalaxies`
-        objects must be initialized with a list of fields to be "pre-loaded". This
-        function carries out these read operations.
-        """
-        for preload_field in self.preload:
-            obj = self._server
-            for attr in preload_field.split("."):
-                with warnings.catch_warnings():
-                    warnings.filterwarnings(
-                        "ignore",
-                        message="Reading",
-                        category=RuntimeWarning,
-                    )
-                    obj = getattr(obj, attr)
         return
 
     def __iter__(self) -> Generator:
@@ -557,17 +509,12 @@ class SWIFTGalaxies(object):
         ):
             region_mask.constrain_spatial(region)
             self._start_server(region_mask)
-            self._preload()
             for igalaxy in target_indices:
                 self.halo_catalogue._mask_multi_galaxy(igalaxy)
                 server_mask = self.halo_catalogue._get_extra_mask(self._server)
-                for preload_type in set(
-                    [preload_field.split(".")[0] for preload_field in self.preload]
-                ):
-                    type_mask = getattr(server_mask, preload_type)
-                    if isinstance(type_mask, LazyMask):
-                        type_mask._evaluate(mask_loaded_data=False)
-                swift_galaxy = self._server[server_mask]
+                swift_galaxy = self._server._data_copy(
+                    server_mask, _data_server=self._server
+                )
                 swift_galaxy.halo_catalogue = self.halo_catalogue
                 if self.auto_recentre and self.coordinate_frame_from is not None:
                     raise ValueError(
@@ -666,7 +613,6 @@ class SWIFTGalaxies(object):
                 SOAP(
                     "my_soap.hdf5",
                     soap_index=[11, 22, 33],
-                    preload={"dark_matter.coordinates"},
                 ),
             )
             my_result = sgs.map(dm_median_position)
@@ -697,7 +643,6 @@ class SWIFTGalaxies(object):
                 "my_snapshot.hdf5",
                 SOAP("my_soap.hdf5",
                 soap_index=[11, 22, 33]),
-                preload={"dark_matter.coordinates"},
             )
             my_result = sg.map(
                 dm_median_position,
