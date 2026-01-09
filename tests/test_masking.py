@@ -26,6 +26,19 @@ reltol_nd = 1.0e-4
 
 class TestMaskingSWIFTGalaxy:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
+    def test_getattr_masking(self, sg, particle_name):
+        """
+        Test that we can mask with square bracket notation. Use an order reversing mask.
+        """
+        getattr(sg, particle_name).particle_ids
+        mask = np.s_[::-1]
+        new_sg = sg[MaskCollection(**{particle_name: mask})]
+        assert (
+            getattr(new_sg, particle_name).particle_ids[::-1]
+            == getattr(sg, particle_name).particle_ids
+        ).all()
+
+    @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_slice_mask(self, sg, particle_name, before_load):
         """

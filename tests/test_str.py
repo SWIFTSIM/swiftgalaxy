@@ -9,7 +9,6 @@ from swiftgalaxy.halo_catalogues import _MaskHelper
 
 
 class TestStr:
-
     def test_coordinate_helper_str(self, sg):
         """
         Check that we get a sensible string representation of a coordinate helper.
@@ -29,6 +28,12 @@ class TestStr:
             sg.gas.hydrogen_ionization_fractions._fullname
             == "gas.hydrogen_ionization_fractions"
         )
+
+    def test_dataset_fullname(self, sg):
+        """
+        Check that the _fullname of a dataset matches the dataset name.
+        """
+        assert sg.gas._fullname == "gas"
 
     def test_sg_string(self, sg):
         """
@@ -55,7 +60,6 @@ class TestStr:
         expected_repr = "expected repr"
 
         class DummyData(object):
-
             def __repr__(self):
                 return expected_repr
 

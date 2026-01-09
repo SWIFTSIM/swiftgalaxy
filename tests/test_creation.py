@@ -122,6 +122,13 @@ class TestSWIFTGalaxyCreation:
         # finally, check that we didn't lazy-load everything!
         assert sg.gas._particle_dataset._coordinates is None
 
+    def test_internal_refs(self, sg):
+        """
+        Check that datasets and namedcolumns store a reference to enclosing swiftgalaxy.
+        """
+        assert sg.gas._swiftgalaxy is sg
+        assert sg.gas.hydrogen_ionization_fractions._swiftgalaxy is sg
+
 
 class TestSWIFTGalaxiesCreation:
     def test_sgs_creation(self, sgs):
@@ -153,7 +160,6 @@ class TestSWIFTGalaxiesCreation:
 
 
 class TestDeletion:
-
     def test_dataset_deleter(self, sg):
         """
         Check that we can delete a dataset's array.

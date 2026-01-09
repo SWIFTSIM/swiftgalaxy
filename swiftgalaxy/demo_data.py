@@ -190,16 +190,7 @@ class WebExamples(object):
         from requests.exceptions import HTTPError
 
         try:
-            from tqdm.notebook import tqdm_notebook
-            from tqdm import tqdm as tqdm_standard
-
-            # figure out which progressbar style to use
-            try:
-                tqdm_notebook(leave=False).close()
-            except ImportError:
-                tqdm = tqdm_standard
-            else:  # pragma: no cover
-                tqdm = tqdm_notebook
+            from tqdm.autonotebook import tqdm
         except ImportError:  # pragma: no cover
             show_progressbar = False
         else:
