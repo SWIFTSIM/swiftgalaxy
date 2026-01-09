@@ -512,7 +512,9 @@ class SWIFTGalaxies(object):
             for igalaxy in target_indices:
                 self.halo_catalogue._mask_multi_galaxy(igalaxy)
                 server_mask = self.halo_catalogue._get_extra_mask(self._server)
-                swift_galaxy = self._server[server_mask]
+                swift_galaxy = self._server._data_copy(
+                    server_mask, _data_server=self._server
+                )
                 swift_galaxy.halo_catalogue = self.halo_catalogue
                 if self.auto_recentre and self.coordinate_frame_from is not None:
                     raise ValueError(
