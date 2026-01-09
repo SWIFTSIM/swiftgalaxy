@@ -30,7 +30,6 @@ from swiftgalaxy.halo_catalogues import Standalone, SOAP, Velociraptor, Caesar
 
 
 class TestSWIFTGalaxies:
-
     def test_eval_sparse_optimized_solution(self, toysnap):
         """
         Check that the sparse solution is chosen when optimal and matches expectations
@@ -196,7 +195,6 @@ class TestSWIFTGalaxies:
                         sgs._solution[k][i], dense_solution[k][i], atol=0
                     )
             else:
-                print(k, sgs._solution[k], dense_solution[k])
                 assert_allclose_units(
                     sgs._solution[k], dense_solution[k], atol=0.001 * u.Mpc
                 )
@@ -683,8 +681,7 @@ class TestSWIFTGalaxies:
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "Internal units (length and time) of coordinate_frame_from don't "
-                "match."
+                "Internal units (length and time) of coordinate_frame_from don't match."
             ),
         ):
             for sg_i in sgs:
@@ -701,3 +698,46 @@ class TestSWIFTGalaxies:
         )
         for sg in sgs:
             assert np.allclose(sg.centre, np.zeros(3))
+
+    def test_read_caching(self, toysnap):
+        """
+        Check that we can re-use "raw" data read for a region through the _data_server.
+        """
+        server = SWIFTGalaxy(
+            toysnap["toysnap_filename"],
+            ToyHF(snapfile=toysnap["toysnap_filename"], index=0, extra_mask=None),
+            auto_recentre=False,
+        )
+        client1 = SWIFTGalaxy(
+            toysnap["toysnap_filename"],
+            ToyHF(snapfile=toysnap["toysnap_filename"], index=0),
+            _data_server=server,
+        )
+        client2 = SWIFTGalaxy(
+            toysnap["toysnap_filename"],
+            ToyHF(snapfile=toysnap["toysnap_filename"], index=0),
+            _data_server=server,
+        )
+        assert client1._data_server is server
+        assert client1.gas._internal_dataset._masses is None
+        assert server.gas._internal_dataset._masses is None
+        client1.gas.masses  # trigger read
+        assert client1.gas._internal_dataset._masses is not None
+        assert server.gas._internal_dataset._masses is not None
+        assert (
+            client1.gas._internal_dataset._masses.shape
+            != server.gas._internal_dataset._masses.shape
+        )
+        assert not np.all(server.gas._internal_dataset._masses == 0)
+        # set cached data to new values (0's) so that we can make sure that we used it
+        server.gas._internal_dataset._masses *= 0
+        assert client2._data_server is server
+        assert client2.gas._internal_dataset._masses is None
+        assert server.gas._internal_dataset._masses is not None
+        client2.gas.masses  # trigger read: should just mask/transform cached data
+        assert client2.gas._internal_dataset._masses is not None
+        assert (
+            client2.gas._internal_dataset._masses.shape
+            != server.gas._internal_dataset._masses.shape
+        )
+        assert np.all(client2.gas._internal_dataset._masses == 0)

@@ -214,7 +214,6 @@ def _data_read_wrapper(prop: str) -> Callable:
         out : :class:`~swiftsimio.objects.cosmo_array`
             The data with any needed transformations and masks applied.
         """
-        # ACCESS THE SERVER AND WRITE TO THE SERVER AND SELF WHERE APPROPRIATE
         if getattr(self._internal_dataset, f"_{prop}") is None:
             # going to read from file: apply masks, transforms
             data = getattr(self._data_server._internal_dataset, prop)  # raw data loaded
