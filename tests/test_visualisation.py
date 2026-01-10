@@ -1,3 +1,5 @@
+"""Tests of integration of swiftsimio visualisation tools with swiftgalaxy."""
+
 import pytest
 import numpy as np
 import unyt as u
@@ -10,6 +12,8 @@ from swiftgalaxy import SWIFTGalaxy
 
 @pytest.mark.parametrize("periodic", [False, True])
 class TestRecenteredVisualisation:
+    """Tests for visualisation functions on swiftgalaxies with recentered coordinates."""
+
     @pytest.mark.parametrize("z_cut", [False, True])
     def test_recentered_projection(self, sg_autorecentre_off, z_cut, periodic):
         """We should be able to make the same projections whether we recentered or not."""

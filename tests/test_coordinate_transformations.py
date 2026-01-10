@@ -1,3 +1,5 @@
+"""Test routines handling coordinate transformations of :mod:`swiftgalaxy` objects."""
+
 import pytest
 import numpy as np
 import unyt as u
@@ -154,12 +156,16 @@ rot = np.array(
 
 
 class TestAutoCoordinateTransformations:
+    """Test coordinate transformations triggered internally."""
+
     @pytest.mark.parametrize(
         "particle_name, expected_xy, expected_z",
         [(k, expected_xy[k], expected_z[k]) for k in _present_particle_types.values()],
     )
     def test_auto_recentering(self, sg, particle_name, expected_xy, expected_z):
         """
+        Check that auto-recentering works.
+
         The galaxy particles should be around (0, 0, 0),
         not around (2, 2, 2) Mpc like they are in box coords.
         """
@@ -178,6 +184,8 @@ class TestAutoCoordinateTransformations:
         self, sg, particle_name, expected_vxy, expected_vz
     ):
         """
+        Check that auto-recentering works.
+
         The galaxy velocities should be around (0, 0, 0),
         the velocity centre is (200, 200, 200).
         """
@@ -190,10 +198,7 @@ class TestAutoCoordinateTransformations:
         [(k, expected_xy[k], expected_z[k]) for k in _present_particle_types.values()],
     )
     def test_auto_recentering_extra(self, sg, particle_name, expected_xy, expected_z):
-        """
-        Check that another array flagged to transform like coordinates
-        actually auto-recentres.
-        """
+        """Check that an array flagged to transform like coordinates auto-recentres."""
         xyz = getattr(sg, particle_name).extra_coordinates
         assert (np.abs(xyz[:, :2]) <= expected_xy).all()
         assert (np.abs(xyz[:, 2]) <= expected_z).all()
@@ -208,10 +213,7 @@ class TestAutoCoordinateTransformations:
     def test_auto_recentering_velocity_extra(
         self, sg, particle_name, expected_vxy, expected_vz
     ):
-        """
-        Check that another array flagged to transform like velocities
-        actually auto-recentres.
-        """
+        """Check that an array flagged to transform like velocities auto-recentres."""
         vxyz = getattr(sg, particle_name).extra_velocities
         assert (np.abs(vxyz[:, :2]) <= expected_vxy).all()
         assert (np.abs(vxyz[:, 2]) <= expected_vz).all()
@@ -314,6 +316,8 @@ class TestAutoCoordinateTransformations:
 
 
 class TestManualCoordinateTransformations:
+    """Test coordinate transformations triggered explicitly by users."""
+
     @pytest.mark.parametrize("coordinate_name", ("coordinates", "extra_coordinates"))
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
@@ -510,11 +514,14 @@ class TestManualCoordinateTransformations:
 
 
 class TestSequentialTransformations:
+    """Test multiple coordinate transformations applied in sequence."""
+
     @pytest.mark.parametrize("before_load", (True, False))
     def test_translate_then_rotate(self, sg, before_load):
         """
-        Check that sequential transformations work correctly. Combining
-        rotation and translation checks the implementation of the 4x4
+        Check that sequential transformations work correctly.
+
+        Combining rotation and translation checks the implementation of the 4x4
         transformation matrix.
         """
         xyz_before = sg.gas.coordinates
@@ -537,8 +544,9 @@ class TestSequentialTransformations:
     @pytest.mark.parametrize("before_load", (True, False))
     def test_rotate_then_translate(self, sg, before_load):
         """
-        Check that sequential transformations work correctly. Combining
-        rotation and translation checks the implementation of the 4x4
+        Check that sequential transformations work correctly.
+
+        Combining rotation and translation checks the implementation of the 4x4
         transformation matrix.
         """
         xyz_before = sg.gas.coordinates
@@ -561,8 +569,9 @@ class TestSequentialTransformations:
     @pytest.mark.parametrize("before_load", (True, False))
     def test_boost_then_rotate(self, sg, before_load):
         """
-        Check that sequential transformations work correctly. Combining
-        rotation and translation checks the implementation of the 4x4
+        Check that sequential transformations work correctly.
+
+        Combining rotation and translation checks the implementation of the 4x4
         transformation matrix.
         """
         vxyz_before = sg.gas.velocities
@@ -585,8 +594,9 @@ class TestSequentialTransformations:
     @pytest.mark.parametrize("before_load", (True, False))
     def test_rotate_then_boost(self, sg, before_load):
         """
-        Check that sequential transformations work correctly. Combining
-        rotation and translation checks the implementation of the 4x4
+        Check that sequential transformations work correctly.
+
+        Combining rotation and translation checks the implementation of the 4x4
         transformation matrix.
         """
         vxyz_before = sg.gas.velocities
@@ -608,8 +618,12 @@ class TestSequentialTransformations:
 
 
 class TestCopyingTransformations:
+    """Test coordinate transformations when the coordinate frame is copied."""
+
     def test_auto_recentering_with_copied_coordinate_frame(self, sg):
         """
+        Test valid input parameters when copying a coordinate frame.
+
         Check that a SWIFTGalaxy initialised to copy the coordinate frame
         of an existing SWIFTGalaxy needs auto_recentre=False.
         """
@@ -625,7 +639,7 @@ class TestCopyingTransformations:
             )
 
     def test_invalid_coordinate_frame_from(self, sg):
-        """Check that we get an error if coordinate_frame_from has mismatched internal units."""
+        """Check that if coordinate_frame_from has mismatched internal units we raise."""
         new_time_unit = u.s
         assert sg.metadata.units.time != new_time_unit
         sg.metadata.units.time = new_time_unit
@@ -639,8 +653,10 @@ class TestCopyingTransformations:
 
     def test_copied_coordinate_transform(self, sg):
         """
-        Check that a SWIFTGalaxy initialised to copy the coordinate frame
-        of an existing SWIFTGalaxy adopts the correct coordinate frame.
+        Check copuing coordinate frame when copying a coordinate frame.
+
+        A SWIFTGalaxy initialised to copy the coordinate frame of an existing SWIFTGalaxy
+        should adopt the correct coordinate frame.
         """
         sg.rotate(Rotation.from_matrix(rot))
         translation = cosmo_array(
@@ -663,8 +679,10 @@ class TestCopyingTransformations:
 
     def test_copied_velocity_transform(self, sg):
         """
-        Check that a SWIFTGalaxy initialised to copy the coordinate frame
-        of an existing SWIFTGalaxy adopts the correct velocity frame.
+        Check copying velocity frame when copying a coordinate frame.
+
+        A SWIFTGalaxy initialised to copy the coordinate frame of an existing SWIFTGalaxy
+        should adopt the correct velocity frame.
         """
         sg.rotate(Rotation.from_matrix(rot))
         translation = cosmo_array(
@@ -687,12 +705,11 @@ class TestCopyingTransformations:
 
 
 class TestApplyTranslation:
+    """Unit test the _apply_translation method."""
+
     @pytest.mark.parametrize("comoving", [True, False])
     def test_comoving_physical_conversion(self, comoving):
-        """
-        The _apply_translation function should convert the offset to
-        match the coordinates.
-        """
+        """Test that _apply_translation converts the offset to match the coordinates."""
         coords = cosmo_array(
             [[1, 2, 3], [4, 5, 6]],
             units=u.Mpc,
@@ -738,11 +755,14 @@ class TestApplyTranslation:
 
 
 class TestApply4Transform:
+    """Unit test the _apply_4transform method."""
+
     @pytest.mark.parametrize("comoving", [True, False])
     def test_comoving_physical_conversion(self, comoving):
         """
-        The _apply_4transform function should return comoving if input
-        was comoving, physical otherwise.
+        Test that _apply_4transform function returns comoving if input was comoving.
+
+        Physical otherwise.
         """
         coords = cosmo_array(
             [[1, 2, 3], [4, 5, 6]],
@@ -757,6 +777,8 @@ class TestApply4Transform:
 
 
 class TestCoordinateProperties:
+    """Test accessing properties related to coordinate transformations."""
+
     def test_centre(self, sg):
         """Check the centre attribute."""
         new_centre = cosmo_array(

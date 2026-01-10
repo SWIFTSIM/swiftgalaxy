@@ -1,3 +1,5 @@
+"""Test the various wrapper classes that give a common interface for halo catalogues."""
+
 from pathlib import Path
 import re
 import pytest
@@ -53,6 +55,8 @@ reltol_nd = 1.0e-4
 
 
 class TestHaloCatalogues:
+    """Test behaviour generic to all catalogue types."""
+
     def test_get_spatial_mask(self, hf, toysnap):
         """Check that we get spatial masks that we expect."""
         # don't use sg fixture here, just need the snapshot file
@@ -260,7 +264,7 @@ class TestHaloCatalogues:
         )
 
     def test_velocity_centre(self, hf):
-        """Check that the velocity_centre function returns the expected velocity centre."""
+        """Check that the velocity_centre function returns expected velocity centre."""
         # default is minpot == 200. km/s
         assert_allclose_units(
             hf.velocity_centre,
@@ -277,6 +281,8 @@ class TestHaloCatalogues:
 
 
 class TestHaloCataloguesMulti:
+    """Test behaviour of catalogues targeting multiple objects for iteration."""
+
     def test_multi_flags(self, hf_multi):
         """Check that the multi-target nature of the cataloue is recognized."""
         assert hf_multi._multi_galaxy
@@ -461,6 +467,7 @@ class TestHaloCataloguesMulti:
         assert indices_with_mask == 0
 
     def test_masked_catalogue_matches(self, hf_multi):
+        """Test that a masked multi-catalogue agrees with the single-object equivalent."""
         mask_index = 0
         init_args = {"extra_mask": hf_multi.extra_mask}
         if hf_multi.__class__ != Standalone:
@@ -505,10 +512,12 @@ class TestHaloCataloguesMulti:
         elif hf_multi.__class__ == Standalone:
             pass  # has no catalogue to check
         else:
-            raise NotImplementedError  # a new class we're not checking
+            raise NotImplementedError  # a new class that we should be checking
 
 
 class TestVelociraptor:
+    """Test things specific to the Velociraptor wrapper class."""
+
     def test_load(self, vr):
         """Check that the loading function is doing it's job."""
         # _load called during super().__init__
@@ -624,6 +633,8 @@ class TestVelociraptor:
 
 class TestVelociraptorWithSWIFTGalaxy:
     """
+    Test things specific to the interaction between Velociraptor and SWIFTGalaxy.
+
     Most interaction between the halo catalogue and swiftgalaxy.reader.SWIFTGalaxy
     is tested using the toysnap.ToyHF testing class (that inherits from
     swiftgalaxy.halo_catalogues._HaloCatalogue). Here we just want to test anything
@@ -631,10 +642,7 @@ class TestVelociraptorWithSWIFTGalaxy:
     """
 
     def test_catalogue_exposed(self, sg_vr):
-        """
-        Check that exposing the halo properties is working, through the
-        SWIFTGalaxy object.
-        """
+        """Check that we can expose the halo properties through the SWIFTGalaxy object."""
         assert_allclose_units(
             sg_vr.halo_catalogue.masses.mvir,
             1.0e12 * u.Msun,
@@ -645,8 +653,9 @@ class TestVelociraptorWithSWIFTGalaxy:
     @pytest.mark.parametrize("particle_type", _present_particle_types.values())
     def test_masks_compatible(self, sg_vr, particle_type):
         """
-        Check that the bound_only default mask works with the spatial mask,
-        giving the expected shapes for arrays.
+        Check that the bound_only default mask works with the spatial mask.
+
+        It should give the expected shapes for arrays.
         """
         assert (
             getattr(sg_vr, particle_type).masses.size
@@ -656,6 +665,7 @@ class TestVelociraptorWithSWIFTGalaxy:
         )
 
     def test_with_swiftgalaxies(self, sgs_vr):
+        """Check that velociraptor catalogue work with the iteration helper."""
         for sg_from_sgs in sgs_vr:
             sg = SWIFTGalaxy(
                 sg_from_sgs.snapshot_filename,
@@ -672,8 +682,9 @@ class TestVelociraptorWithSWIFTGalaxy:
 
     def test_lazy_masking_sg(self, sg_vr):
         """
-        Check that lazy masks are evaluated only when needed, loading and masking exactly
-        the expected data.
+        Check that lazy masks are evaluated only when needed.
+
+        They should load and mask exactly the expected data.
         """
         # check that masks aren't evaluated
         for ptype in sg_vr.metadata.present_group_names:
@@ -702,6 +713,8 @@ class TestVelociraptorWithSWIFTGalaxy:
 
 
 class TestCaesar:
+    """Test things specific to the Caesar catalogue wrapper."""
+
     def test_load(self, caesar):
         """Check that the loading function is doing it's job."""
         # _load called during super().__init__
@@ -793,10 +806,7 @@ class TestCaesar:
         self.test_catalogue_exposed(caesar_multi)
 
     def test_spatial_mask_applied(self, caesar, toysnap):
-        """
-        Check that we get the expected number of particles when only the spatial mask is
-        applied.
-        """
+        """Check we get expected number of particles with only the spatial mask."""
         caesar.extra_mask = None  # apply only the spatial mask
         sg = SWIFTGalaxy(toysnap["toysnap_filename"], caesar)
         for particle_type in _present_particle_types.values():
@@ -840,16 +850,18 @@ class TestCaesar:
 
     def test_prevent_infinite_attribute_recursion(self, caesar):
         """
-        Check that we can access the private catalogue object without entering an infinite
-        loop.
+        Check that we can access the private catalogue without entering an infinite loop.
+
+        The danger is during initialization before the _catalogue attribute exists.
         """
-        # the danger is during initialization before the _catalogue attribute exists
         del caesar._catalogue
         assert caesar._catalogue is None
 
 
 class TestCaesarWithSWIFTGalaxy:
     """
+    Test things specific to the interaction between Caesar and SWIFTGalaxy.
+
     Most interaction between the halo catalogue and swiftgalaxy.reader.SWIFTGalaxy
     is tested using the toysnap.ToyHF testing class (that inherits from
     swiftgalaxy.halo_catalogues._HaloCatalogue). Here we just want to test anything
@@ -857,10 +869,7 @@ class TestCaesarWithSWIFTGalaxy:
     """
 
     def test_catalogue_exposed(self, sg_caesar):
-        """
-        Check that exposing the halo properties is working, through the
-        SWIFTGalaxy object.
-        """
+        """Check that we expose the halo properties through the SWIFTGalaxy object."""
         if hasattr(sg_caesar.halo_catalogue, "virial_quantities"):
             assert_allclose_units(
                 sg_caesar.halo_catalogue.virial_quantities["m200c"],
@@ -881,8 +890,9 @@ class TestCaesarWithSWIFTGalaxy:
     @pytest.mark.parametrize("particle_type", _present_particle_types.values())
     def test_masks_compatible(self, sg_caesar, particle_type):
         """
-        Check that the bound_only default mask works with the spatial mask,
-        giving the expected shapes for arrays.
+        Check that the bound_only default mask works with the spatial mask.
+
+        It should give the expected shapes for arrays.
         """
         expected_dm = 0 if sg_caesar.halo_catalogue.group_type == "galaxy" else _n_dm_1
         assert (
@@ -893,6 +903,7 @@ class TestCaesarWithSWIFTGalaxy:
         )
 
     def test_with_swiftgalaxies(self, sgs_caesar):
+        """Check that Caesar is compatible with the iteration helper."""
         for sg_from_sgs in sgs_caesar:
             sg = SWIFTGalaxy(
                 sg_from_sgs.snapshot_filename,
@@ -917,8 +928,9 @@ class TestCaesarWithSWIFTGalaxy:
     @pytest.mark.parametrize("group_type", ["halo", "galaxy"])
     def test_incomplete_catalogue(self, toysnap, group_type):
         """
-        Check that we can tolerate missing particle membership information for arbitrary
-        particle types in a caesar catalogue.
+        Check that we can tolerate missing particle membership information.
+
+        This should work for arbitrary particle types in a caesar catalogue.
         """
         pytest.importorskip("caesar")
         toycaesar_filename = (
@@ -945,8 +957,9 @@ class TestCaesarWithSWIFTGalaxy:
 
     def test_lazy_masking_sg(self, sg_caesar):
         """
-        Check that lazy masks are evaluated only when needed, loading and masking exactly
-        the expected data.
+        Check that lazy masks are evaluated only when needed.
+
+        They should load and mask exactly the expected data.
         """
         # check that masks aren't evaluated
         for ptype in sg_caesar.metadata.present_group_names:
@@ -973,11 +986,10 @@ class TestCaesarWithSWIFTGalaxy:
 
 
 class TestStandalone:
+    """Test things specific to the standalone pseudo-catalogue."""
+
     def test_spatial_mask_applied(self, sa, toysnap):
-        """
-        Check that we get the expected number of particles when only the spatial mask is
-        applied.
-        """
+        """Check we get expected number of particles with only the spatial mask."""
         sa.extra_mask = None  # apply only the spatial mask
         sg = SWIFTGalaxy(toysnap["toysnap_filename"], sa)
         for particle_type in _present_particle_types.values():
@@ -1056,8 +1068,9 @@ class TestStandalone:
 
     def test_other_invalid_input(self):
         """
-        Check that trying to use a bound_only mask fails, and that omitting
-        spatial_offsets with multiple galaxies fails.
+        Check that other invalid inputs raise.
+
+        Using bound_only, or omitting spatial_offsets with multiple galaxies should fail.
         """
         with pytest.raises(
             ValueError, match="extra_mask='bound_only' is not supported"
@@ -1113,6 +1126,8 @@ class TestStandalone:
 
     def test_mask_index_is_none(self, sa):
         """
+        Test that Standalone does not have a mask index.
+
         The standalone class has no catalogue rows to be masked so should not define a
         mask index.
         """
@@ -1130,6 +1145,8 @@ class TestStandalone:
 
 class TestStandaloneWithSWIFTGalaxy:
     """
+    Test things specific to the interaction of the Standalone catalogue and SWIFTGalaxy.
+
     Most interaction between the halo catalogue and swiftgalaxy.reader.SWIFTGalaxy
     is tested using the toysnap.ToyHF testing class (that inherits from
     swiftgalaxy.halo_catalogues._HaloCatalogue). Here we just want to test anything
@@ -1138,8 +1155,9 @@ class TestStandaloneWithSWIFTGalaxy:
 
     def test_lazy_masking_sg(self, sg_sa):
         """
-        Check that lazy masks are evaluated only when needed, loading and masking exactly
-        the expected data.
+        Check that lazy masks are evaluated only when needed.
+
+        They should load and mask exactly the expected data.
         """
         # check that masks aren't evaluated
         for ptype in sg_sa.metadata.present_group_names:
@@ -1171,6 +1189,8 @@ class TestStandaloneWithSWIFTGalaxy:
 
 
 class TestSOAP:
+    """Test things specific to the SOAP catalogue wrapper."""
+
     def test_load(self, soap):
         """Check that the loading function is doing it's job."""
         # _load called during super().__init__
@@ -1307,6 +1327,8 @@ class TestSOAP:
 
 class TestSOAPWithSWIFTGalaxy:
     """
+    Test things specific to the interaction between SOAP and SWIFTGalaxy.
+
     Most interaction between the halo catalogue and swiftgalaxy.reader.SWIFTGalaxy
     is tested using the toysnap.ToyHF testing class (that inherits from
     swiftgalaxy.halo_catalogues._HaloCatalogue). Here we just want to test anything
@@ -1314,10 +1336,7 @@ class TestSOAPWithSWIFTGalaxy:
     """
 
     def test_catalogue_exposed(self, sg_soap):
-        """
-        Check that exposing the halo properties is working, through the
-        SWIFTGalaxy object.
-        """
+        """Check that we expose the halo properties through the SWIFTGalaxy object."""
         # pick a couple of attributes to check
         assert_allclose_units(
             sg_soap.halo_catalogue.input_halos_hbtplus.host_fofid,
@@ -1339,8 +1358,9 @@ class TestSOAPWithSWIFTGalaxy:
     @pytest.mark.parametrize("particle_type", _present_particle_types.values())
     def test_masks_compatible(self, sg_soap, particle_type):
         """
-        Check that the bound_only default mask works with the spatial mask,
-        giving the expected shapes for arrays.
+        Check that the bound_only default mask works with the spatial mask.
+
+        It should give the expected shapes for arrays.
         """
         assert (
             getattr(sg_soap, particle_type).masses.size
@@ -1350,6 +1370,7 @@ class TestSOAPWithSWIFTGalaxy:
         )
 
     def test_with_swiftgalaxies(self, sgs_soap):
+        """Test that SOAP is compatible with the iteration helper."""
         for sg_from_sgs in sgs_soap:
             sg = SWIFTGalaxy(
                 sg_from_sgs.snapshot_filename,
@@ -1366,8 +1387,9 @@ class TestSOAPWithSWIFTGalaxy:
 
     def test_lazy_masking_sg(self, sg_soap):
         """
-        Check that lazy masks are evaluated only when needed, loading and masking exactly
-        the expected data.
+        Check that lazy masks are evaluated only when needed.
+
+        They should load and mask exactly the expected data.
         """
         # check that masks aren't evaluated
         for ptype in sg_soap.metadata.present_group_names:
@@ -1396,6 +1418,8 @@ class TestSOAPWithSWIFTGalaxy:
 
 
 class TestMaskHelper:
+    """Test the lazy masking helper class."""
+
     def test_mask_applied(self):
         """Check that the mask helper applies the mask when getting an attribute."""
 

@@ -1,3 +1,5 @@
+"""Test the handling of coordinates evaluated from the directly stored coordinates."""
+
 import pytest
 import numpy as np
 import unyt as u
@@ -12,6 +14,8 @@ abstol_a = 1.0e-4 * u.rad
 
 
 class TestCartesianCoordinates:
+    """Test cartesian coordinate helper."""
+
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize(
         "coordinate_name, mask",
@@ -38,6 +42,8 @@ class TestCartesianCoordinates:
 
 
 class TestSphericalCoordinates:
+    """Test spherical coordinate helper."""
+
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("r", "radius"))
     @pytest.mark.filterwarnings(
@@ -203,6 +209,8 @@ class TestSphericalCoordinates:
 
 
 class TestCylindricalCoordinates:
+    """Test cylindrical coordinate helper."""
+
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("rho", "R", "radius"))
     def test_cylindrical_rho(self, sg, particle_name, alias):
@@ -305,6 +313,7 @@ class TestCylindricalCoordinates:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("z", "height"))
     def test_cylindrical_velocity_z(self, sg, particle_name, alias):
+        """Check that cylindrical vertical velocity matches direct computation."""
         cylindrical_v_z = getattr(
             getattr(sg, particle_name).cylindrical_velocities, alias
         )
@@ -325,6 +334,8 @@ class TestCylindricalCoordinates:
 
 
 class TestInteractionWithCoordinateTransformations:
+    """Test that derived coordinates transform with their source."""
+
     @pytest.mark.parametrize("coordinate_type", ("coordinates", "velocities"))
     @pytest.mark.parametrize("coordinate_system", ("spherical", "cylindrical"))
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
@@ -489,6 +500,8 @@ class TestInteractionWithCoordinateTransformations:
 
 
 class TestInteractionWithMasking:
+    """Test that coordinate data always share the mask of the source data."""
+
     @pytest.mark.parametrize("coordinate_type", ("coordinates", "velocities"))
     @pytest.mark.parametrize(
         "coordinate_system", ("cartesian", "spherical", "cylindrical")
@@ -502,6 +515,8 @@ class TestInteractionWithMasking:
         self, sg, coordinate_type, coordinate_system, particle_name, before_load
     ):
         """
+        Test that coordinate data evaluated later are masked.
+
         Check that when we mask the SWIFTGalaxy, derived coordinates loaded in
         the future are also masked.
         """
@@ -563,8 +578,9 @@ class TestInteractionWithMasking:
         self, sg, coordinate_name, coordinate_type
     ):
         """
-        Make sure an array is returned even for a single quantity (some
-        calculations tend to produce unyt_quantities, which have shape ()).
+        Make sure an array is returned even for a single quantity.
+
+        Some calculations tend to produce unyt_quantities, which have shape ``()``.
         The black hole arrays in the test data have a single particle.
         """
         assert (
@@ -583,8 +599,9 @@ class TestInteractionWithMasking:
         self, sg, coordinate_name, coordinate_type
     ):
         """
-        Make sure an array is returned even for a single quantity (some
-        calculations tend to produce unyt_quantities, which have shape ()).
+        Make sure an array is returned even for a single quantity.
+
+        Some calculations tend to produce unyt_quantities, which have shape ``()``.
         The black hole arrays in the test data have a single particle.
         """
         assert (
@@ -598,6 +615,7 @@ class TestInteractionWithMasking:
     def test_dir_for_tab_completion(self, sg):
         """
         Check that we can see coordinate names when using dir on the helper class.
+
         We don't test for an exhaustive list, as long as some appear all will.
         """
         for coord in ("x", "xyz"):

@@ -1,3 +1,5 @@
+"""Check version numbering consistency."""
+
 import importlib.metadata
 import swiftgalaxy
 

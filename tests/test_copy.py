@@ -1,3 +1,5 @@
+"""Test copying instances of our classes."""
+
 import numpy as np
 from copy import copy, deepcopy
 import pytest
@@ -12,6 +14,8 @@ reltol_nd = 1.0e-4
 
 
 class TestCopySWIFTGalaxy:
+    """Test copying instances of :class:`~swiftgalaxy.reader.SWIFTGalaxy`."""
+
     def test_copy_sg(self, sg):
         """Test that dataset arrays don't get copied on shallow copy."""
         # lazy load a dataset and a named column
@@ -75,6 +79,8 @@ class TestCopySWIFTGalaxy:
 
 
 class TestCopyDataset:
+    """Test copying instances of the dataset wrapper class."""
+
     def test_copy_dataset(self, sg):
         """Test that arrays don't get copied on shallow copy."""
         # lazy load a dataset and a named column
@@ -109,6 +115,8 @@ class TestCopyDataset:
 
 
 class TestCopyNamedColumns:
+    """Test copying instances of the named column dataset helper class."""
+
     def test_copy_namedcolumn(self, sg):
         """Test that columns don't get copied on shallow copy."""
         # lazy load a named column
@@ -132,6 +140,8 @@ class TestCopyNamedColumns:
 
 
 class TestCopyMaskCollection:
+    """Test copying instances of the mask collection helper."""
+
     def test_copy_mask_collection(self):
         """Test that masks get copied."""
         mc = MaskCollection(

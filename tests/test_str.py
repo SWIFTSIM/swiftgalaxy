@@ -7,6 +7,8 @@ from swiftgalaxy.halo_catalogues import _MaskHelper
 
 
 class TestStr:
+    """Tests of string representations of objects and other info strings."""
+
     def test_coordinate_helper_str(self, sg):
         """Check that we get a sensible string representation of a coordinate helper."""
         string = str(sg.gas.spherical_coordinates)
@@ -16,10 +18,7 @@ class TestStr:
         assert repr(sg.gas.spherical_coordinates) == string
 
     def test_namedcolumn_fullname(self, sg):
-        """
-        Check that the _fullname of a namedcolumns matches the dataset + namedcolumns
-        name.
-        """
+        """Check _fullname of a namedcolumns matches the dataset + namedcolumns name."""
         assert (
             sg.gas.hydrogen_ionization_fractions._fullname
             == "gas.hydrogen_ionization_fractions"
@@ -30,10 +29,7 @@ class TestStr:
         assert sg.gas._fullname == "gas"
 
     def test_sg_string(self, sg):
-        """
-        Check that the swiftgalaxy has a string representation (not the one from
-        SWIFTDataset).
-        """
+        """Check swiftgalaxy has a string representation (not from SWIFTDataset)."""
         string = str(sg)
         assert "SWIFTGalaxy at" in string
         assert repr(sg) == string

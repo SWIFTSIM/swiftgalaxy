@@ -1,25 +1,32 @@
 """
-Tests checking that we can create objects, if these fail something
-fundamental has gone wrong.
+Tests checking that we can create objects.
+
+If these fail something fundamental has gone wrong.
 """
 
 from pathlib import Path
 from swiftgalaxy.demo_data import _create_toyvr, _create_toycaesar, _create_toysoap
+from swiftgalaxy.halo_catalogues import Caesar, Velociraptor, SOAP, Standalone
+from swiftgalaxy.reader import SWIFTGalaxy
+from swiftgalaxy.iterator import SWIFTGalaxies
 
 
 class TestSWIFTGalaxyCreation:
+    """Test that our fixtures can create the objects that we want."""
+
     def test_sg_creation(self, sg):
         """Make sure we can create a SWIFTGalaxy without error."""
-        pass  # fixture created SWIFTGalaxy
+        assert isinstance(sg, SWIFTGalaxy)
 
     def test_soap_creation(self, soap):
         """Make sure we can create a SOAP without error."""
-        pass  # fixture created SOAP interface
+        assert isinstance(soap, SOAP)
 
     def test_soap_recreation(self, toysoap_with_virtual_snapshot):
         """
-        Make sure we can try to create a soap file set when one already
-        exists (from the fixture) without issue (should skip making files).
+        Make sure we can try to create a soap file set when one already exists.
+
+        This uses the fixture. We should skip making files.
         """
         assert toysoap_with_virtual_snapshot["toysoap_filename"].is_file()
         assert Path(
@@ -44,12 +51,13 @@ class TestSWIFTGalaxyCreation:
 
     def test_vr_creation(self, vr):
         """Make sure we can create a Velociraptor without error."""
-        pass  # fixture created Velociraptor interface
+        assert isinstance(vr, Velociraptor)
 
     def test_vr_recreation(self, vr):
         """
-        Make sure we can try to create a velociraptor file set when one already
-        exists (from the fixture) without issue (should skip making files).
+        Make sure we can try to create a velociraptor file set when one already exists.
+
+        This uses the fixture. We should skip making files.
         """
         for f in vr.velociraptor_files.values():
             assert Path(f).is_file()
@@ -58,40 +66,46 @@ class TestSWIFTGalaxyCreation:
 
     def test_caesar_creation(self, caesar):
         """Make sure we can create a Caesar without error."""
-        pass  # fixture created Caesar interface
+        assert isinstance(caesar, Caesar)
 
     def test_caesar_recreation(self, caesar):
         """
-        Make sure we can try to create a caesar file when one already exists (from
-        the fixture) without issue (should skip making the file).
+        Make sure we can try to create a caesar file when one already exists.
+
+        This uses the fixture. We should skip making the file.
         """
         assert caesar.caesar_file.is_file()
         _create_toycaesar(filename=caesar.caesar_file)
 
     def test_sa_creation(self, sa):
         """Make sure we can create a Standalone without error."""
-        pass  # fixture created Standalone interface
+        assert isinstance(sa, Standalone)
 
     def test_sg_soap_creation(self, sg_soap):
         """Make sure we can create a SWIFTGalaxy with SOAP without error."""
-        pass  # fixture created SWIFTGalaxy with SOAP interface
+        assert isinstance(sg_soap, SWIFTGalaxy)
+        assert isinstance(sg_soap.halo_finder, SOAP)
 
     def test_sg_vr_creation(self, sg_vr):
         """Make sure we can create a SWIFTGalaxy with velociraptor without error."""
-        pass  # fixture created SWIFTGalaxy with Velociraptor interface
+        assert isinstance(sg_vr, SWIFTGalaxy)
+        assert isinstance(sg_vr.halo_finder, Velociraptor)
 
     def test_sg_caesar_creation(self, sg_caesar):
         """Make sure we can create a SWIFTGalaxy with Caesar without error."""
-        pass  # fixture created SWIFTGalaxy with Caesar interface
+        assert isinstance(sg_caesar, SWIFTGalaxy)
+        assert isinstance(sg_caesar.halo_finder, Caesar)
 
     def test_sg_sa_creation(self, sg_sa):
         """Make sure we can create a SWIFTGalaxy with Standalone without error."""
-        pass  # fixture created SWIFTGalaxy with Standalone interface
+        assert isinstance(sg_sa, SWIFTGalaxy)
+        assert isinstance(sg_sa.halo_finder, Standalone)
 
     def test_tab_completion(self, sg):
         """
-        Check that particle dataset names and named column names are in
-        the namespace for tab completion via the dir() method.
+        Check that particle dataset names and named column names are tab-completeable.
+
+        They should be in the namespace for tab completion via the dir() method.
         """
         for prop in ("coordinates", "masses", "hydrogen_ionization_fractions"):
             # check some data fields & named column sets
@@ -105,41 +119,58 @@ class TestSWIFTGalaxyCreation:
         assert sg.gas._particle_dataset._coordinates is None
 
     def test_internal_refs(self, sg):
-        """Check that datasets and namedcolumns store a reference to enclosing swiftgalaxy."""
+        """Check that datasets and namedcolumns store a reference to their swiftgalaxy."""
         assert sg.gas._swiftgalaxy is sg
         assert sg.gas.hydrogen_ionization_fractions._swiftgalaxy is sg
 
 
 class TestSWIFTGalaxiesCreation:
+    """Test that our fixtures can create the objects that we want."""
+
     def test_sgs_creation(self, sgs):
-        pass  # fixture created SWIFTGalaxies
+        """Test that the fixture creates a SWIFTGalaxies."""
+        assert isinstance(sgs, SWIFTGalaxies)
 
     def test_soap_multi_creation(self, soap_multi):
-        pass  # fixture created SOAP interface
+        """Test that the fixture creates a SOAP."""
+        assert isinstance(soap_multi, SOAP)
 
     def test_vr_creation(self, vr_multi):
-        pass  # fixture created Velociraptor interface
+        """Test that the fixture creates a Velociraptor."""
+        assert isinstance(vr_multi, Velociraptor)
 
     def test_caesar_creation(self, caesar_multi):
-        pass  # fixture created Caesar interface
+        """Test that the fixture creates a Caesar."""
+        assert isinstance(caesar_multi, Caesar)
 
     def test_sa_creation(self, sa_multi):
-        pass  # fixture created Standalone interface
+        """Test that the fixture creates a Standalone."""
+        assert isinstance(sa_multi, Standalone)
 
     def test_sgs_soap_creation(self, sgs_soap):
-        pass  # fixture created SWIFTGalaxy with SOAP interface
+        """Test that the fixture creates a SWIFTGalaxies with SOAP."""
+        assert isinstance(sgs_soap, SWIFTGalaxies)
+        assert isinstance(sgs_soap.halo_catalogue, SOAP)
 
     def test_sgs_vr_creation(self, sgs_vr):
-        pass  # fixture created SWIFTGalaxy with Velociraptor interface
+        """Test that the fixture creates a SWIFTGalaxies with Velociraptor."""
+        assert isinstance(sgs_vr, SWIFTGalaxies)
+        assert isinstance(sgs_vr.halo_catalogue, Velociraptor)
 
     def test_sgs_caesar_creation(self, sgs_caesar):
-        pass  # fixture created SWIFTGalaxy with Caesar interface
+        """Test that the fixture creates a SWIFTGalaxies with Caesar."""
+        assert isinstance(sgs_caesar, SWIFTGalaxies)
+        assert isinstance(sgs_caesar.halo_catalogue, Caesar)
 
     def test_sgs_sa_creation(self, sgs_sa):
-        pass  # fixture created SWIFTGalaxy with Standalone interface
+        """Test that the fixture creates a SWIFTGalaxies with Standalone."""
+        assert isinstance(sgs_sa, SWIFTGalaxies)
+        assert isinstance(sgs_sa.halo_catalogue, Standalone)
 
 
 class TestDeletion:
+    """Test that datasets are deleteable."""
+
     def test_dataset_deleter(self, sg):
         """Check that we can delete a dataset's array."""
         sg.gas.coordinates  # lazy-load some data

@@ -23,9 +23,11 @@ reltol_nd = 1.0e-4
 
 
 class TestMaskingSWIFTGalaxy:
+    """Test applying masks to :class:`~swiftgalaxy.reader.SWIFTGalaxy` objects."""
+
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     def test_getattr_masking(self, sg, particle_name):
-        """Test that we can mask with square bracket notation. Use an order reversing mask."""
+        """Test masking with square bracket notation. Uses an order reversing mask."""
         getattr(sg, particle_name).particle_ids
         mask = np.s_[::-1]
         new_sg = sg[MaskCollection(**{particle_name: mask})]
@@ -51,10 +53,7 @@ class TestMaskingSWIFTGalaxy:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_int_mask(self, sg, particle_name, before_load):
-        """
-        Test whether an integer array mask that re-orders elements and changes
-        the array length works.
-        """
+        """Test an integer array mask that re-orders elements and changes the length."""
         ids_before = getattr(sg, particle_name).particle_ids
         mask = np.arange(ids_before.size)
         # randomize order (in-place operation)
@@ -102,6 +101,7 @@ class TestMaskingSWIFTGalaxy:
     def test_mask_without_spatial_mask(self, tmp_path_factory):
         """
         Check that if we have no masks we read everything in the box (and warn about it).
+
         Then that we can still apply an extra mask, and a second one (there's specific
         logic for applying two consecutively).
         """
@@ -139,6 +139,8 @@ class TestMaskingSWIFTGalaxy:
 
 
 class TestMaskingParticleDatasets:
+    """Test applying masks to particle datasets."""
+
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_slice_mask(self, sg, particle_name, before_load):
@@ -156,10 +158,7 @@ class TestMaskingParticleDatasets:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_int_mask(self, sg, particle_name, before_load):
-        """
-        Test whether an integer array mask that re-orders elements and changes
-        the array length works.
-        """
+        """Test masking with an integer array: re-orders elements and changes length."""
         ids_before = getattr(sg, particle_name).particle_ids
         mask = np.arange(ids_before.size)
         # randomize order (in-place operation)
@@ -191,6 +190,8 @@ class TestMaskingParticleDatasets:
 
 
 class TestMaskingNamedColumnDatasets:
+    """Test applying masks to named column datasets."""
+
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_slice_mask(self, sg, before_load):
         """Test whether a slice mask that re-orders elements works."""
@@ -208,10 +209,7 @@ class TestMaskingNamedColumnDatasets:
 
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_int_mask(self, sg, before_load):
-        """
-        Test whether an integer array mask that re-orders elements and changes
-        the array length works.
-        """
+        """Test masking with an integer array: re-orders and changes the length."""
         fractions_before = sg.gas.hydrogen_ionization_fractions.neutral
         mask = np.arange(fractions_before.size)
         # randomize order (in-place operation)
@@ -246,13 +244,12 @@ class TestMaskingNamedColumnDatasets:
 
 
 class TestMultiModeMask:
-    """
-    Tests particular to masks when handling a halo catalogue with multiple galaxies
-    selected.
-    """
+    """Tests handling a halo catalogue with multiple galaxies selected."""
 
     def test_mask_multi_invalid(self, sg):
         """
+        Check that catalogues raise when accessing single row in multi mode.
+
         When a multi-galaxy halo catalogue object is not masked down to a single object,
         attempting to request a mask for a single object should raise.
         """
@@ -266,6 +263,8 @@ class TestMultiModeMask:
 
     def test_caesar_mask_catalogue(self, caesar_multi):
         """
+        Check that caesar catalogues raise when accessing single row in multi mode.
+
         If a caesar catalogue is in multi-galaxy mode and is not currently masked then
         trying to use the helper to select a single row when the catalogue isn't currently
         restricted to a single galaxy should raise.
@@ -328,10 +327,7 @@ class TestLazyMask:
         """Check that we can't trigger mask evaluation repeatedly."""
 
         class MF(object):
-            """
-            A simple class that behaves as a mask generator and counts how many times its
-            ``__call__`` is called.
-            """
+            """A mask generator that counts how many times its ``__call__`` is called."""
 
             call_counter: int = 0
 

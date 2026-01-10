@@ -1,3 +1,5 @@
+"""Set up fixtures and helpers for tests."""
+
 import pytest
 from pathlib import Path
 import numpy as np
@@ -44,6 +46,7 @@ hfs = ("vr", "caesar_halo", "caesar_galaxy", "sa", "soap")
 
 @pytest.fixture(scope="function")
 def toysnap(tmp_path_factory):
+    """Make a basic snapshot file."""
     toysnap_filename = (
         tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
     )
@@ -56,6 +59,7 @@ def toysnap(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def toysnap_withfof(tmp_path_factory):
+    """Make a snapshot file with FOF data for particles."""
     toysnap_filename = (
         tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
     )
@@ -68,6 +72,7 @@ def toysnap_withfof(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def toysoap_with_virtual_snapshot(tmp_path_factory):
+    """Make a SOAP dataset backed by a virtual snapshot file."""
     pytest.importorskip("compression")
     tp = tmp_path_factory.mktemp(_toysoap_filename.parent)
     toysoap_filename = tp / _toysoap_filename.name
@@ -100,6 +105,7 @@ def toysoap_with_virtual_snapshot(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sg(request, tmp_path_factory):
+    """Make a basic :class:`~swiftgalaxy.reader.SWIFTGalaxy`."""
     toysnap_filename = (
         tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
     )
@@ -117,6 +123,7 @@ def sg(request, tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sgs(request, tmp_path_factory):
+    """Make a basic :class:`~swiftgalaxy.iterator.SWIFTGalaxies`."""
     toysnap_filename = (
         tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
     )
@@ -132,6 +139,11 @@ def sgs(request, tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sg_custom_names(tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    With alternate names for coordinates, velocities and particle IDs.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_custom_names_filename = tp / "toysnap_custom_names.hdf5"
     alt_coord_name, alt_vel_name, alt_id_name = "my_coords", "my_vels", "my_ids"
@@ -158,6 +170,11 @@ def sg_custom_names(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sg_autorecentre_off(tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    With auto-recentering of the coordinate system switched off.
+    """
     toysnap_filename = (
         tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
     )
@@ -176,6 +193,11 @@ def sg_autorecentre_off(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sg_soap(tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    With a :class:`~swiftgalaxy.halo_catalogues.SOAP` halo catalogue.
+    """
     pytest.importorskip("compression")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
@@ -211,6 +233,11 @@ def sg_soap(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sgs_soap(tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.iterator.SWIFTGalaxies`.
+
+    With a :class:`~swiftgalaxy.halo_catalogues.SOAP` halo catalogue.
+    """
     pytest.importorskip("compression")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
@@ -246,6 +273,11 @@ def sgs_soap(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sg_vr(tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    With a :class:`~swiftgalaxy.halo_catalogues.Velociraptor` halo catalogue.
+    """
     pytest.importorskip("velociraptor")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
@@ -266,6 +298,11 @@ def sg_vr(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sgs_vr(tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.iterator.SWIFTGalaxies`.
+
+    With a :class:`~swiftgalaxy.halo_catalogues.Velociraptor` halo catalogue.
+    """
     pytest.importorskip("velociraptor")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
@@ -286,6 +323,11 @@ def sgs_vr(tmp_path_factory):
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
 def sg_caesar(request, tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    With a :class:`~swiftgalaxy.halo_catalogues.Caesar` halo catalogue.
+    """
     pytest.importorskip("caesar")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
@@ -306,6 +348,11 @@ def sg_caesar(request, tmp_path_factory):
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
 def sgs_caesar(request, tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.iterator.SWIFTGalaxies`.
+
+    With a :class:`~swiftgalaxy.halo_catalogues.Caesar` halo catalogue.
+    """
     pytest.importorskip("caesar")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
@@ -330,6 +377,7 @@ def sgs_caesar(request, tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def soap(tmp_path_factory):
+    """Make a :class:`~swiftgalaxy.halo_catalogues.SOAP` catalogue."""
     # no virtual snapshot needed, don't need importorskip("compression")
     toysoap_filename = (
         tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysoap_filename.name
@@ -348,6 +396,11 @@ def soap(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def soap_multi(tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues.SOAP` catalogue.
+
+    With multiple target galaxies.
+    """
     # no virtual snapshot needed, don't need importorskip("compression")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysoap_filename = tp / _toysoap_filename.name
@@ -367,6 +420,7 @@ def soap_multi(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def vr(tmp_path_factory):
+    """Make a :class:`~swiftgalaxy.halo_catalogues.Velociraptor` catalogue."""
     pytest.importorskip("velociraptor")
     toyvr_filebase = (
         tmp_path_factory.mktemp(_toyvr_filebase.parent) / _toyvr_filebase.name
@@ -380,6 +434,11 @@ def vr(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def vr_multi(tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues.Velociraptor` catalogue.
+
+    With multiple target galaxies.
+    """
     pytest.importorskip("velociraptor")
     toyvr_filebase = (
         tmp_path_factory.mktemp(_toyvr_filebase.parent) / _toyvr_filebase.name
@@ -393,6 +452,7 @@ def vr_multi(tmp_path_factory):
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
 def caesar(request, tmp_path_factory):
+    """Make a :class:`~swiftgalaxy.halo_catalogues.Caesar` catalogue."""
     pytest.importorskip("caesar")
     toycaesar_filename = (
         tmp_path_factory.mktemp(_toycaesar_filename.parent) / _toycaesar_filename.name
@@ -408,6 +468,11 @@ def caesar(request, tmp_path_factory):
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
 def caesar_multi(request, tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues.Caesar` catalogue.
+
+    With multiple target galaxies.
+    """
     pytest.importorskip("caesar")
     toycaesar_filename = (
         tmp_path_factory.mktemp(_toycaesar_filename.parent) / _toycaesar_filename.name
@@ -423,6 +488,7 @@ def caesar_multi(request, tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sa(tmp_path_factory):
+    """Make a :class:`~swiftgalaxy.halo_catalogues.Standalone` catalogue."""
     yield Standalone(
         extra_mask=MaskCollection(
             gas=np.s_[_n_g_b // 2 :],
@@ -456,6 +522,11 @@ def sa(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sa_multi(tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues.Standalone` catalogue.
+
+    With multiple target galaxies.
+    """
     yield Standalone(
         extra_mask=None,
         centre=cosmo_array(
@@ -490,6 +561,11 @@ def sa_multi(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sg_sa(tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    With :class:`~swiftgalaxy.halo_catalogues.Standalone` halo catalogue.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename)
@@ -530,6 +606,11 @@ def sg_sa(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def sgs_sa(tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.iterator.SWIFTGalaxies`.
+
+    With :class:`~swiftgalaxy.halo_catalogues.Standalone` halo catalogue.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename)
@@ -571,6 +652,7 @@ def sgs_sa(tmp_path_factory):
 
 @pytest.fixture(scope="function", params=hfs)
 def sg_hf(request, tmp_path_factory):
+    """Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy` with selectable halo catalogue."""
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
@@ -660,6 +742,7 @@ def sg_hf(request, tmp_path_factory):
 
 @pytest.fixture(scope="function", params=hfs)
 def hf(request, tmp_path_factory):
+    """Make a :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue` of selectable type."""
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     if request.param in {"caesar_halo", "caesar_galaxy"}:
         pytest.importorskip("caesar")
@@ -732,6 +815,11 @@ def hf(request, tmp_path_factory):
 
 @pytest.fixture(scope="function", params=hfs)
 def hf_multi(request, tmp_path_factory):
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue` of selectable type.
+
+    With multiple target galaxies.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
@@ -817,6 +905,12 @@ def hf_multi(request, tmp_path_factory):
 
 @pytest.fixture(scope="function", params=hfs)
 def hf_multi_forwards_and_backwards(request, tmp_path_factory):
+    """
+    Make two :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`s.
+
+    Their type is a selectable parameter. They have multiple target galaxies. The first of
+    the pair has the targets in forward order, the second in reverse order.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
@@ -947,6 +1041,12 @@ def hf_multi_forwards_and_backwards(request, tmp_path_factory):
 
 @pytest.fixture(scope="function", params=hfs)
 def hf_multi_onetarget(request, tmp_path_factory):
+    """
+    Make :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue` of selectable type.
+
+    There are "multiple targets" in the sense that there is a target list, but the list
+    has length 1.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
@@ -1027,6 +1127,12 @@ def hf_multi_onetarget(request, tmp_path_factory):
 
 @pytest.fixture(scope="function", params=hfs)
 def hf_multi_zerotarget(request, tmp_path_factory):
+    """
+    Make :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue` of selectable type.
+
+    There are "multiple targets" in the sense that there is a target list, but the list
+    has length 0.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
@@ -1105,9 +1211,11 @@ def hf_multi_zerotarget(request, tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def lm():
+    """Make a simple lazy mask."""
+
     def mf():
         """
-        A simple mask function.
+        Create a simple mask function.
 
         Returns
         -------
@@ -1122,11 +1230,13 @@ def lm():
 
 @pytest.fixture(scope="function")
 def generated_examples_tmpdir(tmp_path_factory):
+    """Make procedurally generated example data helper with a temporary directory."""
     generated_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
     return generated_examples
 
 
 @pytest.fixture(scope="function")
 def web_examples_tmpdir(tmp_path_factory):
+    """Make downloadable example data helper with a temporary directory."""
     web_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
     return web_examples
