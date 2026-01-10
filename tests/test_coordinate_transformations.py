@@ -223,9 +223,7 @@ class TestAutoCoordinateTransformations:
     def test_auto_recentering_custom_name(
         self, sg_custom_names, particle_name, expected_xy, expected_z
     ):
-        """
-        Recentering should still work if we set up a custom coordinates name.
-        """
+        """Recentering should still work if we set up a custom coordinates name."""
         custom_name = sg_custom_names.coordinates_dataset_name
         xyz = getattr(getattr(sg_custom_names, particle_name), f"{custom_name}")
         assert (np.abs(xyz[:, :2]) <= expected_xy).all()
@@ -241,9 +239,7 @@ class TestAutoCoordinateTransformations:
     def test_auto_recentering_velocity_custom_name(
         self, sg_custom_names, particle_name, expected_vxy, expected_vz
     ):
-        """
-        Recentering should still work if we set up a custom velocities name.
-        """
+        """Recentering should still work if we set up a custom velocities name."""
         custom_name = sg_custom_names.velocities_dataset_name
         vxyz = getattr(getattr(sg_custom_names, particle_name), f"{custom_name}")
         assert (np.abs(vxyz[:, :2]) <= expected_vxy).all()
@@ -256,9 +252,7 @@ class TestAutoCoordinateTransformations:
     def test_auto_recentering_off(
         self, sg_autorecentre_off, particle_name, expected_xy, expected_z
     ):
-        """
-        Positions should still be offcentre.
-        """
+        """Positions should still be offcentre."""
         xyz = getattr(sg_autorecentre_off, particle_name).coordinates
         assert (
             np.abs(
@@ -289,9 +283,7 @@ class TestAutoCoordinateTransformations:
     def test_auto_recentering_off_velocity(
         self, sg_autorecentre_off, particle_name, expected_vxy, expected_vz
     ):
-        """
-        Velocities should still be offcentre.
-        """
+        """Velocities should still be offcentre."""
         vxyz = getattr(sg_autorecentre_off, particle_name).velocities
         assert (
             np.abs(
@@ -326,9 +318,7 @@ class TestManualCoordinateTransformations:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_manual_recentring(self, sg, particle_name, coordinate_name, before_load):
-        """
-        Check that recentring places new centre where expected.
-        """
+        """Check that recentring places new centre where expected."""
         xyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         if before_load:
             setattr(
@@ -353,9 +343,7 @@ class TestManualCoordinateTransformations:
     def test_manual_recentring_velocity(
         self, sg, particle_name, velocity_name, before_load
     ):
-        """
-        Check that velocity recentring places new velocity centre correctly.
-        """
+        """Check that velocity recentring places new velocity centre correctly."""
         vxyz_before = getattr(getattr(sg, particle_name), f"{velocity_name}")
         if before_load:
             setattr(
@@ -378,9 +366,7 @@ class TestManualCoordinateTransformations:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_translate(self, sg, particle_name, coordinate_name, before_load):
-        """
-        Check that translation translates to expected location.
-        """
+        """Check that translation translates to expected location."""
         xyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         if before_load:
             setattr(
@@ -400,9 +386,7 @@ class TestManualCoordinateTransformations:
         assert_allclose_units(xyz_before + translation, xyz, rtol=1.0e-4, atol=abstol_c)
 
     def test_translate_warn_comoving_missing(self, sg):
-        """
-        If the translation does not have comoving information issue a warning.
-        """
+        """If the translation does not have comoving information issue a warning."""
         translation = u.unyt_array(
             [1, 1, 1],
             units=u.Mpc,
@@ -415,9 +399,7 @@ class TestManualCoordinateTransformations:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_boost(self, sg, particle_name, velocity_name, before_load):
-        """
-        Check that boost boosts to expected reference velocity.
-        """
+        """Check that boost boosts to expected reference velocity."""
         vxyz_before = getattr(getattr(sg, particle_name), f"{velocity_name}")
         if before_load:
             setattr(
@@ -443,9 +425,7 @@ class TestManualCoordinateTransformations:
     def test_rotation(
         self, sg, particle_name, coordinate_name, velocity_name, before_load
     ):
-        """
-        Check that an arbitrary rotation rotates positions and velocities.
-        """
+        """Check that an arbitrary rotation rotates positions and velocities."""
         xyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         vxyz_before = getattr(getattr(sg, particle_name), f"{velocity_name}")
         if before_load:
@@ -466,9 +446,7 @@ class TestManualCoordinateTransformations:
     @pytest.mark.parametrize("coordinate_name", ("coordinates", "extra_coordinates"))
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     def test_box_wrap(self, sg, particle_name, coordinate_name):
-        """
-        Check that translating by two box lengths wraps back to previous state.
-        """
+        """Check that translating by two box lengths wraps back to previous state."""
         xyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         sg.translate(-2 * sg.metadata.boxsize)  # -2x box size
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
@@ -478,9 +456,7 @@ class TestManualCoordinateTransformations:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_transform(self, sg, particle_name, coordinate_name, before_load):
-        """
-        Check that affine transformation works.
-        """
+        """Check that affine transformation works."""
         xyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         if before_load:
             setattr(
@@ -508,9 +484,7 @@ class TestManualCoordinateTransformations:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_transform_velocity(self, sg, particle_name, coordinate_name, before_load):
-        """
-        Check that affine transformation works.
-        """
+        """Check that affine transformation works."""
         xyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         if before_load:
             setattr(
@@ -651,9 +625,7 @@ class TestCopyingTransformations:
             )
 
     def test_invalid_coordinate_frame_from(self, sg):
-        """
-        Check that we get an error if coordinate_frame_from has mismatched internal units.
-        """
+        """Check that we get an error if coordinate_frame_from has mismatched internal units."""
         new_time_unit = u.s
         assert sg.metadata.units.time != new_time_unit
         sg.metadata.units.time = new_time_unit
@@ -715,7 +687,6 @@ class TestCopyingTransformations:
 
 
 class TestApplyTranslation:
-
     @pytest.mark.parametrize("comoving", [True, False])
     def test_comoving_physical_conversion(self, comoving):
         """
@@ -741,9 +712,7 @@ class TestApplyTranslation:
 
     @pytest.mark.parametrize("comoving", [True, False])
     def test_warn_comoving_missing(self, comoving):
-        """
-        If the offset does not have comoving information issue a warning.
-        """
+        """If the offset does not have comoving information issue a warning."""
         coords = cosmo_array(
             [[1, 2, 3], [4, 5, 6]],
             units=u.Mpc,
@@ -769,7 +738,6 @@ class TestApplyTranslation:
 
 
 class TestApply4Transform:
-
     @pytest.mark.parametrize("comoving", [True, False])
     def test_comoving_physical_conversion(self, comoving):
         """
@@ -789,11 +757,8 @@ class TestApply4Transform:
 
 
 class TestCoordinateProperties:
-
     def test_centre(self, sg):
-        """
-        Check the centre attribute.
-        """
+        """Check the centre attribute."""
         new_centre = cosmo_array(
             [1, 2, 3],
             units=u.Mpc,
@@ -808,9 +773,7 @@ class TestCoordinateProperties:
         )
 
     def test_velocity_centre(self, sg):
-        """
-        Check the velocity_centre attribute.
-        """
+        """Check the velocity_centre attribute."""
         new_centre = cosmo_array(
             [100, 200, 300],
             units=u.km / u.s,
@@ -825,8 +788,6 @@ class TestCoordinateProperties:
         )
 
     def test_rotation(self, sg):
-        """
-        Check the rotation attribute.
-        """
+        """Check the rotation attribute."""
         sg.rotate(Rotation.from_matrix(rot))
         assert np.allclose(sg.rotation.as_matrix(), rot)

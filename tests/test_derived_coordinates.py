@@ -28,9 +28,7 @@ class TestCartesianCoordinates:
     def test_cartesian_coordinates(
         self, sg, particle_name, coordinate_name, mask, coordinate_type, tol
     ):
-        """
-        Check that cartesian coordinates match the particle coordinates.
-        """
+        """Check that cartesian coordinates match the particle coordinates."""
         coordinate = getattr(getattr(sg, particle_name), coordinate_type)[mask]
         cartesian_coordinate = getattr(
             getattr(getattr(sg, particle_name), f"cartesian_{coordinate_type}"),
@@ -46,9 +44,7 @@ class TestSphericalCoordinates:
         "ignore:invalid value encountered in true_divide"
     )  # comes from r=0 particle, handled in definition of theta
     def test_spherical_r(self, sg, particle_name, alias):
-        """
-        Check spherical radius matches direct computation.
-        """
+        """Check spherical radius matches direct computation."""
         spherical_r = getattr(getattr(sg, particle_name).spherical_coordinates, alias)
         xyz = getattr(sg, particle_name).coordinates
         r_from_cartesian = np.sqrt(np.sum(np.power(xyz, 2), axis=1))
@@ -60,9 +56,7 @@ class TestSphericalCoordinates:
         "ignore:invalid value encountered in true_divide"
     )  # comes from r=0 particle, handled in definition of theta
     def test_spherical_velocity_r(self, sg, particle_name, alias):
-        """
-        Check spherical radial velocity matches direct computation.
-        """
+        """Check spherical radial velocity matches direct computation."""
         spherical_v_r = getattr(getattr(sg, particle_name).spherical_velocities, alias)
         xyz = getattr(sg, particle_name).coordinates
         vxyz = getattr(sg, particle_name).velocities
@@ -95,9 +89,7 @@ class TestSphericalCoordinates:
         "ignore:invalid value encountered in true_divide"
     )  # comes from r=0 particle, handled in definition of theta
     def test_spherical_theta(self, sg, particle_name, alias):
-        """
-        Check spherical polar angle matches direct computation.
-        """
+        """Check spherical polar angle matches direct computation."""
         spherical_theta = getattr(
             getattr(sg, particle_name).spherical_coordinates, alias
         )
@@ -120,9 +112,7 @@ class TestSphericalCoordinates:
         "ignore:invalid value encountered in true_divide"
     )  # comes from r=0 particle, handled in definition of theta
     def test_spherical_velocity_theta(self, sg, particle_name, alias):
-        """
-        Check spherical polar velocity matches direct computation.
-        """
+        """Check spherical polar velocity matches direct computation."""
         spherical_v_theta = getattr(
             getattr(sg, particle_name).spherical_velocities, alias
         )
@@ -157,9 +147,7 @@ class TestSphericalCoordinates:
         "ignore:invalid value encountered in true_divide"
     )  # comes from r=0 particle, handled in definition of theta
     def test_spherical_phi(self, sg, particle_name, alias):
-        """
-        Check spherical azimuthal angle matches direct computation.
-        """
+        """Check spherical azimuthal angle matches direct computation."""
         spherical_phi = getattr(getattr(sg, particle_name).spherical_coordinates, alias)
         xyz = getattr(sg, particle_name).coordinates
         phi_from_cartesian = np.arctan2(xyz[:, 1], xyz[:, 0]).view(np.ndarray)
@@ -181,9 +169,7 @@ class TestSphericalCoordinates:
         "ignore:invalid value encountered in true_divide"
     )  # comes from r=0 particle, handled in definition of theta
     def test_spherical_velocity_phi(self, sg, particle_name, alias):
-        """
-        Check spherical azimuthal velocity matches direct computation.
-        """
+        """Check spherical azimuthal velocity matches direct computation."""
         spherical_v_phi = getattr(
             getattr(sg, particle_name).spherical_velocities, alias
         )
@@ -208,9 +194,7 @@ class TestSphericalCoordinates:
 
     @pytest.mark.parametrize("ctype", ["coordinates", "velocities"])
     def test_copy_from_cylindrical(self, sg, ctype):
-        """
-        Check that copying the azimuth from cylindrical if already evaluated works.
-        """
+        """Check that copying the azimuth from cylindrical if already evaluated works."""
         getattr(sg.gas, f"cylindrical_{ctype}").phi  # trigger evaluation
         assert (
             getattr(sg.gas, f"spherical_{ctype}").phi
@@ -222,9 +206,7 @@ class TestCylindricalCoordinates:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("rho", "R", "radius"))
     def test_cylindrical_rho(self, sg, particle_name, alias):
-        """
-        Check cylindrical radius matches direct computation.
-        """
+        """Check cylindrical radius matches direct computation."""
         spherical_rho = getattr(
             getattr(sg, particle_name).cylindrical_coordinates, alias
         )
@@ -237,9 +219,7 @@ class TestCylindricalCoordinates:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("rho", "R", "radius"))
     def test_cylindrical_velocity_rho(self, sg, particle_name, alias):
-        """
-        Check cylindrical radial velocity matches direct computation.
-        """
+        """Check cylindrical radial velocity matches direct computation."""
         cylindrical_v_rho = getattr(
             getattr(sg, particle_name).cylindrical_velocities, alias
         )
@@ -265,9 +245,7 @@ class TestCylindricalCoordinates:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("phi", "lon", "longitude", "az", "azimuth"))
     def test_cylindrical_phi(self, sg, particle_name, alias):
-        """
-        Check that cylindrical azimuthal angle matches direct computation.
-        """
+        """Check that cylindrical azimuthal angle matches direct computation."""
         cylindrical_phi = getattr(
             getattr(sg, particle_name).cylindrical_coordinates, alias
         )
@@ -288,9 +266,7 @@ class TestCylindricalCoordinates:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("phi", "lon", "longitude", "az", "azimuth"))
     def test_cylindrical_velocity_phi(self, sg, particle_name, alias):
-        """
-        Check that cylindrical azimuthal velocity matches direct computation.
-        """
+        """Check that cylindrical azimuthal velocity matches direct computation."""
         cylindrical_v_phi = getattr(
             getattr(sg, particle_name).cylindrical_velocities, alias
         )
@@ -316,9 +292,7 @@ class TestCylindricalCoordinates:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("alias", ("z", "height"))
     def test_cylindrical_z(self, sg, particle_name, alias):
-        """
-        Check that cylindrical height matches direct computation.
-        """
+        """Check that cylindrical height matches direct computation."""
         cylindrical_z = getattr(
             getattr(sg, particle_name).cylindrical_coordinates, alias
         )
@@ -342,9 +316,7 @@ class TestCylindricalCoordinates:
 
     @pytest.mark.parametrize("ctype", ["coordinates", "velocities"])
     def test_copy_from_spherical(self, sg, ctype):
-        """
-        Check that copying the azimuth from spherical if already evaluated works.
-        """
+        """Check that copying the azimuth from spherical if already evaluated works."""
         getattr(sg.gas, f"spherical_{ctype}").phi  # trigger evaluation
         assert (
             getattr(sg.gas, f"cylindrical_{ctype}").phi
@@ -414,9 +386,7 @@ class TestInteractionWithCoordinateTransformations:
         transform_function,
         transform_arg,
     ):
-        """
-        Check that non-cartesian coordinates are deleted after transformations.
-        """
+        """Check that non-cartesian coordinates are deleted after transformations."""
         # load derived coordinates
         getattr(getattr(sg, particle_name), f"{coordinate_system}_{coordinate_type}")
         # check that they are loaded
@@ -485,9 +455,7 @@ class TestInteractionWithCoordinateTransformations:
     def test_cartesian_coordinates_transform(
         self, sg, particle_name, coordinate_type, transform_function, transform_arg
     ):
-        """
-        Check that cartesian coordinate views update with transformations.
-        """
+        """Check that cartesian coordinate views update with transformations."""
         # load cartesian coordinates
         before = getattr(getattr(sg, particle_name), f"cartesian_{coordinate_type}").xyz
         if coordinate_type == "coordinates":

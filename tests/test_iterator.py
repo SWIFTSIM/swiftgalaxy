@@ -242,9 +242,7 @@ class TestSWIFTGalaxies:
         assert count == len(sgs.halo_catalogue.index)
 
     def test_warn_on_no_preload(self, toysnap):
-        """
-        Check that we warn users if they specify anything to pre-load (deprecated).
-        """
+        """Check that we warn users if they specify anything to pre-load (deprecated)."""
         with pytest.warns(DeprecationWarning, match="Preloading is no longer required"):
             SWIFTGalaxies(
                 toysnap["toysnap_filename"],
@@ -367,9 +365,7 @@ class TestSWIFTGalaxies:
             _remove_toysnap(snapfile=toysnap_filename)
 
     def test_args_kwargs_to_map(self, sgs):
-        """
-        Make sure that we can pass extra args & kwargs to a function given to map.
-        """
+        """Make sure that we can pass extra args & kwargs to a function given to map."""
         extra_arg = [("foo",), ("bar",)]
         extra_kwarg = [dict(extra_kwarg="spam"), dict(extra_kwarg="eggs")]
 
@@ -512,9 +508,7 @@ class TestSWIFTGalaxies:
             _remove_toycaesar(filename=toycaesar_filename)
 
     def test_zero_targets(self, tmp_path_factory, hf_multi_zerotarget):
-        """
-        Make sure we don't crash with zero targets. Instead iterate over zero elements.
-        """
+        """Make sure we don't crash with zero targets. Instead iterate over zero elements."""
         if isinstance(hf_multi_zerotarget, SOAP):
             tp = hf_multi_zerotarget.soap_file.parent
         elif isinstance(hf_multi_zerotarget, Caesar):
@@ -544,9 +538,7 @@ class TestSWIFTGalaxies:
         assert len(map_result) == 0
 
     def test_one_target(self, tmp_path_factory, hf_multi_onetarget):
-        """
-        Make sure that we don't crash with a single target. Instead iterate over it.
-        """
+        """Make sure that we don't crash with a single target. Instead iterate over it."""
         if isinstance(hf_multi_onetarget, SOAP):
             tp = hf_multi_onetarget.soap_file.parent
         elif isinstance(hf_multi_onetarget, Caesar):
@@ -596,9 +588,7 @@ class TestSWIFTGalaxies:
             assert map_result == [0]  # standalone gets position in own catalogue: 0
 
     def test_catalogue_not_iterable(self, toysnap):
-        """
-        Check that trying to use a non-iterable catalogue raises.
-        """
+        """Check that trying to use a non-iterable catalogue raises."""
         with pytest.raises(
             ValueError, match="halo_catalogue target list is not iterable"
         ):
@@ -608,9 +598,7 @@ class TestSWIFTGalaxies:
             )
 
     def test_invalid_iteration_mode(self, toysnap):
-        """
-        Check that giving an invalid iteration mode raises.
-        """
+        """Check that giving an invalid iteration mode raises."""
         with pytest.raises(ValueError, match="optimize_iteration must be one of"):
             SWIFTGalaxies(
                 toysnap["toysnap_filename"],
@@ -619,9 +607,7 @@ class TestSWIFTGalaxies:
             )
 
     def test_coordinate_frame_from_and_auto_recentre_invalid(self, toysnap):
-        """
-        Check that inheriting a coordinate frame and auto-recentering are incompatible.
-        """
+        """Check that inheriting a coordinate frame and auto-recentering are incompatible."""
         sg = SWIFTGalaxy(
             toysnap["toysnap_filename"],
             ToyHF(snapfile=toysnap["toysnap_filename"], index=0),
@@ -639,9 +625,7 @@ class TestSWIFTGalaxies:
                 pass
 
     def test_coordinate_frame_from_in_iteration(self, toysnap):
-        """
-        Check that we can borrow a coordinate frame when iterating.
-        """
+        """Check that we can borrow a coordinate frame when iterating."""
         sg = SWIFTGalaxy(
             toysnap["toysnap_filename"],
             ToyHF(snapfile=toysnap["toysnap_filename"], index=0),
@@ -664,9 +648,7 @@ class TestSWIFTGalaxies:
             assert np.allclose(sg.halo_catalogue.centre - translation, sg_i.centre)
 
     def test_internal_units_mismatch_in_coordinate_frame_from(self, toysnap):
-        """
-        Check that incompatible internal units raises.
-        """
+        """Check that incompatible internal units raises."""
         sg = SWIFTGalaxy(
             toysnap["toysnap_filename"],
             ToyHF(snapfile=toysnap["toysnap_filename"], index=0),
@@ -688,9 +670,7 @@ class TestSWIFTGalaxies:
                 pass
 
     def test_auto_recentre_off(self, toysnap):
-        """
-        Check that we can switch of auto-recentering in iteration.
-        """
+        """Check that we can switch of auto-recentering in iteration."""
         sgs = SWIFTGalaxies(
             toysnap["toysnap_filename"],
             ToyHF(snapfile=toysnap["toysnap_filename"], index=[0, 1]),
@@ -700,9 +680,7 @@ class TestSWIFTGalaxies:
             assert np.allclose(sg.centre, np.zeros(3))
 
     def test_read_caching(self, toysnap):
-        """
-        Check that we can re-use "raw" data read for a region through the _data_server.
-        """
+        """Check that we can re-use "raw" data read for a region through the _data_server."""
         server = SWIFTGalaxy(
             toysnap["toysnap_filename"],
             ToyHF(snapfile=toysnap["toysnap_filename"], index=0, extra_mask=None),

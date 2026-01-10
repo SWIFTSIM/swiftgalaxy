@@ -45,7 +45,7 @@ class LazyMask(object):
         self,
         mask: Optional[Union[slice, EllipsisType, ArrayLike]] = None,
         mask_function: Optional[Callable] = None,
-    ):
+    ) -> None:
         if mask_function is None and mask is None:
             self._mask = None
             self._evaluated = True
@@ -60,9 +60,7 @@ class LazyMask(object):
         return
 
     def _evaluate(self) -> None:
-        """
-        Forces evaluation the mask function.
-        """
+        """Forces evaluation the mask function."""
         if not self._evaluated:
             assert self._mask_function is not None  # placate mypy
             self._mask = self._mask_function()
@@ -209,7 +207,6 @@ class MaskCollection(object):
 
     Parameters
     ----------
-
     **kwargs
         Any items passed as kwargs will have their values passed to
         correspondingly named attributes of this object.

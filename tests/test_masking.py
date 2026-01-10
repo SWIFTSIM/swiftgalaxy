@@ -1,6 +1,4 @@
-"""
-Tests for applying masks to swiftgalaxy, datasets and named columns.
-"""
+"""Tests for applying masks to swiftgalaxy, datasets and named columns."""
 
 import pytest
 from copy import copy, deepcopy
@@ -27,9 +25,7 @@ reltol_nd = 1.0e-4
 class TestMaskingSWIFTGalaxy:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     def test_getattr_masking(self, sg, particle_name):
-        """
-        Test that we can mask with square bracket notation. Use an order reversing mask.
-        """
+        """Test that we can mask with square bracket notation. Use an order reversing mask."""
         getattr(sg, particle_name).particle_ids
         mask = np.s_[::-1]
         new_sg = sg[MaskCollection(**{particle_name: mask})]
@@ -41,9 +37,7 @@ class TestMaskingSWIFTGalaxy:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_slice_mask(self, sg, particle_name, before_load):
-        """
-        Test whether a slice mask that re-orders elements works.
-        """
+        """Test whether a slice mask that re-orders elements works."""
         mask = np.s_[::-1]
         ids_before = getattr(sg, particle_name).particle_ids
         if before_load:
@@ -78,9 +72,7 @@ class TestMaskingSWIFTGalaxy:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_bool_mask(self, sg, particle_name, before_load):
-        """
-        Test whether a boolean array mask works.
-        """
+        """Test whether a boolean array mask works."""
         ids_before = getattr(sg, particle_name).particle_ids
         # randomly keep about half of particles
         mask = np.random.rand(ids_before.size) > 0.5
@@ -94,9 +86,7 @@ class TestMaskingSWIFTGalaxy:
 
     @pytest.mark.parametrize("before_load", (True, False))
     def test_namedcolumn_masked(self, sg, before_load):
-        """
-        Test that named columns get masked too.
-        """
+        """Test that named columns get masked too."""
         neutral_before = sg.gas.hydrogen_ionization_fractions.neutral
         mask = np.random.rand(neutral_before.size) > 0.5
         if before_load:
@@ -152,9 +142,7 @@ class TestMaskingParticleDatasets:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_slice_mask(self, sg, particle_name, before_load):
-        """
-        Test whether a slice mask that re-orders elements works.
-        """
+        """Test whether a slice mask that re-orders elements works."""
         mask = np.s_[::-1]
         ids_before = getattr(sg, particle_name).particle_ids
         if before_load:
@@ -189,9 +177,7 @@ class TestMaskingParticleDatasets:
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
     @pytest.mark.parametrize("before_load", (True, False))
     def test_bool_mask(self, sg, particle_name, before_load):
-        """
-        Test whether a boolean array mask works.
-        """
+        """Test whether a boolean array mask works."""
         ids_before = getattr(sg, particle_name).particle_ids
         # randomly keep about half of particles
         mask = np.random.rand(ids_before.size) > 0.5
@@ -207,9 +193,7 @@ class TestMaskingParticleDatasets:
 class TestMaskingNamedColumnDatasets:
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_slice_mask(self, sg, before_load):
-        """
-        Test whether a slice mask that re-orders elements works.
-        """
+        """Test whether a slice mask that re-orders elements works."""
         mask = np.s_[::-1]
         fractions_before = sg.gas.hydrogen_ionization_fractions.neutral
         if before_load:
@@ -246,9 +230,7 @@ class TestMaskingNamedColumnDatasets:
 
     @pytest.mark.parametrize("before_load", (True, False))
     def test_bool_mask(self, sg, before_load):
-        """
-        Test whether a boolean array mask works.
-        """
+        """Test whether a boolean array mask works."""
         fractions_before = sg.gas.hydrogen_ionization_fractions.neutral
         # randomly keep about half of particles
         mask = np.random.rand(fractions_before.size) > 0.5
@@ -295,22 +277,16 @@ class TestMultiModeMask:
 
 
 class TestLazyMask:
-    """
-    Unit tests for the LazyMask class itself.
-    """
+    """Unit tests for the LazyMask class itself."""
 
     def test_init_lazy(self, lm):
-        """
-        Check that initializing in lazy mode works.
-        """
+        """Check that initializing in lazy mode works."""
         assert lm._evaluated is False
         assert lm._mask_function is not None  # also implies it exists
         assert not hasattr(lm, "_mask")
 
     def test_init_concrete(self):
-        """
-        Check that initializing with a concrete mask works.
-        """
+        """Check that initializing with a concrete mask works."""
         m = np.ones(10, dtype=bool)
         lm = LazyMask(mask=m)
         assert lm._evaluated
@@ -318,18 +294,14 @@ class TestLazyMask:
         assert lm._mask_function is None
 
     def test_init_none(self):
-        """
-        Check that initializing with ``None`` works (i.e. no mask).
-        """
+        """Check that initializing with ``None`` works (i.e. no mask)."""
         lm = LazyMask(mask=None)
         assert lm._evaluated
         assert lm._mask is None
         assert not hasattr(lm, "_mask_function")
 
     def test_trigger_eval(self, lm):
-        """
-        Check that accessing mask triggers evaluation if lazy.
-        """
+        """Check that accessing mask triggers evaluation if lazy."""
         assert lm._evaluated is False
         assert not hasattr(lm, "_mask")
         assert (lm.mask == lm._mask_function()).all()
@@ -337,19 +309,14 @@ class TestLazyMask:
         assert (lm._mask == lm._mask_function()).all()
 
     def test_access_not_lazy(self):
-        """
-        Check that accessing the mask works for a non-lazy mask.
-        """
+        """Check that accessing the mask works for a non-lazy mask."""
         m = np.ones(10, dtype=bool)
         lm = LazyMask(mask=m)
         assert lm._evaluated
         assert (lm.mask == m).all()
 
     def test_manual_trigger_eval(self, lm):
-        """
-        Check that accessing mask triggers evaluation if lazy.
-        """
-
+        """Check that accessing mask triggers evaluation if lazy."""
         assert lm._evaluated is False
         assert not hasattr(lm, "_mask")
         lm._evaluate()
@@ -358,9 +325,7 @@ class TestLazyMask:
         assert (lm._mask == lm._mask_function()).all()
 
     def test_trigger_eval_once_only(self):
-        """
-        Check that we can't trigger mask evaluation repeatedly.
-        """
+        """Check that we can't trigger mask evaluation repeatedly."""
 
         class MF(object):
             """
@@ -379,7 +344,6 @@ class TestLazyMask:
                 out : ndarray
                     A simple mask array.
                 """
-
                 self.call_counter += 1
                 return np.ones(10, dtype=bool)
 
@@ -396,9 +360,7 @@ class TestLazyMask:
         assert mf.call_counter == 1
 
     def test_copy(self, lm):
-        """
-        Check copying behaviour of ``LazyMask`` objects.
-        """
+        """Check copying behaviour of ``LazyMask`` objects."""
         # first copy before evaluating
         lm_unevaluated_copy = copy(lm)
         assert lm_unevaluated_copy._evaluated is False
@@ -421,9 +383,7 @@ class TestLazyMask:
         assert nlm_copy._mask_function is None
 
     def test_deepcopy(self, lm):
-        """
-        Check deep copying behaviour of ``LazyMask`` objects.
-        """
+        """Check deep copying behaviour of ``LazyMask`` objects."""
         # first copy before evaluating
         lm_unevaluated_copy = deepcopy(lm)
         assert lm_unevaluated_copy._evaluated is False
@@ -446,9 +406,7 @@ class TestLazyMask:
         assert nlm_copy._mask_function is None
 
     def test_compare_lazymask(self, lm):
-        """
-        Check comparison behaviour between two ``LazyMask`` objects.
-        """
+        """Check comparison behaviour between two ``LazyMask`` objects."""
         lm2 = copy(lm)
         with pytest.raises(
             ValueError, match="Cannot compare when one or more masks are not evaluated."
@@ -461,9 +419,7 @@ class TestLazyMask:
         assert lm != lmn
 
     def test_compare_nonlazymask(self, lm):
-        """
-        Check comparison behaviour between a ``LazyMask`` and other objects.
-        """
+        """Check comparison behaviour between a ``LazyMask`` and other objects."""
         m = np.ones(10, dtype=bool)
         with pytest.raises(
             ValueError, match="Cannot compare when one or more masks are not evaluated."
@@ -474,9 +430,7 @@ class TestLazyMask:
         assert lm != np.zeros(10, dtype=bool)
 
     def test_compare_nonemask(self):
-        """
-        Check comparison behaviour between null masks.
-        """
+        """Check comparison behaviour between null masks."""
         lm = LazyMask(mask=None)
         assert lm == lm
         assert not lm != lm

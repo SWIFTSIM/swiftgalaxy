@@ -42,7 +42,7 @@ class _MaskHelper:
         The row, index or slice to select from the data.
     """
 
-    def __init__(self, data: u.unyt_array, mask: Union[int, slice]):
+    def __init__(self, data: u.unyt_array, mask: Union[int, slice]) -> None:
         self._mask_helper_data = data
         self._mask_helper_mask = mask
 
@@ -817,9 +817,7 @@ class SOAP(_HaloCatalogue):
                     sg, group_name
                 )._particle_dataset.group_nr_bound.to_value(
                     u.dimensionless
-                ) == self.input_halos.halo_catalogue_index.to_value(
-                    u.dimensionless
-                )
+                ) == self.input_halos.halo_catalogue_index.to_value(u.dimensionless)
                 # mask the group_nr_bound array that we loaded
                 getattr(sg, group_name)._particle_dataset._group_nr_bound = getattr(
                     sg, group_name
@@ -906,7 +904,6 @@ class Velociraptor(_HaloCatalogue):
 
     Parameters
     ----------
-
     velociraptor_filebase : :obj:`str`
         The initial part of the velociraptor filenames (possibly including
         path), e.g. if there is a :file:`{halos}.properties` file, pass
@@ -1484,7 +1481,6 @@ class Caesar(_HaloCatalogue):
 
     Parameters
     ----------
-
     caesar_file : :obj:`str`
         The catalogue file (hdf5 format) output by caesar.
 
@@ -1824,7 +1820,6 @@ class Caesar(_HaloCatalogue):
         out : :obj:`int` or :obj:`list`
             The index or indices of the object(s) of interest in the halo catalogue.
         """
-
         index = self._mask_index
         assert index is not None  # placate mypy
         return index
@@ -1944,9 +1939,7 @@ class Caesar(_HaloCatalogue):
             return cosmo_array(
                 getattr(
                     self._catalogue[self._multi_galaxy_catalogue_mask], centre_attr
-                ).to(
-                    u.kpc
-                ),  # maybe comoving, ensure physical
+                ).to(u.kpc),  # maybe comoving, ensure physical
                 comoving=False,
                 scale_factor=self._caesar.simulation.scale_factor,
                 scale_exponent=1,
@@ -2053,7 +2046,6 @@ class Standalone(_HaloCatalogue):
 
     Parameters
     ----------
-
     centre : :class:`~swiftsimio.objects.cosmo_array`, default: ``None``
         A value for this parameter is required, and must have units of length.
         Specifies the geometric centre in simulation coordinates. Particle

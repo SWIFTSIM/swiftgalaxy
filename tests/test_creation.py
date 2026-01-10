@@ -9,15 +9,11 @@ from swiftgalaxy.demo_data import _create_toyvr, _create_toycaesar, _create_toys
 
 class TestSWIFTGalaxyCreation:
     def test_sg_creation(self, sg):
-        """
-        Make sure we can create a SWIFTGalaxy without error.
-        """
+        """Make sure we can create a SWIFTGalaxy without error."""
         pass  # fixture created SWIFTGalaxy
 
     def test_soap_creation(self, soap):
-        """
-        Make sure we can create a SOAP without error.
-        """
+        """Make sure we can create a SOAP without error."""
         pass  # fixture created SOAP interface
 
     def test_soap_recreation(self, toysoap_with_virtual_snapshot):
@@ -47,9 +43,7 @@ class TestSWIFTGalaxyCreation:
         )
 
     def test_vr_creation(self, vr):
-        """
-        Make sure we can create a Velociraptor without error.
-        """
+        """Make sure we can create a Velociraptor without error."""
         pass  # fixture created Velociraptor interface
 
     def test_vr_recreation(self, vr):
@@ -63,9 +57,7 @@ class TestSWIFTGalaxyCreation:
         _create_toyvr(filebase=filebase)
 
     def test_caesar_creation(self, caesar):
-        """
-        Make sure we can create a Caesar without error.
-        """
+        """Make sure we can create a Caesar without error."""
         pass  # fixture created Caesar interface
 
     def test_caesar_recreation(self, caesar):
@@ -77,33 +69,23 @@ class TestSWIFTGalaxyCreation:
         _create_toycaesar(filename=caesar.caesar_file)
 
     def test_sa_creation(self, sa):
-        """
-        Make sure we can create a Standalone without error.
-        """
+        """Make sure we can create a Standalone without error."""
         pass  # fixture created Standalone interface
 
     def test_sg_soap_creation(self, sg_soap):
-        """
-        Make sure we can create a SWIFTGalaxy with SOAP without error.
-        """
+        """Make sure we can create a SWIFTGalaxy with SOAP without error."""
         pass  # fixture created SWIFTGalaxy with SOAP interface
 
     def test_sg_vr_creation(self, sg_vr):
-        """
-        Make sure we can create a SWIFTGalaxy with velociraptor without error.
-        """
+        """Make sure we can create a SWIFTGalaxy with velociraptor without error."""
         pass  # fixture created SWIFTGalaxy with Velociraptor interface
 
     def test_sg_caesar_creation(self, sg_caesar):
-        """
-        Make sure we can create a SWIFTGalaxy with Caesar without error.
-        """
+        """Make sure we can create a SWIFTGalaxy with Caesar without error."""
         pass  # fixture created SWIFTGalaxy with Caesar interface
 
     def test_sg_sa_creation(self, sg_sa):
-        """
-        Make sure we can create a SWIFTGalaxy with Standalone without error.
-        """
+        """Make sure we can create a SWIFTGalaxy with Standalone without error."""
         pass  # fixture created SWIFTGalaxy with Standalone interface
 
     def test_tab_completion(self, sg):
@@ -123,9 +105,7 @@ class TestSWIFTGalaxyCreation:
         assert sg.gas._particle_dataset._coordinates is None
 
     def test_internal_refs(self, sg):
-        """
-        Check that datasets and namedcolumns store a reference to enclosing swiftgalaxy.
-        """
+        """Check that datasets and namedcolumns store a reference to enclosing swiftgalaxy."""
         assert sg.gas._swiftgalaxy is sg
         assert sg.gas.hydrogen_ionization_fractions._swiftgalaxy is sg
 
@@ -161,9 +141,7 @@ class TestSWIFTGalaxiesCreation:
 
 class TestDeletion:
     def test_dataset_deleter(self, sg):
-        """
-        Check that we can delete a dataset's array.
-        """
+        """Check that we can delete a dataset's array."""
         sg.gas.coordinates  # lazy-load some data
         assert sg.gas._internal_dataset._coordinates is not None
         del sg.gas.coordinates

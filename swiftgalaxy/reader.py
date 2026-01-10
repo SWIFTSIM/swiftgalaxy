@@ -558,7 +558,6 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
         out : :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
             The copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object.
         """
-
         return self._data_copy()
 
     def _data_copy(
@@ -647,7 +646,6 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     Examples
     --------
-
     The cartesian, spherical and cylindrical coordinates of gas particles can
     be accessed, for example, by (``mygalaxy`` is a :class:`SWIFTGalaxy`):
 
@@ -1008,7 +1006,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     @property
     def spherical_coordinates(self) -> _CoordinateHelper:
-        """
+        r"""
         Utility to access the spherical coordinates of particles.
 
         The spherical coordinates of particles are calculated the first time
@@ -1091,7 +1089,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     @property
     def spherical_velocities(self) -> _CoordinateHelper:
-        """
+        r"""
         Utility to access the velocities of particles in spherical coordinates.
 
         The particle velocities in spherical coordinates are calculated the
@@ -1180,7 +1178,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     @property
     def cylindrical_coordinates(self) -> _CoordinateHelper:
-        """
+        r"""
         Utility to access the cylindrical coordinates of particles.
 
         The cylindrical coordinates of particles are calculated the first time
@@ -1252,7 +1250,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     @property
     def cylindrical_velocities(self) -> _CoordinateHelper:
-        """
+        r"""
         Utility to access the velocities of particles in cylindrical
         coordinates.
 
@@ -1459,7 +1457,6 @@ class SWIFTGalaxy(SWIFTDataset):
 
     Examples
     --------
-
     Assuming we have a snapshot file :file:`{snap}.hdf5`, and velociraptor
     outputs :file:`{halos}.properties`, :file:`{halos}.catalog_groups`, etc.,
     with the default names for coordinates, velocities and particle_ids, we can
@@ -1542,7 +1539,7 @@ class SWIFTGalaxy(SWIFTDataset):
         velocities_dataset_name: str = "velocities",
         coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
         _data_server: Optional["SWIFTGalaxy"] = None,
-    ):
+    ) -> None:
         self.snapshot_filename = snapshot_filename
         self.halo_catalogue = halo_catalogue
         self.transforms_like_coordinates = {coordinates_dataset_name}.union(

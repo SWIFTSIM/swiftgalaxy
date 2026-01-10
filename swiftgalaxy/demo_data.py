@@ -1,6 +1,4 @@
-"""
-Functions and definitions to retrieve, generate and use illustrative example data.
-"""
+"""Functions and definitions to retrieve, generate and use illustrative example data."""
 
 from pathlib import Path
 import h5py
@@ -447,9 +445,7 @@ class ToyHF(_HaloCatalogue):
         return
 
     def _load(self) -> None:
-        """
-        Any non-trivial i/o operations needed at initialization go here.
-        """
+        """Any non-trivial i/o operations needed at initialization go here."""
         return
 
     @property
@@ -1189,15 +1185,15 @@ def _create_toysnap(
                     "Conversion factor to physical CGS "
                     "(including cosmological corrections)"
                 ] = np.array([1.0])
-                f[f"PartType{ptype}/FOFGroupIDs"].attrs[
-                    "Description"
-                ] = b"Friends-Of-Friends ID of the group the particles belong to"
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs["Description"] = (
+                    b"Friends-Of-Friends ID of the group the particles belong to"
+                )
                 f[f"PartType{ptype}/FOFGroupIDs"].attrs[
                     "Expression for physical CGS units"
                 ] = b"[ - ] "
-                f[f"PartType{ptype}/FOFGroupIDs"].attrs[
-                    "Lossy compression filter"
-                ] = b"None"
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs["Lossy compression filter"] = (
+                    b"None"
+                )
                 f[f"PartType{ptype}/FOFGroupIDs"].attrs["U_I exponent"] = np.array(
                     [0.0]
                 )
@@ -2107,9 +2103,9 @@ def _create_toycaesar(
         f["/simulation_attributes/units"].attrs["H_z"] = "1/s"
         f["/simulation_attributes/units"].attrs["_boxsize"] = "kpccm"
         f["/simulation_attributes/units"].attrs["critical_density"] = "Msun/kpc**3"
-        f["/simulation_attributes/units"].attrs[
-            "mean_interparticle_separation"
-        ] = "kpccm"
+        f["/simulation_attributes/units"].attrs["mean_interparticle_separation"] = (
+            "kpccm"
+        )
         f["/simulation_attributes/units"].attrs["search_radius"] = "kpccm"
         f["/simulation_attributes/units"].attrs["time"] = "s"
     return

@@ -15,17 +15,12 @@ from swiftgalaxy.demo_data import (
 
 
 class TestWebExampleData:
-
     def test_str(self, web_examples_tmpdir):
-        """
-        Check that string representation lists available examples.
-        """
+        """Check that string representation lists available examples."""
         assert "snapshot" in str(web_examples_tmpdir)
 
     def test_snapshot(self, web_examples_tmpdir):
-        """
-        Check that we can create a swiftgalaxy, retrieving a sample snapshot file.
-        """
+        """Check that we can create a swiftgalaxy, retrieving a sample snapshot file."""
         sm = mask(web_examples_tmpdir.snapshot)  # just to get an interface to metadata
         SWIFTGalaxy(
             web_examples_tmpdir.snapshot,
@@ -88,9 +83,7 @@ class TestWebExampleData:
         )
 
     def test_remove(self, web_examples_tmpdir):
-        """
-        Check that example data files get cleaned up on request.
-        """
+        """Check that example data files get cleaned up on request."""
         # download all the example data (if not present)
         for example in web_examples_tmpdir.available_examples.keys():
             getattr(web_examples_tmpdir, example)
@@ -111,17 +104,12 @@ class TestWebExampleData:
 
 
 class TestGeneratedExampleData:
-
     def test_str(self, generated_examples_tmpdir):
-        """
-        Check that string representation lists available examples.
-        """
+        """Check that string representation lists available examples."""
         assert "snapshot" in str(generated_examples_tmpdir)
 
     def test_snapshot(self, generated_examples_tmpdir):
-        """
-        Check that we can create a swiftgalaxy using the helper for a generated snapshot.
-        """
+        """Check that we can create a swiftgalaxy using the helper for a generated snapshot."""
         SWIFTGalaxy(
             generated_examples_tmpdir.snapshot,
             ToyHF(snapfile=generated_examples_tmpdir.snapshot, index=0),
@@ -164,9 +152,7 @@ class TestGeneratedExampleData:
         )
 
     def test_remove(self, generated_examples_tmpdir):
-        """
-        Check that examples get cleaned up on request.
-        """
+        """Check that examples get cleaned up on request."""
         pytest.importorskip("compression")
         # create all the example data (if not present)
         for example in generated_examples_tmpdir.available_examples:
@@ -199,11 +185,8 @@ class TestGeneratedExampleData:
 
 
 class TestExampleNotebooks:
-
     def test_generated_example_notebook(self):
-        """
-        Check that the example notebook with data generated on the fly runs without error.
-        """
+        """Check that the example notebook with data generated on the fly runs without error."""
         pytest.importorskip(
             "nbmake", reason="nbmake (optional dependency) not available"
         )

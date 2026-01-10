@@ -18,9 +18,7 @@ from swiftsimio.masks import SWIFTMask
 
 
 class _IterationSolution(TypedDict):
-    """
-    Type hints for dicts containing a proposed SWIFTGalaxies iteration strategy.
-    """
+    """Type hints for dicts containing a proposed SWIFTGalaxies iteration strategy."""
 
     regions: np.ndarray
     region_target_indices: list[np.ndarray]
@@ -180,7 +178,7 @@ class SWIFTGalaxies(object):
         velocities_dataset_name: str = "velocities",
         coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
         optimize_iteration: str = "auto",
-    ):
+    ) -> None:
         if not halo_catalogue._multi_galaxy:
             raise ValueError(
                 "halo_catalogue target list is not iterable, create halo_catalogue with "

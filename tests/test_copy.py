@@ -13,9 +13,7 @@ reltol_nd = 1.0e-4
 
 class TestCopySWIFTGalaxy:
     def test_copy_sg(self, sg):
-        """
-        Test that dataset arrays don't get copied on shallow copy.
-        """
+        """Test that dataset arrays don't get copied on shallow copy."""
         # lazy load a dataset and a named column
         sg.gas.masses
         sg.gas.hydrogen_ionization_fractions.neutral
@@ -29,9 +27,7 @@ class TestCopySWIFTGalaxy:
 
     @pytest.mark.parametrize("derived_coords_initialized", [True, False])
     def test_deepcopy_sg(self, sg, derived_coords_initialized):
-        """
-        Test that dataset arrays get copied on deep copy.
-        """
+        """Test that dataset arrays get copied on deep copy."""
         # lazy load a dataset and a named column
         sg.gas.masses
         sg.gas.hydrogen_ionization_fractions.neutral
@@ -80,9 +76,7 @@ class TestCopySWIFTGalaxy:
 
 class TestCopyDataset:
     def test_copy_dataset(self, sg):
-        """
-        Test that arrays don't get copied on shallow copy.
-        """
+        """Test that arrays don't get copied on shallow copy."""
         # lazy load a dataset and a named column
         sg.gas.masses
         sg.gas.hydrogen_ionization_fractions.neutral
@@ -94,9 +88,7 @@ class TestCopyDataset:
         )
 
     def test_deepcopy_dataset(self, sg):
-        """
-        Test that arrays get copied on deep copy.
-        """
+        """Test that arrays get copied on deep copy."""
         # lazy load a dataset and a named column
         sg.gas.masses
         sg.gas.hydrogen_ionization_fractions.neutral
@@ -118,9 +110,7 @@ class TestCopyDataset:
 
 class TestCopyNamedColumns:
     def test_copy_namedcolumn(self, sg):
-        """
-        Test that columns don't get copied on shallow copy.
-        """
+        """Test that columns don't get copied on shallow copy."""
         # lazy load a named column
         sg.gas.hydrogen_ionization_fractions.neutral
         nc_copy = copy(sg.gas.hydrogen_ionization_fractions)
@@ -128,9 +118,7 @@ class TestCopyNamedColumns:
         assert nc_copy._named_column_dataset._neutral is None
 
     def test_deepcopy_namedcolumn(self, sg):
-        """
-        Test that columns get copied on deep copy.
-        """
+        """Test that columns get copied on deep copy."""
         # lazy load a named column
         sg.gas.hydrogen_ionization_fractions.neutral
         nc_copy = deepcopy(sg.gas.hydrogen_ionization_fractions)
@@ -145,9 +133,7 @@ class TestCopyNamedColumns:
 
 class TestCopyMaskCollection:
     def test_copy_mask_collection(self):
-        """
-        Test that masks get copied.
-        """
+        """Test that masks get copied."""
         mc = MaskCollection(
             gas=np.ones(100, dtype=bool),
             dark_matter=np.s_[:20],
@@ -164,9 +150,7 @@ class TestCopyMaskCollection:
                 assert all(comparison)
 
     def test_deepcopy_mask_collection(self):
-        """
-        Test that masks get copied along with values.
-        """
+        """Test that masks get copied along with values."""
         mc = MaskCollection(
             gas=np.ones(100, dtype=bool),
             dark_matter=np.s_[:20],
