@@ -1,6 +1,7 @@
 """
-This module contains wrappers for the parts making up a :mod:`swiftsimio`
-dataset to facilitate analyses of individual simulated galaxies.
+Facilitate analyses of individual simulated galaxies.
+
+This module contains Wrappers for the parts making up a :mod:`swiftsimio` dataset.
 
 The top-level wrapper is :class:`SWIFTGalaxy`, which inherits from
 :class:`~swiftsimio.reader.SWIFTDataset`. It extends the functionality of a
@@ -144,8 +145,7 @@ def _apply_4transform(
     coords: cosmo_array, transform: np.ndarray, transform_units: unyt.unit_object.Unit
 ) -> cosmo_array:
     """
-    Apply an arbitary coordinate transformation (translation mixed with rotation) to a
-    coordinate array.
+    Apply an affine coordinate transformation to a coordinate array.
 
     An arbitrary coordinate transformation mixing translations and rotations can be
     expressed as a 4x4 matrix. However, such a matrix has mixed units, so we need to
@@ -185,7 +185,7 @@ def _apply_4transform(
 
 def _data_read_wrapper(prop: str) -> Callable:
     """
-    Generator function to wrap :mod:`swiftsimio` data getters.
+    Wrap :mod:`swiftsimio` data getters (generator function).
 
     Parameters
     ----------
@@ -227,7 +227,7 @@ def _data_read_wrapper(prop: str) -> Callable:
 
 def _data_write_wrapper(prop: str) -> Callable:
     """
-    Generator function to wrap :mod:`swiftsimio` data setters.
+    Wrap :mod:`swiftsimio` data setters (generator function).
 
     Parameters
     ----------
@@ -260,7 +260,7 @@ def _data_write_wrapper(prop: str) -> Callable:
 
 def _data_delete_wrapper(prop: str) -> Callable:
     """
-    Generator function to wrap :mod:`swiftsimio` data deleters.
+    Wrap :mod:`swiftsimio` data deleters (generator function).
 
     Parameters
     ----------
@@ -374,8 +374,7 @@ class _CoordinateHelper(object):
 
 class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
     """
-    A wrapper class to enable :class:`SWIFTGalaxy`
-    functionality for a :class:`swiftsimio.reader.__SWIFTNamedColumnDataset`.
+    Wrapper for a :class:`swiftsimio.reader.__SWIFTNamedColumnDataset`.
 
     This class both inherits from
     :class:`swiftsimio.reader.__SWIFTNamedColumnDataset` and maintains an
@@ -486,7 +485,9 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
     @property
     def _apply_data_mask(self) -> Callable:
         """
-        Facilitate access to the corresponding method of the enclosing
+        Apply masks to data.
+
+        Done by accessing the corresponding method of the enclosing
         :class:`~swiftsimio.reader.__SWIFTGroupDataset`.
 
         Returns
@@ -500,7 +501,9 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
     @property
     def _apply_transforms(self) -> Callable:
         """
-        Facilitate access to the corresponding method of the enclosing
+        Apply coordinate transformations.
+
+        Done by accessing the corresponding method of the enclosing
         :class:`~swiftsimio.reader.__SWIFTGroupDataset`.
 
         Returns
@@ -513,8 +516,9 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
 
     def __getitem__(self, mask: slice) -> "_SWIFTNamedColumnDatasetHelper":
         """
-        Apply a mask to the :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
-        with square-bracket notation.
+        Mask a :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`.
+
+        Uses square-bracket notation.
 
         To ensure internal consistency this requires producing a full ("deep") copy of
         the parent :class:`~swiftgalaxy.reader.SWIFTGalaxy` object and all of its contents
@@ -530,8 +534,9 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
 
     def __copy__(self) -> "_SWIFTNamedColumnDatasetHelper":
         """
-        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
-        without copying data (a "shallow" copy).
+        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`.
+
+        Does not copy data (a "shallow" copy).
 
         Returns
         -------
@@ -545,8 +550,9 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
         self, memo: Optional[dict] = None
     ) -> "_SWIFTNamedColumnDatasetHelper":
         """
-        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
-        including copying data (a "deep" copy).
+        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`.
+
+        Includes copying data (a "deep" copy).
 
         Parameters
         ----------
@@ -564,8 +570,9 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
         self, mask: Optional[slice] = None
     ) -> "_SWIFTNamedColumnDatasetHelper":
         """
-        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
-        including copying data (a "deep" copy).
+        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`.
+
+        Includes copying data (a "deep" copy).
 
         Parameters
         ----------
@@ -583,8 +590,7 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
 
 class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
     """
-    A wrapper class to enable :class:`SWIFTGalaxy`
-    functionality for a :class:`swiftsimio.reader.__SWIFTGroupDataset`.
+    Wrapper for a :class:`swiftsimio.reader.__SWIFTGroupDataset`.
 
     This class both inherits from
     :class:`swiftsimio.reader.__SWIFTGroupDataset` and maintains an
@@ -721,8 +727,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     def __getitem__(self, mask: slice) -> "_SWIFTGroupDatasetHelper":
         """
-        Apply a mask to the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
-        with square-bracket notation.
+        Mask :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper` with square-brackets.
 
         To ensure internal consistency this requires producing a full ("deep") copy of
         the parent :class:`~swiftgalaxy.reader.SWIFTGalaxy` object and all of its contents
@@ -737,8 +742,9 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     def __copy__(self) -> "_SWIFTGroupDatasetHelper":
         """
-        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
-        without copying data (a "shallow" copy).
+        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`.
+
+        Does not copy data (a "shallow" copy).
 
         Returns
         -------
@@ -749,8 +755,9 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     def __deepcopy__(self, memo: Optional[dict] = None) -> "_SWIFTGroupDatasetHelper":
         """
-        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
-        including copying data (a "deep" copy).
+        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`.
+
+        Includes copying data (a "deep" copy).
 
         Parameters
         ----------
@@ -766,8 +773,9 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     def _data_copy(self, mask: Optional[slice] = None) -> "_SWIFTGroupDatasetHelper":
         """
-        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
-        including copying data (a "deep" copy).
+        Create a copy of the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`.
+
+        Includes copying data (a "deep" copy).
 
         Parameters
         ----------
@@ -793,7 +801,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     def _is_namedcolumns(self, field_name: str) -> bool:
         """
-        Checks a string against the metadata to determine if it describes a named column.
+        Check a string against the metadata to determine if it describes a named column.
 
         Parameters
         ----------
@@ -816,7 +824,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     def _apply_data_mask(self, data: cosmo_array) -> cosmo_array:
         """
-        Used internally to apply existing masks on reading new data.
+        Apply existing masks on reading new data (for internal use).
 
         Parameters
         ----------
@@ -900,7 +908,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     def _apply_transforms(self, data: cosmo_array, dataset_name: str) -> cosmo_array:
         """
-        Used internally to apply existing coordinate transforms on reading new data.
+        Apply existing coordinate transforms on reading new data (for internal use).
 
         Checks whether the input dataset_name is in the list of datasets that need
         to have coordinate transformation (either coordinate-like or velocity-like)
@@ -939,7 +947,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
     @property
     def cartesian_coordinates(self) -> _CoordinateHelper:
         """
-        Utility to access the cartesian coordinates of particles.
+        Access the cartesian coordinates of particles.
 
         Returns a wrapper around the coordinate array which can be accessed using
         attribute syntax. Cartesian coordinates can be accessed separately:
@@ -973,7 +981,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
     @property
     def cartesian_velocities(self) -> _CoordinateHelper:
         """
-        Utility to access the cartesian components of particle velocities.
+        Access the cartesian components of particle velocities.
 
         Returns a wrapper around the velocities array which can be accessed using
         attribute syntax. Cartesian coordinates can be accessed separately:
@@ -1007,7 +1015,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
     @property
     def spherical_coordinates(self) -> _CoordinateHelper:
         r"""
-        Utility to access the spherical coordinates of particles.
+        Access the spherical coordinates of particles.
 
         The spherical coordinates of particles are calculated the first time
         this attribute is accessed. If a coordinate transformation (e.g. a
@@ -1090,7 +1098,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
     @property
     def spherical_velocities(self) -> _CoordinateHelper:
         r"""
-        Utility to access the velocities of particles in spherical coordinates.
+        Access the velocities of particles in spherical coordinates.
 
         The particle velocities in spherical coordinates are calculated the
         first time this attribute is accessed. If a coordinate transformation
@@ -1179,7 +1187,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
     @property
     def cylindrical_coordinates(self) -> _CoordinateHelper:
         r"""
-        Utility to access the cylindrical coordinates of particles.
+        Access the cylindrical coordinates of particles.
 
         The cylindrical coordinates of particles are calculated the first time
         this attribute is accessed. If a coordinate transformation (e.g. a
@@ -1251,8 +1259,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
     @property
     def cylindrical_velocities(self) -> _CoordinateHelper:
         r"""
-        Utility to access the velocities of particles in cylindrical
-        coordinates.
+        Access the velocities of particles in cylindrical coordinates.
 
         The particle velocities in cylindrical coordinates are calculated the
         first time this attribute is accessed. If a coordinate transformation
@@ -1366,8 +1373,9 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
     def _void_derived_coordinates(self) -> None:
         """
-        Reset internal references to spherical/cylindrical coordinates to None (e.g.
-        because they are no longer valid).
+        Reset internal references to spherical/cylindrical coordinates to ``None``.
+
+        E.g. because they are no longer valid.
         """
         self._spherical_coordinates = None
         self._cylindrical_coordinates = None
@@ -1819,8 +1827,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def __getitem__(self, mask_collection: MaskCollection) -> "SWIFTGalaxy":
         """
-        Apply a mask to the :class:`~swiftgalaxy.reader.SWIFTGalaxy` with square-bracket
-        notation.
+        Mask the :class:`~swiftgalaxy.reader.SWIFTGalaxy` with square-bracket notation.
 
         To ensure internal consistency this requires producing a full ("deep") copy of
         the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object and all of its contents (but
@@ -1835,8 +1842,9 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def __copy__(self) -> "SWIFTGalaxy":
         """
-        Create a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` without copying
-        data (a "shallow" copy).
+        Create a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+        This is without copying data (a "shallow" copy).
 
         Returns
         -------
@@ -1861,8 +1869,9 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def __deepcopy__(self, memo: Optional[dict] = None) -> "SWIFTGalaxy":
         """
-        Create a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` including copying
-        data (a "deep" copy).
+        Create a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+        This includes copying data (a "deep" copy).
 
         Parameters
         ----------
@@ -1882,8 +1891,9 @@ class SWIFTGalaxy(SWIFTDataset):
         _data_server: Optional["SWIFTGalaxy"] = None,
     ) -> "SWIFTGalaxy":
         """
-        Create a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` including copying
-        data (a "deep" copy).
+        Create a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+        This includes copying data (a "deep" copy).
 
         Parameters
         ----------
@@ -2108,8 +2118,9 @@ class SWIFTGalaxy(SWIFTDataset):
     @property
     def centre(self) -> cosmo_array:
         """
-        The current origin of the coordinate reference frame with respect to the native
-        simulation coordinate reference frame.
+        Get the current origin of the coordinate reference frame.
+
+        It is given with respect to the native simulation coordinate reference frame.
 
         Returns
         -------
@@ -2138,8 +2149,9 @@ class SWIFTGalaxy(SWIFTDataset):
     @property
     def velocity_centre(self) -> cosmo_array:
         """
-        The current origin of the velocity reference frame with respect to the native
-        simulation velocity reference frame.
+        Get the current origin of the velocity reference frame.
+
+        It is given with respect to the native simulation velocity reference frame.
 
         Returns
         -------
@@ -2330,8 +2342,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def _append_to_coordinate_like_transform(self, transform: np.ndarray) -> None:
         """
-        Add a new transformation to the sequence of transformations for the spatial-like
-        coordinates.
+        Add a new transformation to the sequence for the spatial-like coordinates.
 
         The cumulative transformation is stored as a single 4x4 transformation matrix,
         so we update the current transformation using a dot product. This voids any
@@ -2348,8 +2359,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def _append_to_velocity_like_transform(self, transform: np.ndarray) -> None:
         """
-        Add a new transformation to the sequence of transformations for the velocity-like
-        coordinates.
+        Add a new transformation to the sequence for the velocity-like coordinates.
 
         The cumulative transformation is stored as a single 4x4 transformation matrix,
         so we update the current transformation using a dot product. This voids any
@@ -2366,8 +2376,9 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def _void_derived_coordinates(self) -> None:
         """
-        Reset internal references to spherical/cylindrical coordinates to None (e.g.
-        because they are no longer valid).
+        Reset internal references to spherical/cylindrical coordinates to ``None``.
+
+        E.g. because they are no longer valid.
         """
         # Transforming implies conversion back to cartesian, it's therefore
         # cheaper to just delete any non-cartesian coordinates when a
