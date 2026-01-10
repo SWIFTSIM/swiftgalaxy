@@ -1,4 +1,6 @@
 """
+Mask particles to select galaxies. Supplements :mod:`swiftsimio`'s spatial masking.
+
 The :mod:`swiftsimio` masking features are optimized for spatial masking, that is
 selecting regions made up of a subset of the SWIFT "top-level cells" in a simulation.
 :mod:`swiftgalaxy` masking features aim to support refining these relatively coarse
@@ -60,7 +62,7 @@ class LazyMask(object):
         return
 
     def _evaluate(self) -> None:
-        """Forces evaluation the mask function."""
+        """Force evaluation the mask function."""
         if not self._evaluated:
             assert self._mask_function is not None  # placate mypy
             self._mask = self._mask_function()
@@ -82,8 +84,9 @@ class LazyMask(object):
 
     def __copy__(self) -> "LazyMask":
         """
-        Make a copy of the :class:`~swiftgalaxy.masks.LazyMask` without copying
-        data (a "shallow" copy).
+        Make a copy of the :class:`~swiftgalaxy.masks.LazyMask`.
+
+        This is without copying data (a "shallow" copy).
 
         Returns
         -------
@@ -97,8 +100,9 @@ class LazyMask(object):
 
     def __deepcopy__(self, memo: Optional[dict] = None) -> "LazyMask":
         """
-        Make a copy of the :class:`~swiftgalaxy.masks.LazyMask`, copying data
-        (a "deep" copy).
+        Make a copy of the :class:`~swiftgalaxy.masks.LazyMask`.
+
+        This copies data (a "deep" copy).
 
         Parameters
         ----------
@@ -269,8 +273,9 @@ class MaskCollection(object):
 
     def __copy__(self) -> "MaskCollection":
         """
-        Make a copy of the :class:`~swiftgalaxy.masks.MaskCollection` without copying
-        data (a "shallow" copy).
+        Make a copy of the :class:`~swiftgalaxy.masks.MaskCollection`.
+
+        This is without copying data (a "shallow" copy).
 
         Returns
         -------
@@ -281,8 +286,9 @@ class MaskCollection(object):
 
     def __deepcopy__(self, memo: Optional[dict] = None) -> "MaskCollection":
         """
-        Make a copy of the :class:`~swiftgalaxy.masks.MaskCollection`, copying data
-        (a "deep" copy).
+        Make a copy of the :class:`~swiftgalaxy.masks.MaskCollection`.
+
+        This copies data (a "deep" copy).
 
         Parameters
         ----------

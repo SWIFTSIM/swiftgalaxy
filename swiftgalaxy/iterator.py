@@ -1,4 +1,6 @@
 """
+Iterate over :class:`~swiftgalaxy.reader.SWIFTGalaxy`s efficiently.
+
 Provides the :class:`~swiftgalaxy.iterator.SWIFTGalaxies` class that enables efficient
 iteration over :class:`~swiftgalaxy.reader.SWIFTGalaxy` objects for multiple objects of
 interest within a single simulation snapshot.
