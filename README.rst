@@ -46,13 +46,20 @@ SWIFTGalaxy is an open-source astrophysics module that extends SWIFTSimIO_ tailo
 
 .. INTRO_END_LABEL
 
-Installation_ is as simple as ``pip install swiftgalaxy``. Dependencies for using Velociraptor catalogues can be installed with ``pip install swiftgalaxy[velociraptor]``. For SOAP and Caesar support use:
+Installation_ is as simple as ``pip install swiftgalaxy``.
+
+To install optional dependencies to support Velociraptor catalogues use ``pip install swiftgalaxy[velociraptor]``. For Caesar support use:
 
 .. code-block::
 
-   pip install git+https://github.com/SWIFTSIM/soap.git@soap_runtime
    pip install git+https://github.com/dnarayanan/caesar.git
 
+No additional dependencies are needed for reading SOAP catalogues. If you want to generate example input files for SOAP, you should install:
+
+.. code-block::
+
+   pip install git+https://github.com/SWIFTSIM/soap.git
+   
 .. _Installation: https://swiftgalaxy.readthedocs.io/en/latest/getting_started/index.html#installing
 
 .. EXAMPLE_START_LABEL

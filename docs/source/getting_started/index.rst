@@ -58,14 +58,17 @@ Installing
 
 ``pip install swiftgalaxy``
 
-Note that this will also install required dependencies. To install optional dependencies to support Velociraptor catalogues use ``pip install swiftgalaxy[velociraptor]``. For SOAP and Caesar support use:
+Note that this will also install required dependencies. To install optional dependencies to support Velociraptor catalogues use ``pip install swiftgalaxy[velociraptor]``. For Caesar support use:
 
 .. code-block::
 
-   pip install git+https://github.com/SWIFTSIM/soap.git@soap_runtime
    pip install git+https://github.com/dnarayanan/caesar.git
 
-The SOAP package is only needed if you want to generate example input files for SOAP, otherwise there are no additional dependencies.
+No additional dependencies are needed for reading SOAP catalogues. If you want to generate example input files for SOAP, you should install:
+
+.. code-block::
+
+   pip install git+https://github.com/SWIFTSIM/soap.git
 
 Installation for development
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -75,7 +78,14 @@ To set up the code for development, first clone the latest `main` branch from `g
 and install with ``pip`` using the ``-e`` (editable) flag, and specify development dependencies with ``[dev]``:
 ``pip install -e swiftgalaxy/[dev]``.
 
-You should also install type definitions for :mod:`mypy`:
+You should also install the dependencies for SOAP and Caesar (cannot be declared as dependencies in a PyPI-distributed package because they are hosted on github, so omitted from the ``pyproject.toml`` file for simplicity):
+
+.. code-block::
+
+   pip install git+https://github.com/SWIFTSIM/soap.git
+   pip install git+https://github.com/dnarayanan/caesar.git
+
+Finally, you should install type definitions for :mod:`mypy`:
 ``mypy --install-types --non-interactive``.
 
 You can check that the installation and your environment is ready for development work by moving to the code root directory (``cd swiftgalaxy``) and running the following checks:

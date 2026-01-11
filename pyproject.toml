@@ -30,17 +30,18 @@ dependencies = [
 "Documentation" = "https://swiftgalaxy.readthedocs.io/en/latest"
 
 [project.optional-dependencies]
+# PyPI will reject any uploads with git dependencies
 all = [
     "velociraptor",
-    "caesar @ git+https://github.com/dnarayanan/caesar",
-    "soap @ git+https://github.com/SWIFTSIM/soap",
+    # "caesar @ git+https://github.com/dnarayanan/caesar",
+    # "soap @ git+https://github.com/SWIFTSIM/soap",
     "tqdm",
     "astropy",
     "h5py",
 ]
 velociraptor = ["velociraptor", "tqdm", "astropy"]
-soap = ["soap @ git+https://github.com/SWIFTSIM/soap", "tqdm", "astropy"]
-caesar = ["caesar @ git+https://github.com/dnarayanan/caesar", "tqdm", "astropy"]
+# soap = ["soap @ git+https://github.com/SWIFTSIM/soap", "tqdm", "astropy"]
+# caesar = ["caesar @ git+https://github.com/dnarayanan/caesar", "tqdm", "astropy"]
 dev = [
     "pytest",
     "pytest-xdist",
@@ -51,29 +52,8 @@ dev = [
     "numpydoc",
     "nbmake",
     "velociraptor",
-    "caesar @ git+https://github.com/dnarayanan/caesar",
-    "soap @ git+https://github.com/SWIFTSIM/soap",
-    "tqdm",
-    "astropy",
-    "h5py",
-    "sphinx",
-    "sphinx-rtd-theme",
-    "sphinx-design",
-    "recommonmark",
-    "numpy",
-    "numba",
-]
-dev-windows= [
-    "pytest",
-    "pytest-xdist",
-    "pytest-cov",
-    "flake8",
-    "ruff",
-    "mypy",
-    "numpydoc",
-    "nbmake",
-    "velociraptor",
-    "soap @ git+https://github.com/SWIFTSIM/soap",
+    # "caesar @ git+https://github.com/dnarayanan/caesar",
+    # "soap @ git+https://github.com/SWIFTSIM/soap",
     "tqdm",
     "astropy",
     "h5py",
