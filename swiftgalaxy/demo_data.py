@@ -76,7 +76,7 @@ def _ensure_demo_data_directory(func: Callable) -> Callable:
 
     Returns
     -------
-    out : callable
+    callable
         Decorated function.
     """
 
@@ -166,7 +166,7 @@ class WebExamples(object):
 
         Returns
         -------
-        out : :obj:`str`
+        :obj:`str`
             The list of available example data.
         """
         return f"Available examples: {', '.join(self.available_examples.keys())}."
@@ -236,7 +236,7 @@ class WebExamples(object):
 
         Returns
         -------
-        out : :class:`~pathlib._local.Path`
+        :class:`~pathlib._local.Path`
             The path to the requested example file (that was downloaded if needed).
         """
         if attr in self.available_examples:
@@ -308,7 +308,7 @@ class GeneratedExamples(object):
 
         Returns
         -------
-        out : :obj:`str`
+        :obj:`str`
             The list of available example data.
         """
         return f"Available examples: {', '.join(self.available_examples)}."
@@ -329,7 +329,7 @@ class GeneratedExamples(object):
 
         Returns
         -------
-        out : :class:`~pathlib._local.Path`
+        :class:`~pathlib._local.Path`
             The path to the requested example file.
         """
         if attr == "snapshot":
@@ -460,7 +460,7 @@ class ToyHF(_HaloCatalogue):
 
         Returns
         -------
-        out : :obj:`int`
+        :obj:`int`
             The position in the catalogue of the target galaxy.
         """
         return self._mask_index
@@ -476,7 +476,7 @@ class ToyHF(_HaloCatalogue):
 
         Returns
         -------
-        out : swiftsimio.masks.SWIFTMask
+        swiftsimio.masks.SWIFTMask
             The spatial mask.
         """
         if self.index == 0:
@@ -513,7 +513,7 @@ class ToyHF(_HaloCatalogue):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.masks.MaskCollection`
+        :class:`~swiftgalaxy.masks.MaskCollection`
             The extra mask.
         """
 
@@ -530,7 +530,7 @@ class ToyHF(_HaloCatalogue):
 
             Returns
             -------
-            out : Callable
+            Callable
                 The generated function that evaluates a mask.
             """
 
@@ -547,7 +547,7 @@ class ToyHF(_HaloCatalogue):
 
                 Returns
                 -------
-                out : :class:`~numpy.ndarray`, :obj:`slice` or :obj:`Ellipsis`
+                :class:`~numpy.ndarray`, :obj:`slice` or :obj:`Ellipsis`
                     The mask that selects bound particles.
                 """
                 getattr(
@@ -595,7 +595,7 @@ class ToyHF(_HaloCatalogue):
 
         Returns
         -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
+        :class:`~swiftsimio.objects.cosmo_array`
             The coordinate centre of the target galaxy.
         """
         if self.index == 0:
@@ -622,7 +622,7 @@ class ToyHF(_HaloCatalogue):
 
         Returns
         -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
+        :class:`~swiftsimio.objects.cosmo_array`
             The velocity centre of the target galaxy.
         """
         if self.index == 0:
@@ -649,7 +649,7 @@ class ToyHF(_HaloCatalogue):
 
         Returns
         -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
+        :class:`~swiftsimio.objects.cosmo_array`
             The bounding box centre.
         """
         return cosmo_array(
@@ -667,7 +667,7 @@ class ToyHF(_HaloCatalogue):
 
         Returns
         -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
+        :class:`~swiftsimio.objects.cosmo_array`
             The half-length of the bounding box used to construct the spatial mask.
         """
         return cosmo_array(

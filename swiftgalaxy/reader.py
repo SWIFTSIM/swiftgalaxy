@@ -68,7 +68,7 @@ def _apply_box_wrap(
 
     Returns
     -------
-    out : :class:`~swiftsimio.objects.cosmo_array`
+    :class:`~swiftsimio.objects.cosmo_array`
         The coordinates wrapped to lie within the box dimensions.
     """
     rot = current_transform[:3, :3] if current_transform is not None else np.eye(3)
@@ -97,7 +97,7 @@ def _apply_translation(coords: cosmo_array, offset: cosmo_array) -> cosmo_array:
 
     Returns
     -------
-    out : :class:`~swiftsimio.objects.cosmo_array`
+    :class:`~swiftsimio.objects.cosmo_array`
         The coordinate array with the translation applied.
     """
     if hasattr(offset, "comoving") and coords.comoving:
@@ -130,7 +130,7 @@ def _apply_rotmat(coords: cosmo_array, rotation_matrix: np.ndarray) -> cosmo_arr
 
     Returns
     -------
-    out : :class:`~swiftsimio.objects.cosmo_array`
+    :class:`~swiftsimio.objects.cosmo_array`
         The coordinate array with rotation applied.
     """
     return cosmo_array(
@@ -163,7 +163,7 @@ def _apply_4transform(
 
     Returns
     -------
-    out : :class:`~swiftsimio.objects.cosmo_array`
+    :class:`~swiftsimio.objects.cosmo_array`
         The coordinate array with transformation applied.
     """
     retval = cosmo_array(
@@ -194,7 +194,7 @@ def _data_read_wrapper(prop: str) -> Callable:
 
     Returns
     -------
-    out : Callable
+    Callable
         The wrapper function.
     """
 
@@ -211,7 +211,7 @@ def _data_read_wrapper(prop: str) -> Callable:
 
         Returns
         -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
+        :class:`~swiftsimio.objects.cosmo_array`
             The data with any needed transformations and masks applied.
         """
         if getattr(self._internal_dataset, f"_{prop}") is None:
@@ -236,7 +236,7 @@ def _data_write_wrapper(prop: str) -> Callable:
 
     Returns
     -------
-    out : Callable
+    Callable
         The wrapper function.
     """
 
@@ -269,7 +269,7 @@ def _data_delete_wrapper(prop: str) -> Callable:
 
     Returns
     -------
-    out : Callable
+    Callable
         The wrapper function.
     """
 
@@ -323,7 +323,7 @@ class _CoordinateHelper(object):
 
         Returns
         -------
-        out : list
+        list
             List of coordinate name strings.
         """
         return list(self._masks.keys())
@@ -343,7 +343,7 @@ class _CoordinateHelper(object):
 
         Returns
         -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
+        :class:`~swiftsimio.objects.cosmo_array`
             The requested coordinate array.
         """
         return self._coordinates[self._masks[attr]]
@@ -354,7 +354,7 @@ class _CoordinateHelper(object):
 
         Returns
         -------
-        out : :obj:`str`
+        :obj:`str`
             The string representation.
         """
         keys = ", ".join(self._masks.keys())
@@ -366,7 +366,7 @@ class _CoordinateHelper(object):
 
         Returns
         -------
-        out : :obj:`str`
+        :obj:`str`
             The string representation.
         """
         return self.__str__()
@@ -453,7 +453,7 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
 
         Returns
         -------
-        out : :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset`
+        :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset`
             The internal :class:`~swiftsimio.reader.__SWIFTNamedColumnDataset` instance.
         """
         return self._named_column_dataset
@@ -465,7 +465,7 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        :class:`~swiftgalaxy.reader.SWIFTGalaxy`
             The enclosing :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
         """
         return self._particle_dataset_helper._swiftgalaxy
@@ -477,7 +477,7 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
 
         Returns
         -------
-        out : :obj:`str`
+        :obj:`str`
             The name prefixed with the enclosing dataset name.
         """
         return f"{self._particle_dataset_helper.group_name}.{self.name}"
@@ -492,7 +492,7 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
 
         Returns
         -------
-        out : Callable
+        Callable
             The :func:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper._apply_data_mask`
             method of the enclosing :class:`~swiftsimio.reader.__SWIFTGroupDataset`.
         """
@@ -508,7 +508,7 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
 
         Returns
         -------
-        out : Callable
+        Callable
             The :func:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper._apply_transforms`
             method of the enclosing :class:`~swiftsimio.reader.__SWIFTGroupDataset`.
         """
@@ -540,7 +540,7 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
+        :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
             The copy of the :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
             object.
         """
@@ -561,7 +561,7 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
+        :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
             The copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object.
         """
         return self._data_copy()
@@ -581,7 +581,7 @@ class _SWIFTNamedColumnDatasetHelper(__SWIFTNamedColumnDataset):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
+        :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper`
             A (possibly masked) copy of the
             :class:`~swiftgalaxy.reader._SWIFTNamedColumnDatasetHelper` object.
         """
@@ -708,7 +708,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Returns
         -------
-        out : :class:`~swiftsimio.reader.__SWIFTGroupDataset`
+        :class:`~swiftsimio.reader.__SWIFTGroupDataset`
             The internal :class:`~swiftsimio.reader.__SWIFTGroupDataset` instance.
         """
         return self._particle_dataset
@@ -720,7 +720,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Returns
         -------
-        out : :obj:`str`
+        :obj:`str`
             The name.
         """
         return f"{self.group_name}"
@@ -748,7 +748,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
+        :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
             The copy of the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper` object.
         """
         return getattr(self._swiftgalaxy.__copy__(), self.group_name)
@@ -766,7 +766,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
+        :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
             The copy of the :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper` object.
         """
         return self._data_copy()
@@ -784,7 +784,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
+        :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper`
             A (possibly masked) copy of the
             :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper` object.
         """
@@ -810,7 +810,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Returns
         -------
-        out : :obj:`bool`
+        :obj:`bool`
             ``True`` if ``field_name`` describes a named column, else ``False``.
         """
         particle_name = self._particle_dataset.group_name
@@ -833,7 +833,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Returns
         -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
+        :class:`~swiftsimio.objects.cosmo_array`
             The data with any masks applied.
         """
         mask = getattr(self._swiftgalaxy._extra_mask, self._particle_dataset.group_name)
@@ -923,7 +923,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Returns
         -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
+        :class:`~swiftsimio.objects.cosmo_array`
             The data with any required transformations applied.
         """
         if dataset_name in self._swiftgalaxy.transforms_like_coordinates:
@@ -970,7 +970,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Returns
         -------
-        coordinate_helper : :class:`_CoordinateHelper`
+        :class:`_CoordinateHelper`
             Container providing particle cartesian coordinates as attributes.
         """
         return _CoordinateHelper(
@@ -1004,7 +1004,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Returns
         -------
-        coordinate_helper : :class:`_CoordinateHelper`
+        :class:`_CoordinateHelper`
             Container providing particle cartesian velocities as attributes.
         """
         return _CoordinateHelper(
@@ -1054,7 +1054,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Returns
         -------
-        coordinate_helper : :class:`_CoordinateHelper`
+        :class:`_CoordinateHelper`
             Container providing particle spherical coordinates as attributes.
         """
         if self._spherical_coordinates is None:
@@ -1137,7 +1137,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Returns
         -------
-        coordinate_helper : :class:`_CoordinateHelper`
+        :class:`_CoordinateHelper`
             Container providing particle velocities in spherical coordinates as
             attributes.
         """
@@ -1221,7 +1221,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Returns
         -------
-        coordinate_helper : :class:`_CoordinateHelper`
+        :class:`_CoordinateHelper`
             Container providing particle cylindrical coordinates as attributes.
         """
         if self._cylindrical_coordinates is None:
@@ -1298,7 +1298,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
 
         Returns
         -------
-        coordinate_helper : :class:`_CoordinateHelper`
+        :class:`_CoordinateHelper`
             Container providing particle velocities in cylindrical coordinates
             as attributes.
         """
@@ -1809,7 +1809,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Returns
         -------
-        out : :obj:`str`
+        :obj:`str`
             The string representation.
         """
         return f"SWIFTGalaxy at {self.snapshot_filename}."
@@ -1820,7 +1820,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Returns
         -------
-        out : :obj:`str`
+        :obj:`str`
             The string representation.
         """
         return self.__str__()
@@ -1848,7 +1848,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        :class:`~swiftgalaxy.reader.SWIFTGalaxy`
             The copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object.
         """
         sg = self._copyinit(
@@ -1880,7 +1880,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        :class:`~swiftgalaxy.reader.SWIFTGalaxy`
             The copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object.
         """
         return self._data_copy()
@@ -1908,7 +1908,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        :class:`~swiftgalaxy.reader.SWIFTGalaxy`
             A (possibly masked) copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy`
             object.
         """
@@ -2124,7 +2124,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Returns
         -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
+        :class:`~swiftsimio.objects.cosmo_array`
             The origin of the coordinate reference frame.
         """
         transform_units = self.metadata.units.length
@@ -2155,7 +2155,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Returns
         -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
+        :class:`~swiftsimio.objects.cosmo_array`
             The origin of the velocity reference frame.
         """
         transform_units = self.metadata.units.length / self.metadata.units.time
@@ -2179,7 +2179,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Returns
         -------
-        out : :class:`scipy.spatial.transform.Rotation`
+        :class:`scipy.spatial.transform.Rotation`
             The current rotation.
         """
         return Rotation.from_matrix(self._coordinate_like_transform[:3, :3])

@@ -258,7 +258,7 @@ class SWIFTGalaxies(object):
 
         Returns
         -------
-        out : :class:`numpy.ndarray`
+        :class:`numpy.ndarray`
             Array of indices specifying the iteration order.
         """
         return np.concatenate(self._solution["region_target_indices"])
@@ -494,7 +494,7 @@ class SWIFTGalaxies(object):
 
         Yields
         ------
-        out : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        :class:`~swiftgalaxy.reader.SWIFTGalaxy`
             Each subsequent :class:`~swiftgalaxy.reader.SWIFTGalaxy` object to be
             iterated over.
 
@@ -590,7 +590,7 @@ class SWIFTGalaxies(object):
 
         Returns
         -------
-        out : :obj:`list`
+        :obj:`list`
             A list containing the return value(s) of the function applied to each object
             of interest, in the same order as the objects of interest were passed to the
             halo finder interface.

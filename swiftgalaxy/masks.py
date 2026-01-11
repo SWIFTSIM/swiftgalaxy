@@ -33,7 +33,7 @@ class LazyMask(object):
     Parameters
     ----------
     mask : slice, default: ``None``
-        An object that can be used to mask an array (could be a slice, boolean array, etc)
+        An object that can be used to mask an array (slice, boolean array, etc.).
 
     mask_function : Callable, default: ``None``
         A reference to a function that returns a mask when called.
@@ -75,7 +75,7 @@ class LazyMask(object):
 
         Returns
         -------
-        out : slice
+        slice
             The explicitly evaluated mask.
         """
         if not self._evaluated:
@@ -90,7 +90,7 @@ class LazyMask(object):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.masks.LazyMask`
+        :class:`~swiftgalaxy.masks.LazyMask`
             The copy of the :class:`~swiftgalaxy.masks.LazyMask`.
         """
         if self._evaluated:
@@ -111,7 +111,7 @@ class LazyMask(object):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.masks.LazyMask`
+        :class:`~swiftgalaxy.masks.LazyMask`
             The copy of the :class:`~swiftgalaxy.masks.LazyMask`.
         """
         if self._evaluated:
@@ -138,7 +138,7 @@ class LazyMask(object):
 
         Returns
         -------
-        out : :obj:`bool`
+        :obj:`bool`
             Comparison result.
 
         Raises
@@ -183,7 +183,7 @@ class LazyMask(object):
 
         Returns
         -------
-        out : :obj:`bool`
+        :obj:`bool`
             Comparison result.
 
         Raises
@@ -265,7 +265,7 @@ class MaskCollection(object):
 
         Returns
         -------
-        out : None
+        None
             If we reach calling this function the attribute is not found and we
             return ``None``.
         """
@@ -279,7 +279,7 @@ class MaskCollection(object):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.masks.MaskCollection`
+        :class:`~swiftgalaxy.masks.MaskCollection`
             The copy of the :class:`~swiftgalaxy.masks.MaskCollection`.
         """
         return MaskCollection(**self.__dict__)
@@ -297,7 +297,7 @@ class MaskCollection(object):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.masks.MaskCollection`
+        :class:`~swiftgalaxy.masks.MaskCollection`
             The copy of the :class:`~swiftgalaxy.masks.MaskCollection`.
         """
         return MaskCollection(**{k: deepcopy(v) for k, v in self.__dict__.items()})
