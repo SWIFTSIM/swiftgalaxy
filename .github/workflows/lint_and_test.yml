@@ -55,9 +55,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[dev]
-        pip install git+https://github.com/dnarayanan/caesar.git
-        pip install git+https://github.com/SWIFTSIM/soap.git
+        python -m pip install -e .[dev]
+        python -m pip install git+https://github.com/dnarayanan/caesar.git
+        python -m pip install git+https://github.com/SWIFTSIM/soap.git
     - name: Test with pytest
       run: |
         pytest -n 2
@@ -75,9 +75,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[dev]
-        pip install git+https://github.com/SWIFTSIM/soap.git
-        pip install git+https://github.com/dnarayanan/caesar.git
+        python -m pip install -e .[dev]
+        python -m pip install git+https://github.com/SWIFTSIM/soap.git
+        python -m pip install git+https://github.com/dnarayanan/caesar.git
     - name: Test with pytest including coverage report
       run: |
         pytest -n 2 --cov --cov-branch --cov-report=xml
@@ -103,8 +103,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[dev]
-        pip install git+https://github.com/SWIFTSIM/soap.git
+        python -m pip install -e .[dev]
+        python -m pip install git+https://github.com/SWIFTSIM/soap.git
 		# caesar is not installable on windows: https://github.com/dfm/python-fsps/issues/267
     - name: Test with pytest
       run: |
@@ -127,9 +127,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[dev]
-        pip install git+https://github.com/SWIFTSIM/soap.git
-        pip install git+https://github.com/dnarayanan/caesar.git
+        python -m pip install -e .[dev]
+        python -m pip install git+https://github.com/SWIFTSIM/soap.git
+        python -m pip install git+https://github.com/dnarayanan/caesar.git
     - name: Test with pytest
       run: |
         pytest -n 2
