@@ -9,7 +9,7 @@ build:
     python: "3.12"
   jobs:
     post_create_environment:
-      - python3 -m pip install swiftgalaxy[dev]
+      - python3 -m pip install git+https://github.com/SWIFTSIM/swiftgalaxy[dev]
 
 sphinx:
    configuration: docs/source/conf.py
