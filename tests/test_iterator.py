@@ -1,3 +1,5 @@
+"""Test the tools for iterating over :class:`~swiftgalaxy.reader.SWIFTGalaxy`s."""
+
 import pytest
 import re
 from pathlib import Path
@@ -30,10 +32,13 @@ from swiftgalaxy.halo_catalogues import Standalone, SOAP, Velociraptor, Caesar
 
 
 class TestSWIFTGalaxies:
+    """Test the :mod:`swiftgalaxy` iteration helper class."""
+
     def test_eval_sparse_optimized_solution(self, toysnap):
         """
-        Check that the sparse solution is chosen when optimal and matches expectations
-        for a case that we can work out by hand.
+        Check that the sparse solution is chosen when optimal.
+
+        It should match expectations for a case that we can work out by hand.
         """
         # place a single target in the centre of each cell
         # this should make sparse iteration optimal
@@ -102,8 +107,9 @@ class TestSWIFTGalaxies:
 
     def test_eval_dense_optimized_solution(self, toysnap):
         """
-        Check that the dense solution is chosen when optimal and matches expectations
-        for a case that we can work out by hand.
+        Check that the dense solution is chosen when optimal.
+
+        It should match expectations for a case that we can work out by hand.
         """
         # Place a single target in the centre of each cell
         # and ones straddling many faces, vertices and corners
@@ -200,10 +206,7 @@ class TestSWIFTGalaxies:
                 )
 
     def test_iteration_order(self, sgs):
-        """
-        Check that the iteration order agrees with that computed in the two iteration
-        optimizations.
-        """
+        """Check that the iteration order is that computed for the two optimizations."""
         # force dense solution
         sgs._solution = sgs._dense_optimized_solution
         assert np.allclose(
@@ -221,8 +224,9 @@ class TestSWIFTGalaxies:
 
     def test_iterate(self, sgs):
         """
-        Check that we iterate over the right number of SWIFTGalaxy objects and that
-        they behave like a SWIFTGalaxy created on its own for each target.
+        Check that we iterate over the right number of SWIFTGalaxy objects.
+
+        Each should behave like a SWIFTGalaxy created on its own for each target.
         """
         count = 0
         for sg_from_sgs in sgs:
@@ -242,9 +246,7 @@ class TestSWIFTGalaxies:
         assert count == len(sgs.halo_catalogue.index)
 
     def test_warn_on_no_preload(self, toysnap):
-        """
-        Check that we warn users if they specify anything to pre-load (deprecated).
-        """
+        """Check that we warn users if they specify anything to pre-load (deprecated)."""
         with pytest.warns(DeprecationWarning, match="Preloading is no longer required"):
             SWIFTGalaxies(
                 toysnap["toysnap_filename"],
@@ -254,6 +256,8 @@ class TestSWIFTGalaxies:
 
     def test_exception_on_repeated_targets(self, toysnap):
         """
+        Check that duplicate targets are forbidden.
+
         Due to especially swiftsimio's masking behaviour having duplicate targets in the
         list for a SWIFTGalaxies causes all kinds of problems, so make sure we raise an
         exception if a user tries to do this.
@@ -266,9 +270,10 @@ class TestSWIFTGalaxies:
 
     def test_map(self, tmp_path_factory, hf_multi):
         """
-        Check that the map method returns results in the same order as the input target
-        list. We're careful in this test to make sure that the iteration order is
-        different from the input list order.
+        Check that map method returns results in the same order as the input target list.
+
+        We're careful in this test to make sure that the iteration order is different from
+        the input list order.
         """
         if isinstance(hf_multi, SOAP):
             tp = hf_multi.soap_file.parent
@@ -367,9 +372,7 @@ class TestSWIFTGalaxies:
             _remove_toysnap(snapfile=toysnap_filename)
 
     def test_args_kwargs_to_map(self, sgs):
-        """
-        Make sure that we can pass extra args & kwargs to a function given to map.
-        """
+        """Make sure that we can pass extra args & kwargs to a function given to map."""
         extra_arg = [("foo",), ("bar",)]
         extra_kwarg = [dict(extra_kwarg="spam"), dict(extra_kwarg="eggs")]
 
@@ -381,6 +384,8 @@ class TestSWIFTGalaxies:
 
     def test_soap_target_order_consistency(self, toysoap_with_virtual_snapshot):
         """
+        Test that SOAP doesn't sneakily reorder the galaxy catalogue.
+
         SOAP implicitly sorts the target mask (when getting things from the catalogue
         we get them masked in the order that they appear in the catalogue, rather
         than the order that they appear in the mask - say we ask for items [1, 0]
@@ -435,8 +440,9 @@ class TestSWIFTGalaxies:
     @pytest.mark.parametrize("hf_type", hfs)
     def test_halo_catalogue_with_non_list_indices(self, hf_type, toysnap_withfof):
         """
-        Check if we can initialize a halo_catalogue in multi-galaxy mode with
-        ordered containers that are not a list.
+        Check that we can initialize a halo_catalogue in multi-galaxy mode.
+
+        Here we check some ordered containers that are not a list.
         """
         toysnap_filename = toysnap_withfof["toysnap_filename"]
         tp = toysnap_filename.parent
@@ -513,7 +519,9 @@ class TestSWIFTGalaxies:
 
     def test_zero_targets(self, tmp_path_factory, hf_multi_zerotarget):
         """
-        Make sure we don't crash with zero targets. Instead iterate over zero elements.
+        Make sure we don't crash with zero targets.
+
+        Instead iterate over zero elements.
         """
         if isinstance(hf_multi_zerotarget, SOAP):
             tp = hf_multi_zerotarget.soap_file.parent
@@ -544,9 +552,7 @@ class TestSWIFTGalaxies:
         assert len(map_result) == 0
 
     def test_one_target(self, tmp_path_factory, hf_multi_onetarget):
-        """
-        Make sure that we don't crash with a single target. Instead iterate over it.
-        """
+        """Make sure that we don't crash with a single target. Instead iterate over it."""
         if isinstance(hf_multi_onetarget, SOAP):
             tp = hf_multi_onetarget.soap_file.parent
         elif isinstance(hf_multi_onetarget, Caesar):
@@ -596,9 +602,7 @@ class TestSWIFTGalaxies:
             assert map_result == [0]  # standalone gets position in own catalogue: 0
 
     def test_catalogue_not_iterable(self, toysnap):
-        """
-        Check that trying to use a non-iterable catalogue raises.
-        """
+        """Check that trying to use a non-iterable catalogue raises."""
         with pytest.raises(
             ValueError, match="halo_catalogue target list is not iterable"
         ):
@@ -608,9 +612,7 @@ class TestSWIFTGalaxies:
             )
 
     def test_invalid_iteration_mode(self, toysnap):
-        """
-        Check that giving an invalid iteration mode raises.
-        """
+        """Check that giving an invalid iteration mode raises."""
         with pytest.raises(ValueError, match="optimize_iteration must be one of"):
             SWIFTGalaxies(
                 toysnap["toysnap_filename"],
@@ -619,9 +621,7 @@ class TestSWIFTGalaxies:
             )
 
     def test_coordinate_frame_from_and_auto_recentre_invalid(self, toysnap):
-        """
-        Check that inheriting a coordinate frame and auto-recentering are incompatible.
-        """
+        """Check inheriting coordinate frame and auto-recentering are incompatible."""
         sg = SWIFTGalaxy(
             toysnap["toysnap_filename"],
             ToyHF(snapfile=toysnap["toysnap_filename"], index=0),
@@ -639,9 +639,7 @@ class TestSWIFTGalaxies:
                 pass
 
     def test_coordinate_frame_from_in_iteration(self, toysnap):
-        """
-        Check that we can borrow a coordinate frame when iterating.
-        """
+        """Check that we can borrow a coordinate frame when iterating."""
         sg = SWIFTGalaxy(
             toysnap["toysnap_filename"],
             ToyHF(snapfile=toysnap["toysnap_filename"], index=0),
@@ -664,9 +662,7 @@ class TestSWIFTGalaxies:
             assert np.allclose(sg.halo_catalogue.centre - translation, sg_i.centre)
 
     def test_internal_units_mismatch_in_coordinate_frame_from(self, toysnap):
-        """
-        Check that incompatible internal units raises.
-        """
+        """Check that incompatible internal units raises."""
         sg = SWIFTGalaxy(
             toysnap["toysnap_filename"],
             ToyHF(snapfile=toysnap["toysnap_filename"], index=0),
@@ -688,9 +684,7 @@ class TestSWIFTGalaxies:
                 pass
 
     def test_auto_recentre_off(self, toysnap):
-        """
-        Check that we can switch of auto-recentering in iteration.
-        """
+        """Check that we can switch of auto-recentering in iteration."""
         sgs = SWIFTGalaxies(
             toysnap["toysnap_filename"],
             ToyHF(snapfile=toysnap["toysnap_filename"], index=[0, 1]),
@@ -700,9 +694,7 @@ class TestSWIFTGalaxies:
             assert np.allclose(sg.centre, np.zeros(3))
 
     def test_read_caching(self, toysnap):
-        """
-        Check that we can re-use "raw" data read for a region through the _data_server.
-        """
+        """Check that we can re-use raw data read for a region through _data_server."""
         server = SWIFTGalaxy(
             toysnap["toysnap_filename"],
             ToyHF(snapfile=toysnap["toysnap_filename"], index=0, extra_mask=None),

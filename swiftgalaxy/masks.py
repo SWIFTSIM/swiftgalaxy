@@ -1,4 +1,6 @@
 """
+Mask particles to select galaxies. Supplements :mod:`swiftsimio`'s spatial masking.
+
 The :mod:`swiftsimio` masking features are optimized for spatial masking, that is
 selecting regions made up of a subset of the SWIFT "top-level cells" in a simulation.
 :mod:`swiftgalaxy` masking features aim to support refining these relatively coarse
@@ -31,7 +33,7 @@ class LazyMask(object):
     Parameters
     ----------
     mask : slice, default: ``None``
-        An object that can be used to mask an array (could be a slice, boolean array, etc)
+        An object that can be used to mask an array (slice, boolean array, etc.).
 
     mask_function : Callable, default: ``None``
         A reference to a function that returns a mask when called.
@@ -45,7 +47,7 @@ class LazyMask(object):
         self,
         mask: Optional[Union[slice, EllipsisType, ArrayLike]] = None,
         mask_function: Optional[Callable] = None,
-    ):
+    ) -> None:
         if mask_function is None and mask is None:
             self._mask = None
             self._evaluated = True
@@ -60,9 +62,7 @@ class LazyMask(object):
         return
 
     def _evaluate(self) -> None:
-        """
-        Forces evaluation the mask function.
-        """
+        """Force evaluation the mask function."""
         if not self._evaluated:
             assert self._mask_function is not None  # placate mypy
             self._mask = self._mask_function()
@@ -75,7 +75,7 @@ class LazyMask(object):
 
         Returns
         -------
-        out : slice
+        slice
             The explicitly evaluated mask.
         """
         if not self._evaluated:
@@ -84,12 +84,13 @@ class LazyMask(object):
 
     def __copy__(self) -> "LazyMask":
         """
-        Make a copy of the :class:`~swiftgalaxy.masks.LazyMask` without copying
-        data (a "shallow" copy).
+        Make a copy of the :class:`~swiftgalaxy.masks.LazyMask`.
+
+        This is without copying data (a "shallow" copy).
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.masks.LazyMask`
+        :class:`~swiftgalaxy.masks.LazyMask`
             The copy of the :class:`~swiftgalaxy.masks.LazyMask`.
         """
         if self._evaluated:
@@ -99,8 +100,9 @@ class LazyMask(object):
 
     def __deepcopy__(self, memo: Optional[dict] = None) -> "LazyMask":
         """
-        Make a copy of the :class:`~swiftgalaxy.masks.LazyMask`, copying data
-        (a "deep" copy).
+        Make a copy of the :class:`~swiftgalaxy.masks.LazyMask`.
+
+        This copies data (a "deep" copy).
 
         Parameters
         ----------
@@ -109,7 +111,7 @@ class LazyMask(object):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.masks.LazyMask`
+        :class:`~swiftgalaxy.masks.LazyMask`
             The copy of the :class:`~swiftgalaxy.masks.LazyMask`.
         """
         if self._evaluated:
@@ -136,7 +138,7 @@ class LazyMask(object):
 
         Returns
         -------
-        out : :obj:`bool`
+        :obj:`bool`
             Comparison result.
 
         Raises
@@ -181,7 +183,7 @@ class LazyMask(object):
 
         Returns
         -------
-        out : :obj:`bool`
+        :obj:`bool`
             Comparison result.
 
         Raises
@@ -209,7 +211,6 @@ class MaskCollection(object):
 
     Parameters
     ----------
-
     **kwargs
         Any items passed as kwargs will have their values passed to
         correspondingly named attributes of this object.
@@ -264,7 +265,7 @@ class MaskCollection(object):
 
         Returns
         -------
-        out : None
+        None
             If we reach calling this function the attribute is not found and we
             return ``None``.
         """
@@ -272,20 +273,22 @@ class MaskCollection(object):
 
     def __copy__(self) -> "MaskCollection":
         """
-        Make a copy of the :class:`~swiftgalaxy.masks.MaskCollection` without copying
-        data (a "shallow" copy).
+        Make a copy of the :class:`~swiftgalaxy.masks.MaskCollection`.
+
+        This is without copying data (a "shallow" copy).
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.masks.MaskCollection`
+        :class:`~swiftgalaxy.masks.MaskCollection`
             The copy of the :class:`~swiftgalaxy.masks.MaskCollection`.
         """
         return MaskCollection(**self.__dict__)
 
     def __deepcopy__(self, memo: Optional[dict] = None) -> "MaskCollection":
         """
-        Make a copy of the :class:`~swiftgalaxy.masks.MaskCollection`, copying data
-        (a "deep" copy).
+        Make a copy of the :class:`~swiftgalaxy.masks.MaskCollection`.
+
+        This copies data (a "deep" copy).
 
         Parameters
         ----------
@@ -294,7 +297,7 @@ class MaskCollection(object):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.masks.MaskCollection`
+        :class:`~swiftgalaxy.masks.MaskCollection`
             The copy of the :class:`~swiftgalaxy.masks.MaskCollection`.
         """
         return MaskCollection(**{k: deepcopy(v) for k, v in self.__dict__.items()})

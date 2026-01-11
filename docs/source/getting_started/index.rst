@@ -36,7 +36,7 @@ Optional:
 
 Additional optional packages for developers:
 
-+ :mod:`black[jupyter]` for code formatting.
++ :mod:`ruff` for code formatting and style checks.
 + :mod:`mypy` for type checking (run ``mypy --install-types --non-interactive`` after installation).
 + :mod:`pytest` to run the test suite.
 + :mod:`numpydoc` to check for issues in docstrings.
@@ -72,15 +72,10 @@ Installation for development
 
 To set up the code for development, first clone the latest `main` branch from `github`_:
 ``git clone https://github.com/SWIFTSIM/swiftgalaxy.git``
-and install with ``pip`` using the ``-e`` (editable) flag,
-``pip install -e swiftgalaxy/``.
+and install with ``pip`` using the ``-e`` (editable) flag, and specify development dependencies with ``[dev]``:
+``pip install -e swiftgalaxy/[dev]``.
 
-You should also install all optional dependencies:
-``pip install -r swiftgalaxy/optional_requirements.txt``
-and dependencies to build the documentation:
-``pip install -r swiftgalaxy/docs/requirements.txt``.
-
-Finally, you should install type definitions for :mod:`mypy`:
+You should also install type definitions for :mod:`mypy`:
 ``mypy --install-types --non-interactive``.
 
 You can check that the installation and your environment is ready for development work by moving to the code root directory (``cd swiftgalaxy``) and running the following checks:
@@ -88,7 +83,8 @@ You can check that the installation and your environment is ready for developmen
 .. code-block:: bash
 
    flake8
-   black --check .
+   ruff format --check
+   ruff check
    mypy
    python -m numpydoc lint swiftgalaxy/*.py
    pytest --cov --cov-branch
@@ -100,9 +96,10 @@ You may wish to set up the following `pre-commit hook`_:
    #!/bin/sh
 
    flake8 || exit 1
-   black --check . || exit 1
+   ruff format --check || exit 1
+   ruff check || exit 1
    mypy || exit 1
-   python -m numpydoc lint swiftgalaxy/*.py || exit 1
+   python -m numpydoc lint swiftgalaxy**/*.py || exit 1
 
    exit 0
 
@@ -116,9 +113,10 @@ and `pre-push hook`_:
    url="$2"
 
    flake8 || exit 1
-   black --check . || exit 1
+   ruff format --check || exit 1
+   ruff check || exit 1
    mypy || exit 1
-   python -m numpydoc lint swiftgalaxy/*.py || exit 1
+   python -m numpydoc lint swiftgalaxy**/*.py || exit 1
    pytest || exit 1
 
    exit 0

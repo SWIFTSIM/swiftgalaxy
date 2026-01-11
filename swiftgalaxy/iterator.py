@@ -1,4 +1,6 @@
 """
+Iterate over :class:`~swiftgalaxy.reader.SWIFTGalaxy`s efficiently.
+
 Provides the :class:`~swiftgalaxy.iterator.SWIFTGalaxies` class that enables efficient
 iteration over :class:`~swiftgalaxy.reader.SWIFTGalaxy` objects for multiple objects of
 interest within a single simulation snapshot.
@@ -18,9 +20,7 @@ from swiftsimio.masks import SWIFTMask
 
 
 class _IterationSolution(TypedDict):
-    """
-    Type hints for dicts containing a proposed SWIFTGalaxies iteration strategy.
-    """
+    """Type hints for dicts containing a proposed SWIFTGalaxies iteration strategy."""
 
     regions: np.ndarray
     region_target_indices: list[np.ndarray]
@@ -180,7 +180,7 @@ class SWIFTGalaxies(object):
         velocities_dataset_name: str = "velocities",
         coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
         optimize_iteration: str = "auto",
-    ):
+    ) -> None:
         if not halo_catalogue._multi_galaxy:
             raise ValueError(
                 "halo_catalogue target list is not iterable, create halo_catalogue with "
@@ -258,7 +258,7 @@ class SWIFTGalaxies(object):
 
         Returns
         -------
-        out : :class:`numpy.ndarray`
+        :class:`numpy.ndarray`
             Array of indices specifying the iteration order.
         """
         return np.concatenate(self._solution["region_target_indices"])
@@ -494,7 +494,7 @@ class SWIFTGalaxies(object):
 
         Yields
         ------
-        out : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        :class:`~swiftgalaxy.reader.SWIFTGalaxy`
             Each subsequent :class:`~swiftgalaxy.reader.SWIFTGalaxy` object to be
             iterated over.
 
@@ -590,7 +590,7 @@ class SWIFTGalaxies(object):
 
         Returns
         -------
-        out : :obj:`list`
+        :obj:`list`
             A list containing the return value(s) of the function applied to each object
             of interest, in the same order as the objects of interest were passed to the
             halo finder interface.

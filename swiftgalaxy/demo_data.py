@@ -1,13 +1,11 @@
-"""
-Functions and definitions to retrieve, generate and use illustrative example data.
-"""
+"""Functions and definitions to retrieve, generate and use illustrative example data."""
 
 from pathlib import Path
 import h5py
 import numpy as np
 import unyt as u
 from types import EllipsisType
-from typing import Optional, Callable, Any, Union, List, Sequence
+from typing import Optional, Callable, Union, List, Sequence
 from numpy.typing import NDArray
 from astropy.cosmology import LambdaCDM
 from astropy import units as U
@@ -69,7 +67,7 @@ _age = u.unyt_quantity.from_astropy(
 
 def _ensure_demo_data_directory(func: Callable) -> Callable:
     """
-    Decorator that makes sure demo data directory exists.
+    Make sure demo data directory exists (decorator).
 
     Parameters
     ----------
@@ -78,11 +76,11 @@ def _ensure_demo_data_directory(func: Callable) -> Callable:
 
     Returns
     -------
-    out : callable
+    callable
         Decorated function.
     """
 
-    def wrapper(*args: tuple, **kwargs: dict) -> Any:
+    def wrapper(*args: tuple, **kwargs: dict) -> object:
         """
         Create demo data directory if it does not exist, then call wrapped function.
 
@@ -110,7 +108,7 @@ def _ensure_demo_data_directory(func: Callable) -> Callable:
 
 class WebExamples(object):
     """
-    Helper class to fetch example data from the web storage on demand.
+    Fetch example data from the web storage on demand.
 
     An instantiated helper is available using
     ``from swiftgalaxy.demo_data import web_examples``. The available examples are
@@ -164,11 +162,11 @@ class WebExamples(object):
 
     def __str__(self) -> str:
         """
-        Returns a string listing available example data.
+        Return a string listing available example data.
 
         Returns
         -------
-        out : :obj:`str`
+        :obj:`str`
             The list of available example data.
         """
         return f"Available examples: {', '.join(self.available_examples.keys())}."
@@ -224,8 +222,9 @@ class WebExamples(object):
 
     def __getattr__(self, attr: str) -> Path:
         """
-        If the attribute is in the list of available examples get the needed file(s) and
-        return the path to the requested example file.
+        Get the needed file(s) and return the path to the requested example file.
+
+        First checks if the attribute is in the list of available examples.
 
         Getting a virtual file for example would get the virtual file itself and the files
         that it links to, then return the path to the virtual file.
@@ -237,7 +236,7 @@ class WebExamples(object):
 
         Returns
         -------
-        out : :class:`~pathlib._local.Path`
+        :class:`~pathlib._local.Path`
             The path to the requested example file (that was downloaded if needed).
         """
         if attr in self.available_examples:
@@ -250,8 +249,10 @@ class WebExamples(object):
 
     def remove(self) -> None:
         """
-        Remove all downloaded example files. Also removes the example data directory, if
-        it is empty after the files have been removed.
+        Remove all downloaded example files.
+
+        Also removes the example data directory, if it is empty after the files have been
+        removed.
         """
         for example_dict in self.available_examples.values():
             filenames = example_dict["files"]
@@ -303,19 +304,20 @@ class GeneratedExamples(object):
 
     def __str__(self) -> str:
         """
-        Returns a string listing available example data.
+        Return a string listing available example data.
 
         Returns
         -------
-        out : :obj:`str`
+        :obj:`str`
             The list of available example data.
         """
         return f"Available examples: {', '.join(self.available_examples)}."
 
     def __getattr__(self, attr: str) -> Path:
         """
-        If the attribute is in the list of available examples, create the needed file(s)
-        and return the path to the requested example file.
+        Create the needed file(s) and return the path to the requested example file.
+
+        First checks if the attribute is in the list of available examples.
 
         Creating a virtual file for example would create the virtual file itself and the
         files that it links to, then return the path to the virtual file.
@@ -327,7 +329,7 @@ class GeneratedExamples(object):
 
         Returns
         -------
-        out : :class:`~pathlib._local.Path`
+        :class:`~pathlib._local.Path`
             The path to the requested example file.
         """
         if attr == "snapshot":
@@ -385,8 +387,10 @@ class GeneratedExamples(object):
 
     def remove(self) -> None:
         """
-        Remove all generated example files. Also removes the example data directory, if
-        it is empty after the files have been removed.
+        Remove all generated example files.
+
+        Also removes the example data directory, if it is empty after the files have been
+        removed.
         """
         _remove_toysnap(snapfile=self._demo_data_dir / _toysnap_filename.name)
         _remove_toyvr(filebase=self._demo_data_dir / _toyvr_filebase.name)
@@ -410,8 +414,7 @@ generated_examples = GeneratedExamples()
 
 class ToyHF(_HaloCatalogue):
     """
-    A minimalist halo catalogue class for demo use with
-    :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+    Minimalist halo catalogue class for use with :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
 
     Parameters
     ----------
@@ -447,27 +450,24 @@ class ToyHF(_HaloCatalogue):
         return
 
     def _load(self) -> None:
-        """
-        Any non-trivial i/o operations needed at initialization go here.
-        """
+        """Any non-trivial i/o operations needed at initialization go here."""
         return
 
     @property
     def index(self) -> Optional[Union[int, list[int]]]:
         """
-        The position in the catalogue of the target galaxy.
+        Get the position in the catalogue of the target galaxy.
 
         Returns
         -------
-        out : :obj:`int`
+        :obj:`int`
             The position in the catalogue of the target galaxy.
         """
         return self._mask_index
 
     def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         """
-        Evaluate the spatial mask (:class:`~swiftsimio.masks.SWIFTMask`) for the target
-        galaxy.
+        Evaluate the spatial mask for the target galaxy.
 
         Parameters
         ----------
@@ -476,7 +476,7 @@ class ToyHF(_HaloCatalogue):
 
         Returns
         -------
-        out : swiftsimio.masks.SWIFTMask
+        swiftsimio.masks.SWIFTMask
             The spatial mask.
         """
         if self.index == 0:
@@ -501,8 +501,9 @@ class ToyHF(_HaloCatalogue):
 
     def _generate_bound_only_mask(self, sg: SWIFTGalaxy) -> MaskCollection:
         """
-        Evaluate the extra mask (to apply after the spatial mask) selecting particles
-        belonging to the target galaxy.
+        Evaluate the extra mask selecting particles belonging to the target galaxy.
+
+        This should be applied after the spatial mask.
 
         Parameters
         ----------
@@ -512,16 +513,15 @@ class ToyHF(_HaloCatalogue):
 
         Returns
         -------
-        out : :class:`~swiftgalaxy.masks.MaskCollection`
+        :class:`~swiftgalaxy.masks.MaskCollection`
             The extra mask.
         """
 
         def generate_lazy_mask(group_name: str) -> LazyMask:
             """
-            Generate a function that evaluates a mask for bound particles of a specified
-            particle type. The generated function should have one parameter, accepting a
-            boolean, that toggles masking the data loaded during the construction of the
-            mask on and off.
+            Generate a function that evaluates a mask for bound particles.
+
+            This is for particles of a specified particle type.
 
             Parameters
             ----------
@@ -530,23 +530,24 @@ class ToyHF(_HaloCatalogue):
 
             Returns
             -------
-            out : Callable
+            Callable
                 The generated function that evaluates a mask.
             """
 
             def lazy_mask() -> Union[NDArray, slice, EllipsisType]:
                 """
-                "Evaluate" a mask that selects bound particles. In reality we know what
-                the mask is a priori. We pretend that we need to load the particle ids
-                so that we can test the behaviour of a dataset loaded while constructing
-                the mask.
+                "Evaluate" a mask that selects bound particles.
+
+                In reality we know what the mask is a priori. We pretend that we need to
+                load the particle ids so that we can test the behaviour of a dataset
+                loaded while constructing the mask.
 
                 This function must optionally mask the data (``particle_ids``) that it
                 has loaded.
 
                 Returns
                 -------
-                out : :class:`~numpy.ndarray`, :obj:`slice` or :obj:`Ellipsis`
+                :class:`~numpy.ndarray`, :obj:`slice` or :obj:`Ellipsis`
                     The mask that selects bound particles.
                 """
                 getattr(
@@ -590,11 +591,11 @@ class ToyHF(_HaloCatalogue):
     @property
     def centre(self) -> cosmo_array:
         """
-        Coordinate centre of the target galaxy.
+        Get the coordinate centre of the target galaxy.
 
         Returns
         -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
+        :class:`~swiftsimio.objects.cosmo_array`
             The coordinate centre of the target galaxy.
         """
         if self.index == 0:
@@ -617,11 +618,11 @@ class ToyHF(_HaloCatalogue):
     @property
     def velocity_centre(self) -> cosmo_array:
         """
-        Velocity centre of the target galaxy.
+        Get the velocity centre of the target galaxy.
 
         Returns
         -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
+        :class:`~swiftsimio.objects.cosmo_array`
             The velocity centre of the target galaxy.
         """
         if self.index == 0:
@@ -644,11 +645,11 @@ class ToyHF(_HaloCatalogue):
     @property
     def _region_centre(self) -> cosmo_array:
         """
-        Centre of the bounding box that defines the spatial mask for the target galaxy.
+        Get the centre of the bounding box that defines the spatial mask.
 
         Returns
         -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
+        :class:`~swiftsimio.objects.cosmo_array`
             The bounding box centre.
         """
         return cosmo_array(
@@ -662,12 +663,11 @@ class ToyHF(_HaloCatalogue):
     @property
     def _region_aperture(self) -> cosmo_array:
         """
-        Half-side length of the bounding box that defines the spatial mask for the target
-        galaxy.
+        Get the half-side length of the bounding box that defines the spatial.
 
         Returns
         -------
-        out : :class:`~swiftsimio.objects.cosmo_array`
+        :class:`~swiftsimio.objects.cosmo_array`
             The half-length of the bounding box used to construct the spatial mask.
         """
         return cosmo_array(
@@ -688,8 +688,9 @@ def _create_toysnap(
     withfof: bool = False,
 ) -> None:
     """
-    Creates a sample 'snapshot file' dataset containing 2 galaxies and a 'background' of
-    unassigned particles.
+    Create a sample 'snapshot file' dataset containing 2 galaxies.
+
+    Also contains a 'background' of unassigned particles.
 
     The data are created entirely "by hand" by drawing from random distributions (uniform,
     exponential disk, etc.). They are not the result of any actual simulation. Their
@@ -1189,15 +1190,15 @@ def _create_toysnap(
                     "Conversion factor to physical CGS "
                     "(including cosmological corrections)"
                 ] = np.array([1.0])
-                f[f"PartType{ptype}/FOFGroupIDs"].attrs[
-                    "Description"
-                ] = b"Friends-Of-Friends ID of the group the particles belong to"
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs["Description"] = (
+                    b"Friends-Of-Friends ID of the group the particles belong to"
+                )
                 f[f"PartType{ptype}/FOFGroupIDs"].attrs[
                     "Expression for physical CGS units"
                 ] = b"[ - ] "
-                f[f"PartType{ptype}/FOFGroupIDs"].attrs[
-                    "Lossy compression filter"
-                ] = b"None"
+                f[f"PartType{ptype}/FOFGroupIDs"].attrs["Lossy compression filter"] = (
+                    b"None"
+                )
                 f[f"PartType{ptype}/FOFGroupIDs"].attrs["U_I exponent"] = np.array(
                     [0.0]
                 )
@@ -1225,7 +1226,7 @@ def _create_toysnap(
 
 def _remove_toysnap(snapfile: Union[str, Path] = _toysnap_filename) -> None:
     """
-    Removes file created by :func:`~swiftgalaxy.demo_data._create_toysnap`.
+    Remove file created by :func:`~swiftgalaxy.demo_data._create_toysnap`.
 
     Parameters
     ----------
@@ -1240,8 +1241,10 @@ def _remove_toysnap(snapfile: Union[str, Path] = _toysnap_filename) -> None:
 @_ensure_demo_data_directory
 def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
     """
-    Creates a sample Velociraptor catalogue containing 2 galaxies matching the snapshot
-    file created by :func:`~swiftgalaxy.demo_data._create_toysnap`.
+    Create a sample Velociraptor catalogue containing 2 galaxies.
+
+    These match the snapshot file created by
+    :func:`~swiftgalaxy.demo_data._create_toysnap`.
 
     The data are created entirely "by hand". They are not the result of any actual
     simulation. Their purpose is to illustrate :mod:`swiftgalaxy` use by providing files
@@ -1629,7 +1632,7 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
 
 def _remove_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
     """
-    Removes files created by :func:`~swiftgalaxy.demo_data._create_toyvr`.
+    Remove files created by :func:`~swiftgalaxy.demo_data._create_toyvr`.
 
     Parameters
     ----------
@@ -1659,8 +1662,10 @@ def _create_toycaesar(
     include_bhlist: bool = True,
 ) -> None:
     """
-    Creates a sample Caesar catalogue containing 2 galaxies matching the snapshot
-    file created by :func:`~swiftgalaxy.demo_data._create_toysnap`.
+    Create a sample Caesar catalogue containing 2 galaxies.
+
+    These match the snapshot file created by
+    :func:`~swiftgalaxy.demo_data._create_toysnap`.
 
     The data are created entirely "by hand". They are not the result of any actual
     simulation. Their purpose is to illustrate :mod:`swiftgalaxy` use by providing files
@@ -2107,9 +2112,9 @@ def _create_toycaesar(
         f["/simulation_attributes/units"].attrs["H_z"] = "1/s"
         f["/simulation_attributes/units"].attrs["_boxsize"] = "kpccm"
         f["/simulation_attributes/units"].attrs["critical_density"] = "Msun/kpc**3"
-        f["/simulation_attributes/units"].attrs[
-            "mean_interparticle_separation"
-        ] = "kpccm"
+        f["/simulation_attributes/units"].attrs["mean_interparticle_separation"] = (
+            "kpccm"
+        )
         f["/simulation_attributes/units"].attrs["search_radius"] = "kpccm"
         f["/simulation_attributes/units"].attrs["time"] = "s"
     return
@@ -2117,7 +2122,7 @@ def _create_toycaesar(
 
 def _remove_toycaesar(filename: Union[str, Path] = _toycaesar_filename) -> None:
     """
-    Removes files created by :func:`~swiftgalaxy.demo_data._create_toycaesar`.
+    Remove files created by :func:`~swiftgalaxy.demo_data._create_toycaesar`.
 
     Parameters
     ----------
@@ -2139,10 +2144,12 @@ def _create_toysoap(
     virtual_snapshot_filename: Union[str, Path] = _toysoap_virtual_snapshot_filename,
 ) -> None:
     """
-    Creates a sample SOAP catalogue containing 2 galaxies matching the snapshot
-    file created by :func:`~swiftgalaxy.demo_data._create_toysnap`. Files containing
-    particle membership information and a virtual snapshot linking this information
-    into the snapshot file can optionally be created.
+    Create a sample SOAP catalogue containing 2 galaxies.
+
+    These match the snapshot file created by
+    :func:`~swiftgalaxy.demo_data._create_toysnap`. Files containing particle membership
+    information and a virtual snapshot linking this information into the snapshot file can
+    optionally be created.
 
     The data are created entirely "by hand". They are not the result of any actual
     simulation. Their purpose is to illustrate :mod:`swiftgalaxy` use by providing files
@@ -3190,8 +3197,9 @@ def _remove_toysoap(
     virtual_snapshot_filename: Union[str, Path] = _toysoap_virtual_snapshot_filename,
 ) -> None:
     """
-    Removes files created by :func:`~swiftgalaxy.demo_data._create_toysoap`. Any files
-    not found are ignored.
+    Remove files created by :func:`~swiftgalaxy.demo_data._create_toysoap`.
+
+    Any files not found are ignored.
 
     Parameters
     ----------

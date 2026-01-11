@@ -1,3 +1,5 @@
+"""Test running the examples that come with :mod:`swiftgalaxy`."""
+
 from pathlib import Path
 import pytest
 import unyt as u
@@ -15,17 +17,14 @@ from swiftgalaxy.demo_data import (
 
 
 class TestWebExampleData:
+    """Test the example data available for download."""
 
     def test_str(self, web_examples_tmpdir):
-        """
-        Check that string representation lists available examples.
-        """
+        """Check that string representation lists available examples."""
         assert "snapshot" in str(web_examples_tmpdir)
 
     def test_snapshot(self, web_examples_tmpdir):
-        """
-        Check that we can create a swiftgalaxy, retrieving a sample snapshot file.
-        """
+        """Check that we can create a swiftgalaxy, retrieving a sample snapshot file."""
         sm = mask(web_examples_tmpdir.snapshot)  # just to get an interface to metadata
         SWIFTGalaxy(
             web_examples_tmpdir.snapshot,
@@ -57,8 +56,9 @@ class TestWebExampleData:
     @pytest.mark.parametrize("group_type", ["halo", "galaxy"])
     def test_caesar(self, web_examples_tmpdir, group_type):
         """
-        Check that we can create a swiftgalaxy, retrieving a sample snapshot file and
-        caesar catalogue.
+        Check that we can create a swiftgalaxy.
+
+        We should retrieve a sample snapshot file and caesar catalogue.
         """
         pytest.importorskip("caesar")
         SWIFTGalaxy(
@@ -68,8 +68,9 @@ class TestWebExampleData:
 
     def test_soap(self, web_examples_tmpdir):
         """
-        Check that we can create a swiftgalaxy, retrieving a sample virtual snapshot
-        file and a soap catalogue.
+        Check that we can create a swiftgalaxy.
+
+        We should retrieve a sample virtual snapshot file and a soap catalogue.
         """
         SWIFTGalaxy(
             web_examples_tmpdir.virtual_snapshot,
@@ -78,8 +79,9 @@ class TestWebExampleData:
 
     def test_vr(self, web_examples_tmpdir):
         """
-        Check that we can create a swiftgalaxy, retrieving a sample snapshot file
-        and velociraptor catalogue.
+        Check that we can create a swiftgalaxy.
+
+        We should retrieve a sample snapshot file and velociraptor catalogue.
         """
         pytest.importorskip("velociraptor")
         SWIFTGalaxy(
@@ -88,9 +90,7 @@ class TestWebExampleData:
         )
 
     def test_remove(self, web_examples_tmpdir):
-        """
-        Check that example data files get cleaned up on request.
-        """
+        """Check that example data files get cleaned up on request."""
         # download all the example data (if not present)
         for example in web_examples_tmpdir.available_examples.keys():
             getattr(web_examples_tmpdir, example)
@@ -111,27 +111,21 @@ class TestWebExampleData:
 
 
 class TestGeneratedExampleData:
+    """Test the procedurally-generated example data."""
 
     def test_str(self, generated_examples_tmpdir):
-        """
-        Check that string representation lists available examples.
-        """
+        """Check that string representation lists available examples."""
         assert "snapshot" in str(generated_examples_tmpdir)
 
     def test_snapshot(self, generated_examples_tmpdir):
-        """
-        Check that we can create a swiftgalaxy using the helper for a generated snapshot.
-        """
+        """Check that we can create a swiftgalaxy with the generated snapshot helper."""
         SWIFTGalaxy(
             generated_examples_tmpdir.snapshot,
             ToyHF(snapfile=generated_examples_tmpdir.snapshot, index=0),
         )
 
     def test_velociraptor(self, generated_examples_tmpdir):
-        """
-        Check that we can create a swiftgalaxy using the helper for a generated
-        velociraptor catalogue.
-        """
+        """Check that we can create a swiftgalaxy using the generated velociraptor."""
         pytest.importorskip("velociraptor")
         SWIFTGalaxy(
             generated_examples_tmpdir.snapshot,
@@ -140,10 +134,7 @@ class TestGeneratedExampleData:
 
     @pytest.mark.parametrize("group_type", ["halo", "galaxy"])
     def test_caesar(self, generated_examples_tmpdir, group_type):
-        """
-        Check that we can create a swiftgalaxy using the helper for a generated caesar
-        catalogue.
-        """
+        """Check that we can create a swiftgalaxy using the generated caesar."""
         pytest.importorskip("caesar")
         SWIFTGalaxy(
             generated_examples_tmpdir.snapshot,
@@ -153,10 +144,7 @@ class TestGeneratedExampleData:
         )
 
     def test_soap(self, generated_examples_tmpdir):
-        """
-        Check that we can create a swiftgalaxy using the helper for a generated soap
-        catalogue.
-        """
+        """Check that we can create a swiftgalaxy using the generated soap."""
         pytest.importorskip("compression")
         SWIFTGalaxy(
             generated_examples_tmpdir.virtual_snapshot,
@@ -164,9 +152,7 @@ class TestGeneratedExampleData:
         )
 
     def test_remove(self, generated_examples_tmpdir):
-        """
-        Check that examples get cleaned up on request.
-        """
+        """Check that examples get cleaned up on request."""
         pytest.importorskip("compression")
         # create all the example data (if not present)
         for example in generated_examples_tmpdir.available_examples:
@@ -199,11 +185,10 @@ class TestGeneratedExampleData:
 
 
 class TestExampleNotebooks:
+    """Test the example code contained in notebooks."""
 
     def test_generated_example_notebook(self):
-        """
-        Check that the example notebook with data generated on the fly runs without error.
-        """
+        """Check that the example notebook with generated data runs without error."""
         pytest.importorskip(
             "nbmake", reason="nbmake (optional dependency) not available"
         )

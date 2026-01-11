@@ -1,4 +1,7 @@
+"""Set up fixtures and helpers for tests."""
+
 import pytest
+from pytest import TempPathFactory, FixtureRequest
 from pathlib import Path
 import numpy as np
 import unyt as u
@@ -12,6 +15,7 @@ from swiftgalaxy import (
     Standalone,
     MaskCollection,
 )
+from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftgalaxy.masks import LazyMask
 from swiftgalaxy.demo_data import (
     _create_toysnap,
@@ -37,13 +41,28 @@ from swiftgalaxy.demo_data import (
     _vcentre_2,
     generated_examples,
     web_examples,
+    GeneratedExamples,
+    WebExamples,
 )
 
 hfs = ("vr", "caesar_halo", "caesar_galaxy", "sa", "soap")
 
 
 @pytest.fixture(scope="function")
-def toysnap(tmp_path_factory):
+def toysnap(tmp_path_factory: TempPathFactory) -> dict[str, Path]:
+    """
+    Make a basic snapshot file.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :obj:`dict`
+        Dictionary with created file locations.
+    """
     toysnap_filename = (
         tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
     )
@@ -55,7 +74,20 @@ def toysnap(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def toysnap_withfof(tmp_path_factory):
+def toysnap_withfof(tmp_path_factory: TempPathFactory) -> dict[str, Path]:
+    """
+    Make a snapshot file with FOF data for particles.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :obj:`dict`
+        Dictionary with created file locations.
+    """
     toysnap_filename = (
         tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
     )
@@ -67,7 +99,20 @@ def toysnap_withfof(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def toysoap_with_virtual_snapshot(tmp_path_factory):
+def toysoap_with_virtual_snapshot(tmp_path_factory: TempPathFactory) -> dict[str, Path]:
+    """
+    Make a SOAP dataset backed by a virtual snapshot file.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :obj:`dict`
+        Dictionary with created file locations.
+    """
     pytest.importorskip("compression")
     tp = tmp_path_factory.mktemp(_toysoap_filename.parent)
     toysoap_filename = tp / _toysoap_filename.name
@@ -99,7 +144,20 @@ def toysoap_with_virtual_snapshot(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def sg(request, tmp_path_factory):
+def sg(tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
+    """
+    Make a basic :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        A basic :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+    """
     toysnap_filename = (
         tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
     )
@@ -116,7 +174,15 @@ def sg(request, tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def sgs(request, tmp_path_factory):
+def sgs(tmp_path_factory: TempPathFactory) -> SWIFTGalaxies:
+    """
+    Make a basic :class:`~swiftgalaxy.iterator.SWIFTGalaxies`.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+    """
     toysnap_filename = (
         tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
     )
@@ -131,7 +197,23 @@ def sgs(request, tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def sg_custom_names(tmp_path_factory):
+def sg_custom_names(tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
+    """
+    Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    With alternate names for coordinates, velocities and particle IDs.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with alternate names for coordinates,
+        velocities and particle IDs.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_custom_names_filename = tp / "toysnap_custom_names.hdf5"
     alt_coord_name, alt_vel_name, alt_id_name = "my_coords", "my_vels", "my_ids"
@@ -157,7 +239,22 @@ def sg_custom_names(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def sg_autorecentre_off(tmp_path_factory):
+def sg_autorecentre_off(tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
+    """
+    Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    With auto-recentering of the coordinate system switched off.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with autorecentering switched off.
+    """
     toysnap_filename = (
         tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
     )
@@ -175,7 +272,23 @@ def sg_autorecentre_off(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def sg_soap(tmp_path_factory):
+def sg_soap(tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
+    """
+    Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    With a :class:`~swiftgalaxy.halo_catalogues.SOAP` halo catalogue.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with
+        :class:`~swiftgalaxy.halo_catalogues.SOAP` halo catalogue.
+    """
     pytest.importorskip("compression")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
@@ -210,7 +323,23 @@ def sg_soap(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def sgs_soap(tmp_path_factory):
+def sgs_soap(tmp_path_factory: TempPathFactory) -> SWIFTGalaxies:
+    """
+    Make a :class:`~swiftgalaxy.iterator.SWIFTGalaxies`.
+
+    With a :class:`~swiftgalaxy.halo_catalogues.SOAP` halo catalogue.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.iterator.SWIFTGalaxies`
+        A :class:`~swiftgalaxy.iterator.SWIFTGalaxies` with
+        :class:`~swiftgalaxy.halo_catalogues.SOAP` halo catalogue.
+    """
     pytest.importorskip("compression")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
@@ -245,7 +374,23 @@ def sgs_soap(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def sg_vr(tmp_path_factory):
+def sg_vr(tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
+    """
+    Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    With a :class:`~swiftgalaxy.halo_catalogues.Velociraptor` halo catalogue.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with
+        :class:`~swiftgalaxy.halo_catalogues.Velociraptor` halo catalogue.
+    """
     pytest.importorskip("velociraptor")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
@@ -265,7 +410,23 @@ def sg_vr(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def sgs_vr(tmp_path_factory):
+def sgs_vr(tmp_path_factory: TempPathFactory) -> SWIFTGalaxies:
+    """
+    Make a :class:`~swiftgalaxy.iterator.SWIFTGalaxies`.
+
+    With a :class:`~swiftgalaxy.halo_catalogues.Velociraptor` halo catalogue.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.iterator.SWIFTGalaxies`
+        A :class:`~swiftgalaxy.iterator.SWIFTGalaxies` with
+        :class:`~swiftgalaxy.halo_catalogue.Velociraptor` halo catalogue.
+    """
     pytest.importorskip("velociraptor")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
@@ -285,7 +446,28 @@ def sgs_vr(tmp_path_factory):
 
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
-def sg_caesar(request, tmp_path_factory):
+def sg_caesar(
+    request: FixtureRequest, tmp_path_factory: TempPathFactory
+) -> SWIFTGalaxy:
+    """
+    Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    With a :class:`~swiftgalaxy.halo_catalogues.Caesar` halo catalogue.
+
+    Parameters
+    ----------
+    request : FixtureRequest
+        Provides access to configurable parameters for fixture.
+
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with
+        :class:`~swiftgalaxy.halo_catalogue.Caesar` halo catalogue.
+    """
     pytest.importorskip("caesar")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
@@ -305,7 +487,28 @@ def sg_caesar(request, tmp_path_factory):
 
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
-def sgs_caesar(request, tmp_path_factory):
+def sgs_caesar(
+    request: FixtureRequest, tmp_path_factory: TempPathFactory
+) -> SWIFTGalaxies:
+    """
+    Make a :class:`~swiftgalaxy.iterator.SWIFTGalaxies`.
+
+    With a :class:`~swiftgalaxy.halo_catalogues.Caesar` halo catalogue.
+
+    Parameters
+    ----------
+    request : FixtureRequest
+        Provides access to configurable parameters for fixture.
+
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.iterator.SWIFTGalaxies`
+        A :class:`~swiftgalaxy.iterator.SWIFTGalaxies` with
+        :class:`~swiftgalaxy.halo_catalogue.Caesar` halo catalogue.
+    """
     pytest.importorskip("caesar")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
@@ -329,7 +532,20 @@ def sgs_caesar(request, tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def soap(tmp_path_factory):
+def soap(tmp_path_factory: TempPathFactory) -> SOAP:
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues.SOAP` catalogue.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.halo_catalogues.SOAP`
+        A :class:`~swiftgalaxy.halo_catalogue.SOAP` halo catalogue.
+    """
     # no virtual snapshot needed, don't need importorskip("compression")
     toysoap_filename = (
         tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysoap_filename.name
@@ -347,7 +563,22 @@ def soap(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def soap_multi(tmp_path_factory):
+def soap_multi(tmp_path_factory: TempPathFactory) -> SOAP:
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues.SOAP` catalogue.
+
+    With multiple target galaxies.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.halo_catalogues.SOAP`
+        A :class:`~swiftgalaxy.halo_catalogue.SOAP` halo catalogue with multiple targets.
+    """
     # no virtual snapshot needed, don't need importorskip("compression")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysoap_filename = tp / _toysoap_filename.name
@@ -366,7 +597,20 @@ def soap_multi(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def vr(tmp_path_factory):
+def vr(tmp_path_factory: TempPathFactory) -> Velociraptor:
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues.Velociraptor` catalogue.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.halo_catalogues.Velociraptor`
+        A :class:`~swiftgalaxy.halo_catalogue.Velociraptor` halo catalogue.
+    """
     pytest.importorskip("velociraptor")
     toyvr_filebase = (
         tmp_path_factory.mktemp(_toyvr_filebase.parent) / _toyvr_filebase.name
@@ -379,7 +623,23 @@ def vr(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def vr_multi(tmp_path_factory):
+def vr_multi(tmp_path_factory: TempPathFactory) -> Velociraptor:
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues.Velociraptor` catalogue.
+
+    With multiple target galaxies.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.halo_catalogues.Velociraptor`
+        A :class:`~swiftgalaxy.halo_catalogue.Velociraptor` halo catalogue with multiple
+        targets.
+    """
     pytest.importorskip("velociraptor")
     toyvr_filebase = (
         tmp_path_factory.mktemp(_toyvr_filebase.parent) / _toyvr_filebase.name
@@ -392,7 +652,23 @@ def vr_multi(tmp_path_factory):
 
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
-def caesar(request, tmp_path_factory):
+def caesar(request: FixtureRequest, tmp_path_factory: TempPathFactory) -> Caesar:
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues.Caesar` catalogue.
+
+    Parameters
+    ----------
+    request : FixtureRequest
+        Provides access to configurable parameters for fixture.
+
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.halo_catalogues.Caesar`
+        A :class:`~swiftgalaxy.halo_catalogue.Caesar` halo catalogue.
+    """
     pytest.importorskip("caesar")
     toycaesar_filename = (
         tmp_path_factory.mktemp(_toycaesar_filename.parent) / _toycaesar_filename.name
@@ -407,7 +683,26 @@ def caesar(request, tmp_path_factory):
 
 
 @pytest.fixture(scope="function", params=["halo", "galaxy"])
-def caesar_multi(request, tmp_path_factory):
+def caesar_multi(request: FixtureRequest, tmp_path_factory: TempPathFactory) -> Caesar:
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues.Caesar` catalogue.
+
+    With multiple target galaxies.
+
+    Parameters
+    ----------
+    request : FixtureRequest
+        Provides access to configurable parameters for fixture.
+
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.halo_catalogues.Caesar`
+        A :class:`~swiftgalaxy.halo_catalogue.Caesar` halo catalogue with multiple
+        targets.
+    """
     pytest.importorskip("caesar")
     toycaesar_filename = (
         tmp_path_factory.mktemp(_toycaesar_filename.parent) / _toycaesar_filename.name
@@ -422,7 +717,20 @@ def caesar_multi(request, tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def sa(tmp_path_factory):
+def sa(tmp_path_factory: TempPathFactory) -> Standalone:
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues.Standalone` catalogue.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.halo_catalogues.Standalone`
+        A :class:`~swiftgalaxy.halo_catalogue.Standalone` halo catalogue.
+    """
     yield Standalone(
         extra_mask=MaskCollection(
             gas=np.s_[_n_g_b // 2 :],
@@ -455,7 +763,23 @@ def sa(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def sa_multi(tmp_path_factory):
+def sa_multi(tmp_path_factory: TempPathFactory) -> Standalone:
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues.Standalone` catalogue.
+
+    With multiple target galaxies.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.halo_catalogues.Standalone`
+        A :class:`~swiftgalaxy.halo_catalogue.Standalone` halo catalogue with multiple
+        targets.
+    """
     yield Standalone(
         extra_mask=None,
         centre=cosmo_array(
@@ -489,7 +813,23 @@ def sa_multi(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def sg_sa(tmp_path_factory):
+def sg_sa(tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
+    """
+    Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    With :class:`~swiftgalaxy.halo_catalogues.Standalone` halo catalogue.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with
+        :class:`~swiftgalaxy.halo_catalogues.Standalone` halo catalogue.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename)
@@ -529,7 +869,23 @@ def sg_sa(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def sgs_sa(tmp_path_factory):
+def sgs_sa(tmp_path_factory: TempPathFactory) -> SWIFTGalaxies:
+    """
+    Make a :class:`~swiftgalaxy.iterator.SWIFTGalaxies`.
+
+    With :class:`~swiftgalaxy.halo_catalogues.Standalone` halo catalogue.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.iterator.SWIFTGalaxies`
+        A :class:`~swiftgalaxy.iterator.SWIFTGalaxies` with
+        :class:`~swiftgalaxy.halo_catalogues.Standalone` halo catalogue.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename)
@@ -570,7 +926,24 @@ def sgs_sa(tmp_path_factory):
 
 
 @pytest.fixture(scope="function", params=hfs)
-def sg_hf(request, tmp_path_factory):
+def sg_hf(request: FixtureRequest, tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
+    """
+    Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy` with selectable halo catalogue.
+
+    Parameters
+    ----------
+    request : FixtureRequest
+        Provides access to configurable parameters for fixture.
+
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with halo catalogue of configurable
+        type.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
@@ -659,7 +1032,23 @@ def sg_hf(request, tmp_path_factory):
 
 
 @pytest.fixture(scope="function", params=hfs)
-def hf(request, tmp_path_factory):
+def hf(request: FixtureRequest, tmp_path_factory: TempPathFactory) -> _HaloCatalogue:
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue` of selectable type.
+
+    Parameters
+    ----------
+    request : FixtureRequest
+        Provides access to configurable parameters for fixture.
+
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+        A halo catalogue of configurable type.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     if request.param in {"caesar_halo", "caesar_galaxy"}:
         pytest.importorskip("caesar")
@@ -731,7 +1120,27 @@ def hf(request, tmp_path_factory):
 
 
 @pytest.fixture(scope="function", params=hfs)
-def hf_multi(request, tmp_path_factory):
+def hf_multi(
+    request: FixtureRequest, tmp_path_factory: TempPathFactory
+) -> _HaloCatalogue:
+    """
+    Make a :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue` of selectable type.
+
+    With multiple target galaxies.
+
+    Parameters
+    ----------
+    request : FixtureRequest
+        Provides access to configurable parameters for fixture.
+
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+        A halo catalogue of configurable type with multiple targets.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
@@ -816,7 +1225,30 @@ def hf_multi(request, tmp_path_factory):
 
 
 @pytest.fixture(scope="function", params=hfs)
-def hf_multi_forwards_and_backwards(request, tmp_path_factory):
+def hf_multi_forwards_and_backwards(
+    request: FixtureRequest, tmp_path_factory: TempPathFactory
+) -> _HaloCatalogue:
+    """
+    Make two :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`s.
+
+    Their type is a selectable parameter. They have multiple target galaxies. The first of
+    the pair has the targets in forward order, the second in reverse order.
+
+    Parameters
+    ----------
+    request : FixtureRequest
+        Provides access to configurable parameters for fixture.
+
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`, \
+    :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+        Two halo catalogues of configurable type with multiple targets, the first with
+        forward and the second with backwards target ordering.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
@@ -946,7 +1378,28 @@ def hf_multi_forwards_and_backwards(request, tmp_path_factory):
 
 
 @pytest.fixture(scope="function", params=hfs)
-def hf_multi_onetarget(request, tmp_path_factory):
+def hf_multi_onetarget(
+    request: FixtureRequest, tmp_path_factory: TempPathFactory
+) -> _HaloCatalogue:
+    """
+    Make :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue` of selectable type.
+
+    There are "multiple targets" in the sense that there is a target list, but the list
+    has length 1.
+
+    Parameters
+    ----------
+    request : FixtureRequest
+        Provides access to configurable parameters for fixture.
+
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+        A halo catalogue of configurable type with one target in its "multi-target" list.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
@@ -1026,7 +1479,29 @@ def hf_multi_onetarget(request, tmp_path_factory):
 
 
 @pytest.fixture(scope="function", params=hfs)
-def hf_multi_zerotarget(request, tmp_path_factory):
+def hf_multi_zerotarget(
+    request: FixtureRequest, tmp_path_factory: TempPathFactory
+) -> _HaloCatalogue:
+    """
+    Make :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue` of selectable type.
+
+    There are "multiple targets" in the sense that there is a target list, but the list
+    has length 0.
+
+    Parameters
+    ----------
+    request : FixtureRequest
+        Provides access to configurable parameters for fixture.
+
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+        A halo catalogue of configurable type with zero targets in its "multi-target"
+        list.
+    """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     _create_toysnap(snapfile=toysnap_filename, withfof=request.param == "soap")
@@ -1104,14 +1579,23 @@ def hf_multi_zerotarget(request, tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def lm():
-    def mf():
+def lm() -> LazyMask:
+    """
+    Make a simple lazy mask.
+
+    Yields
+    ------
+    :class:`~swiftgalaxy.masks.LazyMask`
+        A lazy mask.
+    """
+
+    def mf() -> np.ndarray:
         """
-        A simple mask function.
+        Create a simple mask function.
 
         Returns
         -------
-        out : ndarray
+        :class:`~numpy.ndarray`
             A simple mask array.
         """
         return np.ones(10, dtype=bool)
@@ -1121,12 +1605,38 @@ def lm():
 
 
 @pytest.fixture(scope="function")
-def generated_examples_tmpdir(tmp_path_factory):
+def generated_examples_tmpdir(tmp_path_factory: TempPathFactory) -> GeneratedExamples:
+    """
+    Make procedurally generated example data helper with a temporary directory.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Returns
+    -------
+    :class:`~swiftgalaxy.demo_data.WebExamples`
+        Helper class to access procedurally generated example data.
+    """
     generated_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
     return generated_examples
 
 
 @pytest.fixture(scope="function")
-def web_examples_tmpdir(tmp_path_factory):
+def web_examples_tmpdir(tmp_path_factory: TempPathFactory) -> WebExamples:
+    """
+    Make downloadable example data helper with a temporary directory.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Returns
+    -------
+    :class:`~swiftgalaxy.demo_data.WebExamples`
+        Helper class to access downloadable example data.
+    """
     web_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
     return web_examples
