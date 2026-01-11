@@ -36,6 +36,7 @@ all = [
     "soap @ git+https://github.com/SWIFTSIM/soap",
     "tqdm",
     "astropy",
+    "h5py",
 ]
 velociraptor = ["velociraptor", "tqdm", "astropy"]
 soap = ["soap @ git+https://github.com/SWIFTSIM/soap", "tqdm", "astropy"]
@@ -54,6 +55,7 @@ dev = [
     "soap @ git+https://github.com/SWIFTSIM/soap",
     "tqdm",
     "astropy",
+    "h5py",
 ]
 
 [tool.ruff]

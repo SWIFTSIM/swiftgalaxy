@@ -8,18 +8,24 @@ Please see the documentation pages on [setting up your development environment](
 Contributions are always welcome, but you should make sure of the following:
 
 + Your contributions include type hints (in function and method declarations).
-+ Your contributions are formatted with the `black` formatter.
++ Your contributions are formatted with the `ruff` formatter.
++ Your contributions pass `ruff` style checks.
 + Your contributions do not have formatting or style issues identified by `flake8`.
 + Your contributions are covered by tests and pass all unit tests in `/tests`.
 + Your contributions add unit tests for new functionality.
++ Your contributions are documented with docstrings and their style passes `numpydoc lint` checks.
 + Your contributions are documented fully under `/docs`.
 
 Some brief quickstart-style notes are included below, but are not intended to replace consulting the documentation of each relevant toolset. We recognize that this can seem daunting to users new to collaborative development. Don't hesitate to get in touch for help if you want to contribute!
 
-Black style
------------
+Ruff
+----
 
-You can install the `black` formatter with `pip install black`. To check your copy of the repository you can then run `black --check --diff` in the same directory as the `pyproject.toml` file. A message like `All done! ✨ 🍰 ✨` indicates that your working copy passes the checks, while `Oh no! 💥 💔 💥` indicates problems are present. You can also use `black` to automatically edit your copy of the repository to comply with the style rules by running `black` in the same directory as `pyproject.toml`. Don't forget to commit any changes it makes. In most cases, code formatted with `black` will pass the `flake8` checks.
+You can install the `ruff` linter with `pip install ruff`. To check that your copy of the repository conforms to style rules you can run `ruff check` in the same directory as the `pyproject.toml` file. A message like `All tests passed!` indicates that your working copy passes the checks, otherwise a list of problems is given. Some might be automatically fixable with `ruff check --fix`. Don't forget to commit any automatic fixes.
+
+`ruff` is also used to enforce code formatting, you can check this with `ruff format --check` and automatically format your copy of the code with `ruff format`. Again remember to commit any automatically formatted files.
+
+Pytest unit testing
 
 Flake8 style guide enforcement
 ------------------------------
@@ -37,3 +43,8 @@ Documentation
 -------------
 
 The API documentation is built automatically from the docstrings of classes, functions, etc. in the source files. These follow the NumPy-style format. All public (i.e. not starting in `_`) modules, functions, classes, methods, etc. should have an appropriate docstring. In addition to this there is "narrative documentation" that should describe the features of the code. The docs are built with `sphinx` and use the "ReadTheDocs" theme. If you have the dependencies installed (check `/docs/requirements.txt`) you can build the documentation locally with `make html` in the `/docs` directory. Opening the `/docs/index.html` file with a browser will then allow you to browse the documentation and check your contributions.
+
+Docstrings
+----------
+
+Ruff currently has limited support for [numpydoc](https://numpydoc.readthedocs.io/en/latest/index.html)-style docstrings. To run additional checks on docstrings use `numpydoc lint **/*.py` in the same directory as the `pyproject.toml` file. As more style rules become supported by `ruff` this will hopefully be phased out.
