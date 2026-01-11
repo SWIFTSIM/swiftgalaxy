@@ -19,6 +19,7 @@ import numpy as np
 import unyt as u
 from swiftsimio import SWIFTMask, SWIFTDataset, mask
 from swiftgalaxy.masks import MaskCollection, LazyMask
+from swiftsimio.reader import __SWIFTGroupDataset
 from swiftsimio.objects import cosmo_array, cosmo_quantity
 
 from typing import Union, Optional, TYPE_CHECKING, List, Dict
@@ -625,6 +626,8 @@ class SOAP(_HaloCatalogue):
     velocity_centre_type: str
     _catalogue: SWIFTDataset
     _index_attr = "_soap_index"
+    input_halos: "__SWIFTGroupDataset"
+    bound_subhalo: "__SWIFTGroupDataset"
 
     def __init__(
         self,
@@ -728,7 +731,7 @@ class SOAP(_HaloCatalogue):
         """
         # should not need to box wrap here but there's a bug upstream
         boxsize = self._catalogue.metadata.boxsize
-        coords = self._catalogue.bound_subhalo.centre_of_mass.squeeze()
+        coords = self.bound_subhalo.centre_of_mass.squeeze()
         return coords % boxsize
 
     @property
@@ -746,7 +749,7 @@ class SOAP(_HaloCatalogue):
             The half-length of the bounding box to use to construct the spatial mask
             regions.
         """
-        return self._catalogue.bound_subhalo.enclose_radius.squeeze()
+        return self.bound_subhalo.enclose_radius.squeeze()
 
     def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         """
@@ -827,9 +830,7 @@ class SOAP(_HaloCatalogue):
                     sg, group_name
                 )._particle_dataset.group_nr_bound.to_value(
                     u.dimensionless
-                ) == self._catalogue.input_halos.halo_catalogue_index.to_value(
-                    u.dimensionless
-                )
+                ) == self.input_halos.halo_catalogue_index.to_value(u.dimensionless)
                 # mask the group_nr_bound array that we loaded
                 getattr(sg, group_name)._particle_dataset._group_nr_bound = getattr(
                     sg, group_name
