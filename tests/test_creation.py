@@ -84,22 +84,22 @@ class TestSWIFTGalaxyCreation:
     def test_sg_soap_creation(self, sg_soap):
         """Make sure we can create a SWIFTGalaxy with SOAP without error."""
         assert isinstance(sg_soap, SWIFTGalaxy)
-        assert isinstance(sg_soap.halo_finder, SOAP)
+        assert isinstance(sg_soap.halo_catalogue, SOAP)
 
     def test_sg_vr_creation(self, sg_vr):
         """Make sure we can create a SWIFTGalaxy with velociraptor without error."""
         assert isinstance(sg_vr, SWIFTGalaxy)
-        assert isinstance(sg_vr.halo_finder, Velociraptor)
+        assert isinstance(sg_vr.halo_catalogue, Velociraptor)
 
     def test_sg_caesar_creation(self, sg_caesar):
         """Make sure we can create a SWIFTGalaxy with Caesar without error."""
         assert isinstance(sg_caesar, SWIFTGalaxy)
-        assert isinstance(sg_caesar.halo_finder, Caesar)
+        assert isinstance(sg_caesar.halo_catalogue, Caesar)
 
     def test_sg_sa_creation(self, sg_sa):
         """Make sure we can create a SWIFTGalaxy with Standalone without error."""
         assert isinstance(sg_sa, SWIFTGalaxy)
-        assert isinstance(sg_sa.halo_finder, Standalone)
+        assert isinstance(sg_sa.halo_catalogue, Standalone)
 
     def test_tab_completion(self, sg):
         """

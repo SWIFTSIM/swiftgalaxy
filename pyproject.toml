@@ -61,7 +61,28 @@ dev = [
     "sphinx-design",
     "recommonmark",
     "numpy",
-    "numba",    
+    "numba",
+]
+dev-windows= [
+    "pytest",
+    "pytest-xdist",
+    "pytest-cov",
+    "flake8",
+    "ruff",
+    "mypy",
+    "numpydoc",
+    "nbmake",
+    "velociraptor",
+    "soap @ git+https://github.com/SWIFTSIM/soap",
+    "tqdm",
+    "astropy",
+    "h5py",
+    "sphinx",
+    "sphinx-rtd-theme",
+    "sphinx-design",
+    "recommonmark",
+    "numpy",
+    "numba",
 ]
 
 [tool.ruff]
