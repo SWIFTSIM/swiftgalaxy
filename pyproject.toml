@@ -19,9 +19,9 @@ classifiers = [
 dependencies = [
     "numpy",
     "scipy",
-    "h5py",
     "unyt",
     "swiftsimio>=10.0.0",
+    "requests",
 ]
 
 [project.urls]
@@ -30,7 +30,31 @@ dependencies = [
 "Documentation" = "https://swiftgalaxy.readthedocs.io/en/latest"
 
 [project.optional-dependencies]
-velociraptor = ["velociraptor", "tqdm"]
+all = [
+    "velociraptor",
+    "caesar @ git+https://github.com/dnarayanan/caesar",
+    "soap @ git+https://github.com/SWIFTSIM/soap",
+    "tqdm",
+    "astropy",
+]
+velociraptor = ["velociraptor", "tqdm", "astropy"]
+soap = ["soap @ git+https://github.com/SWIFTSIM/soap", "tqdm", "astropy"]
+caesar = ["caesar @ git+https://github.com/dnarayanan/caesar", "tqdm", "astropy"]
+dev = [
+    "pytest",
+    "pytest-xdist",
+    "pytest-cov",
+    "flake8",
+    "ruff",
+    "mypy",
+    "numpydoc",
+    "nbmake",
+    "velociraptor",
+    "caesar @ git+https://github.com/dnarayanan/caesar",
+    "soap @ git+https://github.com/SWIFTSIM/soap",
+    "tqdm",
+    "astropy",
+]
 
 [tool.ruff]
 exclude = ["docs/source/conf.py"]

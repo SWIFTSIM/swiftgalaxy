@@ -64,10 +64,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest pytest-xdist
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        if [ -f optional_requirements.txt ]; then pip install -r optional_requirements.txt; fi
-        pip install -e .
+        pip install -e .[dev]
     - name: Test with pytest
       run: |
         pytest -n 2
@@ -94,10 +91,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest pytest-cov pytest-xdist
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        if [ -f optional_requirements.txt ]; then pip install -r optional_requirements.txt; fi
-        pip install -e .
+        pip install -e .[dev]
     - name: Test with pytest including coverage report
       run: |
         pytest -n 2 --cov --cov-branch --cov-report=xml
@@ -123,10 +117,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest pytest-xdist
-        if ( Test-Path requirements.txt -PathType Leaf ) { pip install -r requirements.txt }
-        if ( Test-Path optional_requirements.txt -PathType Leaf ) { pip install -r optional_requirements.txt }
-        pip install -e .
+        pip install -e .[dev]
     - name: Test with pytest
       run: |
         pytest -n 2
@@ -148,10 +139,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest pytest-xdist
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        if [ -f optional_requirements.txt ]; then pip install -r optional_requirements.txt; fi
-        pip install -e .
+        pip install -e .[dev]
     - name: Test with pytest
       run: |
         pytest -n 2
