@@ -75,10 +75,7 @@ To set up the code for development, first clone the latest `main` branch from `g
 and install with ``pip`` using the ``-e`` (editable) flag, and specify development dependencies with ``[dev]``:
 ``pip install -e swiftgalaxy/[dev]``.
 
-You should also install dependencies to build the documentation:
-``pip install -r swiftgalaxy/docs/requirements.txt``.
-
-Finally, you should install type definitions for :mod:`mypy`:
+You should also install type definitions for :mod:`mypy`:
 ``mypy --install-types --non-interactive``.
 
 You can check that the installation and your environment is ready for development work by moving to the code root directory (``cd swiftgalaxy``) and running the following checks:

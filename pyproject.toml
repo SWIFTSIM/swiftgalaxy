@@ -56,6 +56,12 @@ dev = [
     "tqdm",
     "astropy",
     "h5py",
+    "sphinx",
+    "sphinx-rtd-theme",
+    "sphinx-design",
+    "recommonmark",
+    "numpy",
+    "numba",    
 ]
 
 [tool.ruff]
