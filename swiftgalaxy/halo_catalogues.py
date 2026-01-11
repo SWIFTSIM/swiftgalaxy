@@ -125,6 +125,8 @@ class _HaloCatalogue(ABC):
     _multi_galaxy_index_mask: Optional[Union[int, slice]] = None
     _multi_count: int
     _index_attr: Optional[str]
+    _centre: cosmo_array
+    _velocity_centre: cosmo_array
 
     def __init__(
         self, extra_mask: Optional[Union[str, MaskCollection]] = "bound_only"
@@ -726,7 +728,7 @@ class SOAP(_HaloCatalogue):
         """
         # should not need to box wrap here but there's a bug upstream
         boxsize = self._catalogue.metadata.boxsize
-        coords = self.bound_subhalo.centre_of_mass.squeeze()
+        coords = self._catalogue.bound_subhalo.centre_of_mass.squeeze()
         return coords % boxsize
 
     @property
@@ -744,7 +746,7 @@ class SOAP(_HaloCatalogue):
             The half-length of the bounding box to use to construct the spatial mask
             regions.
         """
-        return self.bound_subhalo.enclose_radius.squeeze()
+        return self._catalogue.bound_subhalo.enclose_radius.squeeze()
 
     def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         """
@@ -825,7 +827,9 @@ class SOAP(_HaloCatalogue):
                     sg, group_name
                 )._particle_dataset.group_nr_bound.to_value(
                     u.dimensionless
-                ) == self.input_halos.halo_catalogue_index.to_value(u.dimensionless)
+                ) == self._catalogue.input_halos.halo_catalogue_index.to_value(
+                    u.dimensionless
+                )
                 # mask the group_nr_bound array that we loaded
                 getattr(sg, group_name)._particle_dataset._group_nr_bound = getattr(
                     sg, group_name
