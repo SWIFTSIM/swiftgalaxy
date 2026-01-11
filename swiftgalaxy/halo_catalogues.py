@@ -825,9 +825,7 @@ class SOAP(_HaloCatalogue):
                     sg, group_name
                 )._particle_dataset.group_nr_bound.to_value(
                     u.dimensionless
-                ) == self.input_halos.halo_catalogue_index.to_value(
-                    u.dimensionless
-                )
+                ) == self.input_halos.halo_catalogue_index.to_value(u.dimensionless)
                 # mask the group_nr_bound array that we loaded
                 getattr(sg, group_name)._particle_dataset._group_nr_bound = getattr(
                     sg, group_name
@@ -1957,9 +1955,7 @@ class Caesar(_HaloCatalogue):
             return cosmo_array(
                 getattr(
                     self._catalogue[self._multi_galaxy_catalogue_mask], centre_attr
-                ).to(
-                    u.kpc
-                ),  # maybe comoving, ensure physical
+                ).to(u.kpc),  # maybe comoving, ensure physical
                 comoving=False,
                 scale_factor=self._caesar.simulation.scale_factor,
                 scale_exponent=1,
