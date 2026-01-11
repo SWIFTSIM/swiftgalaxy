@@ -105,7 +105,6 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install -e .[dev]
         python -m pip install git+https://github.com/SWIFTSIM/soap.git
-		# caesar is not installable on windows: https://github.com/dfm/python-fsps/issues/267
     - name: Test with pytest
       run: |
         pytest -n 2
