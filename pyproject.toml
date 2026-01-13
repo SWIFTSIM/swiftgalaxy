@@ -39,8 +39,8 @@ velociraptor = ["velociraptor"]
 # caesar = ["caesar @ git+https://github.com/dnarayanan/caesar"]
 # soap_write = ["soap @ git+https://github.com/SWIFTSIM/soap"]
 all = [
-    "swiftsimio[extra,velociraptor]",
-    # "swiftsimio[caesar,soap_write]",  # merge with above
+    "swiftgalaxy[extra,velociraptor]",
+    # "swiftgalaxy[caesar,soap_write]",  # merge with above
 ]
 testing = [
     "pytest",
