@@ -56,7 +56,8 @@ Additional optional packages for developers:
 + :mod:`pytest` to run the test suite.
 + :mod:`numpydoc` to check for issues in docstrings.
 + :mod:`flake8` to check for code style issues.
-+ :mod:`pytest-cov` to generate test coverage reports
++ :mod:`pytest-cov` to generate test coverage reports.
++ :mod:`sphinx-lint` to check for style issues in narrative documentation files.
 
 And for building the docs:
 
@@ -120,6 +121,7 @@ moving to the code root directory (``cd swiftgalaxy``) and running the following
    ruff check
    mypy
    python -m numpydoc lint swiftgalaxy/*.py
+   sphinx-lint --max-line-length 90 -e all docs/source/
    pytest --cov --cov-branch
 
 You may wish to set up the following `pre-commit hook`_:
@@ -133,6 +135,7 @@ You may wish to set up the following `pre-commit hook`_:
    ruff check || exit 1
    mypy || exit 1
    python -m numpydoc lint swiftgalaxy**/*.py || exit 1
+   sphinx-lint --max-line-length 90 -e all docs/source/ || exit 1
 
    exit 0
 
@@ -150,6 +153,7 @@ and `pre-push hook`_:
    ruff check || exit 1
    mypy || exit 1
    python -m numpydoc lint swiftgalaxy**/*.py || exit 1
+   sphinx-lint --max-line-length 90 -e all docs/source/ || exit 1
    pytest || exit 1
 
    exit 0
