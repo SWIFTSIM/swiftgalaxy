@@ -51,6 +51,7 @@ testing = [
     "mypy",
     "numpydoc",
     "nbmake",
+    "sphinx-lint",
 ]
 docs = [
     "sphinx",
