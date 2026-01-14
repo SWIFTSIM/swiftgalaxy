@@ -18,8 +18,8 @@ It may be that along with the basic coordinates and velocities arrays, you have 
 
     SWIFTGalaxy(
         ...,
-	transforms_like_coordinates=set(),
-	transforms_like_velocities={'wind_velocity'},
+        transforms_like_coordinates=set(),
+        transforms_like_velocities={'wind_velocity'},
     )
 
 The equivalent for coordinate-like arrays is the ``transforms_like_coordinates`` argument. The ``coordinates`` and ``velocities`` arrays are always assumed to transform as coordinates and velocities, respectively. Note that it is not necessary that a name provided in one of these arguments be present for all particle types.
@@ -30,8 +30,8 @@ By default, :class:`~swiftgalaxy.reader.SWIFTGalaxy` assumes that particle coord
 
     SWIFTGalaxy(
         ...,
-	coordinates_dataset_name='coordinates',
-	velocities_dataset_name='velocities',
+        coordinates_dataset_name='coordinates',
+        velocities_dataset_name='velocities',
     )
 
 
@@ -49,10 +49,10 @@ Some halo catalogues define more than one centre and/or bulk velocity. The one u
 
     SWIFTGalaxy(
         ...,
-	SOAP(
-	    ...,
-	    centre_type='bound_subhalo.centre_of_mass',
-	),
+        SOAP(
+            ...,
+            centre_type='bound_subhalo.centre_of_mass',
+        ),
     )
 
 Manual recentering

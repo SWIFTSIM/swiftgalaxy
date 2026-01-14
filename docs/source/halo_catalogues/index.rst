@@ -23,7 +23,7 @@ Setting up an instance of the helper class is straightforward. We'll assume a SO
 
     soap = SOAP(
         soap_file="halo_properties_0123.hdf5",
-	soap_index=0,
+        soap_index=0,
     )
 
 The first argument could also include a path if needed, e.g. :file:`/path/to/halo_properties_0123.hdf5`.
@@ -42,10 +42,10 @@ Usually the :class:`~swiftgalaxy.halo_catalogues.SOAP` object is used to create 
 
     sg = SWIFTGalaxy(
         "snapshot_0123.hdf5",
-	SOAP(
-	    "halo_properties_0123.hdf5",
-	    soap_index=0,
-	)
+        SOAP(
+            "halo_properties_0123.hdf5",
+            soap_index=0,
+        )
     )
 
 .. note::
@@ -77,7 +77,7 @@ By default, the :class:`~swiftgalaxy.halo_catalogues.SOAP` class will identify t
 
     SOAP(
         ...,
-	extra_mask="bound_only"
+        extra_mask="bound_only"
     )
 
 This behaviour can be adjusted. If ``None`` is passed instead, then only the spatial masking (provided internally by :meth:`~swiftgalaxy.halo_catalogues.SOAP._get_spatial_mask`) is used. This means that all particles in the set of (probably cubic) subvolumes of the simulation that overlap with the region of interest will be read in. Alternatively, a :class:`~swiftgalaxy.masks.MaskCollection` can be provided for finer control of the particle selection. This will be used to select particles from those already selected spatially.
@@ -90,8 +90,8 @@ SOAP catalogues lists many centres for halos. :mod:`swiftgalaxy` uses the "input
 
     SOAP(
         ...,
-	centre_type="spherical_overdensity_500_crit.centre_of_mass",  # centre of mass of particles in R500crit
-	velocity_centre_type="exclusive_sphere_1kpc.centre_of_mass_velocity",  # mass-weighted mean velocity of particles in central 1kpc
+        centre_type="spherical_overdensity_500_crit.centre_of_mass",  # centre of mass of particles in R500crit
+        velocity_centre_type="exclusive_sphere_1kpc.centre_of_mass_velocity",  # mass-weighted mean velocity of particles in central 1kpc
     )
 
 The centre and reference velocity :doc:`can also be shifted (and rotated) <../coordinate_transformations/index>` to an arbitrary coordinate frame after the :class:`~swiftgalaxy.reader.SWIFTGalaxy` has been created.
@@ -110,8 +110,8 @@ The Caesar catalogue format is popular in the Simba_ simulation community and li
 
     cat = Caesar(
         caesar_file="caesar_catalogue.hdf5",
-	group_type="halo",
-	group_index=3,
+        group_type="halo",
+        group_index=3,
     )
 
 The first argument could also include a path if needed, e.g. :file:`"/path/to/caesar_catalogue.hdf5"`.
@@ -138,12 +138,12 @@ Caesar is compatible with yt and returns values with units specified with yt tha
 
         import unyt as u
         from swiftsimio.objects import cosmo_array, cosmo_factor
-	scale_factor = ...  # retrieve scale factor from snapshot or catalogue file
+        scale_factor = ...  # retrieve scale factor from snapshot or catalogue file
         cosmo_array(
-	    cat.virial_quantities["r200c"].to(u.kpc),  # ensures physical units
-	    comoving=False,
-	    cosmo_factor=cosmo_factor(a**1, scale_factor=scale_factor)
-	).to_comoving()  # or leave in physical units if desired
+            cat.virial_quantities["r200c"].to(u.kpc),  # ensures physical units
+            comoving=False,
+            cosmo_factor=cosmo_factor(a**1, scale_factor=scale_factor)
+        ).to_comoving()  # or leave in physical units if desired
 
 Usually the :class:`~swiftgalaxy.halo_catalogues.Caesar` object is used to create a :class:`~swiftgalaxy.reader.SWIFTGalaxy` object. In this case the interface is exposed through the ``halo_catalogue`` attribute, for example:
 
@@ -151,7 +151,7 @@ Usually the :class:`~swiftgalaxy.halo_catalogues.Caesar` object is used to creat
 
     sg = SWIFTGalaxy(
         ...,
-	Caesar(...),
+        Caesar(...),
     )
     sg.halo_catalogue.info()
     sg.halo_catalogue.virial_quantities["m200c"]
@@ -162,7 +162,7 @@ By default, the :class:`~swiftgalaxy.halo_catalogues.Caesar` class will identify
 
     Caesar(
         ...,
-	extra_mask="bound_only"
+        extra_mask="bound_only"
     )
 
 This behaviour can be adjusted. If ``None`` is passed instead, then only the spatial masking provided by :meth:`~swiftgalaxy.halo_catalogues.Caesar._get_spatial_mask` is used. This means that all particles in the set of (probably cubic) subvolumes of the simulation that overlap with the region of interest will be read in. Alternatively, a :class:`~swiftgalaxy.masks.MaskCollection` can be provided. This will be used to select particles from those already selected spatially.
@@ -184,7 +184,7 @@ These can be used as, for example:
 
     Caesar(
         ...,
-	centre_type="",  # centre of mass (no suffix in Caesar catalogue)
+        centre_type="",  # centre of mass (no suffix in Caesar catalogue)
     )
 
 To select *all* particles (not only bound particles) in an aperture around the halo of interest, see the :ref:`example below <aperture-example>`.
@@ -201,7 +201,7 @@ Velociraptor_ is a widely-used halo finder. Some SWIFT-based simulations project
 
     cat = Velociraptor(
         "halos",
-	halo_index=3
+        halo_index=3
     )
 
 The first argument could also include a path if needed, e.g. :file:`"/path/to/{halos}"`.
@@ -216,9 +216,9 @@ The properties of the galaxy of interest as calculated by Velociraptor are made 
 
     sg = SWIFTGalaxy(
         ...,
-	Velociraptor(
-	    ...
-	)
+        Velociraptor(
+            ...
+        )
     )
     sg.halo_catalogue.masses.mvir
     
@@ -228,7 +228,7 @@ By default, the :class:`~swiftgalaxy.halo_catalogues.Velociraptor` class will id
 
     Velociraptor(
         ...,
-	extra_mask="bound_only"
+        extra_mask="bound_only"
     )
 
 This behaviour can be adjusted. If ``None`` is passed instead, then only the spatial masking provided by :func:`velociraptor.swift.swift.generate_spatial_mask` is used. This means that all particles in the set of (probably cubic) subvolumes of the simulation that overlap with the region of interest will be read in. Alternatively, a :class:`~swiftgalaxy.masks.MaskCollection` can be provided. This will be used to select particles from those already selected using :func:`~velociraptor.swift.swift.generate_spatial_mask`.
@@ -249,7 +249,7 @@ These can be used as, for example:
 
     Velociraptor(
         ...,
-	centre_type="mbp"
+        centre_type="mbp"
     )
 
 To select *all* particles (not only bound particles) in an aperture around the halo of interest, see the :ref:`example below <aperture-example>`.
@@ -318,22 +318,22 @@ You're now ready to proceed with analysis of the particles in the 1 Mpc spherica
    :meth:`~swiftgalaxy.reader.SWIFTGalaxy.mask_particles` applies the masks in-place. The mask could also be applied with the :meth:`~swiftgalaxy.reader.SWIFTGalaxy.__getattr__` method (i.e. in square brackets), but this returns a copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object. If memory efficiency is a concern, prefer the :meth:`~swiftgalaxy.reader.SWIFTGalaxy.mask_particles` approach.
 
 .. _aperture-example:
-	 
+ 
 Selecting particles within an aperture
 --------------------------------------
-	 
+ 
 The workflow to select all particles within a given aperture (e.g. 1 Mpc) also works when starting from a halo catalogue object. For instance, using SOAP you could do the following:
 
 .. code-block:: python
 
     sg = SWIFTGalaxy(
         "my_snapshot.hdf5",
-	SOAP(
-	    "my_soap_file.hdf5",
-	    soap_index=0,
-	    extra_mask=None,  # disable selecting only particles flagged as bound by the halo finder
-	    custom_spatial_offsets=cosmo_array([[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]], u.Mpc),
-	)
+        SOAP(
+            "my_soap_file.hdf5",
+            soap_index=0,
+            extra_mask=None,  # disable selecting only particles flagged as bound by the halo finder
+            custom_spatial_offsets=cosmo_array([[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]], u.Mpc),
+        )
     )
     mask_collection = MaskCollection(
         gas=sg.gas.spherical_coordinates.r < 1 * u.Mpc,

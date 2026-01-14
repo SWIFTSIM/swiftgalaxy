@@ -27,9 +27,9 @@ Some illustrative examples:
     sg = SWIFTGalaxy(...)
     mask = MaskCollection(
         gas=sg.gas.temperatures > 1e6 * u.K,  # boolean mask
-	dark_matter=np.s_[:10],  # first 10 particles
-	stars=...,  # Ellipsis, equivalent to keeping previous mask
-	# black_holes omitted, equivalent to keeping previous mask
+        dark_matter=np.s_[:10],  # first 10 particles
+        stars=...,  # Ellipsis, equivalent to keeping previous mask
+        # black_holes omitted, equivalent to keeping previous mask
     )
     sg.mask_particles(mask)
 
@@ -99,12 +99,12 @@ One of :mod:`swiftgalaxy`'s features is that it can conveniently provide a set o
 
     sg = SWIFTGalaxy(
         "my_snapshot.hdf5",
-	SOAP(
-	    "my_soap.hdf5",  # name of catalogue file
-	    soap_index=3,  # pick the 4th galaxy (i.e. indexed from 0) in the catalogue array
-	    extra_mask=None,  # select all particles in the spatially selected region (for now)
-	    custom_spatial_offsets=cosmo_array([[-1, 1], [-1, 1], [-1, 1]], u.Mpc), # relative to centre
-	),
+        SOAP(
+            "my_soap.hdf5",  # name of catalogue file
+            soap_index=3,  # pick the 4th galaxy (i.e. indexed from 0) in the catalogue array
+            extra_mask=None,  # select all particles in the spatially selected region (for now)
+            custom_spatial_offsets=cosmo_array([[-1, 1], [-1, 1], [-1, 1]], u.Mpc), # relative to centre
+        ),
     )
 
 You can next define the masks selecting particles in your desired spherical aperture, using :class:`~swiftgalaxy.reader.SWIFTGalaxy`'s convenient spherical coordinates feature, and store them in a :class:`~swiftgalaxy.masks.MaskCollection`:

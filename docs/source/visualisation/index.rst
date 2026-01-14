@@ -20,10 +20,10 @@ When a :class:`~swiftgalaxy.reader.SWIFTGalaxy` has been recentered (the default
        resolution=256,
        region=cosmo_array(
            [-0.5, 0.5, -0.5, 0.5],
-	       u.Mpc,
-	       comoving=True,
-	       scale_factor=sg.metadata.a,
-	       scale_exponent=1,
+           u.Mpc,
+           comoving=True,
+           scale_factor=sg.metadata.a,
+           scale_exponent=1,
        )
    )
 
