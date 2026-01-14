@@ -1,7 +1,16 @@
 Getting Started
 ===============
 
-:mod:`swiftgalaxy` facilitates analyses of individual galaxies from cosmological hydrodynamical simulations executed with the `SWIFT`_ code. The core :class:`~swiftgalaxy.reader.SWIFTGalaxy` class makes selecting particles belonging to a galaxy, transforming their coordinates, masking its particle arrays, working with spherical or cylindrical coordinates, accessing its integrated properties computed by a halo finder, and more, easy. It is built upon the :class:`~swiftsimio.reader.SWIFTDataset` from :mod:`swiftsimio` and takes advantage of that module's lazy-loading and unit-awareness features. Users already familiar with usage of :mod:`swiftsimio` will find that any syntax to interact with a :class:`~swiftsimio.reader.SWIFTDataset` also works with a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+:mod:`swiftgalaxy` facilitates analyses of individual galaxies from cosmological
+hydrodynamical simulations executed with the `SWIFT`_ code. The core
+:class:`~swiftgalaxy.reader.SWIFTGalaxy` class makes selecting particles belonging to a
+galaxy, transforming their coordinates, masking its particle arrays, working with
+spherical or cylindrical coordinates, accessing its integrated properties computed by a
+halo finder, and more, easy. It is built upon the :class:`~swiftsimio.reader.SWIFTDataset`
+from :mod:`swiftsimio` and takes advantage of that module's lazy-loading and
+unit-awareness features. Users already familiar with usage of :mod:`swiftsimio` will find
+that any syntax to interact with a :class:`~swiftsimio.reader.SWIFTDataset` also works
+with a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
 
 .. _SWIFT: http://swift.dur.ac.uk
 
@@ -15,16 +24,21 @@ Python packages
 
 Required:
 
-+ :mod:`swiftsimio` (v10 or higher), required to provide the :class:`~swiftsimio.reader.SWIFTDataset` class and related functionality (note that :mod:`swiftsimio` has additional required dependencies).
++ :mod:`swiftsimio` (v10 or higher), required to provide the
+  :class:`~swiftsimio.reader.SWIFTDataset` class and related functionality (note that
+  :mod:`swiftsimio` has additional required dependencies).
 + :mod:`numpy`, required to support various array operations.
 + :mod:`unyt`, required for unit calculations.
-+ :mod:`scipy`, required to specify rotations via the :class:`~scipy.spatial.transform.Rotation` class.
++ :mod:`scipy`, required to specify rotations via the
+  :class:`~scipy.spatial.transform.Rotation` class.
 
 Optional:
 
 + :mod:`velociraptor`, required to enable support for Velociraptor_ halo finder outputs.
-+ :mod:`soap` (`soap on github`_ not the :mod:`soap` from PyPI!), for generating example SOAP_ data sets.
-+ :mod:`caesar` (`caesar on github`_ not the :mod:`caesar` from PyPI!), required to enable support for Caesar_ catalogues.
++ :mod:`soap` (`soap on github`_ not the :mod:`soap` from PyPI!), for generating example
+  SOAP_ data sets.
++ :mod:`caesar` (`caesar on github`_ not the :mod:`caesar` from PyPI!), required to enable
+  support for Caesar_ catalogues.
 + :mod:`astropy`, used in generating example data sets.
 + :mod:`h5py`, used to generate example data sets.
 
@@ -37,7 +51,8 @@ Optional:
 Additional optional packages for developers:
 
 + :mod:`ruff` for code formatting and style checks.
-+ :mod:`mypy` for type checking (run ``mypy --install-types --non-interactive`` after installation).
++ :mod:`mypy` for type checking (run ``mypy --install-types --non-interactive`` after
+  installation).
 + :mod:`pytest` to run the test suite.
 + :mod:`numpydoc` to check for issues in docstrings.
 + :mod:`flake8` to check for code style issues.
@@ -54,17 +69,21 @@ And for building the docs:
 Installing
 ----------
 
-:mod:`swiftgalaxy` can be installed using the python packaging manager, ``pip``, or any other packaging manager that you wish to use:
+:mod:`swiftgalaxy` can be installed using the python packaging manager, ``pip``, or any
+other packaging manager that you wish to use:
 
 ``pip install swiftgalaxy``
 
-Note that this will also install required dependencies. To install optional dependencies to support Velociraptor catalogues use ``pip install swiftgalaxy[velociraptor]``. For Caesar support use:
+Note that this will also install required dependencies. To install optional dependencies
+to support Velociraptor catalogues use ``pip install swiftgalaxy[velociraptor]``. For
+Caesar support use:
 
 .. code-block::
 
    pip install git+https://github.com/dnarayanan/caesar.git
 
-No additional dependencies are needed for reading SOAP catalogues. If you want to generate example input files for SOAP, you should install:
+No additional dependencies are needed for reading SOAP catalogues. If you want to generate
+example input files for SOAP, you should install:
 
 .. code-block::
 
@@ -73,12 +92,15 @@ No additional dependencies are needed for reading SOAP catalogues. If you want t
 Installation for development
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To set up the code for development, first clone the latest `main` branch from `github`_:
+To set up the code for development, first clone the latest ``main`` branch from `github`_:
 ``git clone https://github.com/SWIFTSIM/swiftgalaxy.git``
-and install with ``pip`` using the ``-e`` (editable) flag, and specify development dependencies with ``[dev]``:
+and install with ``pip`` using the ``-e`` (editable) flag, and specify development
+dependencies with ``[dev]``:
 ``pip install -e swiftgalaxy/[dev]``.
 
-You should also install the dependencies for SOAP and Caesar (cannot be declared as dependencies in a PyPI-distributed package because they are hosted on github, so omitted from the ``pyproject.toml`` file for simplicity):
+You should also install the dependencies for SOAP and Caesar (cannot be declared as
+dependencies in a PyPI-distributed package because they are hosted on github, so omitted
+from the ``pyproject.toml`` file for simplicity):
 
 .. code-block::
 
@@ -88,7 +110,8 @@ You should also install the dependencies for SOAP and Caesar (cannot be declared
 Finally, you should install type definitions for :mod:`mypy`:
 ``mypy --install-types --non-interactive``.
 
-You can check that the installation and your environment is ready for development work by moving to the code root directory (``cd swiftgalaxy``) and running the following checks:
+You can check that the installation and your environment is ready for development work by
+moving to the code root directory (``cd swiftgalaxy``) and running the following checks:
 
 .. code-block:: bash
 
@@ -146,19 +169,28 @@ Quick start
 
 Like a :class:`~swiftsimio.reader.SWIFTDataset`, all data are loaded 'lazily' on demand.
 
-However, information from the halo catalogue is used to select only the particles identified as bound to this galaxy. The coordinate system is centred in both position and velocity on the centre and peculiar velocity of the galaxy, as determined by the halo catalogue. The coordinate system can be further manipulated, and all particle arrays will stay in a consistent reference frame at all times.
+However, information from the halo catalogue is used to select only the particles
+identified as bound to this galaxy. The coordinate system is centred in both position and
+velocity on the centre and peculiar velocity of the galaxy, as determined by the halo
+catalogue. The coordinate system can be further manipulated, and all particle arrays will
+stay in a consistent reference frame at all times.
 
-Again like for a :class:`~swiftsimio.reader.SWIFTDataset`, the units and metadata information are available:
+Again like for a :class:`~swiftsimio.reader.SWIFTDataset`, the units and metadata
+information are available:
 
 .. code-block:: python
 
     sg.units
     sg.metadata
 
-:mod:`swiftgalaxy` supports Python's tab completion features. This means that you can browse the available attributes of objects in an interactive interpreter by starting to type an attribute (or just a trailing dot) and pressing tab twice. A few examples to help start exploring:
+:mod:`swiftgalaxy` supports Python's tab completion features. This means that you can
+browse the available attributes of objects in an interactive interpreter by starting to
+type an attribute (or just a trailing dot) and pressing tab twice. A few examples to help
+start exploring:
 
    - ``sg.<tab><tab>``
    - ``sg.gas.<tab><tab>``
    - ``sg.halo_catalogue.<tab><tab>``
 
-The further features of a :class:`~swiftgalaxy.reader.SWIFTGalaxy` are detailed in the next sections.
+The further features of a :class:`~swiftgalaxy.reader.SWIFTGalaxy` are detailed in the
+next sections.
