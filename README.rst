@@ -7,8 +7,8 @@
 .. |Build status| image:: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml/badge.svg
     :target: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml
     :alt: Build Status
-.. |Documentation status| image:: https://readthedocs.org/projects/swiftgalaxy/badge/?version=latest
-    :target: https://swiftgalaxy.readthedocs.io/en/latest/?badge=latest
+.. |Documentation status| image:: https://readthedocs.org/projects/swiftgalaxy/badge/?version=stable
+    :target: https://swiftgalaxy.readthedocs.io/en/stable/?badge=stable
     :alt: Documentation Status
 .. |Python version| image:: https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FSWIFTSIM%2Fswiftgalaxy%2Fmain%2Fpyproject.toml
    :alt: Python Version from PEP 621 TOML
