@@ -21,15 +21,15 @@
             :outline:
             :expand:
 
-	    installation
+            installation
 
         .. button-ref:: quick-start
             :color: primary
             :outline:
             :expand:
 
-	    quick start guide
-	    
+            quick start guide
+
     .. grid-item-card:: :octicon:`code-square` Contributing
         :text-align: center
         :class-title: sd-fs-5
@@ -42,7 +42,7 @@
 
             information for developers
 
-	.. button-link:: https://github.com/SWIFTSIM/swiftgalaxy
+        .. button-link:: https://github.com/SWIFTSIM/swiftgalaxy
             :color: primary
             :outline:
             :expand:
@@ -60,7 +60,7 @@
             :outline:
             :expand:
 
-	    lists of modules and functions
+            lists of modules and functions
 
     .. grid-item-card:: :octicon:`bookmark` Publishing?
         :text-align: center
@@ -68,16 +68,16 @@
         :class-card: sd-p-3
 
         .. button-ref:: citing/index
-	    :click-parent:
+            :click-parent:
             :color: primary
             :outline:
             :expand:
 
-	    citation information
+            citation information
 
 Documentation contents
 ----------------------
-	     
+
 .. toctree::
    :maxdepth: 2
 

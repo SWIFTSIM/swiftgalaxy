@@ -31,18 +31,18 @@ dependencies = [
 
 [project.optional-dependencies]
 # PyPI will reject any uploads with git dependencies
-all = [
-    "velociraptor",
-    # "caesar @ git+https://github.com/dnarayanan/caesar",
-    # "soap @ git+https://github.com/SWIFTSIM/soap",
+extra = [
     "tqdm",
     "astropy",
-    "h5py",
 ]
-velociraptor = ["velociraptor", "tqdm", "astropy"]
-# soap = ["soap @ git+https://github.com/SWIFTSIM/soap", "tqdm", "astropy"]
-# caesar = ["caesar @ git+https://github.com/dnarayanan/caesar", "tqdm", "astropy"]
-dev = [
+velociraptor = ["velociraptor"]
+# caesar = ["caesar @ git+https://github.com/dnarayanan/caesar"]
+# soap_write = ["soap @ git+https://github.com/SWIFTSIM/soap"]
+all = [
+    "swiftgalaxy[extra,velociraptor]",
+    # "swiftgalaxy[caesar,soap_write]",  # merge with above
+]
+testing = [
     "pytest",
     "pytest-xdist",
     "pytest-cov",
@@ -51,18 +51,17 @@ dev = [
     "mypy",
     "numpydoc",
     "nbmake",
-    "velociraptor",
-    # "caesar @ git+https://github.com/dnarayanan/caesar",
-    # "soap @ git+https://github.com/SWIFTSIM/soap",
-    "tqdm",
-    "astropy",
-    "h5py",
+    "sphinx-lint",
+]
+docs = [
     "sphinx",
     "sphinx-rtd-theme",
     "sphinx-design",
     "recommonmark",
-    "numpy",
-    "numba",
+]
+dev = [
+    "swiftgalaxy[all,testing,docs]",
+    # swiftgalaxy[caesar,soap_write]  # merge with above
 ]
 
 [tool.ruff]
