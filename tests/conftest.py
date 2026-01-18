@@ -60,7 +60,7 @@ def toysnap(tmp_path_factory: TempPathFactory) -> dict[str, Path]:
 
     Yields
     ------
-    :obj:`dict`
+    dict
         Dictionary with created file locations.
     """
     toysnap_filename = (
@@ -85,7 +85,7 @@ def toysnap_withfof(tmp_path_factory: TempPathFactory) -> dict[str, Path]:
 
     Yields
     ------
-    :obj:`dict`
+    dict
         Dictionary with created file locations.
     """
     toysnap_filename = (
@@ -110,7 +110,7 @@ def toysoap_with_virtual_snapshot(tmp_path_factory: TempPathFactory) -> dict[str
 
     Yields
     ------
-    :obj:`dict`
+    dict
         Dictionary with created file locations.
     """
     pytest.importorskip("compression")
@@ -155,7 +155,7 @@ def sg(tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
 
     Yields
     ------
-    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+    ~swiftgalaxy.reader.SWIFTGalaxy
         A basic :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
     """
     toysnap_filename = (
@@ -210,7 +210,7 @@ def sg_custom_names(tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
 
     Yields
     ------
-    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+    ~swiftgalaxy.reader.SWIFTGalaxy
         A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with alternate names for coordinates,
         velocities and particle IDs.
     """
@@ -252,7 +252,7 @@ def sg_autorecentre_off(tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
 
     Yields
     ------
-    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+    ~swiftgalaxy.reader.SWIFTGalaxy
         A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with autorecentering switched off.
     """
     toysnap_filename = (
@@ -285,7 +285,7 @@ def sg_soap(tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
 
     Yields
     ------
-    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+    ~swiftgalaxy.reader.SWIFTGalaxy
         A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with
         :class:`~swiftgalaxy.halo_catalogues.SOAP` halo catalogue.
     """
@@ -336,7 +336,7 @@ def sgs_soap(tmp_path_factory: TempPathFactory) -> SWIFTGalaxies:
 
     Yields
     ------
-    :class:`~swiftgalaxy.iterator.SWIFTGalaxies`
+    ~swiftgalaxy.iterator.SWIFTGalaxies
         A :class:`~swiftgalaxy.iterator.SWIFTGalaxies` with
         :class:`~swiftgalaxy.halo_catalogues.SOAP` halo catalogue.
     """
@@ -387,7 +387,7 @@ def sg_vr(tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
 
     Yields
     ------
-    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+    ~swiftgalaxy.reader.SWIFTGalaxy
         A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with
         :class:`~swiftgalaxy.halo_catalogues.Velociraptor` halo catalogue.
     """
@@ -423,7 +423,7 @@ def sgs_vr(tmp_path_factory: TempPathFactory) -> SWIFTGalaxies:
 
     Yields
     ------
-    :class:`~swiftgalaxy.iterator.SWIFTGalaxies`
+    ~swiftgalaxy.iterator.SWIFTGalaxies
         A :class:`~swiftgalaxy.iterator.SWIFTGalaxies` with
         :class:`~swiftgalaxy.halo_catalogue.Velociraptor` halo catalogue.
     """
@@ -464,7 +464,7 @@ def sg_caesar(
 
     Yields
     ------
-    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+    ~swiftgalaxy.reader.SWIFTGalaxy
         A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with
         :class:`~swiftgalaxy.halo_catalogue.Caesar` halo catalogue.
     """
@@ -505,7 +505,7 @@ def sgs_caesar(
 
     Yields
     ------
-    :class:`~swiftgalaxy.iterator.SWIFTGalaxies`
+    ~swiftgalaxy.iterator.SWIFTGalaxies
         A :class:`~swiftgalaxy.iterator.SWIFTGalaxies` with
         :class:`~swiftgalaxy.halo_catalogue.Caesar` halo catalogue.
     """
@@ -543,7 +543,7 @@ def soap(tmp_path_factory: TempPathFactory) -> SOAP:
 
     Yields
     ------
-    :class:`~swiftgalaxy.halo_catalogues.SOAP`
+    ~swiftgalaxy.halo_catalogues.SOAP
         A :class:`~swiftgalaxy.halo_catalogue.SOAP` halo catalogue.
     """
     # no virtual snapshot needed, don't need importorskip("compression")
@@ -576,7 +576,7 @@ def soap_multi(tmp_path_factory: TempPathFactory) -> SOAP:
 
     Yields
     ------
-    :class:`~swiftgalaxy.halo_catalogues.SOAP`
+    ~swiftgalaxy.halo_catalogues.SOAP
         A :class:`~swiftgalaxy.halo_catalogue.SOAP` halo catalogue with multiple targets.
     """
     # no virtual snapshot needed, don't need importorskip("compression")
@@ -608,7 +608,7 @@ def vr(tmp_path_factory: TempPathFactory) -> Velociraptor:
 
     Yields
     ------
-    :class:`~swiftgalaxy.halo_catalogues.Velociraptor`
+    ~swiftgalaxy.halo_catalogues.Velociraptor
         A :class:`~swiftgalaxy.halo_catalogue.Velociraptor` halo catalogue.
     """
     pytest.importorskip("velociraptor")
@@ -636,7 +636,7 @@ def vr_multi(tmp_path_factory: TempPathFactory) -> Velociraptor:
 
     Yields
     ------
-    :class:`~swiftgalaxy.halo_catalogues.Velociraptor`
+    ~swiftgalaxy.halo_catalogues.Velociraptor
         A :class:`~swiftgalaxy.halo_catalogue.Velociraptor` halo catalogue with multiple
         targets.
     """
@@ -666,7 +666,7 @@ def caesar(request: FixtureRequest, tmp_path_factory: TempPathFactory) -> Caesar
 
     Yields
     ------
-    :class:`~swiftgalaxy.halo_catalogues.Caesar`
+    ~swiftgalaxy.halo_catalogues.Caesar
         A :class:`~swiftgalaxy.halo_catalogue.Caesar` halo catalogue.
     """
     pytest.importorskip("caesar")
@@ -699,7 +699,7 @@ def caesar_multi(request: FixtureRequest, tmp_path_factory: TempPathFactory) -> 
 
     Yields
     ------
-    :class:`~swiftgalaxy.halo_catalogues.Caesar`
+    ~swiftgalaxy.halo_catalogues.Caesar
         A :class:`~swiftgalaxy.halo_catalogue.Caesar` halo catalogue with multiple
         targets.
     """
@@ -728,7 +728,7 @@ def sa(tmp_path_factory: TempPathFactory) -> Standalone:
 
     Yields
     ------
-    :class:`~swiftgalaxy.halo_catalogues.Standalone`
+    ~swiftgalaxy.halo_catalogues.Standalone
         A :class:`~swiftgalaxy.halo_catalogue.Standalone` halo catalogue.
     """
     yield Standalone(
@@ -776,7 +776,7 @@ def sa_multi(tmp_path_factory: TempPathFactory) -> Standalone:
 
     Yields
     ------
-    :class:`~swiftgalaxy.halo_catalogues.Standalone`
+    ~swiftgalaxy.halo_catalogues.Standalone
         A :class:`~swiftgalaxy.halo_catalogue.Standalone` halo catalogue with multiple
         targets.
     """
@@ -826,7 +826,7 @@ def sg_sa(tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
 
     Yields
     ------
-    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+    ~swiftgalaxy.reader.SWIFTGalaxy
         A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with
         :class:`~swiftgalaxy.halo_catalogues.Standalone` halo catalogue.
     """
@@ -882,7 +882,7 @@ def sgs_sa(tmp_path_factory: TempPathFactory) -> SWIFTGalaxies:
 
     Yields
     ------
-    :class:`~swiftgalaxy.iterator.SWIFTGalaxies`
+    ~swiftgalaxy.iterator.SWIFTGalaxies
         A :class:`~swiftgalaxy.iterator.SWIFTGalaxies` with
         :class:`~swiftgalaxy.halo_catalogues.Standalone` halo catalogue.
     """
@@ -940,7 +940,7 @@ def sg_hf(request: FixtureRequest, tmp_path_factory: TempPathFactory) -> SWIFTGa
 
     Yields
     ------
-    :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+    ~swiftgalaxy.reader.SWIFTGalaxy
         A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with halo catalogue of configurable
         type.
     """
@@ -1046,7 +1046,7 @@ def hf(request: FixtureRequest, tmp_path_factory: TempPathFactory) -> _HaloCatal
 
     Yields
     ------
-    :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+    ~swiftgalaxy.halo_catalogues._HaloCatalogue
         A halo catalogue of configurable type.
     """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
@@ -1138,7 +1138,7 @@ def hf_multi(
 
     Yields
     ------
-    :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+    ~swiftgalaxy.halo_catalogues._HaloCatalogue
         A halo catalogue of configurable type with multiple targets.
     """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
@@ -1244,8 +1244,8 @@ def hf_multi_forwards_and_backwards(
 
     Yields
     ------
-    :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`, \
-    :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+    ~swiftgalaxy.halo_catalogues._HaloCatalogue, \
+    ~swiftgalaxy.halo_catalogues._HaloCatalogue
         Two halo catalogues of configurable type with multiple targets, the first with
         forward and the second with backwards target ordering.
     """
@@ -1397,7 +1397,7 @@ def hf_multi_onetarget(
 
     Yields
     ------
-    :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+    ~swiftgalaxy.halo_catalogues._HaloCatalogue
         A halo catalogue of configurable type with one target in its "multi-target" list.
     """
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
@@ -1498,7 +1498,7 @@ def hf_multi_zerotarget(
 
     Yields
     ------
-    :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+    ~swiftgalaxy.halo_catalogues._HaloCatalogue
         A halo catalogue of configurable type with zero targets in its "multi-target"
         list.
     """
@@ -1585,7 +1585,7 @@ def lm() -> LazyMask:
 
     Yields
     ------
-    :class:`~swiftgalaxy.masks.LazyMask`
+    ~swiftgalaxy.masks.LazyMask
         A lazy mask.
     """
 
@@ -1595,7 +1595,7 @@ def lm() -> LazyMask:
 
         Returns
         -------
-        :class:`~numpy.ndarray`
+        ~numpy.ndarray
             A simple mask array.
         """
         return np.ones(10, dtype=bool)
@@ -1616,7 +1616,7 @@ def generated_examples_tmpdir(tmp_path_factory: TempPathFactory) -> GeneratedExa
 
     Returns
     -------
-    :class:`~swiftgalaxy.demo_data.WebExamples`
+    ~swiftgalaxy.demo_data.WebExamples
         Helper class to access procedurally generated example data.
     """
     generated_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
@@ -1635,7 +1635,7 @@ def web_examples_tmpdir(tmp_path_factory: TempPathFactory) -> WebExamples:
 
     Returns
     -------
-    :class:`~swiftgalaxy.demo_data.WebExamples`
+    ~swiftgalaxy.demo_data.WebExamples
         Helper class to access downloadable example data.
     """
     web_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
