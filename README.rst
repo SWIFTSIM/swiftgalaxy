@@ -2,7 +2,7 @@
    :width: 100%
    :alt: Banner with logo showing a swift in a spiral and the text SWIFTGalaxy.
 
-|Python version| |PyPI version| |JOSS| |pyOpenSci| |ASCL| |Repostatus| |Zenodo| |Build status| |Documentation status| |codecov| |Black|
+|Python version| |PyPI version| |JOSS| |pyOpenSci| |ASCL| |Repostatus| |Zenodo| |Build status| |Documentation status| |codecov| |Ruff|
 
 .. |Build status| image:: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml/badge.svg
     :target: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml
@@ -16,23 +16,26 @@
    :target: https://pypi.org/project/swiftgalaxy/
    :alt: PyPI - Version
 .. |Repostatus| image:: https://www.repostatus.org/badges/latest/active.svg
-   :alt: Project Status: Active – The project has reached a stable, usable state and is being actively developed.
    :target: https://www.repostatus.org/#active
+   :alt: Project Status: Active – The project has reached a stable, usable state and is being actively developed.
 .. |codecov| image:: https://codecov.io/gh/SWIFTSIM/swiftgalaxy/graph/badge.svg?token=YV3YYEK78Z 
    :target: https://codecov.io/gh/SWIFTSIM/swiftgalaxy
+   :alt: CodeCov status
 .. |Zenodo| image:: https://zenodo.org/badge/488271795.svg
    :target: https://doi.org/10.5281/zenodo.15502355
+   :alt: Zenodo DOI
 .. |ASCL| image:: https://img.shields.io/badge/ascl-2505.002-blue.svg?colorB=262255
-   :alt: ascl:2505.002
    :target: https://ascl.net/2505.002
+   :alt: ascl:2505.002
 .. |pyOpenSci| image:: https://pyopensci.org/badges/peer-reviewed.svg
-   :alt: pyOpenSci Peer-Reviewed
    :target: https://github.com/pyOpenSci/software-submission/issues/244
-.. |Black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
-   :alt: Code style - Black
-   :target: https://github.com/psf/black
+   :alt: pyOpenSci Peer-Reviewed
+.. |Ruff| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
+    :target: https://github.com/astral-sh/ruff
+    :alt: Ruff
 .. |JOSS| image:: https://joss.theoj.org/papers/10.21105/joss.09278/status.svg
    :target: https://doi.org/10.21105/joss.09278
+   :alt: JOSS doi:10.21105/joss.09278
 
 .. INTRO_START_LABEL
 

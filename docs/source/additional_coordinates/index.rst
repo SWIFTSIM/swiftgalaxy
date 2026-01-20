@@ -1,18 +1,36 @@
 Additional coordinates
 ======================
 
-When analysing a galaxy it is often convenient to work in spherical or cylindrical coordinates. A :class:`~swiftgalaxy.reader.SWIFTGalaxy` will compute these (and the velocities) on the fly if requested. The poles of the spherical/cylindrical coordinate frame are assumed to lie along the cartesian :math:`z` axis of the :doc:`current coordinate frame <../coordinate_transformations/index>`, the reference azimuth (:math:`\phi=0`) lies along the :math:`x` axis, and the coordinate system is assumed to be right-handed.
+When analysing a galaxy it is often convenient to work in spherical or cylindrical
+coordinates. A :class:`~swiftgalaxy.reader.SWIFTGalaxy` will compute these (and the
+velocities) on the fly if requested. The poles of the spherical/cylindrical coordinate
+frame are assumed to lie along the cartesian :math:`z` axis of the
+:doc:`current coordinate frame <../coordinate_transformations/index>`, the reference
+azimuth (:math:`\phi=0`) lies along the :math:`x` axis, and the coordinate system is
+assumed to be right-handed.
 
-Any computed coordinates (or velocities) are cached to speed up subsequent requests, but note that :doc:`coordinate transformations <../coordinate_transformations/index>` in general would require a conversion back to cartesian coordinates, application of the transformation, and then re-calculation of the spherical/cylindrical coordinates. Therefore, in the interest of efficiency, if a coordinate transformation occurs the spherical/cylindrical coordinates are simply discarded, and re-computed if they are subsequently requested.
+Any computed coordinates (or velocities) are cached to speed up subsequent requests, but
+note that :doc:`coordinate transformations <../coordinate_transformations/index>` in
+general would require a conversion back to cartesian coordinates, application of the
+transformation, and then re-calculation of the spherical/cylindrical coordinates.
+Therefore, in the interest of efficiency, if a coordinate transformation occurs the
+spherical/cylindrical coordinates are simply discarded, and re-computed if they are
+subsequently requested.
 
 Spherical coordinates
 ---------------------
 
 .. note::
-   
-   A "physics" notation convention is assumed, with coordinate components named :math:`(r, \theta, \phi)`, where :math:`-\frac{\pi}{2} \leq \theta \leq \frac{\pi}{2}` is the polar angle and :math:`0 < \phi \leq 2\pi` is the azimuthal angle. The convention that if :math:`r=0`, then :math:`\theta=0` and :math:`\phi=0` is also adopted.
 
-The spherical coordinates can be accessed through the :attr:`~swiftgalaxy.reader._SWIFTParticleDatasetHelper.spherical_coordinates` property of a particle dataset. Supposing that we are interested in the ``gas`` particles:
+   A "physics" notation convention is assumed, with coordinate components named
+   :math:`(r, \theta, \phi)`, where :math:`-\frac{\pi}{2} \leq \theta \leq \frac{\pi}{2}`
+   is the polar angle and :math:`0 < \phi \leq 2\pi` is the azimuthal angle. The
+   convention that if :math:`r=0`, then :math:`\theta=0` and :math:`\phi=0` is also
+   adopted.
+
+The spherical coordinates can be accessed through the
+:attr:`~swiftgalaxy.reader._SWIFTParticleDatasetHelper.spherical_coordinates` property of
+a particle dataset. Supposing that we are interested in the ``gas`` particles:
 
 .. code-block:: python
 
@@ -21,13 +39,14 @@ The spherical coordinates can be accessed through the :attr:`~swiftgalaxy.reader
     sg.gas.spherical_coordinates.theta
     sg.gas.spherical_coordinates.phi
 
-For convenience and/or readability, some common (?) aliases to the coordinates are also supported.
+For convenience and/or readability, some common (?) aliases to the coordinates are also
+supported.
 
 .. admonition:: Aliases
     :class: toggle
 
     Aliases for spherical coordinates are as follows:
-    
+
     + ``spherical_coordinates.r``:
         + ``spherical_coordinates.radius``
     + ``spherical_coordinates.theta``:
@@ -44,7 +63,8 @@ For convenience and/or readability, some common (?) aliases to the coordinates a
 Spherical velocities
 ^^^^^^^^^^^^^^^^^^^^
 
-The velocity components in the directions of the spherical unit vectors -- :math:`(v_r, v_\theta, v_\phi)` -- can be accessed with the following syntax:
+The velocity components in the directions of the spherical unit vectors --
+:math:`(v_r, v_\theta, v_\phi)` -- can be accessed with the following syntax:
 
 .. code-block:: python
 
@@ -52,13 +72,14 @@ The velocity components in the directions of the spherical unit vectors -- :math
     sg.gas.spherical_velocities.theta
     sg.gas.spherical_velocities.phi
 
-Note that if :math:`r=0`, then :math:`\theta=0` and :math:`\phi=0` are assumed to define the directions of the unit vectors.
-    
+Note that if :math:`r=0`, then :math:`\theta=0` and :math:`\phi=0` are assumed to define
+the directions of the unit vectors.
+
 .. admonition:: Aliases
     :class: toggle
 
     Again, some aliases are provided:
-    
+
     + ``spherical_velocities.r``:
         + ``spherical_velocities.radius``
     + ``spherical_velocities.theta``:
@@ -76,10 +97,15 @@ Cylindrical coordinates
 -----------------------
 
 .. note::
-   
-   The coordinate components are named :math:`(\rho, \phi, z)` by default, and assume a convention where :math:`0 < \phi \leq 2\pi`. The convention that if :math:`\rho=0`, then :math:`\phi=0` is also adopted.
 
-Similarly to the spherical coordinates, the cylindrical coordinates can be accessed through the :attr:`~swiftgalaxy.reader._SWIFTParticleDatasetHelper.cylindrical_coordinates` property of a particle dataset. Supposing again that we are interested in the ``gas`` particles:
+   The coordinate components are named :math:`(\rho, \phi, z)` by default, and assume a
+   convention where :math:`0 < \phi \leq 2\pi`. The convention that if :math:`\rho=0`,
+   then :math:`\phi=0` is also adopted.
+
+Similarly to the spherical coordinates, the cylindrical coordinates can be accessed
+through the
+:attr:`~swiftgalaxy.reader._SWIFTParticleDatasetHelper.cylindrical_coordinates` property
+of a particle dataset. Supposing again that we are interested in the ``gas`` particles:
 
 .. code-block:: python
 
@@ -91,7 +117,7 @@ Similarly to the spherical coordinates, the cylindrical coordinates can be acces
     :class: toggle
 
     Aliases for cylindrical coordinates are as follows:
-    
+
     + ``cylindrical_coordinates.rho``:
         + ``cylindrical_coordinates.R``
         + ``cylindrical_coordinates.radius``
@@ -106,7 +132,8 @@ Similarly to the spherical coordinates, the cylindrical coordinates can be acces
 Cylindrical velocities
 ^^^^^^^^^^^^^^^^^^^^^^
 
-The velocity components in the directions of the cylindrical unit vectors -- :math:`(v_\rho, v_\phi, v_z)` -- can be accessed with the following syntax:
+The velocity components in the directions of the cylindrical unit vectors --
+:math:`(v_\rho, v_\phi, v_z)` -- can be accessed with the following syntax:
 
 .. code-block:: python
 
@@ -114,13 +141,14 @@ The velocity components in the directions of the cylindrical unit vectors -- :ma
     sg.gas.cylindrical_velocities.phi
     sg.gas.cylindrical_velocities.z
 
-Note that if :math:`\rho=0`, then :math:`\phi=0` is assumed to define the directions of the unit vectors.
+Note that if :math:`\rho=0`, then :math:`\phi=0` is assumed to define the directions of
+the unit vectors.
 
 .. admonition:: Aliases
     :class: toggle
 
     Again, some aliases are provided:
-    
+
     + ``cylindrical_velocities.rho``:
         + ``cylindrical_velocities.R``
         + ``cylindrical_velocities.radius``
@@ -135,7 +163,8 @@ Note that if :math:`\rho=0`, then :math:`\phi=0` is assumed to define the direct
 Cartesian coordinates
 ---------------------
 
-For completeness, the cartesian coordinates :math:`(x, y, z)` are made available with a similar syntax:
+For completeness, the cartesian coordinates :math:`(x, y, z)` are made available with a
+similar syntax:
 
 .. code-block:: python
 
@@ -143,7 +172,9 @@ For completeness, the cartesian coordinates :math:`(x, y, z)` are made available
     sg.gas.cartesian_coordinates.y
     sg.gas.cartesian_coordinates.z
 
-These are implemented such that a reference to the coordinates array is used and therefore occupy no additional memory. In addition to the individual coordinate components, for cartesian coordinates the :math:`(N, 3)` coordinate array is available as:
+These are implemented such that a reference to the coordinates array is used and therefore
+occupy no additional memory. In addition to the individual coordinate components, for
+cartesian coordinates the :math:`(N, 3)` coordinate array is available as:
 
 .. code-block:: python
 
