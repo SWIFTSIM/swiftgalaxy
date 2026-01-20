@@ -25,8 +25,6 @@ You can install the `ruff` linter with `pip install ruff`. To check that your co
 
 `ruff` is also used to enforce code formatting, you can check this with `ruff format --check` and automatically format your copy of the code with `ruff format`. Again remember to commit any automatically formatted files.
 
-Pytest unit testing
-
 Flake8 style guide enforcement
 ------------------------------
 
