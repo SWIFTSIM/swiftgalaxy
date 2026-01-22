@@ -156,8 +156,10 @@ def _apply_4transform(
     ----------
     coords : :class:`~swiftsimio.objects.cosmo_array`
         The coordinate array to be transformed.
+
     transform : :class:`~numpy.ndarray`
         The 4x4 transformation matrix.
+
     transform_units : :class:`unyt.unit_object.Unit`
         The units assumed in the translation portion of the transformation matrix.
 
@@ -918,6 +920,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
         ----------
         data : :class:`~swiftsimio.objects.cosmo_array`
             The data to (potentially) transform.
+
         dataset_name : :obj:`str`
             The name of the dataset contained in ``data``.
 
