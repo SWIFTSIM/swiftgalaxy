@@ -424,7 +424,7 @@ class SWIFTGalaxies(object):
             np.sum(
                 np.prod(
                     np.ceil(
-                        np.diff(unique_regions, axis=2).squeeze() / sm.cell_size
+                        np.diff(unique_regions, axis=2).squeeze(axis=2) / sm.cell_size
                     ).to_value(u.dimensionless),
                     axis=1,
                 )
@@ -434,7 +434,7 @@ class SWIFTGalaxies(object):
             np.sum(
                 np.prod(
                     np.ceil(
-                        np.diff(unique_regions, axis=2).squeeze() / sm.cell_size
+                        np.diff(unique_regions, axis=2).squeeze(axis=2) / sm.cell_size
                     ).to_value(u.dimensionless)
                     + 1,
                     axis=1,
