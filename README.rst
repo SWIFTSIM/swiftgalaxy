@@ -112,7 +112,7 @@ Once installed, creating a ``SWIFTGalaxy`` object to get started with analysis i
    )
    plt.imsave("eagle6_galaxy.png", np.log10(img.T), origin="lower", cmap="inferno")
 
-.. image:: eagle6_galaxy.png
+.. image:: https://github.com/SWIFTSIM/swiftgalaxy/raw/main/eagle6_galaxy.png
 
 .. EXAMPLE_END_LABEL
 
