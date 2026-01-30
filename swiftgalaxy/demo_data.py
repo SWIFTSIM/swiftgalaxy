@@ -499,7 +499,9 @@ class ToyHF(_HaloCatalogue):
         swift_mask.constrain_spatial(spatial_mask)
         return swift_mask
 
-    def _generate_bound_only_mask(self, sg: SWIFTGalaxy) -> MaskCollection:
+    def _generate_bound_only_mask(
+        self, sg: SWIFTGalaxy, mask_loaded: bool = True
+    ) -> MaskCollection:
         """
         Evaluate the extra mask selecting particles belonging to the target galaxy.
 
@@ -511,13 +513,17 @@ class ToyHF(_HaloCatalogue):
             The :class:`~swiftgalaxy.reader.SWIFTGalaxy` for which the mask is being
             evaluated.
 
+        mask_loaded : :obj:`bool`
+            Whether to mask any data loaded while creating the mask. The iterator wants to
+            switch this off.
+
         Returns
         -------
         :class:`~swiftgalaxy.masks.MaskCollection`
             The extra mask.
         """
 
-        def generate_lazy_mask(group_name: str) -> LazyMask:
+        def generate_lazy_mask(group_name: str, mask_loaded: bool) -> LazyMask:
             """
             Generate a function that evaluates a mask for bound particles.
 
@@ -527,6 +533,10 @@ class ToyHF(_HaloCatalogue):
             ----------
             group_name : :obj:`str`
                 The particle type to evaluate a mask for.
+
+            mask_loaded : :obj:`bool`
+                Whether to mask the data loaded while constructing the mask. The iterator
+                wants to switch this off.
 
             Returns
             -------
@@ -563,15 +573,16 @@ class ToyHF(_HaloCatalogue):
                     "stars": np.s_[...],
                     "black_holes": np.s_[...],
                 }[group_name]
-                # mask the particle_ids
-                setattr(
-                    getattr(sg, group_name)._particle_dataset,
-                    f"_{sg.id_particle_dataset_name}",
-                    getattr(
+                if mask_loaded:
+                    # mask the particle_ids
+                    setattr(
                         getattr(sg, group_name)._particle_dataset,
                         f"_{sg.id_particle_dataset_name}",
-                    )[mask],
-                )
+                        getattr(
+                            getattr(sg, group_name)._particle_dataset,
+                            f"_{sg.id_particle_dataset_name}",
+                        )[mask],
+                    )
                 assert (
                     isinstance(mask, np.ndarray)
                     or isinstance(mask, slice)
@@ -583,7 +594,7 @@ class ToyHF(_HaloCatalogue):
 
         return MaskCollection(
             **{
-                group_name: generate_lazy_mask(group_name)
+                group_name: generate_lazy_mask(group_name, mask_loaded)
                 for group_name in sg.metadata.present_group_names
             }
         )

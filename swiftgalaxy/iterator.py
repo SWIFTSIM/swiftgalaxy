@@ -511,7 +511,9 @@ class SWIFTGalaxies(object):
             self._start_server(region_mask)
             for igalaxy in target_indices:
                 self.halo_catalogue._mask_multi_galaxy(igalaxy)
-                server_mask = self.halo_catalogue._get_extra_mask(self._server)
+                server_mask = self.halo_catalogue._get_extra_mask(
+                    self._server, mask_loaded=False
+                )
                 swift_galaxy = self._server._data_copy(
                     server_mask, _data_server=self._server
                 )
