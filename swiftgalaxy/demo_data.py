@@ -9,14 +9,15 @@ from typing import Optional, Callable, Union, List, Sequence
 from numpy.typing import NDArray
 from astropy.cosmology import LambdaCDM
 from astropy import units as U
-from swiftsimio.objects import cosmo_array
+from swiftsimio.objects import cosmo_array, cosmo_quantity
 import swiftsimio
 from swiftsimio import Writer, SWIFTMask
 from swiftgalaxy import SWIFTGalaxy
 from swiftgalaxy.masks import MaskCollection, LazyMask
 from swiftgalaxy.halo_catalogues import _HaloCatalogue
-from swiftsimio.units import cosmo_units
+from swiftsimio.metadata.writer.unit_systems import cosmo_units
 
+_a = 1.0
 _demo_data_dir = Path("demo_data")
 _toysnap_filename = _demo_data_dir / "toysnap.hdf5"
 _toyvr_filebase = _demo_data_dir / "toyvr"
@@ -25,7 +26,7 @@ _toysoap_membership_filebase = _demo_data_dir / "toysoap_membership"
 _toysoap_virtual_snapshot_filename = _demo_data_dir / "toysnap_virtual.hdf5"
 _toycaesar_filename = _demo_data_dir / "toycaesar.hdf5"
 _present_particle_types = {0: "gas", 1: "dark_matter", 4: "stars", 5: "black_holes"}
-_boxsize = 10.0 * u.Mpc
+_boxsize = cosmo_quantity(10.0, u.Mpc, comoving=True, scale_factor=_a, scale_exponent=1)
 _n_g_all = 32**3
 _centre_1 = 2
 _centre_2 = 8
@@ -44,19 +45,25 @@ _n_s_all = _n_s_1 + _n_s_2
 _n_bh_1 = 1
 _n_bh_2 = 1
 _n_bh_all = _n_bh_1 + _n_bh_2
-_m_g = 1e3 * u.msun
-_T_g = 1e4 * u.K
-_m_dm = 1e4 * u.msun
-_m_s = 1e3 * u.msun
-_m_bh = 1e6 * u.msun
+_m_g = cosmo_quantity(1e3, u.solMass, comoving=True, scale_factor=_a, scale_exponent=0)
+_T_g = cosmo_quantity(1e4, u.K, comoving=True, scale_factor=_a, scale_exponent=0)
+_m_dm = cosmo_quantity(1e4, u.solMass, comoving=True, scale_factor=_a, scale_exponent=0)
+_m_s = cosmo_quantity(1e3, u.solMass, comoving=True, scale_factor=_a, scale_exponent=0)
+_m_bh = cosmo_quantity(1e6, u.solMass, comoving=True, scale_factor=_a, scale_exponent=0)
 
 _Om_m = 0.3
 _Om_l = 0.7
 _Om_b = 0.05
 _h0 = 0.7
 _w0 = -1.0
-_rho_c = (3 * (_h0 * 100 * u.km / u.s / u.Mpc) ** 2 / 8 / np.pi / u.G).to(
-    u.msun / u.kpc**3
+_rho_c = cosmo_quantity(
+    (3 * (_h0 * 100 * u.km / u.s / u.Mpc) ** 2 / 8 / np.pi / u.G).to_value(
+        u.solMass / u.kpc**3
+    ),
+    u.solMass / u.kpc**3,
+    comoving=True,
+    scale_factor=_a,
+    scale_exponent=-3,
 )
 _age = u.unyt_quantity.from_astropy(
     LambdaCDM(
@@ -484,7 +491,7 @@ class ToyHF(_HaloCatalogue):
                 [[_centre_1 - 0.1, _centre_1 + 0.1] for ax in range(3)],
                 u.Mpc,
                 comoving=True,
-                scale_factor=1.0,
+                scale_factor=_a,
                 scale_exponent=1,
             )
         else:  # self.index == 1
@@ -492,7 +499,7 @@ class ToyHF(_HaloCatalogue):
                 [[_centre_2 - 0.1, _centre_2 + 0.1] for ax in range(3)],
                 u.Mpc,
                 comoving=True,
-                scale_factor=1.0,
+                scale_factor=_a,
                 scale_exponent=1,
             )
         swift_mask = swiftsimio.mask(self.snapfile, spatial_only=True)
@@ -614,7 +621,7 @@ class ToyHF(_HaloCatalogue):
                 [_centre_1, _centre_1, _centre_1],
                 u.Mpc,
                 comoving=True,
-                scale_factor=1.0,
+                scale_factor=_a,
                 scale_exponent=1,
             )
         else:  # self.index == 1
@@ -622,7 +629,7 @@ class ToyHF(_HaloCatalogue):
                 [_centre_2, _centre_2, _centre_2],
                 u.Mpc,
                 comoving=True,
-                scale_factor=1.0,
+                scale_factor=_a,
                 scale_exponent=1,
             )
 
@@ -641,7 +648,7 @@ class ToyHF(_HaloCatalogue):
                 [_vcentre_1, _vcentre_1, _vcentre_1],
                 u.km / u.s,
                 comoving=True,
-                scale_factor=1.0,
+                scale_factor=_a,
                 scale_exponent=1,
             )
         else:  # self.index == 1
@@ -649,7 +656,7 @@ class ToyHF(_HaloCatalogue):
                 [_vcentre_2, _vcentre_2, _vcentre_2],
                 u.km / u.s,
                 comoving=True,
-                scale_factor=1.0,
+                scale_factor=_a,
                 scale_exponent=1,
             )
 
@@ -667,7 +674,7 @@ class ToyHF(_HaloCatalogue):
             [[_centre_1, _centre_1, _centre_1], [_centre_2, _centre_2, _centre_2]],
             u.Mpc,
             comoving=True,
-            scale_factor=1.0,
+            scale_factor=_a,
             scale_exponent=1,
         )[(self.index,)]
 
@@ -685,7 +692,7 @@ class ToyHF(_HaloCatalogue):
             [0.5, 0.5],
             u.Mpc,
             comoving=True,
-            scale_factor=1.0,
+            scale_factor=_a,
             scale_exponent=1,
         )[(self.index,)]
 
@@ -733,15 +740,15 @@ def _create_toysnap(
     if Path(snapfile).is_file():
         return
 
-    sd = Writer(cosmo_units, np.ones(3, dtype=float) * _boxsize)
+    sd = Writer(unit_system=cosmo_units, boxsize=np.ones(3) * _boxsize)
 
     # Insert a uniform gas background plus two galaxy discs
     phi_1 = np.random.rand(_n_g_1, 1) * 2 * np.pi
     R_1 = np.random.rand(_n_g_1, 1)
     phi_2 = np.random.rand(_n_g_2, 1) * 2 * np.pi
     R_2 = np.random.rand(_n_g_2, 1)
-    getattr(sd, _present_particle_types[0]).particle_ids = np.arange(_n_g_all)
-    getattr(sd, _present_particle_types[0]).coordinates = (
+    getattr(sd, _present_particle_types[0]).particle_ids = np.arange(1, 1 + _n_g_all)
+    getattr(sd, _present_particle_types[0]).coordinates = cosmo_array(
         np.vstack(
             (
                 np.random.rand(_n_g_b // 2, 3) * np.array([5, 10, 10]),
@@ -766,10 +773,13 @@ def _create_toysnap(
                     )
                 ),
             )
-        )
-        * u.Mpc
+        ),
+        u.Mpc,
+        comoving=True,
+        scale_factor=_a,
+        scale_exponent=1,
     )
-    getattr(sd, _present_particle_types[0]).velocities = (
+    getattr(sd, _present_particle_types[0]).velocities = cosmo_array(
         np.vstack(
             (
                 np.random.rand(_n_g_b // 2, 3) * 2 - 1,  # 1 km/s for background
@@ -795,14 +805,16 @@ def _create_toysnap(
                     )
                 ),
             )
-        )
-        * u.km
-        / u.s
+        ),
+        u.km / u.s,
+        comoving=True,
+        scale_factor=_a,
+        scale_exponent=0,
     )
     getattr(sd, _present_particle_types[0]).masses = (
         np.ones(_n_g_all, dtype=float) * _m_g
     )
-    getattr(sd, _present_particle_types[0]).internal_energy = (
+    getattr(sd, _present_particle_types[0]).internal_energy = cosmo_array(
         np.concatenate(
             (
                 np.ones(_n_g_b // 2, dtype=float),  # 1e4 K
@@ -811,13 +823,14 @@ def _create_toysnap(
                 np.ones(_n_g_2, dtype=float) / 10,  # 1e3 K
             )
         )
-        * _T_g
-        * u.kb
-        / (_m_g)
+        * _T_g.to_comoving_value(u.K)
+        / (_m_g).to_comoving_value(u.solMass),
+        u.kb * u.K / u.solMass,
+        comoving=True,
+        scale_factor=_a,
+        scale_exponent=-2,
     )
-    getattr(sd, _present_particle_types[0]).generate_smoothing_lengths(
-        boxsize=_boxsize, dimension=3
-    )
+    getattr(sd, _present_particle_types[0]).generate_smoothing_lengths()
 
     # Insert a uniform DM background plus two galaxy halos
     phi_1 = np.random.rand(_n_dm_1, 1) * 2 * np.pi
@@ -827,9 +840,9 @@ def _create_toysnap(
     theta_2 = np.arccos(np.random.rand(_n_dm_2, 1) * 2 - 1)
     r_2 = np.random.rand(_n_dm_2, 1)
     getattr(sd, _present_particle_types[1]).particle_ids = np.arange(
-        _n_g_all, _n_g_all + _n_dm_all
+        1 + _n_g_all, 1 + _n_g_all + _n_dm_all
     )
-    getattr(sd, _present_particle_types[1]).coordinates = (
+    getattr(sd, _present_particle_types[1]).coordinates = cosmo_array(
         np.vstack(
             (
                 np.random.rand(_n_dm_b // 2, 3) * np.array([5, 10, 10]),
@@ -852,10 +865,13 @@ def _create_toysnap(
                     )
                 ),
             )
-        )
-        * u.Mpc
+        ),
+        u.Mpc,
+        comoving=True,
+        scale_factor=_a,
+        scale_exponent=1,
     )
-    getattr(sd, _present_particle_types[1]).velocities = (
+    getattr(sd, _present_particle_types[1]).velocities = cosmo_array(
         np.vstack(
             (
                 # 1 km/s background, 100 km/s halo
@@ -864,15 +880,14 @@ def _create_toysnap(
                 np.random.rand(_n_dm_b // 2, 3) * 2 - 1,
                 _vcentre_2 + (np.random.rand(_n_dm_2, 3) * 2 - 1) * 100,
             )
-        )
-        * u.km
-        / u.s
+        ),
+        u.km / u.s,
+        comoving=True,
+        scale_factor=_a,
+        scale_exponent=0,
     )
     getattr(sd, _present_particle_types[1]).masses = (
         np.ones(_n_dm_all, dtype=float) * _m_dm
-    )
-    getattr(sd, _present_particle_types[1]).generate_smoothing_lengths(
-        boxsize=_boxsize, dimension=3
     )
 
     # Insert two galaxy stellar discs
@@ -881,9 +896,9 @@ def _create_toysnap(
     phi_2 = np.random.rand(_n_s_2, 1) * 2 * np.pi
     R_2 = np.random.rand(_n_s_2, 1)
     getattr(sd, _present_particle_types[4]).particle_ids = np.arange(
-        _n_g_all + _n_dm_all, _n_g_all + _n_dm_all + _n_s_1 + _n_s_2
+        1 + _n_g_all + _n_dm_all, 1 + _n_g_all + _n_dm_all + _n_s_1 + _n_s_2
     )
-    getattr(sd, _present_particle_types[4]).coordinates = (
+    getattr(sd, _present_particle_types[4]).coordinates = cosmo_array(
         np.vstack(
             (
                 np.hstack(
@@ -905,10 +920,13 @@ def _create_toysnap(
                     )
                 ),
             )
-        )
-        * u.Mpc
+        ),
+        u.Mpc,
+        comoving=True,
+        scale_factor=_a,
+        scale_exponent=1,
     )
-    getattr(sd, _present_particle_types[4]).velocities = (
+    getattr(sd, _present_particle_types[4]).velocities = cosmo_array(
         np.vstack(
             (
                 np.hstack(
@@ -932,22 +950,23 @@ def _create_toysnap(
                     )
                 ),
             )
-        )
-        * u.km
-        / u.s
+        ),
+        u.km / u.s,
+        comoving=True,
+        scale_factor=_a,
+        scale_exponent=0,
     )
     getattr(sd, _present_particle_types[4]).masses = (
         np.ones(_n_s_1 + _n_s_2, dtype=float) * _m_s
     )
-    getattr(sd, _present_particle_types[4]).generate_smoothing_lengths(
-        boxsize=_boxsize, dimension=3
-    )
+    getattr(sd, _present_particle_types[4]).generate_smoothing_lengths()
+
     # Insert a black hole in two galaxies
     getattr(sd, _present_particle_types[5]).particle_ids = np.arange(
-        _n_g_all + _n_dm_all + _n_s_1 + _n_s_2,
-        _n_g_all + _n_dm_all + _n_s_1 + _n_s_2 + _n_bh_1 + _n_bh_2,
+        1 + _n_g_all + _n_dm_all + _n_s_1 + _n_s_2,
+        1 + _n_g_all + _n_dm_all + _n_s_1 + _n_s_2 + _n_bh_1 + _n_bh_2,
     )
-    getattr(sd, _present_particle_types[5]).coordinates = (
+    getattr(sd, _present_particle_types[5]).coordinates = cosmo_array(
         np.concatenate(
             (
                 _centre_1
@@ -957,27 +976,29 @@ def _create_toysnap(
                 - 0.000003
                 * np.ones((_n_bh_2, 3), dtype=float),  # 3 pc to avoid r==0 warnings
             )
-        )
-        * u.Mpc
+        ),
+        u.Mpc,
+        comoving=True,
+        scale_factor=_a,
+        scale_exponent=1,
     )
-    getattr(sd, _present_particle_types[5]).velocities = (
+    getattr(sd, _present_particle_types[5]).velocities = cosmo_array(
         np.concatenate(
             (
                 _vcentre_1 + np.zeros((_n_bh_1, 3), dtype=float),
                 _vcentre_2 + np.zeros((_n_bh_2, 3), dtype=float),
             )
-        )
-        * u.km
-        / u.s
+        ),
+        u.km / u.s,
+        comoving=True,
+        scale_factor=_a,
+        scale_exponent=0,
     )
     getattr(sd, _present_particle_types[5]).masses = (
         np.ones(_n_bh_1 + _n_bh_2, dtype=float) * _m_bh
     )
-    getattr(sd, _present_particle_types[5]).generate_smoothing_lengths(
-        boxsize=_boxsize, dimension=3
-    )
 
-    sd.write(snapfile)  # IDs auto-generated
+    sd.write(snapfile)
 
     with h5py.File(snapfile, "r+") as f:
         g = f.create_group("Cells")
@@ -990,10 +1011,16 @@ def _create_toysnap(
             data=np.array(
                 [
                     np.sum(
-                        getattr(sd, _present_particle_types[0]).coordinates[:, 0] <= 5
+                        getattr(sd, _present_particle_types[0])
+                        .coordinates[:, 0]
+                        .to_comoving_value(u.Mpc)
+                        <= 5
                     ),
                     np.sum(
-                        getattr(sd, _present_particle_types[0]).coordinates[:, 0] > 5
+                        getattr(sd, _present_particle_types[0])
+                        .coordinates[:, 0]
+                        .to_comoving_value(u.Mpc)
+                        > 5
                     ),
                 ]
             ),
@@ -1004,10 +1031,16 @@ def _create_toysnap(
             data=np.array(
                 [
                     np.sum(
-                        getattr(sd, _present_particle_types[1]).coordinates[:, 0] <= 5
+                        getattr(sd, _present_particle_types[1])
+                        .coordinates[:, 0]
+                        .to_comoving_value(u.Mpc)
+                        <= 5
                     ),
                     np.sum(
-                        getattr(sd, _present_particle_types[1]).coordinates[:, 0] > 5
+                        getattr(sd, _present_particle_types[1])
+                        .coordinates[:, 0]
+                        .to_comoving_value(u.Mpc)
+                        > 5
                     ),
                 ]
             ),
@@ -1018,10 +1051,16 @@ def _create_toysnap(
             data=np.array(
                 [
                     np.sum(
-                        getattr(sd, _present_particle_types[4]).coordinates[:, 0] <= 5
+                        getattr(sd, _present_particle_types[4])
+                        .coordinates[:, 0]
+                        .to_comoving_value(u.Mpc)
+                        <= 5
                     ),
                     np.sum(
-                        getattr(sd, _present_particle_types[4]).coordinates[:, 0] > 5
+                        getattr(sd, _present_particle_types[4])
+                        .coordinates[:, 0]
+                        .to_comoving_value(u.Mpc)
+                        > 5
                     ),
                 ]
             ),
@@ -1032,10 +1071,16 @@ def _create_toysnap(
             data=np.array(
                 [
                     np.sum(
-                        getattr(sd, _present_particle_types[5]).coordinates[:, 0] <= 5
+                        getattr(sd, _present_particle_types[5])
+                        .coordinates[:, 0]
+                        .to_comoving_value(u.Mpc)
+                        <= 5
                     ),
                     np.sum(
-                        getattr(sd, _present_particle_types[5]).coordinates[:, 0] > 5
+                        getattr(sd, _present_particle_types[5])
+                        .coordinates[:, 0]
+                        .to_comoving_value(u.Mpc)
+                        > 5
                     ),
                 ]
             ),
@@ -1075,14 +1120,9 @@ def _create_toysnap(
         mdg = g.create_group("Meta-data")
         mdg.attrs["dimension"] = np.array([[2, 1, 1]], dtype=int)
         mdg.attrs["nr_cells"] = np.array([2], dtype=int)
-        mdg.attrs["size"] = np.array(
-            [
-                0.5 * _boxsize.to_value(u.Mpc),
-                _boxsize.to_value(u.Mpc),
-                _boxsize.to_value(u.Mpc),
-            ],
-            dtype=int,
-        )
+        mdg.attrs["size"] = (
+            np.array([0.5, 1.0, 1.0]) * _boxsize.to_comoving_value(u.Mpc)
+        ).astype(int)
         og = g.create_group("OffsetsInFile")
         og.create_dataset(
             "PartType0",
@@ -1090,7 +1130,10 @@ def _create_toysnap(
                 [
                     0,
                     np.sum(
-                        getattr(sd, _present_particle_types[0]).coordinates[:, 0] <= 5
+                        getattr(sd, _present_particle_types[0])
+                        .coordinates[:, 0]
+                        .to_comoving_value(u.Mpc)
+                        <= 5
                     ),
                 ],
                 dtype=int,
@@ -1102,7 +1145,10 @@ def _create_toysnap(
                 [
                     0,
                     np.sum(
-                        getattr(sd, _present_particle_types[1]).coordinates[:, 0] <= 5
+                        getattr(sd, _present_particle_types[1])
+                        .coordinates[:, 0]
+                        .to_comoving_value(u.Mpc)
+                        <= 5
                     ),
                 ],
                 dtype=int,
@@ -1114,7 +1160,10 @@ def _create_toysnap(
                 [
                     0,
                     np.sum(
-                        getattr(sd, _present_particle_types[4]).coordinates[:, 0] <= 5
+                        getattr(sd, _present_particle_types[4])
+                        .coordinates[:, 0]
+                        .to_comoving_value(u.Mpc)
+                        <= 5
                     ),
                 ],
                 dtype=int,
@@ -1126,7 +1175,10 @@ def _create_toysnap(
                 [
                     0,
                     np.sum(
-                        getattr(sd, _present_particle_types[5]).coordinates[:, 0] <= 5
+                        getattr(sd, _present_particle_types[5])
+                        .coordinates[:, 0]
+                        .to_comoving_value(u.Mpc)
+                        <= 5
                     ),
                 ],
                 dtype=int,
@@ -1333,7 +1385,7 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
             f["Configuration"].attrs["Omega_DE"] = _Om_l
             f["Configuration"].attrs["Omega_b"] = _Om_b
             f["Configuration"].attrs["Omega_m"] = _Om_m
-            f["Configuration"].attrs["Period"] = _boxsize.to_value(u.Mpc)
+            f["Configuration"].attrs["Period"] = _boxsize.to_comoving_value(u.Mpc)
             f.create_dataset("File_id", data=np.array([0, 0], dtype=int))
             f.create_dataset("ID", data=np.array([1, 2], dtype=int))
             f["ID"].attrs["Dimension_Length"] = 0.0
@@ -1408,7 +1460,7 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
             f.attrs["Length_unit_to_kpc"] = 1000.000000
             f.attrs["Mass_unit_to_solarmass"] = 10000000000.000000
             f.attrs["Metallicity_unit_to_solar"] = 83.330000
-            f.attrs["Period"] = _boxsize.to_value(u.Mpc)
+            f.attrs["Period"] = _boxsize.to_comoving_value(u.Mpc)
             f.attrs["SFR_unit_to_solarmassperyear"] = 97.780000
             f.attrs["Stellar_age_unit_to_yr"] = 977813413600.000000
             f.attrs["Time"] = 1.0
@@ -1488,43 +1540,49 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
                 data=np.concatenate(
                     (
                         # gas IDs group 0
-                        np.arange(_n_g_b // 2, _n_g_b // 2 + _n_g_1, dtype=int),
+                        np.arange(1 + _n_g_b // 2, 1 + _n_g_b // 2 + _n_g_1, dtype=int),
                         # dm IDs group 0
                         np.arange(
-                            _n_g_all + _n_dm_b // 2,
-                            _n_g_all + _n_dm_b // 2 + _n_dm_1,
+                            1 + _n_g_all + _n_dm_b // 2,
+                            1 + _n_g_all + _n_dm_b // 2 + _n_dm_1,
                             dtype=int,
                         ),
                         # star IDs group 0
                         np.arange(
-                            _n_g_all + _n_dm_all,
-                            _n_g_all + _n_dm_all + _n_s_1,
+                            1 + _n_g_all + _n_dm_all,
+                            1 + _n_g_all + _n_dm_all + _n_s_1,
                             dtype=int,
                         ),
                         # bh IDs group 0
                         np.arange(
-                            _n_g_all + _n_dm_all + _n_s_1 + _n_s_2,
-                            _n_g_all + _n_dm_all + _n_s_1 + _n_s_2 + _n_bh_1,
+                            1 + _n_g_all + _n_dm_all + _n_s_1 + _n_s_2,
+                            1 + _n_g_all + _n_dm_all + _n_s_1 + _n_s_2 + _n_bh_1,
                             dtype=int,
                         ),
                         # gas IDs group 1
-                        np.arange(_n_g_b + _n_g_1, _n_g_all, dtype=int),
+                        np.arange(1 + _n_g_b + _n_g_1, 1 + _n_g_all, dtype=int),
                         # dm IDs group 1
                         np.arange(
-                            _n_g_all + _n_dm_b + _n_dm_1,
-                            _n_g_all + _n_dm_all,
+                            1 + _n_g_all + _n_dm_b + _n_dm_1,
+                            1 + _n_g_all + _n_dm_all,
                             dtype=int,
                         ),
                         # star IDs group 1
                         np.arange(
-                            _n_g_all + _n_dm_all + _n_s_1,
-                            _n_g_all + _n_dm_all + _n_s_1 + _n_s_2,
+                            1 + _n_g_all + _n_dm_all + _n_s_1,
+                            1 + _n_g_all + _n_dm_all + _n_s_1 + _n_s_2,
                             dtype=int,
                         ),
                         # bh IDs group 1
                         np.arange(
-                            _n_g_all + _n_dm_all + _n_s_1 + _n_s_2 + _n_bh_1,
-                            _n_g_all + _n_dm_all + _n_s_1 + _n_s_2 + _n_bh_1 + _n_bh_2,
+                            1 + _n_g_all + _n_dm_all + _n_s_1 + _n_s_2 + _n_bh_1,
+                            1
+                            + _n_g_all
+                            + _n_dm_all
+                            + _n_s_1
+                            + _n_s_2
+                            + _n_bh_1
+                            + _n_bh_2,
                             dtype=int,
                         ),
                     )
@@ -1558,12 +1616,14 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
                 "Particle_IDs",
                 data=np.concatenate(
                     (
-                        np.arange(_n_g_b // 2, dtype=int),
-                        np.arange(_n_g_b // 2 + _n_g_1, _n_g_all - _n_g_2, dtype=int),
-                        np.arange(_n_g_all, _n_g_all + _n_dm_b // 2, dtype=int),
+                        np.arange(1 + _n_g_b // 2, dtype=int),
                         np.arange(
-                            _n_g_all + _n_dm_b // 2 + _n_dm_1,
-                            _n_g_all + _n_dm_all - _n_dm_2,
+                            1 + _n_g_b // 2 + _n_g_1, 1 + _n_g_all - _n_g_2, dtype=int
+                        ),
+                        np.arange(1 + _n_g_all, 1 + _n_g_all + _n_dm_b // 2, dtype=int),
+                        np.arange(
+                            1 + _n_g_all + _n_dm_b // 2 + _n_dm_1,
+                            1 + _n_g_all + _n_dm_all - _n_dm_2,
                             dtype=int,
                         ),
                     )
@@ -1727,8 +1787,12 @@ def _create_toycaesar(
             "masses.total",
             data=np.array(
                 [
-                    (_n_g_1 * _m_g + _n_s_1 * _m_s + _n_bh_1 * _m_bh).to_value(u.msun),
-                    (_n_g_2 * _m_g + _n_s_2 * _m_s + _n_bh_2 * _m_bh).to_value(u.msun),
+                    (_n_g_1 * _m_g + _n_s_1 * _m_s + _n_bh_1 * _m_bh).to_comoving_value(
+                        u.solMass
+                    ),
+                    (_n_g_2 * _m_g + _n_s_2 * _m_s + _n_bh_2 * _m_bh).to_comoving_value(
+                        u.solMass
+                    ),
                 ],
                 dtype=float,
             ),
@@ -1923,13 +1987,13 @@ def _create_toycaesar(
                         + _n_dm_1 * _m_dm
                         + _n_s_1 * _m_s
                         + _n_bh_1 * _m_bh
-                    ).to_value(u.msun),
+                    ).to_comoving_value(u.solMass),
                     (
                         _n_g_2 * _m_g
                         + _n_dm_2 * _m_dm
                         + _n_s_2 * _m_s
                         + _n_bh_2 * _m_bh
-                    ).to_value(u.msun),
+                    ).to_comoving_value(u.solMass),
                 ],
                 dtype=float,
             ),
@@ -2073,9 +2137,9 @@ def _create_toycaesar(
         f["/halo_data/vel"].attrs["unit"] = "km/s"
         f.create_group("simulation_attributes")
         f["/simulation_attributes"].attrs["Densities"] = [
-            200 * _rho_c.to_value(u.msun / u.kpc**3),
-            500 * _rho_c.to_value(u.msun / u.kpc**3),
-            2500 * _rho_c.to_value(u.msun / u.kpc**3),
+            200 * _rho_c.to_comoving_value(u.solMass / u.kpc**3),
+            500 * _rho_c.to_comoving_value(u.solMass / u.kpc**3),
+            2500 * _rho_c.to_comoving_value(u.solMass / u.kpc**3),
         ]
         # f["/simulation_attributes"].attrs["E_z"] = ...
         f["/simulation_attributes"].attrs["G"] = 4.51691362044e-39
@@ -2086,18 +2150,20 @@ def _create_toycaesar(
         f["/simulation_attributes"].attrs["XH"] = 0.76
         f["/simulation_attributes"].attrs["baryons_present"] = True
         f["/simulation_attributes"].attrs["basename"] = "toysnap.hdf5"
-        f["/simulation_attributes"].attrs["_boxsize"] = _boxsize.to_value(u.kpc)
+        f["/simulation_attributes"].attrs["_boxsize"] = _boxsize.to_comoving_value(
+            u.kpc
+        )
         f["/simulation_attributes"].attrs["boxsize_units"] = "kpccm"
         f["/simulation_attributes"].attrs["cosmological_simulation"] = True
-        f["/simulation_attributes"].attrs["critical_density"] = _rho_c.to_value(
-            u.msun / u.kpc**3
+        f["/simulation_attributes"].attrs["critical_density"] = (
+            _rho_c.to_comoving_value(u.solMass / u.kpc**3)
         )
         f["/simulation_attributes"].attrs["ds_type"] = "SwiftDataset"
         # f["/simulation_attributes"].attrs["effective_resolution"] = ...
         # f["/simulation_attributes"].attrs["fullpath"] = ...
         f["/simulation_attributes"].attrs["hubble_constant"] = 0.7
         f["/simulation_attributes"].attrs["mean_interparticle_separation"] = (
-            _boxsize.to_value(u.kpc) / _n_dm_all ** (1 / 3)
+            _boxsize.to_comoving_value(u.kpc) / _n_dm_all ** (1 / 3)
         )
         f["/simulation_attributes"].attrs["nbh"] = _n_bh_1 + _n_bh_2
         f["/simulation_attributes"].attrs["ndm"] = _n_dm_all
@@ -2250,12 +2316,8 @@ def _create_toysoap(
             f["Cosmology"].attrs["w_0"] = np.array([-1.0])
             f["Cosmology"].attrs["w_a"] = np.array([0.0])
             f.create_group("Header")
-            f["Header"].attrs["BoxSize"] = np.array(
-                [
-                    _boxsize.to_value(u.Mpc),
-                    _boxsize.to_value(u.Mpc),
-                    _boxsize.to_value(u.Mpc),
-                ]
+            f["Header"].attrs["BoxSize"] = np.ones(3) * _boxsize.to_comoving_value(
+                u.Mpc
             )
             f["Header"].attrs["Code"] = "SOAP"
             f["Header"].attrs["Dimension"] = np.array([3])
@@ -2746,14 +2808,9 @@ def _create_toysoap(
             f["Cells"].create_group("Meta-data")
             f["Cells/Meta-data"].attrs["dimension"] = np.array([[2, 1, 1]], dtype=int)
             f["Cells/Meta-data"].attrs["nr_cells"] = np.array([2], dtype=int)
-            f["Cells/Meta-data"].attrs["size"] = np.array(
-                [
-                    0.5 * _boxsize.to_value(u.Mpc),
-                    _boxsize.to_value(u.Mpc),
-                    _boxsize.to_value(u.Mpc),
-                ],
-                dtype=int,
-            )
+            f["Cells/Meta-data"].attrs["size"] = (
+                np.array([0.5, 1.0, 1.0]) * _boxsize.to_comoving_value(u.Mpc)
+            ).astype(int)
             f["Cells"].create_group("OffsetsInFile")
             f["Cells/OffsetsInFile"].create_dataset(
                 "Subhalos", data=np.array([0, 1]), dtype=int
@@ -2799,13 +2856,13 @@ def _create_toysoap(
                             + _n_dm_1 * _m_dm
                             + _n_s_1 * _m_s
                             + _n_bh_1 * _m_bh
-                        ).to_value(u.msun),
+                        ).to_comoving_value(u.solMass),
                         (
                             _n_g_2 * _m_g
                             + _n_dm_2 * _m_dm
                             + _n_s_2 * _m_s
                             + _n_bh_2 * _m_bh
-                        ).to_value(u.msun),
+                        ).to_comoving_value(u.solMass),
                     ]
                 ),
                 dtype=float,
