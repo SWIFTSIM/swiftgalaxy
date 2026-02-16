@@ -1,6 +1,7 @@
 """Test the various wrapper classes that give a common interface for halo catalogues."""
 
 from pathlib import Path
+from typing import Optional, Tuple, Union
 import re
 import pytest
 import h5py
@@ -45,6 +46,7 @@ from swiftgalaxy.halo_catalogues import (
     SOAP,
     Standalone,
     _MaskHelper,
+    _HaloCatalogue,
 )
 from swiftsimio.objects import cosmo_array
 
@@ -54,7 +56,9 @@ abstol_m = 1e4 * u.Msun  # less than this is ~0
 reltol_nd = 1.0e-4
 
 
-def _clone_catalogue(hf, extra_mask):
+def _clone_catalogue(
+    hf: _HaloCatalogue, extra_mask: Optional[Union[str, MaskCollection]]
+) -> _HaloCatalogue:
     init_args = {"extra_mask": extra_mask}
     if hf.__class__ != Standalone:
         init_args[hf._index_attr[1:]] = getattr(hf, hf._index_attr)
@@ -79,7 +83,9 @@ def _clone_catalogue(hf, extra_mask):
     return hf.__class__(**init_args)
 
 
-def _prepare_snapshot_for_hf(hf, tmp_path_factory):
+def _prepare_snapshot_for_hf(
+    hf: _HaloCatalogue, tmp_path_factory: pytest.TempPathFactory
+) -> Tuple[Path, Path]:
     if hasattr(hf, "soap_file"):
         pytest.importorskip("compression")
         from compression.make_virtual_snapshot import make_virtual_snapshot
@@ -125,7 +131,9 @@ def _prepare_snapshot_for_hf(hf, tmp_path_factory):
     return toysnap_filename, toysnap_filename
 
 
-def _slab_mask(sg, threshold=0.0 * u.Mpc):
+def _slab_mask(
+    sg: SWIFTGalaxy, threshold: u.unyt_quantity = 0.0 * u.Mpc
+) -> MaskCollection:
     return MaskCollection(
         **{
             particle_type: getattr(sg, particle_type).cartesian_coordinates.x
@@ -362,15 +370,11 @@ class TestHaloCatalogues:
             hf, tmp_path_factory
         )
         try:
-            hf_none = _clone_catalogue(hf, extra_mask=None)
-            hf_bound = _clone_catalogue(hf, extra_mask="bound_only")
-            sg_none = SWIFTGalaxy(snapshot_filename, hf_none)
             sg_user = SWIFTGalaxy(
                 snapshot_filename, _clone_catalogue(hf, extra_mask=None)
             )
             sg_user.mask_particles(_slab_mask(sg_user))
             bound_mask = sg_user.halo_catalogue.get_bound_only_mask(sg_user)
-            sg_bound = SWIFTGalaxy(snapshot_filename, hf_bound)
             sg_bound_user = SWIFTGalaxy(
                 snapshot_filename, _clone_catalogue(hf, extra_mask="bound_only")
             )

@@ -305,7 +305,7 @@ class _HaloCatalogue(ABC):
                     for name in sg.metadata.present_group_names
                 }
             )
-        
+
     def get_bound_only_mask(self, sg: "SWIFTGalaxy") -> MaskCollection:
         """
         Evaluate a bound-only mask without applying it, returning the masks.
@@ -313,6 +313,16 @@ class _HaloCatalogue(ABC):
         The returned :class:`~swiftgalaxy.masks.MaskCollection` contains masks
         aligned to the current particle selections (i.e. any existing extra
         masks are respected).
+
+        Parameters
+        ----------
+        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` to evaluate the mask for.
+
+        Returns
+        -------
+        :class:`~swiftgalaxy.masks.MaskCollection`
+            A bound-only mask aligned to the current particle selection.
         """
 
         def _is_full_mask(mask_value: object) -> bool:
