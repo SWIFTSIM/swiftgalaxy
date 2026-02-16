@@ -305,6 +305,98 @@ class _HaloCatalogue(ABC):
                     for name in sg.metadata.present_group_names
                 }
             )
+        
+    def get_bound_only_mask(self, sg: "SWIFTGalaxy") -> MaskCollection:
+        """
+        Evaluate a bound-only mask without applying it, returning the masks.
+
+        The returned :class:`~swiftgalaxy.masks.MaskCollection` contains masks
+        aligned to the current particle selections (i.e. any existing extra
+        masks are respected).
+        """
+
+        def _is_full_mask(mask_value: object) -> bool:
+            return mask_value is Ellipsis or (
+                isinstance(mask_value, slice) and mask_value == slice(None)
+            )
+
+        def _mask_to_indices(mask_value: object, num_part: int) -> np.ndarray:
+            if mask_value is None:
+                return np.arange(num_part, dtype=int)
+            if _is_full_mask(mask_value):
+                return np.arange(num_part, dtype=int)
+            if isinstance(mask_value, slice):
+                return np.arange(num_part, dtype=int)[mask_value]
+            array_value = np.asarray(mask_value)
+            if array_value.dtype == bool:
+                return np.flatnonzero(array_value)
+            return array_value.astype(int, copy=False)
+
+        def _compose_mask(
+            old_mask: LazyMask, new_mask: LazyMask, num_part: int
+        ) -> LazyMask:
+            def _combined_mask() -> np.ndarray:
+                old_value = old_mask.mask
+                new_value = new_mask.mask
+                if new_value is None:
+                    return np.ones(
+                        len(_mask_to_indices(old_value, num_part)), dtype=bool
+                    )
+                if _is_full_mask(new_value):
+                    return np.ones(
+                        len(_mask_to_indices(old_value, num_part)), dtype=bool
+                    )
+                old_idx = _mask_to_indices(old_value, num_part)
+                current_count = len(old_idx)
+                if _is_full_mask(old_value):
+                    return new_value
+                if isinstance(new_value, slice):
+                    new_idx = _mask_to_indices(new_value, num_part)
+                    return np.isin(old_idx, new_idx)
+                array_value = np.asarray(new_value)
+                if array_value.dtype == bool:
+                    if array_value.shape[0] == current_count:
+                        return array_value
+                else:
+                    if array_value.size == 0:
+                        return array_value
+                    if array_value.max(initial=-1) < current_count:
+                        return array_value
+                new_idx = _mask_to_indices(new_value, num_part)
+                return np.isin(old_idx, new_idx)
+
+            return LazyMask(mask_function=_combined_mask)
+
+        bound_only_mask = self._generate_bound_only_mask(sg, mask_loaded=False)
+        applied_masks: dict[str, LazyMask] = {}
+
+        for particle_name in sg.metadata.present_group_names:
+            new_mask = getattr(bound_only_mask, particle_name)
+            if new_mask is None:
+                continue
+            old_mask = getattr(sg._extra_mask, particle_name)
+            if old_mask is None:
+                mask_to_apply = new_mask
+            else:
+                old_mask._evaluate()
+                particle_metadata = getattr(
+                    sg.metadata, f"{particle_name}_properties"
+                )
+                if sg._spatial_mask is None:
+                    num_part = getattr(sg.metadata, f"n_{particle_metadata.group_name}")
+                else:
+                    num_part = int(
+                        np.sum(
+                            sg._spatial_mask.get_masked_counts_offsets()[0][
+                                particle_name
+                            ]
+                        )
+                    )
+                mask_to_apply = _compose_mask(old_mask, new_mask, num_part)
+
+            applied_masks[particle_name] = mask_to_apply
+
+        return MaskCollection(**applied_masks)
 
     @property
     def _mask_index(self) -> Optional[Union[int, list[int]]]:

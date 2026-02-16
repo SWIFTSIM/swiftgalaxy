@@ -54,6 +54,87 @@ abstol_m = 1e4 * u.Msun  # less than this is ~0
 reltol_nd = 1.0e-4
 
 
+def _clone_catalogue(hf, extra_mask):
+    init_args = {"extra_mask": extra_mask}
+    if hf.__class__ != Standalone:
+        init_args[hf._index_attr[1:]] = getattr(hf, hf._index_attr)
+    else:
+        init_args["centre"] = hf._centre
+        init_args["velocity_centre"] = hf._velocity_centre
+    if hasattr(hf, "centre_type"):
+        init_args["centre_type"] = hf.centre_type
+    if hasattr(hf, "velocity_centre_type"):
+        init_args["velocity_centre_type"] = hf.velocity_centre_type
+    if hf.__class__ == Caesar:
+        init_args["group_type"] = hf.group_type
+    init_args[
+        ("custom_" if hf.__class__ != Standalone else "") + "spatial_offsets"
+    ] = hf._user_spatial_offsets
+    if hf.__class__ == SOAP:
+        init_args["soap_file"] = hf.soap_file
+    elif hf.__class__ == Velociraptor:
+        init_args["velociraptor_files"] = hf.velociraptor_files
+    elif hf.__class__ == Caesar:
+        init_args["caesar_file"] = hf.caesar_file
+    return hf.__class__(**init_args)
+
+
+def _prepare_snapshot_for_hf(hf, tmp_path_factory):
+    if hasattr(hf, "soap_file"):
+        pytest.importorskip("compression")
+        from compression.make_virtual_snapshot import make_virtual_snapshot
+        from compression.update_vds_paths import update_virtual_snapshot_paths
+
+        tp = hf.soap_file.parent
+        toysnap_filename = tp / _toysnap_filename.name
+        _create_toysnap(snapfile=toysnap_filename, withfof=True)
+        membership_filepattern = tp / (
+            str(_toysoap_membership_filebase.name) + ".{file_nr}.hdf5"
+        )
+        toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
+        make_virtual_snapshot(
+            toysnap_filename,
+            str(membership_filepattern),
+            toysoap_virtual_snapshot_filename,
+            0,
+        )
+        abs_snapshot_dir = Path(toysnap_filename).parent.absolute()
+        abs_membership_dir = Path(
+            str(membership_filepattern).format(file_nr=0)
+        ).parent.absolute()
+        abs_output_dir = Path(toysoap_virtual_snapshot_filename).parent.absolute()
+        rel_snapshot_dir = abs_snapshot_dir.relative_to(abs_output_dir)
+        rel_membership_dir = abs_membership_dir.relative_to(abs_output_dir)
+        update_virtual_snapshot_paths(
+            toysoap_virtual_snapshot_filename, rel_snapshot_dir, rel_membership_dir
+        )
+        return toysoap_virtual_snapshot_filename, toysnap_filename
+    if hasattr(hf, "caesar_file"):
+        tp = hf.caesar_file.parent
+        toysnap_filename = tp / _toysnap_filename.name
+        _create_toysnap(snapfile=toysnap_filename)
+        return toysnap_filename, toysnap_filename
+    if hasattr(hf, "velociraptor_files"):
+        tp = Path(hf.velociraptor_files["properties"]).parent
+        toysnap_filename = tp / _toysnap_filename.name
+        _create_toysnap(snapfile=toysnap_filename)
+        return toysnap_filename, toysnap_filename
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    _create_toysnap(snapfile=toysnap_filename)
+    return toysnap_filename, toysnap_filename
+
+
+def _slab_mask(sg, threshold=0.0 * u.Mpc):
+    return MaskCollection(
+        **{
+            particle_type: getattr(sg, particle_type).cartesian_coordinates.x
+            < threshold
+            for particle_type in sg.metadata.present_group_names
+        }
+    )
+
+
 class TestHaloCatalogues:
     """Test behaviour generic to all catalogue types."""
 
@@ -246,6 +327,66 @@ class TestHaloCatalogues:
                         particle_type
                     ]
                 )
+
+    def test_bound_only_mask_equivalent(self, tmp_path_factory, hf):
+        """Check bound-only via helper matches bound-only at initialization."""
+        if isinstance(hf, Standalone):
+            pytest.skip("Standalone does not support bound_only masks.")
+        snapshot_filename, toysnap_filename = _prepare_snapshot_for_hf(
+            hf, tmp_path_factory
+        )
+        try:
+            hf_none = _clone_catalogue(hf, extra_mask=None)
+            hf_bound = _clone_catalogue(hf, extra_mask="bound_only")
+            sg_none = SWIFTGalaxy(snapshot_filename, hf_none)
+            sg_bound = SWIFTGalaxy(snapshot_filename, hf_bound)
+            bound_mask = sg_none.halo_catalogue.get_bound_only_mask(sg_none)
+            for particle_type in sg_none.metadata.present_group_names:
+                mask = getattr(bound_mask, particle_type)
+                if mask is None:
+                    continue
+                assert np.array_equal(
+                    getattr(sg_none, particle_type).particle_ids[mask.mask],
+                    getattr(sg_bound, particle_type).particle_ids,
+                )
+        finally:
+            _remove_toysnap(snapfile=toysnap_filename)
+            if snapshot_filename != toysnap_filename:
+                Path(snapshot_filename).unlink(missing_ok=True)
+
+    def test_bound_only_after_custom_mask(self, tmp_path_factory, hf):
+        """Check bound-only mask composes after a non-trivial mask."""
+        if isinstance(hf, Standalone):
+            pytest.skip("Standalone does not support bound_only masks.")
+        snapshot_filename, toysnap_filename = _prepare_snapshot_for_hf(
+            hf, tmp_path_factory
+        )
+        try:
+            hf_none = _clone_catalogue(hf, extra_mask=None)
+            hf_bound = _clone_catalogue(hf, extra_mask="bound_only")
+            sg_none = SWIFTGalaxy(snapshot_filename, hf_none)
+            sg_user = SWIFTGalaxy(
+                snapshot_filename, _clone_catalogue(hf, extra_mask=None)
+            )
+            sg_user.mask_particles(_slab_mask(sg_user))
+            bound_mask = sg_user.halo_catalogue.get_bound_only_mask(sg_user)
+            sg_bound = SWIFTGalaxy(snapshot_filename, hf_bound)
+            sg_bound_user = SWIFTGalaxy(
+                snapshot_filename, _clone_catalogue(hf, extra_mask="bound_only")
+            )
+            sg_bound_user.mask_particles(_slab_mask(sg_bound_user))
+            for particle_type in sg_user.metadata.present_group_names:
+                mask = getattr(bound_mask, particle_type)
+                if mask is None:
+                    continue
+                assert np.array_equal(
+                    getattr(sg_user, particle_type).particle_ids[mask.mask],
+                    getattr(sg_bound_user, particle_type).particle_ids,
+                )
+        finally:
+            _remove_toysnap(snapfile=toysnap_filename)
+            if snapshot_filename != toysnap_filename:
+                Path(snapshot_filename).unlink(missing_ok=True)
 
     def test_centre(self, hf):
         """Check that the _centre function returns the expected centre."""
