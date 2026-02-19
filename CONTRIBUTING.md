@@ -18,6 +18,11 @@ Contributions are always welcome, but you should make sure of the following:
 
 Some brief quickstart-style notes are included below, but are not intended to replace consulting the documentation of each relevant toolset. We recognize that this can seem daunting to users new to collaborative development. Don't hesitate to get in touch for help if you want to contribute!
 
+Use of GenAI
+------------
+
+You are welcome to use generative AI tools when contributing, but it is expected that you review their output. Contributions that appear to be purely AI generated without self-review by a human will be closed.
+
 Ruff
 ----
 
