@@ -145,7 +145,7 @@ class TestGeneratedExampleData:
 
     def test_soap(self, generated_examples_tmpdir):
         """Check that we can create a swiftgalaxy using the generated soap."""
-        pytest.importorskip("compression")
+        pytest.importorskip("SOAP.compression")
         SWIFTGalaxy(
             generated_examples_tmpdir.virtual_snapshot,
             SOAP(generated_examples_tmpdir.soap, soap_index=0),
@@ -153,7 +153,7 @@ class TestGeneratedExampleData:
 
     def test_remove(self, generated_examples_tmpdir):
         """Check that examples get cleaned up on request."""
-        pytest.importorskip("compression")
+        pytest.importorskip("SOAP.compression")
         # create all the example data (if not present)
         for example in generated_examples_tmpdir.available_examples:
             getattr(generated_examples_tmpdir, example)
