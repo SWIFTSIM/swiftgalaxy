@@ -472,6 +472,8 @@ if it exists. For instance, for Velociraptor this is implemented via ``__getattr
 syntax), which simply exposes the usual interface (with a mask to pick out the galaxy of
 interest).
 
+.. _standalone:
+
 Using swiftgalaxy without a halo catalogue
 ------------------------------------------
 
