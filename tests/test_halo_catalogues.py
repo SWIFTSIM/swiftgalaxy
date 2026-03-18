@@ -137,9 +137,8 @@ class TestHaloCatalogues:
         """Check that bound_only extra mask has the right shape."""
         hf.extra_mask = "bound_only"
         if hasattr(hf, "soap_file"):
-            pytest.importorskip("compression")
-            from compression.make_virtual_snapshot import make_virtual_snapshot
-            from compression.update_vds_paths import update_virtual_snapshot_paths
+            pytest.importorskip("SOAP.compression")
+            from SOAP.compression.make_virtual_snapshot import make_virtual_snapshot
 
             tp = hf.soap_file.parent
             toysnap_filename = tp / _toysnap_filename.name
@@ -152,19 +151,9 @@ class TestHaloCatalogues:
             )
             make_virtual_snapshot(
                 toysnap_filename,
-                str(membership_filepattern),
+                [str(membership_filepattern)],
                 toysoap_virtual_snapshot_filename,
-                0,  # snapshot number, not used since no pattern in filenames
-            )
-            abs_snapshot_dir = Path(toysnap_filename).parent.absolute()
-            abs_membership_dir = Path(
-                str(membership_filepattern).format(file_nr=0)
-            ).parent.absolute()
-            abs_output_dir = Path(toysoap_virtual_snapshot_filename).parent.absolute()
-            rel_snapshot_dir = abs_snapshot_dir.relative_to(abs_output_dir)
-            rel_membership_dir = abs_membership_dir.relative_to(abs_output_dir)
-            update_virtual_snapshot_paths(
-                toysoap_virtual_snapshot_filename, rel_snapshot_dir, rel_membership_dir
+                absolute_paths=True,
             )
             sg = SWIFTGalaxy(toysoap_virtual_snapshot_filename, hf)
         elif hasattr(hf, "caesar_file"):
@@ -378,9 +367,8 @@ class TestHaloCataloguesMulti:
         hf_multi.extra_mask = "bound_only"
         hf_multi._mask_multi_galaxy(0)
         if hasattr(hf_multi, "soap_file"):
-            pytest.importorskip("compression")
-            from compression.make_virtual_snapshot import make_virtual_snapshot
-            from compression.update_vds_paths import update_virtual_snapshot_paths
+            pytest.importorskip("SOAP.compression")
+            from SOAP.compression.make_virtual_snapshot import make_virtual_snapshot
 
             tp = hf_multi.soap_file.parent
             toysnap_filename = tp / _toysnap_filename.name
@@ -393,19 +381,9 @@ class TestHaloCataloguesMulti:
             )
             make_virtual_snapshot(
                 toysnap_filename,
-                str(membership_filepattern),
+                [str(membership_filepattern)],
                 toysoap_virtual_snapshot_filename,
-                0,  # snapshot number, not used since no pattern in filenames
-            )
-            abs_snapshot_dir = Path(toysnap_filename).parent.absolute()
-            abs_membership_dir = Path(
-                str(membership_filepattern).format(file_nr=0)
-            ).parent.absolute()
-            abs_output_dir = Path(toysoap_virtual_snapshot_filename).parent.absolute()
-            rel_snapshot_dir = abs_snapshot_dir.relative_to(abs_output_dir)
-            rel_membership_dir = abs_membership_dir.relative_to(abs_output_dir)
-            update_virtual_snapshot_paths(
-                toysoap_virtual_snapshot_filename, rel_snapshot_dir, rel_membership_dir
+                absolute_paths=True,
             )
             sg = SWIFTGalaxy(toysoap_virtual_snapshot_filename, hf_multi)
         elif hasattr(hf_multi, "caesar_file"):

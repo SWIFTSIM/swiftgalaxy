@@ -113,7 +113,7 @@ def toysoap_with_virtual_snapshot(tmp_path_factory: TempPathFactory) -> dict[str
     dict
         Dictionary with created file locations.
     """
-    pytest.importorskip("compression")
+    pytest.importorskip("SOAP.compression")
     tp = tmp_path_factory.mktemp(_toysoap_filename.parent)
     toysoap_filename = tp / _toysoap_filename.name
     membership_filebase = tp / _toysoap_membership_filebase.name
@@ -289,7 +289,7 @@ def sg_soap(tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
         A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with
         :class:`~swiftgalaxy.halo_catalogues.SOAP` halo catalogue.
     """
-    pytest.importorskip("compression")
+    pytest.importorskip("SOAP.compression")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     toysoap_filename = tp / _toysoap_filename.name
@@ -340,7 +340,7 @@ def sgs_soap(tmp_path_factory: TempPathFactory) -> SWIFTGalaxies:
         A :class:`~swiftgalaxy.iterator.SWIFTGalaxies` with
         :class:`~swiftgalaxy.halo_catalogues.SOAP` halo catalogue.
     """
-    pytest.importorskip("compression")
+    pytest.importorskip("SOAP.compression")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysnap_filename = tp / _toysnap_filename.name
     membership_filebase = tp / _toysoap_membership_filebase.name
@@ -546,7 +546,7 @@ def soap(tmp_path_factory: TempPathFactory) -> SOAP:
     ~swiftgalaxy.halo_catalogues.SOAP
         A :class:`~swiftgalaxy.halo_catalogue.SOAP` halo catalogue.
     """
-    # no virtual snapshot needed, don't need importorskip("compression")
+    # no virtual snapshot needed, don't need importorskip("SOAP.compression")
     toysoap_filename = (
         tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysoap_filename.name
     )
@@ -579,7 +579,7 @@ def soap_multi(tmp_path_factory: TempPathFactory) -> SOAP:
     ~swiftgalaxy.halo_catalogues.SOAP
         A :class:`~swiftgalaxy.halo_catalogue.SOAP` halo catalogue with multiple targets.
     """
-    # no virtual snapshot needed, don't need importorskip("compression")
+    # no virtual snapshot needed, don't need importorskip("SOAP.compression")
     tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
     toysoap_filename = tp / _toysoap_filename.name
     membership_filebase = tp / _toysoap_membership_filebase
@@ -963,7 +963,7 @@ def sg_hf(request: FixtureRequest, tmp_path_factory: TempPathFactory) -> SWIFTGa
         )
         _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
-        pytest.importorskip("compression")
+        pytest.importorskip("SOAP.compression")
         toysoap_filename = tp / _toysoap_filename.name
         membership_filebase = tp / _toysoap_membership_filebase.name
         toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
@@ -1063,7 +1063,7 @@ def hf(request: FixtureRequest, tmp_path_factory: TempPathFactory) -> _HaloCatal
 
         _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
-        # no virtual snapshot needed, don't need pytest.importorskip("compression")
+        # no virtual snapshot needed, don't need pytest.importorskip("SOAP.compression")
         toysoap_filename = tp / _toysoap_filename.name
         membership_filebase = tp / _toysoap_membership_filebase.name
         _create_toysoap(
@@ -1159,7 +1159,7 @@ def hf_multi(
     elif request.param == "soap":
         create_virtual_snapshot = Path(toysnap_filename).is_file()
         if create_virtual_snapshot:
-            pytest.importorskip("compression")
+            pytest.importorskip("SOAP.compression")
         toysoap_filename = tp / _toysoap_filename.name
         membership_filebase = tp / _toysoap_membership_filebase.name
         toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
@@ -1272,7 +1272,7 @@ def hf_multi_forwards_and_backwards(
 
         _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
-        pytest.importorskip("compression")
+        pytest.importorskip("SOAP.compression")
         toysoap_filename = tp / _toysoap_filename.name
         membership_filebase = tp / _toysoap_membership_filebase.name
         toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
@@ -1416,7 +1416,7 @@ def hf_multi_onetarget(
 
         _remove_toycaesar(filename=toycaesar_filename)
     elif request.param == "soap":
-        pytest.importorskip("compression")
+        pytest.importorskip("SOAP.compression")
         toysoap_filename = tp / _toysoap_filename.name
         membership_filebase = tp / _toysoap_membership_filebase.name
         toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name
@@ -1520,7 +1520,7 @@ def hf_multi_zerotarget(
     elif request.param == "soap":
         create_virtual_snapshot = Path(toysnap_filename).is_file()
         if create_virtual_snapshot:
-            pytest.importorskip("compression")
+            pytest.importorskip("SOAP.compression")
         toysoap_filename = tp / _toysoap_filename.name
         membership_filebase = tp / _toysoap_membership_filebase.name
         toysoap_virtual_snapshot_filename = tp / _toysoap_virtual_snapshot_filename.name

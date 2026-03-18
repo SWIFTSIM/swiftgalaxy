@@ -447,7 +447,7 @@ class TestSWIFTGalaxies:
         toysnap_filename = toysnap_withfof["toysnap_filename"]
         tp = toysnap_filename.parent
         if hf_type == "soap":
-            pytest.importorskip("compression")
+            pytest.importorskip("SOAP.compression")
             membership_filebase = tp / _toysoap_membership_filebase.name
             toysoap_filename = tp / _toysoap_filename.name
             toysoap_virtual_snapshot_filename = (
