@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout swiftsimio
+        uses: actions/checkout@v4
       - name: Run flake8
         uses: py-actions/flake8@v2
       - uses: astral-sh/ruff-action@v3
@@ -21,8 +23,6 @@ jobs:
         run: ruff check
       - name: Ruff formatting checks
         run: ruff format --check --diff
-      - name: Checkout swiftsimio
-        uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
