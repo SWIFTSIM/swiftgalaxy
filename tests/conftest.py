@@ -5,6 +5,7 @@ from pytest import TempPathFactory, FixtureRequest
 from pathlib import Path
 import numpy as np
 import unyt as u
+from swiftsimio import mask
 from swiftsimio.objects import cosmo_array
 from swiftgalaxy import (
     SWIFTGalaxy,
@@ -1666,12 +1667,80 @@ def web_hf(
     """
     web_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
     if request.param == "vr":
-        return Velociraptor(web_examples.velociraptor, halo_index=0)
+        yield Velociraptor(web_examples.velociraptor, halo_index=0)
     elif request.param == "caesar_halo":
         pytest.importorskip("caesar")
-        return Caesar(web_examples.caesar, group_type="halo", group_index=0)
+        yield Caesar(web_examples.caesar, group_type="halo", group_index=0)
     elif request.param == "caesar_galaxy":
         pytest.importorskip("caesar")
-        return Caesar(web_examples.caesar, group_type="galaxy", group_index=0)
+        yield Caesar(web_examples.caesar, group_type="galaxy", group_index=0)
     elif request.param == "soap":
-        return SOAP(web_examples.soap, soap_index=0)
+        yield SOAP(web_examples.soap, soap_index=0)
+
+
+@pytest.fixture(scope="function", params=hfs)
+def web_sg(
+    request: FixtureRequest, tmp_path_factory: TempPathFactory
+) -> _HaloCatalogue:
+    """
+    Make a web :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue` of selectable type.
+
+    Parameters
+    ----------
+    request : FixtureRequest
+        Provides access to configurable parameters for fixture.
+
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    ~swiftgalaxy.halo_catalogues._HaloCatalogue
+        A halo catalogue of configurable type.
+    """
+    web_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
+    if request.param == "vr":
+        yield SWIFTGalaxy(
+            web_examples.snapshot, Velociraptor(web_examples.velociraptor, halo_index=0)
+        )
+    elif request.param == "caesar_halo":
+        pytest.importorskip("caesar")
+        yield SWIFTGalaxy(
+            web_examples.snapshot,
+            Caesar(web_examples.caesar, group_type="halo", group_index=0),
+        )
+    elif request.param == "caesar_galaxy":
+        pytest.importorskip("caesar")
+        yield SWIFTGalaxy(
+            web_examples.snapshot,
+            Caesar(web_examples.caesar, group_type="galaxy", group_index=0),
+        )
+    elif request.param == "soap":
+        yield SWIFTGalaxy(
+            web_examples.virtual_snapshot, SOAP(web_examples.soap, soap_index=0)
+        )
+    elif request.param == "sa":
+        a = mask(web_examples.snapshot).metadata.scale_factor
+        yield SWIFTGalaxy(
+            web_examples.snapshot,
+            Standalone(
+                extra_mask=None,
+                centre=cosmo_array(
+                    [2, 2, 2], u.Mpc, comoving=True, scale_factor=a, scale_exponent=1
+                ),
+                velocity_centre=cosmo_array(
+                    [0, 0, 0],
+                    u.km / u.s,
+                    comoving=True,
+                    scale_factor=a,
+                    scale_exponent=0,
+                ),
+                spatial_offsets=cosmo_array(
+                    [[-1, 1], [-1, 1], [-1, 1]],
+                    u.kpc,
+                    comoving=True,
+                    scale_factor=a,
+                    scale_exponent=1,
+                ),
+            ),
+        )

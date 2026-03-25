@@ -186,12 +186,18 @@ class TestCopyHaloCatalogue:
 
     def test_copy(self, web_hf):
         """Test that we can copy a halo catalogue object."""
-        copy(web_hf)
+        c = copy(web_hf)
+        assert isinstance(c, type(web_hf))
+        assert c is not web_hf
 
-    def test_deepcopy(self, web_hf):
+    def test_deepcopy_sg(self, web_sg):
         """
-        Test that we can copy a halo catalogue object.
+        Test that we can deepcopy a swiftgalaxy object.
 
         Regression test for https://github.com/SWIFTSIM/swiftgalaxy/pull/84
         """
-        deepcopy(web_hf)
+        dc = deepcopy(web_sg)
+        assert isinstance(dc, type(web_sg))
+        assert dc is not web_sg
+        assert isinstance(dc.halo_catalogue, type(web_sg.halo_catalogue))
+        assert dc.halo_catalogue is not web_sg.halo_catalogue
