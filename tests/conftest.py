@@ -1668,8 +1668,10 @@ def web_hf(
     if request.param == "vr":
         return Velociraptor(web_examples.velociraptor, halo_index=0)
     elif request.param == "caesar_halo":
+        pytest.importorskip("caesar")
         return Caesar(web_examples.caesar, group_type="halo", group_index=0)
     elif request.param == "caesar_galaxy":
+        pytest.importorskip("caesar")
         return Caesar(web_examples.caesar, group_type="galaxy", group_index=0)
     elif request.param == "soap":
         return SOAP(web_examples.soap, soap_index=0)
