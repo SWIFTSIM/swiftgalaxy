@@ -15,7 +15,6 @@ abstract
 from warnings import warn
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from copy import copy
 import numpy as np
 import unyt as u
 from swiftsimio import SWIFTMask, SWIFTDataset, mask
@@ -678,7 +677,7 @@ class SOAP(_HaloCatalogue):
             sm.constrain_indices(self._soap_index)
         else:
             sm.constrain_index(self._soap_index)
-        self._catalogue = _guard_deepcopy(SWIFTDataset(self.soap_file, mask=sm))
+        self._catalogue = SWIFTDataset(self.soap_file, mask=sm)
 
     @property
     def soap_index(self) -> Union[int, List[int]]:
@@ -1677,10 +1676,10 @@ class Caesar(_HaloCatalogue):
         if self._multi_galaxy:  # set in super().__init__
             assert not isinstance(group_index, int)  # placate mypy
             self._catalogue = [
-                _guard_deepcopy(self._catalogue[gi]) for gi in group_index
+                self._catalogue[gi] for gi in group_index
             ]
         else:
-            self._catalogue = _guard_deepcopy(self._catalogue[group_index])
+            self._catalogue = self._catalogue[group_index]
         return
 
     def _load(self) -> None:
