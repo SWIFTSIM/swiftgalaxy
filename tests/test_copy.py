@@ -192,6 +192,6 @@ class TestCopyHaloCatalogue:
         """
         Test that we can copy a halo catalogue object.
 
-        Regression test for https://github.com/SWIFTSIM/swiftgalaxy/pull/??
+        Regression test for https://github.com/SWIFTSIM/swiftgalaxy/pull/84
         """
         deepcopy(web_hf)
