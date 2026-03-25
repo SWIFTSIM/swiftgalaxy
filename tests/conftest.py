@@ -1724,6 +1724,7 @@ def web_sg(
         yield SWIFTGalaxy(
             web_examples.snapshot,
             Standalone(
+                extra_mask=None,
                 centre=cosmo_array(
                     [2, 2, 2], u.Mpc, comoving=True, scale_factor=a, scale_exponent=1
                 ),
@@ -1738,7 +1739,7 @@ def web_sg(
                     [[-1, 1], [-1, 1], [-1, 1]],
                     u.kpc,
                     comoving=True,
-                    scale_factor=1.0,
+                    scale_factor=a,
                     scale_exponent=1,
                 ),
             ),
