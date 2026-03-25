@@ -10,3 +10,4 @@
 *.ewah
 demo_data/
 .coverage
+pytest.ini

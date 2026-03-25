@@ -33,8 +33,8 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 def _guard_deepcopy(
-    obj: Union[CaesarHalo, CaesarGalaxy, SWIFTDataset],
-) -> Union[CaesarHalo, CaesarGalaxy, SWIFTDataset]:
+    obj: Union["CaesarHalo", "CaesarGalaxy", "SWIFTDataset"],
+) -> Union["CaesarHalo", "CaesarGalaxy", "SWIFTDataset"]:
     """
     Guard an object from being deep copied, it will be shallow copied instead.
 
@@ -66,8 +66,9 @@ def _guard_deepcopy(
     """
 
     def guard(
-        self: Union[CaesarHalo, CaesarGalaxy, SWIFTDataset], memo: Optional[dict] = None
-    ) -> Union[CaesarHalo, CaesarGalaxy, SWIFTDataset]:
+        self: Union["CaesarHalo", "CaesarGalaxy", "SWIFTDataset"],
+        memo: Optional[dict] = None,
+    ) -> Union["CaesarHalo", "CaesarGalaxy", "SWIFTDataset"]:
         """
         Assign to ``__deepcopy__`` to guard an object from being deep copied.
 
