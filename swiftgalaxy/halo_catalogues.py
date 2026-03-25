@@ -32,65 +32,6 @@ if TYPE_CHECKING:  # pragma: no cover
     from caesar.loader import Galaxy as CaesarGalaxy, Halo as CaesarHalo
 
 
-def _guard_deepcopy(
-    obj: Union["CaesarHalo", "CaesarGalaxy", "SWIFTDataset"],
-) -> Union["CaesarHalo", "CaesarGalaxy", "SWIFTDataset"]:
-    """
-    Guard an object from being deep copied, it will be shallow copied instead.
-
-    Deepcopy goes through pickle serialisation, but some of the (external) catalogue
-    objects, e.g. in :mod:`caesar` and :mod:`swiftsimio`, are not serialisable. These
-    internal catalogues should be treated as read-only anyway, so this helper can be
-    used to flag them for shallow copying only.
-
-    The test suite's ``TestCopyHaloCatalogue::test_deepcopy`` should identify when this
-    guard needs to be applied.
-
-    Parameters
-    ----------
-    obj : CaesarHalo, CaesarGalaxy or :class:`~swiftsimio.reader.SWIFTDataset`
-        The object to protect from deep copying.
-
-    Returns
-    -------
-    CaesarHalo, CaesarGalaxy or :class:`~swiftsimio.reader.SWIFTDataset`
-        The object with its ``__deepcopy__`` method replaced.
-
-    Examples
-    --------
-    Typical usage looks like:
-
-    ..code-block:: python
-
-       self._catalogue = _guard_deepcopy(initialize_external_catalogue())
-    """
-
-    def guard(
-        self: Union["CaesarHalo", "CaesarGalaxy", "SWIFTDataset"],
-        memo: Optional[dict] = None,
-    ) -> Union["CaesarHalo", "CaesarGalaxy", "SWIFTDataset"]:
-        """
-        Assign to ``__deepcopy__`` to guard an object from being deep copied.
-
-        Parameters
-        ----------
-        self : CaesarHalo, CaesarGalaxy or :class:`~swiftsimio.reader.SWIFTDataset`
-            The object being guarded.
-
-        memo : :obj:`dict` (optional), default: ``None``
-            For the copy operation to keep a record of already copied objects.
-
-        Returns
-        -------
-        CaesarHalo, CaesarGalaxy or :class:`~swiftsimio.reader.SWIFTDataset`
-            A shallow copy of the object.
-        """
-        return copy(self)
-
-    obj.__deepcopy__ = guard
-    return obj
-
-
 class _MaskHelper:
     """
     Mask halo catalogue attributes when requested.
