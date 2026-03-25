@@ -45,7 +45,7 @@ from swiftgalaxy.demo_data import (
     WebExamples,
 )
 
-hfs = ("vr", "caesar_halo", "caesar_galaxy", "sa", "soap")
+hfs = {"vr", "caesar_halo", "caesar_galaxy", "sa", "soap"}
 
 
 @pytest.fixture(scope="function")
@@ -1640,3 +1640,34 @@ def web_examples_tmpdir(tmp_path_factory: TempPathFactory) -> WebExamples:
     """
     web_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
     return web_examples
+
+
+@pytest.fixture(scope="function", params=hfs - {"sa"})
+def web_hf(
+    request: FixtureRequest, tmp_path_factory: TempPathFactory
+) -> _HaloCatalogue:
+    """
+    Make a web :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue` of selectable type.
+
+    Parameters
+    ----------
+    request : FixtureRequest
+        Provides access to configurable parameters for fixture.
+
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    ~swiftgalaxy.halo_catalogues._HaloCatalogue
+        A halo catalogue of configurable type.
+    """
+    web_examples._demo_data_dir = tmp_path_factory.mktemp("demo_data")
+    if request.param == "vr":
+        return Velociraptor(web_examples.velociraptor, halo_index=0)
+    elif request.param == "caesar_halo":
+        return Caesar(web_examples.caesar, group_type="halo", group_index=0)
+    elif request.param == "caesar_galaxy":
+        return Caesar(web_examples.caesar, group_type="galaxy", group_index=0)
+    elif request.param == "soap":
+        return SOAP(web_examples.soap, soap_index=0)

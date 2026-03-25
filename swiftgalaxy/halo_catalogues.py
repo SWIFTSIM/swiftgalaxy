@@ -15,6 +15,7 @@ abstract
 from warnings import warn
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from copy import copy
 import numpy as np
 import unyt as u
 from swiftsimio import SWIFTMask, SWIFTDataset, mask
@@ -29,6 +30,64 @@ if TYPE_CHECKING:  # pragma: no cover
     from swiftgalaxy.reader import SWIFTGalaxy
     from velociraptor.catalogue.catalogue import Catalogue as VelociraptorCatalogue
     from caesar.loader import Galaxy as CaesarGalaxy, Halo as CaesarHalo
+
+
+def _guard_deepcopy(
+    obj: Union[CaesarHalo, CaesarGalaxy, SWIFTDataset],
+) -> Union[CaesarHalo, CaesarGalaxy, SWIFTDataset]:
+    """
+    Guard an object from being deep copied, it will be shallow copied instead.
+
+    Deepcopy goes through pickle serialisation, but some of the (external) catalogue
+    objects, e.g. in :mod:`caesar` and :mod:`swiftsimio`, are not serialisable. These
+    internal catalogues should be treated as read-only anyway, so this helper can be
+    used to flag them for shallow copying only.
+
+    The test suite's ``TestCopyHaloCatalogue::test_deepcopy`` should identify when this
+    guard needs to be applied.
+
+    Parameters
+    ----------
+    obj : CaesarHalo, CaesarGalaxy or :class:`~swiftsimio.reader.SWIFTDataset`
+        The object to protect from deep copying.
+
+    Returns
+    -------
+    CaesarHalo, CaesarGalaxy or :class:`~swiftsimio.reader.SWIFTDataset`
+        The object with its ``__deepcopy__`` method replaced.
+
+    Examples
+    --------
+    Typical usage looks like:
+
+    ..code-block:: python
+
+       self._catalogue = _guard_deepcopy(initialize_external_catalogue())
+    """
+
+    def guard(
+        self: Union[CaesarHalo, CaesarGalaxy, SWIFTDataset], memo: Optional[dict] = None
+    ) -> Union[CaesarHalo, CaesarGalaxy, SWIFTDataset]:
+        """
+        Assign to ``__deepcopy__`` to guard an object from being deep copied.
+
+        Parameters
+        ----------
+        self : CaesarHalo, CaesarGalaxy or :class:`~swiftsimio.reader.SWIFTDataset`
+            The object being guarded.
+
+        memo : :obj:`dict` (optional), default: ``None``
+            For the copy operation to keep a record of already copied objects.
+
+        Returns
+        -------
+        CaesarHalo, CaesarGalaxy or :class:`~swiftsimio.reader.SWIFTDataset`
+            A shallow copy of the object.
+        """
+        return copy(self)
+
+    obj.__deepcopy__ = guard
+    return obj
 
 
 class _MaskHelper:
@@ -677,7 +736,7 @@ class SOAP(_HaloCatalogue):
             sm.constrain_indices(self._soap_index)
         else:
             sm.constrain_index(self._soap_index)
-        self._catalogue = SWIFTDataset(self.soap_file, mask=sm)
+        self._catalogue = _guard_deepcopy(SWIFTDataset(self.soap_file, mask=sm))
 
     @property
     def soap_index(self) -> Union[int, List[int]]:
@@ -1675,9 +1734,11 @@ class Caesar(_HaloCatalogue):
         self._catalogue = getattr(self._caesar, valid_group_types[group_type])
         if self._multi_galaxy:  # set in super().__init__
             assert not isinstance(group_index, int)  # placate mypy
-            self._catalogue = [self._catalogue[gi] for gi in group_index]
+            self._catalogue = [
+                _guard_deepcopy(self._catalogue[gi]) for gi in group_index
+            ]
         else:
-            self._catalogue = self._catalogue[group_index]
+            self._catalogue = _guard_deepcopy(self._catalogue[group_index])
         return
 
     def _load(self) -> None:
