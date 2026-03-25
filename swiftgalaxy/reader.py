@@ -19,7 +19,7 @@ the :class:`SWIFTGalaxy` class.
 """
 
 from warnings import warn
-from copy import deepcopy
+from copy import copy, deepcopy
 import numpy as np
 from scipy.spatial.transform import Rotation
 import unyt
@@ -1917,7 +1917,7 @@ class SWIFTGalaxy(SWIFTDataset):
         """
         sg = self._copyinit(
             deepcopy(self.snapshot_filename),
-            deepcopy(self.halo_catalogue),
+            copy(self.halo_catalogue),
             auto_recentre=False,  # transforms overwritten below
             transforms_like_coordinates=deepcopy(self.transforms_like_coordinates),
             transforms_like_velocities=deepcopy(self.transforms_like_velocities),
