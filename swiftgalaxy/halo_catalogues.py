@@ -1675,9 +1675,7 @@ class Caesar(_HaloCatalogue):
         self._catalogue = getattr(self._caesar, valid_group_types[group_type])
         if self._multi_galaxy:  # set in super().__init__
             assert not isinstance(group_index, int)  # placate mypy
-            self._catalogue = [
-                self._catalogue[gi] for gi in group_index
-            ]
+            self._catalogue = [self._catalogue[gi] for gi in group_index]
         else:
             self._catalogue = self._catalogue[group_index]
         return
