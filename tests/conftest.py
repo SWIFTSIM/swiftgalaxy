@@ -45,7 +45,7 @@ from swiftgalaxy.demo_data import (
     WebExamples,
 )
 
-hfs = {"vr", "caesar_halo", "caesar_galaxy", "sa", "soap"}
+hfs = ("vr", "caesar_halo", "caesar_galaxy", "sa", "soap")
 
 
 @pytest.fixture(scope="function")
@@ -1642,7 +1642,9 @@ def web_examples_tmpdir(tmp_path_factory: TempPathFactory) -> WebExamples:
     return web_examples
 
 
-@pytest.fixture(scope="function", params=hfs - {"sa"})
+@pytest.fixture(
+    scope="function", params=tuple(hf_type for hf_type in hfs if hf_type != "sa")
+)
 def web_hf(
     request: FixtureRequest, tmp_path_factory: TempPathFactory
 ) -> _HaloCatalogue:
