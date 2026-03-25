@@ -179,3 +179,19 @@ class TestCopyMaskCollection:
                 assert all(comparison)
         assert all(mc.lazy_evaluated.mask == mc_copy.lazy_evaluated.mask)
         assert mc.lazy_unevaluated.mask == mc_copy.lazy_unevaluated.mask
+
+
+class TestCopyHaloCatalogue:
+    """Test that halo catalogue classes can be copied."""
+
+    def test_copy(self, web_hf):
+        """Test that we can copy a halo catalogue object."""
+        copy(web_hf)
+
+    def test_deepcopy(self, web_hf):
+        """
+        Test that we can copy a halo catalogue object.
+
+        Regression test for https://github.com/SWIFTSIM/swiftgalaxy/pull/84
+        """
+        deepcopy(web_hf)
