@@ -1853,12 +1853,14 @@ class Caesar(_HaloCatalogue):
                 if not hasattr(cat, list_name):
                     return null_slice
                 mask = getattr(cat, list_name)
-                mask = mask[in_one_of_ranges(mask, getattr(sg.mask, group_name))]
+                mask = mask[
+                    in_one_of_ranges(mask, getattr(sg._spatial_mask, group_name))
+                ]
                 mask = np.isin(
                     np.concatenate(
                         [
                             np.arange(start, end)
-                            for start, end in getattr(sg.mask, group_name)
+                            for start, end in getattr(sg._spatial_mask, group_name)
                         ]
                     ),
                     mask,
