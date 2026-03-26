@@ -76,6 +76,7 @@ def _apply_box_wrap(
         if current_transform is None
         else current_transform.rotation.approx_equal(Rotation.identity())
     )
+    # in scipy 1.16 approx_equal returns bool, in 1.17 returns array of bool, so:
     rotation_is_identity = (
         rotation_is_identity.all()
         if hasattr(rotation_is_identity, "all")
@@ -1573,10 +1574,8 @@ class SWIFTGalaxy(SWIFTDataset):
         self.id_particle_dataset_name = id_particle_dataset_name
         self.coordinates_dataset_name = coordinates_dataset_name
         self.velocities_dataset_name = velocities_dataset_name
-        if not hasattr(self, "_coordinate_like_transform"):
-            self._coordinate_like_transform = RigidTransform.identity()
-        if not hasattr(self, "_velocity_like_transform"):
-            self._velocity_like_transform = RigidTransform.identity()
+        self._coordinate_like_transform = RigidTransform.identity()
+        self._velocity_like_transform = RigidTransform.identity()
         if self.halo_catalogue is None:
             # in server mode we don't have a halo_catalogue yet
             self._spatial_mask = getattr(self, "_spatial_mask", None)
@@ -1796,8 +1795,7 @@ class SWIFTGalaxy(SWIFTDataset):
             read data between grouped objects.
         """
         sg = cls.__new__(cls)
-        if _spatial_mask is not None:
-            sg._spatial_mask = _spatial_mask
+        sg._spatial_mask = _spatial_mask
         SWIFTGalaxy.__init__(
             sg,
             snapshot_filename,
