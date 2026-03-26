@@ -11,7 +11,11 @@ from swiftgalaxy.demo_data import (
     ToyHF,
 )
 from swiftgalaxy import SWIFTGalaxy
-from swiftgalaxy.reader import _apply_translation, _apply_rigid_transform
+from swiftgalaxy.reader import (
+    _apply_translation,
+    _apply_rigid_transform,
+    _apply_box_wrap,
+)
 
 reltol = 1.01  # allow some wiggle room for floating point roundoff
 abstol_c = cosmo_quantity(
@@ -469,6 +473,15 @@ class TestManualCoordinateTransformations:
         sg.translate(-2 * sg.metadata.boxsize)  # -2x box size
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         assert_allclose_units(xyz_before, xyz, rtol=1.0e-4, atol=abstol_c)
+
+    def test_box_wrap_shortcircuit(self, sg):
+        """Check that box wrapping helper returns input untouched."""
+        xyz = cosmo_array(
+            [[1, 2, 3]], u.Mpc, comoving=True, scale_factor=1, scale_exponent=0
+        )
+        wrapped = _apply_box_wrap(xyz, boxsize=None, current_transform=None)
+        assert wrapped is xyz
+        assert_allclose_units(wrapped, xyz)
 
     @pytest.mark.parametrize("coordinate_name", ("coordinates", "extra_coordinates"))
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
