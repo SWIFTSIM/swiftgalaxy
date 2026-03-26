@@ -1805,7 +1805,7 @@ class SWIFTGalaxy(SWIFTDataset):
         SWIFTGalaxy.__init__(
             sg,
             snapshot_filename,
-            halo_catalogue,
+            halo_catalogue=None,
             auto_recentre=auto_recentre,
             transforms_like_coordinates=transforms_like_coordinates,
             transforms_like_velocities=transforms_like_velocities,
@@ -1815,6 +1815,7 @@ class SWIFTGalaxy(SWIFTDataset):
             coordinate_frame_from=coordinate_frame_from,
             _data_server=_data_server,
         )
+        sg.halo_catalogue = halo_catalogue
         return sg
 
     def __str__(self) -> str:
