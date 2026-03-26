@@ -1930,8 +1930,8 @@ class SWIFTGalaxy(SWIFTDataset):
             velocities_dataset_name=deepcopy(self.velocities_dataset_name),
             _spatial_mask=self._spatial_mask,
             _extra_mask=deepcopy(self._extra_mask),
-            _coordinate_like_transform=deepcopy(self._coordinate_like_transform),
-            _velocity_like_transform=deepcopy(self._velocity_like_transform),
+            _coordinate_like_transform=copy(self._coordinate_like_transform),
+            _velocity_like_transform=copy(self._velocity_like_transform),
             _data_server=_data_server,
         )
         for particle_name in sg.metadata.present_group_names:
