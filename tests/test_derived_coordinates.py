@@ -382,7 +382,7 @@ class TestInteractionWithCoordinateTransformations:
                     scale_exponent=0,
                 ),
             ),
-            ("rotate", Rotation.from_matrix(np.eye(3))),
+            ("rotate", Rotation.identity()),
         ),
     )
     @pytest.mark.filterwarnings(
@@ -480,7 +480,12 @@ class TestInteractionWithCoordinateTransformations:
             elif transform_function == "recentre_velocity":
                 expected = before
             elif transform_function == "rotate":
-                expected = before.dot(transform_arg.as_matrix())
+                expected = cosmo_array(
+                    transform_arg.apply(before.view(np.ndarray)),
+                    units=before.units,
+                    comoving=before.comoving,
+                    cosmo_factor=before.cosmo_factor,
+                )
         elif coordinate_type == "velocities":
             tol = abstol_v
             if transform_function == "translate":
@@ -492,7 +497,12 @@ class TestInteractionWithCoordinateTransformations:
             elif transform_function == "recentre_velocity":
                 expected = before - transform_arg
             elif transform_function == "rotate":
-                expected = before.dot(transform_arg.as_matrix())
+                expected = cosmo_array(
+                    transform_arg.apply(before.view(np.ndarray)),
+                    units=before.units,
+                    comoving=before.comoving,
+                    cosmo_factor=before.cosmo_factor,
+                )
         # do coordinate transformation
         getattr(sg, transform_function)(transform_arg)
         after = getattr(getattr(sg, particle_name), f"cartesian_{coordinate_type}").xyz

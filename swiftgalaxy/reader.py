@@ -21,7 +21,7 @@ the :class:`SWIFTGalaxy` class.
 from warnings import warn
 from copy import copy, deepcopy
 import numpy as np
-from scipy.spatial.transform import Rotation
+from scipy.spatial.transform import Rotation, RigidTransform
 import unyt
 from swiftsimio import metadata as swiftsimio_metadata
 from swiftsimio.reader import (
@@ -40,7 +40,7 @@ from typing import Union, Optional, Set, Callable
 def _apply_box_wrap(
     coords: cosmo_array,
     boxsize: Optional[cosmo_array],
-    current_transform: Optional[np.ndarray],
+    current_transform: Optional[RigidTransform],
     offset_frac: float = 0.5,
 ) -> cosmo_array:
     """
@@ -59,8 +59,8 @@ def _apply_box_wrap(
     boxsize : :class:`~swiftsimio.objects.cosmo_array` or ``None``
         The dimensions of the box to wrap (3 elements).
 
-    current_transform : :class:`~numpy.ndarray`
-        The currently active 4x4 transformation matrix.
+    current_transform : :class:`~scipy.spatial.transform.RigidTransform`
+        The currently active transformation.
 
     offset_frac : :obj:`float`, default: ``0.5``
         The fraction of the box to offset by. The default it to wrap to [-Lbox/2, Lbox/2].
@@ -71,15 +71,23 @@ def _apply_box_wrap(
     :class:`~swiftsimio.objects.cosmo_array`
         The coordinates wrapped to lie within the box dimensions.
     """
-    rot = current_transform[:3, :3] if current_transform is not None else np.eye(3)
-    return (
-        (
-            (coords.dot(rot.T) + offset_frac * boxsize) % boxsize
-            - offset_frac * boxsize
-        ).dot(rot)
-        if boxsize is not None
-        else coords
-    )
+    if boxsize is None:
+        return coords
+    elif (
+        current_transform is None
+        or (current_transform.rotation.approx_equal(Rotation.identity())).squeeze()
+    ):
+        return (coords + offset_frac * boxsize) % boxsize - offset_frac * boxsize
+    else:
+        return _apply_rotation(
+            (
+                _apply_rotation(coords, current_transform.rotation.inv())
+                + offset_frac * boxsize
+            )
+            % boxsize
+            - offset_frac * boxsize,
+            current_transform.rotation,
+        )
 
 
 def _apply_translation(coords: cosmo_array, offset: cosmo_array) -> cosmo_array:
@@ -114,9 +122,9 @@ def _apply_translation(coords: cosmo_array, offset: cosmo_array) -> cosmo_array:
     return coords + offset
 
 
-def _apply_rotmat(coords: cosmo_array, rotation_matrix: np.ndarray) -> cosmo_array:
+def _apply_rotation(coords: cosmo_array, rotation: Rotation) -> cosmo_array:
     """
-    Apply a rotation matrix to a coordinate array.
+    Apply a rotation to a coordinate array.
 
     Applies a rotation in-place using a view through a :class:`numpy.ndarray`, then
     restores units and metadata of the :class:`~swiftsimio.objects.cosmo_array`.
@@ -125,8 +133,8 @@ def _apply_rotmat(coords: cosmo_array, rotation_matrix: np.ndarray) -> cosmo_arr
     ----------
     coords : :class:`~swiftsimio.objects.cosmo_array`
         The coordinate array to be rotated.
-    rotation_matrix : :class:`~numpy.ndarray`
-        The rotation matrix (3x3).
+    rotation : :class:`~scipy.spatial.transform.Rotation`
+        The rotation to apply.
 
     Returns
     -------
@@ -134,15 +142,17 @@ def _apply_rotmat(coords: cosmo_array, rotation_matrix: np.ndarray) -> cosmo_arr
         The coordinate array with rotation applied.
     """
     return cosmo_array(
-        coords.view(np.ndarray).dot(rotation_matrix),
+        rotation.apply(coords.view(np.ndarray)),
         units=coords.units,
         cosmo_factor=coords.cosmo_factor,
         comoving=coords.comoving,
     )
 
 
-def _apply_4transform(
-    coords: cosmo_array, transform: np.ndarray, transform_units: unyt.unit_object.Unit
+def _apply_rigid_transform(
+    coords: cosmo_array,
+    rigid_transform: RigidTransform,
+    transform_units: unyt.unit_object.Unit,
 ) -> cosmo_array:
     """
     Apply an affine coordinate transformation to a coordinate array.
@@ -157,8 +167,8 @@ def _apply_4transform(
     coords : :class:`~swiftsimio.objects.cosmo_array`
         The coordinate array to be transformed.
 
-    transform : :class:`~numpy.ndarray`
-        The 4x4 transformation matrix.
+    rigid_transform : :class:`~scipy.spatial.transform.RigidTransform`
+        The transformation.
 
     transform_units : :class:`unyt.unit_object.Unit`
         The units assumed in the translation portion of the transformation matrix.
@@ -169,20 +179,14 @@ def _apply_4transform(
         The coordinate array with transformation applied.
     """
     retval = cosmo_array(
-        np.hstack(
-            (
-                coords.to_comoving().to_value(transform_units),
-                np.ones(coords.shape[0])[:, np.newaxis],
-            )
-        ).dot(transform)[:, :3],
+        rigid_transform.apply(coords.to_comoving_value(transform_units)),
         units=transform_units,
         comoving=True,
         cosmo_factor=coords.cosmo_factor,
     )
-    if coords.comoving:
-        return retval.to_comoving()
-    else:
-        return retval.to_physical()
+    if not coords.comoving:
+        retval.convert_to_physical()
+    return retval
 
 
 def _data_read_wrapper(prop: str) -> Callable:
@@ -941,7 +945,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
         else:
             transform = None
         if transform is not None:
-            data = _apply_4transform(data, transform, transform_units)
+            data = _apply_rigid_transform(data, transform, transform_units)
         boxsize = getattr(self._particle_dataset.metadata, "boxsize", None)
         if dataset_name in self._swiftgalaxy.transforms_like_coordinates:
             data = _apply_box_wrap(data, boxsize, transform)
@@ -1563,9 +1567,9 @@ class SWIFTGalaxy(SWIFTDataset):
         self.coordinates_dataset_name = coordinates_dataset_name
         self.velocities_dataset_name = velocities_dataset_name
         if not hasattr(self, "_coordinate_like_transform"):
-            self._coordinate_like_transform = np.eye(4)
+            self._coordinate_like_transform = RigidTransform.identity()
         if not hasattr(self, "_velocity_like_transform"):
-            self._velocity_like_transform = np.eye(4)
+            self._velocity_like_transform = RigidTransform.identity()
         if self.halo_catalogue is None:
             # in server mode we don't have a halo_catalogue yet
             self._spatial_mask = getattr(self, "_spatial_mask", None)
@@ -2011,23 +2015,23 @@ class SWIFTGalaxy(SWIFTDataset):
             :class:`~scipy.spatial.transform.Rotation` supports several input
             formats, including axis-angle, rotation matrices, and others.
         """
-        rotation_matrix = rotation.as_matrix()
         rotatable = self.transforms_like_coordinates | self.transforms_like_velocities
         for particle_name in self.metadata.present_group_names:
             dataset = getattr(self, particle_name)._particle_dataset
             for field_name in rotatable:
                 field_data = getattr(dataset, f"_{field_name}")
                 if field_data is not None:
-                    field_data = _apply_rotmat(field_data, rotation_matrix)
+                    field_data = _apply_rotation(field_data, rotation)
                     setattr(dataset, f"_{field_name}", field_data)
-        rotmat4 = np.eye(4)
-        rotmat4[:3, :3] = rotation_matrix
-        self._append_to_coordinate_like_transform(rotmat4)
-        self._append_to_velocity_like_transform(rotmat4)
+
+        self._append_to_coordinate_like_transform(
+            RigidTransform.from_rotation(rotation)
+        )
+        self._append_to_velocity_like_transform(RigidTransform.from_rotation(rotation))
         self.wrap_box()
         return
 
-    def _transform(self, transform4: cosmo_array, boost: bool = False) -> None:
+    def _transform(self, rigid_transform: RigidTransform, boost: bool = False) -> None:
         """
         Apply a 4x4 transformation matrix to either the spatial or velocity coordinates.
 
@@ -2036,7 +2040,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Parameters
         ----------
-        transform4 : :class:`~numpy.ndarray`
+        rigid_transform : :class:`~scipy.spatial.transform.RigidTransform`
             The transformation to be applied.
         boost : :obj:`bool`
             If ``True``, translate the velocity coordinates, else translate the spatial
@@ -2059,14 +2063,14 @@ class SWIFTGalaxy(SWIFTDataset):
             for field_name in transformable:
                 field_data = getattr(dataset, f"_{field_name}")
                 if field_data is not None:
-                    field_data = _apply_4transform(
-                        field_data, transform4, transform_units
+                    field_data = _apply_rigid_transform(
+                        field_data, rigid_transform, transform_units
                     )
                     setattr(dataset, f"_{field_name}", field_data)
         if boost:
-            self._append_to_velocity_like_transform(transform4)
+            self._append_to_velocity_like_transform(rigid_transform)
         else:
-            self._append_to_coordinate_like_transform(transform4)
+            self._append_to_coordinate_like_transform(rigid_transform)
         if not boost:
             self.wrap_box()
 
@@ -2101,19 +2105,22 @@ class SWIFTGalaxy(SWIFTDataset):
             transform_units = self.metadata.units.length / self.metadata.units.time
         else:
             transform_units = self.metadata.units.length
-        transform4 = np.eye(4)
         if hasattr(translation, "comoving"):
-            transform4[3, :3] = translation.to_comoving().to_value(transform_units)
+            rigid_transform = RigidTransform.from_translation(
+                translation.to_comoving_value(transform_units)
+            )
         else:
-            transform4[3, :3] = translation.to_value(transform_units)
+            rigid_transform = RigidTransform.from_translation(
+                translation.to_value(transform_units)
+            )
             warn(
                 "Translation assumed to be in comoving (not physical) coordinates.",
                 category=RuntimeWarning,
             )
         if boost:
-            self._append_to_velocity_like_transform(transform4)
+            self._append_to_velocity_like_transform(rigid_transform)
         else:
-            self._append_to_coordinate_like_transform(transform4)
+            self._append_to_coordinate_like_transform(rigid_transform)
         if not boost:
             self.wrap_box()
         return
@@ -2131,9 +2138,8 @@ class SWIFTGalaxy(SWIFTDataset):
             The origin of the coordinate reference frame.
         """
         transform_units = self.metadata.units.length
-        transform = np.linalg.inv(self._coordinate_like_transform)
         return _apply_box_wrap(
-            _apply_4transform(
+            _apply_rigid_transform(
                 cosmo_array(
                     np.zeros((1, 3)),
                     units=transform_units,
@@ -2141,7 +2147,7 @@ class SWIFTGalaxy(SWIFTDataset):
                     scale_factor=self.metadata.scale_factor,
                     scale_exponent=1,
                 ),
-                transform,
+                self._coordinate_like_transform.inv(),
                 transform_units,
             ).squeeze(),
             self.metadata.boxsize,
@@ -2162,8 +2168,7 @@ class SWIFTGalaxy(SWIFTDataset):
             The origin of the velocity reference frame.
         """
         transform_units = self.metadata.units.length / self.metadata.units.time
-        transform = np.linalg.inv(self._velocity_like_transform)
-        return _apply_4transform(
+        return _apply_rigid_transform(
             cosmo_array(
                 np.zeros((1, 3)),
                 units=transform_units,
@@ -2171,7 +2176,7 @@ class SWIFTGalaxy(SWIFTDataset):
                 scale_factor=self.metadata.scale_factor,
                 scale_exponent=0,
             ),
-            transform,
+            self._velocity_like_transform.inv(),
             transform_units,
         ).squeeze()
 
@@ -2185,7 +2190,7 @@ class SWIFTGalaxy(SWIFTDataset):
         :class:`scipy.spatial.transform.Rotation`
             The current rotation.
         """
-        return Rotation.from_matrix(self._coordinate_like_transform[:3, :3])
+        return self._coordinate_like_transform.rotation
 
     def translate(self, translation: cosmo_array) -> None:
         """
@@ -2343,37 +2348,43 @@ class SWIFTGalaxy(SWIFTDataset):
                 getattr(self, particle_name)._mask_dataset(mask)
         return
 
-    def _append_to_coordinate_like_transform(self, transform: np.ndarray) -> None:
+    def _append_to_coordinate_like_transform(
+        self, rigid_transform: RigidTransform
+    ) -> None:
         """
         Add a new transformation to the sequence for the spatial-like coordinates.
 
-        The cumulative transformation is stored as a single 4x4 transformation matrix,
-        so we update the current transformation using a dot product. This voids any
-        derived (spherical/cylindrical) coordinates.
+        The cumulative transformation is stored as a single transformation object,
+        so we update the current transformation. This voids any derived
+        (spherical/cylindrical) coordinates.
 
         Parameters
         ----------
-        transform : :class:`~numpy.ndarray`
+        rigid_transform : :class:`~scipy.spatial.transform.RigidTransform`
             The transform to add to the cumulative coordinate transformation.
         """
-        self._coordinate_like_transform = self._coordinate_like_transform.dot(transform)
+        self._coordinate_like_transform = (
+            rigid_transform * self._coordinate_like_transform
+        )
         self._void_derived_coordinates()
         return
 
-    def _append_to_velocity_like_transform(self, transform: np.ndarray) -> None:
+    def _append_to_velocity_like_transform(
+        self, rigid_transform: RigidTransform
+    ) -> None:
         """
         Add a new transformation to the sequence for the velocity-like coordinates.
 
-        The cumulative transformation is stored as a single 4x4 transformation matrix,
-        so we update the current transformation using a dot product. This voids any
-        derived (spherical/cylindrical) coordinates.
+        The cumulative transformation is stored as a single transformation object,
+        so we update the current transformation. This voids any derived
+        (spherical/cylindrical) coordinates.
 
         Parameters
         ----------
-        transform : :class:`~numpy.ndarray`
+        rigid_transform : :class:`~scipy.spatial.transform.RigidTransform`
             The transform to add to the cumulative velocity transformation.
         """
-        self._velocity_like_transform = self._velocity_like_transform.dot(transform)
+        self._velocity_like_transform = rigid_transform * self._velocity_like_transform
         self._void_derived_coordinates()
         return
 
