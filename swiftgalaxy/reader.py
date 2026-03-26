@@ -71,12 +71,19 @@ def _apply_box_wrap(
     :class:`~swiftsimio.objects.cosmo_array`
         The coordinates wrapped to lie within the box dimensions.
     """
+    rotation_is_identity = (
+        True
+        if current_transform is None
+        else current_transform.rotation.approx_equal(Rotation.identity())
+    )
+    rotation_is_identity = (
+        rotation_is_identity.all()
+        if hasattr(rotation_is_identity, "all")
+        else rotation_is_identity
+    )
     if boxsize is None:
         return coords
-    elif (
-        current_transform is None
-        or (current_transform.rotation.approx_equal(Rotation.identity())).squeeze()
-    ):
+    elif current_transform is None or rotation_is_identity:
         return (coords + offset_frac * boxsize) % boxsize - offset_frac * boxsize
     else:
         return _apply_rotation(
