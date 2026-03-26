@@ -219,7 +219,7 @@ class TestMaskingNamedColumnDatasets:
         if before_load:
             sg.gas.hydrogen_ionization_fractions._neutral = None
             del sg._extra_mask.gas._mask
-            sg._extra_mask.gas._mask = False
+            sg._extra_mask.gas._evaluated = False
         masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
         fractions = masked_namedcolumnsdataset.neutral
         assert_allclose_units(
