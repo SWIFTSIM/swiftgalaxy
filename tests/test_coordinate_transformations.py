@@ -5,13 +5,17 @@ import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
 from swiftsimio.objects import cosmo_array, cosmo_quantity
-from scipy.spatial.transform import Rotation
+from scipy.spatial.transform import Rotation, RigidTransform
 from swiftgalaxy.demo_data import (
     _present_particle_types,
     ToyHF,
 )
 from swiftgalaxy import SWIFTGalaxy
-from swiftgalaxy.reader import _apply_translation, _apply_4transform
+from swiftgalaxy.reader import (
+    _apply_translation,
+    _apply_rigid_transform,
+    _apply_box_wrap,
+)
 
 reltol = 1.01  # allow some wiggle room for floating point roundoff
 abstol_c = cosmo_quantity(
@@ -134,24 +138,26 @@ expected_vz = {
 alpha = np.pi / 7
 beta = 5 * np.pi / 3
 gamma = 13 * np.pi / 8
-rot = np.array(
-    [
+rotation = Rotation.from_matrix(
+    np.array(
         [
-            np.cos(beta) * np.cos(gamma),
-            np.sin(alpha) * np.sin(beta) * np.cos(gamma)
-            - np.cos(alpha) * np.sin(gamma),
-            np.cos(alpha) * np.sin(beta) * np.cos(gamma)
-            + np.sin(alpha) * np.sin(gamma),
-        ],
-        [
-            np.cos(beta) * np.sin(gamma),
-            np.sin(alpha) * np.sin(beta) * np.sin(gamma)
-            + np.cos(alpha) * np.cos(gamma),
-            np.cos(alpha) * np.sin(beta) * np.sin(gamma)
-            - np.sin(alpha) * np.cos(gamma),
-        ],
-        [-np.sin(beta), np.sin(alpha) * np.cos(beta), np.cos(alpha) * np.cos(beta)],
-    ]
+            [
+                np.cos(beta) * np.cos(gamma),
+                np.sin(alpha) * np.sin(beta) * np.cos(gamma)
+                - np.cos(alpha) * np.sin(gamma),
+                np.cos(alpha) * np.sin(beta) * np.cos(gamma)
+                + np.sin(alpha) * np.sin(gamma),
+            ],
+            [
+                np.cos(beta) * np.sin(gamma),
+                np.sin(alpha) * np.sin(beta) * np.sin(gamma)
+                + np.cos(alpha) * np.cos(gamma),
+                np.cos(alpha) * np.sin(beta) * np.sin(gamma)
+                - np.sin(alpha) * np.cos(gamma),
+            ],
+            [-np.sin(beta), np.sin(alpha) * np.cos(beta), np.cos(alpha) * np.cos(beta)],
+        ]
+    )
 )
 
 
@@ -441,11 +447,23 @@ class TestManualCoordinateTransformations:
             setattr(
                 getattr(sg, particle_name)._particle_dataset, f"_{velocity_name}", None
             )
-        sg.rotate(Rotation.from_matrix(rot))
+        sg.rotate(rotation)
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         vxyz = getattr(getattr(sg, particle_name), f"{velocity_name}")
-        assert_allclose_units(xyz_before.dot(rot), xyz, rtol=1.0e-4, atol=abstol_c)
-        assert_allclose_units(vxyz_before.dot(rot), vxyz, rtol=1.0e-4, atol=abstol_v)
+        expected_xyz = cosmo_array(
+            rotation.apply(xyz_before.view(np.ndarray)),
+            xyz_before.units,
+            comoving=xyz_before.comoving,
+            cosmo_factor=xyz_before.cosmo_factor,
+        )
+        expected_vxyz = cosmo_array(
+            rotation.apply(vxyz_before.view(np.ndarray)),
+            vxyz_before.units,
+            comoving=vxyz_before.comoving,
+            cosmo_factor=vxyz_before.cosmo_factor,
+        )
+        assert_allclose_units(expected_xyz, xyz, rtol=1.0e-4, atol=abstol_c)
+        assert_allclose_units(expected_vxyz, vxyz, rtol=1.0e-4, atol=abstol_v)
 
     @pytest.mark.parametrize("coordinate_name", ("coordinates", "extra_coordinates"))
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
@@ -455,6 +473,15 @@ class TestManualCoordinateTransformations:
         sg.translate(-2 * sg.metadata.boxsize)  # -2x box size
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         assert_allclose_units(xyz_before, xyz, rtol=1.0e-4, atol=abstol_c)
+
+    def test_box_wrap_shortcircuit(self, sg):
+        """Check that box wrapping helper returns input untouched."""
+        xyz = cosmo_array(
+            [[1, 2, 3]], u.Mpc, comoving=True, scale_factor=1, scale_exponent=0
+        )
+        wrapped = _apply_box_wrap(xyz, boxsize=None, current_transform=None)
+        assert wrapped is xyz
+        assert_allclose_units(wrapped, xyz)
 
     @pytest.mark.parametrize("coordinate_name", ("coordinates", "extra_coordinates"))
     @pytest.mark.parametrize("particle_name", _present_particle_types.values())
@@ -475,13 +502,25 @@ class TestManualCoordinateTransformations:
             scale_factor=1.0,
             scale_exponent=1,
         )
-        transform = np.eye(4)
-        transform[:3, :3] = rot
-        transform[3, :3] = translation.to_comoving_value(u.Mpc)
-        sg._transform(transform)
+        rigid_transform = RigidTransform.from_components(
+            translation.to_comoving_value(u.Mpc), rotation
+        )
+        sg._transform(rigid_transform)
         xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
+        expected_xyz = (
+            cosmo_array(
+                rotation.apply(xyz_before.view(np.ndarray)),
+                xyz_before.units,
+                comoving=xyz_before.comoving,
+                cosmo_factor=xyz_before.cosmo_factor,
+            )
+            + translation
+        )
         assert_allclose_units(
-            xyz_before.dot(rot) + translation, xyz, rtol=1.0e-4, atol=abstol_c
+            expected_xyz,
+            xyz,
+            rtol=1.0e-4,
+            atol=abstol_c,
         )
 
     @pytest.mark.parametrize("coordinate_name", ("velocities", "extra_velocities"))
@@ -489,7 +528,7 @@ class TestManualCoordinateTransformations:
     @pytest.mark.parametrize("before_load", (True, False))
     def test_transform_velocity(self, sg, particle_name, coordinate_name, before_load):
         """Check that affine transformation works."""
-        xyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
+        vxyz_before = getattr(getattr(sg, particle_name), f"{coordinate_name}")
         if before_load:
             setattr(
                 getattr(sg, particle_name)._particle_dataset,
@@ -503,13 +542,25 @@ class TestManualCoordinateTransformations:
             scale_factor=1.0,
             scale_exponent=0,
         )
-        transform = np.eye(4)
-        transform[:3, :3] = rot
-        transform[3, :3] = translation.to_comoving_value(u.km / u.s)
-        sg._transform(transform, boost=True)
-        xyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
+        rigid_transform = RigidTransform.from_components(
+            translation.to_comoving_value(u.km / u.s), rotation
+        )
+        sg._transform(rigid_transform, boost=True)
+        vxyz = getattr(getattr(sg, particle_name), f"{coordinate_name}")
+        expected_vxyz = (
+            cosmo_array(
+                rotation.apply(vxyz_before.view(np.ndarray)),
+                vxyz_before.units,
+                comoving=vxyz_before.comoving,
+                cosmo_factor=vxyz_before.cosmo_factor,
+            )
+            + translation
+        )
         assert_allclose_units(
-            xyz_before.dot(rot) + translation, xyz, rtol=1.0e-4, atol=abstol_v
+            expected_vxyz,
+            vxyz,
+            rtol=1.0e-4,
+            atol=abstol_v,
         )
 
 
@@ -529,16 +580,24 @@ class TestSequentialTransformations:
             sg.gas._coordinates = None
         translation = cosmo_array(
             [1, 1, 1],
-            units=u.Mpc,
-            comoving=True,
-            scale_factor=1.0,
-            scale_exponent=1,
+            units=xyz_before.units,
+            comoving=xyz_before.comoving,
+            cosmo_factor=xyz_before.cosmo_factor,
         )
         sg.translate(translation)
-        sg.rotate(Rotation.from_matrix(rot))
+        sg.rotate(rotation)
         xyz = sg.gas.coordinates
+        expected_xyz = cosmo_array(
+            rotation.apply((xyz_before + translation).view(np.ndarray)),
+            xyz_before.units,
+            comoving=xyz_before.comoving,
+            cosmo_factor=xyz_before.cosmo_factor,
+        )
         assert_allclose_units(
-            (xyz_before + translation).dot(rot), xyz, rtol=1.0e-4, atol=abstol_c
+            expected_xyz,
+            xyz,
+            rtol=1.0e-4,
+            atol=abstol_c,
         )
 
     @pytest.mark.parametrize("before_load", (True, False))
@@ -552,19 +611,25 @@ class TestSequentialTransformations:
         xyz_before = sg.gas.coordinates
         if before_load:
             sg.gas._coordinates = None
-        sg.rotate(Rotation.from_matrix(rot))
+        sg.rotate(rotation)
         translation = cosmo_array(
             [1, 1, 1],
-            units=u.Mpc,
-            comoving=True,
-            scale_factor=1.0,
-            scale_exponent=1,
+            units=xyz_before.units,
+            comoving=xyz_before.comoving,
+            cosmo_factor=xyz_before.cosmo_factor,
         )
         sg.translate(translation)
         xyz = sg.gas.coordinates
-        assert_allclose_units(
-            xyz_before.dot(rot) + translation, xyz, rtol=1.0e-4, atol=abstol_c
+        expected_xyz = (
+            cosmo_array(
+                rotation.apply(xyz_before.view(np.ndarray)),
+                xyz_before.units,
+                comoving=xyz_before.comoving,
+                cosmo_factor=xyz_before.cosmo_factor,
+            )
+            + translation
         )
+        assert_allclose_units(expected_xyz, xyz, rtol=1.0e-4, atol=abstol_c)
 
     @pytest.mark.parametrize("before_load", (True, False))
     def test_boost_then_rotate(self, sg, before_load):
@@ -579,17 +644,20 @@ class TestSequentialTransformations:
             sg.gas._velocities = None
         boost = cosmo_array(
             [100, 100, 100],
-            units=u.km / u.s,
-            comoving=True,
-            scale_factor=1.0,
-            scale_exponent=0,
+            units=vxyz_before.units,
+            comoving=vxyz_before.comoving,
+            cosmo_factor=vxyz_before.cosmo_factor,
         )
         sg.boost(boost)
-        sg.rotate(Rotation.from_matrix(rot))
+        sg.rotate(rotation)
         vxyz = sg.gas.velocities
-        assert_allclose_units(
-            (vxyz_before + boost).dot(rot), vxyz, rtol=1.0e-4, atol=abstol_v
+        expected_vxyz = cosmo_array(
+            rotation.apply((vxyz_before + boost).view(np.ndarray)),
+            vxyz_before.units,
+            comoving=vxyz_before.comoving,
+            cosmo_factor=vxyz_before.cosmo_factor,
         )
+        assert_allclose_units(expected_vxyz, vxyz, rtol=1.0e-4, atol=abstol_v)
 
     @pytest.mark.parametrize("before_load", (True, False))
     def test_rotate_then_boost(self, sg, before_load):
@@ -602,19 +670,25 @@ class TestSequentialTransformations:
         vxyz_before = sg.gas.velocities
         if before_load:
             sg.gas._velocities = None
-        sg.rotate(Rotation.from_matrix(rot))
+        sg.rotate(rotation)
         boost = cosmo_array(
             [100, 100, 100],
-            units=u.km / u.s,
-            comoving=True,
-            scale_factor=1.0,
-            scale_exponent=0,
+            units=vxyz_before.units,
+            comoving=vxyz_before.comoving,
+            cosmo_factor=vxyz_before.cosmo_factor,
         )
         sg.boost(boost)
         vxyz = sg.gas.velocities
-        assert_allclose_units(
-            vxyz_before.dot(rot) + boost, vxyz, rtol=1.0e-4, atol=abstol_v
+        expected_vxyz = (
+            cosmo_array(
+                rotation.apply((vxyz_before).view(np.ndarray)),
+                vxyz_before.units,
+                comoving=vxyz_before.comoving,
+                cosmo_factor=vxyz_before.cosmo_factor,
+            )
+            + boost
         )
+        assert_allclose_units(expected_vxyz, vxyz, rtol=1.0e-4, atol=abstol_v)
 
 
 class TestCopyingTransformations:
@@ -658,7 +732,7 @@ class TestCopyingTransformations:
         A SWIFTGalaxy initialised to copy the coordinate frame of an existing SWIFTGalaxy
         should adopt the correct coordinate frame.
         """
-        sg.rotate(Rotation.from_matrix(rot))
+        sg.rotate(rotation)
         translation = cosmo_array(
             [1, 1, 1],
             units=u.Mpc,
@@ -684,7 +758,7 @@ class TestCopyingTransformations:
         A SWIFTGalaxy initialised to copy the coordinate frame of an existing SWIFTGalaxy
         should adopt the correct velocity frame.
         """
-        sg.rotate(Rotation.from_matrix(rot))
+        sg.rotate(rotation)
         translation = cosmo_array(
             [1, 1, 1],
             units=u.Mpc,
@@ -754,13 +828,13 @@ class TestApplyTranslation:
         assert result.comoving == comoving
 
 
-class TestApply4Transform:
-    """Unit test the _apply_4transform method."""
+class TestApplyRigidTransform:
+    """Unit test the _apply_rigid_transform method."""
 
     @pytest.mark.parametrize("comoving", [True, False])
     def test_comoving_physical_conversion(self, comoving):
         """
-        Test that _apply_4transform function returns comoving if input was comoving.
+        Test that _apply_rigid_transform function returns comoving if input was comoving.
 
         Physical otherwise.
         """
@@ -771,8 +845,8 @@ class TestApply4Transform:
             scale_factor=1.0,
             scale_exponent=1,
         )
-        transform = np.eye(4)  # identity 4transform
-        result = _apply_4transform(coords, transform, transform_units=u.Mpc)
+        transform = RigidTransform.identity()
+        result = _apply_rigid_transform(coords, transform, transform_units=u.Mpc)
         assert result.comoving == comoving
 
 
@@ -811,5 +885,5 @@ class TestCoordinateProperties:
 
     def test_rotation(self, sg):
         """Check the rotation attribute."""
-        sg.rotate(Rotation.from_matrix(rot))
-        assert np.allclose(sg.rotation.as_matrix(), rot)
+        sg.rotate(rotation)
+        assert sg.rotation.approx_equal(rotation)
