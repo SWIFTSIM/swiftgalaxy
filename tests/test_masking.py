@@ -3,7 +3,9 @@
 import pytest
 from copy import copy, deepcopy
 import numpy as np
+import unyt as u
 from unyt.testing import assert_allclose_units
+from swiftsimio import cosmo_quantity
 from swiftgalaxy import SWIFTGalaxy, MaskCollection
 from swiftgalaxy.demo_data import (
     ToyHF,
@@ -187,6 +189,38 @@ class TestMaskingParticleDatasets:
         masked_dataset = getattr(sg, particle_name)[mask]
         ids = masked_dataset.particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
+
+    def test_chaining_masks(self, sg):
+        """
+        Check that we can mask a particle dataset after masking the swiftgalaxy.
+
+        This is a regression test, but with no associated github issue.
+        """
+        sg.mask_particles(
+            MaskCollection(
+                gas=sg.gas.spherical_coordinates.r
+                < cosmo_quantity(
+                    3,
+                    u.kpc,
+                    comoving=True,
+                    scale_factor=sg.metadata.scale_factor,
+                    scale_exponent=1,
+                )
+            )
+        )
+        # this had previously caused a crash in version <=2.4.1:
+        # IndexError: boolean index did not match indexed array along axis 0;
+        # size of axis is 5000 but size of corresponding boolean axis is 1480
+        sg.gas[
+            sg.gas.spherical_coordinates.r
+            > cosmo_quantity(
+                1,
+                u.kpc,
+                comoving=True,
+                scale_factor=sg.metadata.scale_factor,
+                scale_exponent=1,
+            )
+        ]
 
 
 class TestMaskingNamedColumnDatasets:
