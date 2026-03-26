@@ -1796,6 +1796,8 @@ class SWIFTGalaxy(SWIFTDataset):
             read data between grouped objects.
         """
         sg = cls.__new__(cls)
+        if _spatial_mask is not None:
+            sg._spatial_mask = _spatial_mask
         SWIFTGalaxy.__init__(
             sg,
             snapshot_filename,
@@ -1809,13 +1811,13 @@ class SWIFTGalaxy(SWIFTDataset):
             coordinate_frame_from=coordinate_frame_from,
             _data_server=_data_server,
         )
-        sg.halo_catalogue = halo_catalogue
-        sg._spatial_mask = _spatial_mask
-        sg._extra_mask = _extra_mask
+        if _extra_mask is not None:
+            sg._extra_mask = _extra_mask
         if _coordinate_like_transform is not None:
             sg._coordinate_like_transform = _coordinate_like_transform
         if _velocity_like_transform is not None:
             sg._velocity_like_transform = _velocity_like_transform
+        sg.halo_catalogue = halo_catalogue
         return sg
 
     def __str__(self) -> str:
