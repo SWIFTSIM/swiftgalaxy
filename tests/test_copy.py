@@ -167,7 +167,7 @@ class TestCopyMaskCollection:
             stars=None,
             black_holes=np.arange(3),
             lazy_evaluated=LazyMask(mask=np.ones(100, dtype=bool)),
-            lazy_unevaluated=LazyMask(mask_function=lambda: np.s_[:20]),
+            lazy_unevaluated=LazyMask(mask_function=lambda x: np.s_[:20]),
         )
         mc_copy = deepcopy(mc)
         assert set(mc_copy.__dict__.keys()) == set(mc.__dict__.keys())
@@ -177,8 +177,8 @@ class TestCopyMaskCollection:
                 assert comparison
             else:
                 assert all(comparison)
-        assert all(mc.lazy_evaluated.mask == mc_copy.lazy_evaluated.mask)
-        assert mc.lazy_unevaluated.mask == mc_copy.lazy_unevaluated.mask
+        assert all(mc.lazy_evaluated.mask(None) == mc_copy.lazy_evaluated.mask(None))
+        assert mc.lazy_unevaluated.mask(None) == mc_copy.lazy_unevaluated.mask(None)
 
 
 class TestCopyHaloCatalogue:

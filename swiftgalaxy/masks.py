@@ -13,9 +13,12 @@ selection of particles of different types for use with
 """
 
 from copy import deepcopy
-from typing import Optional, Union, Callable
+from typing import Optional, Union, Callable, TYPE_CHECKING
 from types import EllipsisType
 from numpy.typing import ArrayLike
+
+if TYPE_CHECKING:  # pragma: no cover
+    from swiftgalaxy import SWIFTGalaxy
 
 
 class LazyMask(object):
@@ -61,17 +64,32 @@ class LazyMask(object):
             self._evaluated = True
         return
 
-    def _evaluate(self) -> None:
-        """Force evaluation the mask function."""
+    def _evaluate(self, sg: "SWIFTGalaxy") -> None:
+        """
+        Force evaluation the mask function.
+
+        Parameters
+        ----------
+        sg : ~swiftgalaxy.reader.SWIFTGalaxy
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` to pass to the ``mask_function``
+            during evaluation.
+        """
         if not self._evaluated:
             assert self._mask_function is not None  # placate mypy
-            self._mask = self._mask_function()
+            self._mask = self._mask_function(sg)
             self._evaluated = True
 
-    @property
-    def mask(self) -> Optional[Union[slice, EllipsisType, ArrayLike]]:
+    def mask(
+        self, sg: "SWIFTGalaxy"
+    ) -> Optional[Union[slice, EllipsisType, ArrayLike]]:
         """
         Get the explicitly evaluated mask, evaluating it if necessary.
+
+        Parameters
+        ----------
+        sg : ~swiftgalaxy.reader.SWIFTGalaxy
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` to pass to the ``mask_function``
+            during evaluation.
 
         Returns
         -------
@@ -79,7 +97,7 @@ class LazyMask(object):
             The explicitly evaluated mask.
         """
         if not self._evaluated:
-            self._evaluate()
+            self._evaluate(sg)
         return self._mask
 
     def __copy__(self) -> "LazyMask":

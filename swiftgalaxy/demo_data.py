@@ -551,7 +551,9 @@ class ToyHF(_HaloCatalogue):
                 The generated function that evaluates a mask.
             """
 
-            def lazy_mask() -> Union[NDArray, slice, EllipsisType]:
+            def lazy_mask(
+                active_sg: SWIFTGalaxy,
+            ) -> Union[NDArray, slice, EllipsisType]:
                 """
                 "Evaluate" a mask that selects bound particles.
 
@@ -562,14 +564,19 @@ class ToyHF(_HaloCatalogue):
                 This function must optionally mask the data (``particle_ids``) that it
                 has loaded.
 
+                Parameters
+                ----------
+                active_sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+                    The :class:`~swiftgalaxy.reader.SWIFTGalaxy` instance being masked.
+
                 Returns
                 -------
                 :class:`~numpy.ndarray`, :obj:`slice` or :obj:`Ellipsis`
                     The mask that selects bound particles.
                 """
                 getattr(
-                    getattr(sg, group_name)._particle_dataset,
-                    sg.id_particle_dataset_name,
+                    getattr(active_sg, group_name)._particle_dataset,
+                    active_sg.id_particle_dataset_name,
                 )  # load the ids
                 assert isinstance(self._mask_index, int)  # placate mypy
                 mask = {
@@ -583,11 +590,11 @@ class ToyHF(_HaloCatalogue):
                 if mask_loaded:
                     # mask the particle_ids
                     setattr(
-                        getattr(sg, group_name)._particle_dataset,
-                        f"_{sg.id_particle_dataset_name}",
+                        getattr(active_sg, group_name)._particle_dataset,
+                        f"_{active_sg.id_particle_dataset_name}",
                         getattr(
-                            getattr(sg, group_name)._particle_dataset,
-                            f"_{sg.id_particle_dataset_name}",
+                            getattr(active_sg, group_name)._particle_dataset,
+                            f"_{active_sg.id_particle_dataset_name}",
                         )[mask],
                     )
                 assert (

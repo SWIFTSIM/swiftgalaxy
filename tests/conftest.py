@@ -1590,9 +1590,14 @@ def lm() -> LazyMask:
         A lazy mask.
     """
 
-    def mf() -> np.ndarray:
+    def mf(arg: None) -> np.ndarray:
         """
         Create a simple mask function.
+
+        Parameters
+        ----------
+        arg : None
+            An argument is required, but for this test object its value is unused.
 
         Returns
         -------

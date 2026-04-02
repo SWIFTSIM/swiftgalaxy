@@ -188,11 +188,11 @@ class TestHaloCatalogues:
         for particle_type in _present_particle_types.values():
             if expected_shape[particle_type] is not None:
                 assert (
-                    getattr(generated_extra_mask, particle_type).mask.shape
+                    getattr(generated_extra_mask, particle_type).mask(sg).shape
                     == expected_shape[particle_type]
                 )
                 assert (
-                    getattr(generated_extra_mask, particle_type).mask.sum()
+                    getattr(generated_extra_mask, particle_type).mask(sg).sum()
                     == dict(
                         gas=_n_g_1,
                         dark_matter=_n_dm_1,
@@ -230,7 +230,7 @@ class TestHaloCatalogues:
                 )
             else:
                 assert (
-                    getattr(generated_extra_mask, particle_type).mask.sum()
+                    getattr(generated_extra_mask, particle_type).mask(sg).sum()
                     == dict(gas=100, dark_matter=None, stars=100, black_holes=_n_bh_1)[
                         particle_type
                     ]
@@ -418,11 +418,11 @@ class TestHaloCataloguesMulti:
         for particle_type in _present_particle_types.values():
             if expected_shape[particle_type] is not None:
                 assert (
-                    getattr(generated_extra_mask, particle_type).mask.shape
+                    getattr(generated_extra_mask, particle_type).mask(sg).shape
                     == expected_shape[particle_type]
                 )
                 assert (
-                    getattr(generated_extra_mask, particle_type).mask.sum()
+                    getattr(generated_extra_mask, particle_type).mask(sg).sum()
                     == dict(
                         gas=_n_g_1,
                         dark_matter=_n_dm_1,
@@ -654,8 +654,8 @@ class TestVelociraptorWithSWIFTGalaxy:
             )
             for ptype in _present_particle_types.values():
                 assert np.all(
-                    getattr(sg_from_sgs._extra_mask, ptype).mask
-                    == getattr(sg._extra_mask, ptype).mask
+                    getattr(sg_from_sgs._extra_mask, ptype).mask(sg_from_sgs)
+                    == getattr(sg._extra_mask, ptype).mask(sg)
                 )
 
     def test_lazy_masking_sg(self, sg_vr):
@@ -893,14 +893,13 @@ class TestCaesarWithSWIFTGalaxy:
             )
             for ptype in _present_particle_types.values():
                 if isinstance(getattr(sg_from_sgs._extra_mask, ptype), slice):
-                    assert (
-                        getattr(sg_from_sgs._extra_mask, ptype).mask
-                        == getattr(sg._extra_mask, ptype).mask
-                    )
+                    assert getattr(sg_from_sgs._extra_mask, ptype).mask(
+                        sg_from_sgs
+                    ) == getattr(sg._extra_mask, ptype).mask(sg)
                 else:
                     assert np.all(
-                        getattr(sg_from_sgs._extra_mask, ptype).mask
-                        == getattr(sg._extra_mask, ptype).mask
+                        getattr(sg_from_sgs._extra_mask, ptype).mask(sg_from_sgs)
+                        == getattr(sg._extra_mask, ptype).mask(sg)
                     )
 
     @pytest.mark.parametrize("group_type", ["halo", "galaxy"])
@@ -926,10 +925,10 @@ class TestCaesarWithSWIFTGalaxy:
                 toysnap["toysnap_filename"],
                 Caesar(toycaesar_filename, group_type=group_type, group_index=0),
             )
-            assert sg._extra_mask.gas.mask == np.s_[:0]
-            assert sg._extra_mask.stars.mask == np.s_[:0]
-            assert sg._extra_mask.dark_matter.mask == np.s_[:0]
-            assert sg._extra_mask.black_holes.mask == np.s_[:0]
+            assert sg._extra_mask.gas.mask(sg) == np.s_[:0]
+            assert sg._extra_mask.stars.mask(sg) == np.s_[:0]
+            assert sg._extra_mask.dark_matter.mask(sg) == np.s_[:0]
+            assert sg._extra_mask.black_holes.mask(sg) == np.s_[:0]
         finally:
             _remove_toycaesar(filename=toycaesar_filename)
 
@@ -1359,8 +1358,8 @@ class TestSOAPWithSWIFTGalaxy:
             )
             for ptype in _present_particle_types.values():
                 assert np.all(
-                    getattr(sg_from_sgs._extra_mask, ptype).mask
-                    == getattr(sg._extra_mask, ptype).mask
+                    getattr(sg_from_sgs._extra_mask, ptype).mask(sg_from_sgs)
+                    == getattr(sg._extra_mask, ptype).mask(sg)
                 )
 
     def test_lazy_masking_sg(self, sg_soap):
