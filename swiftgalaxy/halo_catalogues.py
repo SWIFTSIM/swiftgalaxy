@@ -1879,7 +1879,9 @@ class Caesar(_HaloCatalogue):
                     np.concatenate(
                         [
                             np.arange(start, end)
-                            for start, end in getattr(active_sg._spatial_mask, group_name)
+                            for start, end in getattr(
+                                active_sg._spatial_mask, group_name
+                            )
                         ]
                     ),
                     mask,
