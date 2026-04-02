@@ -3,7 +3,9 @@
 import pytest
 from copy import copy, deepcopy
 import numpy as np
+import unyt as u
 from unyt.testing import assert_allclose_units
+from swiftsimio import cosmo_quantity
 from swiftgalaxy import SWIFTGalaxy, MaskCollection
 from swiftgalaxy.demo_data import (
     ToyHF,
@@ -136,6 +138,60 @@ class TestMaskingSWIFTGalaxy:
             assert sg.gas.masses.size == 100
         finally:
             _remove_toysnap(snapfile=toysnap_filename)
+
+    def test_repeated_copy_mask(self, sg_soap):
+        """
+        Check that we can apply a copying mask operation more than once.
+
+        Regression test for https://github.com/SWIFTSIM/swiftgalaxy/issues/89.
+        This had previously caused an ``IndexError``, specifically when using a
+        :class:`~swiftgalaxy.halo_catalogues.SOAP` catalogue (because it uses a boolean
+        ``"bound_only"`` mask).
+        """
+        sg_copy1 = sg_soap[
+            MaskCollection(
+                gas=sg_soap.gas.spherical_coordinates.r
+                < cosmo_quantity(
+                    3,
+                    u.kpc,
+                    comoving=True,
+                    scale_factor=sg_soap.metadata.scale_factor,
+                    scale_exponent=1,
+                )
+            )
+        ]
+        sg_copy2 = sg_soap[
+            MaskCollection(
+                gas=sg_soap.gas.spherical_coordinates.r
+                < cosmo_quantity(
+                    2,
+                    u.kpc,
+                    comoving=True,
+                    scale_factor=sg_soap.metadata.scale_factor,
+                    scale_exponent=1,
+                )
+            )
+        ]
+        assert (
+            sg_copy1.gas.spherical_coordinates.r
+            < cosmo_quantity(
+                3,
+                u.kpc,
+                comoving=True,
+                scale_factor=sg_soap.metadata.scale_factor,
+                scale_exponent=1,
+            )
+        ).all()
+        assert (
+            sg_copy2.gas.spherical_coordinates.r
+            < cosmo_quantity(
+                2,
+                u.kpc,
+                comoving=True,
+                scale_factor=sg_soap.metadata.scale_factor,
+                scale_exponent=1,
+            )
+        ).all()
 
 
 class TestMaskingParticleDatasets:
