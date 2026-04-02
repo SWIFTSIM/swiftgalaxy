@@ -1,0 +1,64 @@
+cff-version: 1.2.0
+title: swiftgalaxy
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Kyle
+    family-names: Oman
+    name-particle: A
+    email: kyle.a.oman@durham.ac.uk
+    affiliation: Durham University
+    orcid: 'https://orcid.org/0000-0001-9857-7788'
+identifiers:
+  - type: doi
+    value: 10.21105/joss.09278
+    description: JOSS article
+  - type: other
+    value: '2505.002'
+    description: Astrophysics Source Code Library (ascl.net) ID
+  - type: doi
+    value: 10.5281/zenodo.15502355
+    description: Zenodo archive
+repository-code: 'https://github.com/SWIFTSIM/swiftgalaxy'
+url: 'https://swiftgalaxy.readthedocs.io/en/stable/index.html'
+repository-artifact: 'https://zenodo.org/records/15502385'
+abstract: >-
+  SWIFTGalaxy is an open-source astrophysics module that
+  extends SWIFTSimIO to analyses of particles belonging to
+  individual galaxies simulated with SWIFT. It inherits from
+  and extends the functionality of SWIFTSimIO’s SWIFTDataset
+  class. It understands the content of halo catalogues and
+  therefore which particles belong to a galaxy or other
+  group of particles, and its integrated properties. The
+  particles occupy a coordinate frame that is enforced to be
+  consistent, such that particles loaded on-the-fly will
+  match e.g. rotations and translations of particles already
+  in memory. Intuitive masking of particle datasets is also
+  enabled. Utilities to make working in cylindrical and
+  spherical coordinate systems more convenient are also
+  provided. Finally, tools to iterate efficiently over
+  multiple galaxies are provided.
+keywords:
+  - swift
+  - astrophysics
+  - galaxies
+license: GPL-3.0
+preferred-citation:
+  authors:
+  - family-names: Oman
+    given-names: Kyle
+    orcid: "https://orcid.org/0000-0001-9857-7788"
+  date-published: "2025-10-22"
+  doi: 10.21105/joss.09278
+  issn: 2475-9066
+  issue: 114
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 9278
+  title: "SWIFTGalaxy: a Python package to work with particle groups from SWIFT simulations"
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.09278"
+  volume: 10

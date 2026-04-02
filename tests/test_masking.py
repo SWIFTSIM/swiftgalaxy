@@ -244,6 +244,38 @@ class TestMaskingParticleDatasets:
         ids = masked_dataset.particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
 
+    def test_chaining_masks(self, sg):
+        """
+        Check that we can mask a particle dataset after masking the swiftgalaxy.
+
+        This is a regression test, but with no associated github issue.
+        """
+        sg.mask_particles(
+            MaskCollection(
+                gas=sg.gas.spherical_coordinates.r
+                < cosmo_quantity(
+                    3,
+                    u.kpc,
+                    comoving=True,
+                    scale_factor=sg.metadata.scale_factor,
+                    scale_exponent=1,
+                )
+            )
+        )
+        # this had previously caused a crash in version <=2.4.1:
+        # IndexError: boolean index did not match indexed array along axis 0;
+        # size of axis is 5000 but size of corresponding boolean axis is 1480
+        sg.gas[
+            sg.gas.spherical_coordinates.r
+            > cosmo_quantity(
+                1,
+                u.kpc,
+                comoving=True,
+                scale_factor=sg.metadata.scale_factor,
+                scale_exponent=1,
+            )
+        ]
+
 
 class TestMaskingNamedColumnDatasets:
     """Test applying masks to named column datasets."""
@@ -275,7 +307,7 @@ class TestMaskingNamedColumnDatasets:
         if before_load:
             sg.gas.hydrogen_ionization_fractions._neutral = None
             del sg._extra_mask.gas._mask
-            sg._extra_mask.gas._mask = False
+            sg._extra_mask.gas._evaluated = False
         masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
         fractions = masked_namedcolumnsdataset.neutral
         assert_allclose_units(

@@ -71,12 +71,20 @@ def _apply_box_wrap(
     :class:`~swiftsimio.objects.cosmo_array`
         The coordinates wrapped to lie within the box dimensions.
     """
+    rotation_is_identity = (
+        True
+        if current_transform is None
+        else current_transform.rotation.approx_equal(Rotation.identity())
+    )
+    # in scipy 1.16 approx_equal returns bool, in 1.17 returns array of bool, so:
+    rotation_is_identity = (
+        rotation_is_identity.all()
+        if hasattr(rotation_is_identity, "all")
+        else rotation_is_identity
+    )
     if boxsize is None:
         return coords
-    elif (
-        current_transform is None
-        or (current_transform.rotation.approx_equal(Rotation.identity())).squeeze()
-    ):
+    elif current_transform is None or rotation_is_identity:
         return (coords + offset_frac * boxsize) % boxsize - offset_frac * boxsize
     else:
         return _apply_rotation(
@@ -1580,10 +1588,8 @@ class SWIFTGalaxy(SWIFTDataset):
         self.id_particle_dataset_name = id_particle_dataset_name
         self.coordinates_dataset_name = coordinates_dataset_name
         self.velocities_dataset_name = velocities_dataset_name
-        if not hasattr(self, "_coordinate_like_transform"):
-            self._coordinate_like_transform = RigidTransform.identity()
-        if not hasattr(self, "_velocity_like_transform"):
-            self._velocity_like_transform = RigidTransform.identity()
+        self._coordinate_like_transform = RigidTransform.identity()
+        self._velocity_like_transform = RigidTransform.identity()
         if self.halo_catalogue is None:
             # in server mode we don't have a halo_catalogue yet
             self._spatial_mask = getattr(self, "_spatial_mask", None)
@@ -1804,15 +1810,10 @@ class SWIFTGalaxy(SWIFTDataset):
         """
         sg = cls.__new__(cls)
         sg._spatial_mask = _spatial_mask
-        sg._extra_mask = _extra_mask
-        if _coordinate_like_transform is not None:
-            sg._coordinate_like_transform = _coordinate_like_transform
-        if _velocity_like_transform is not None:
-            sg._velocity_like_transform = _velocity_like_transform
         SWIFTGalaxy.__init__(
             sg,
             snapshot_filename,
-            halo_catalogue,
+            halo_catalogue=None,
             auto_recentre=auto_recentre,
             transforms_like_coordinates=transforms_like_coordinates,
             transforms_like_velocities=transforms_like_velocities,
@@ -1822,6 +1823,13 @@ class SWIFTGalaxy(SWIFTDataset):
             coordinate_frame_from=coordinate_frame_from,
             _data_server=_data_server,
         )
+        if _extra_mask is not None:
+            sg._extra_mask = _extra_mask
+        if _coordinate_like_transform is not None:
+            sg._coordinate_like_transform = _coordinate_like_transform
+        if _velocity_like_transform is not None:
+            sg._velocity_like_transform = _velocity_like_transform
+        sg.halo_catalogue = halo_catalogue
         return sg
 
     def __str__(self) -> str:
@@ -1944,8 +1952,8 @@ class SWIFTGalaxy(SWIFTDataset):
             velocities_dataset_name=deepcopy(self.velocities_dataset_name),
             _spatial_mask=self._spatial_mask,
             _extra_mask=deepcopy(self._extra_mask),
-            _coordinate_like_transform=deepcopy(self._coordinate_like_transform),
-            _velocity_like_transform=deepcopy(self._velocity_like_transform),
+            _coordinate_like_transform=copy(self._coordinate_like_transform),
+            _velocity_like_transform=copy(self._velocity_like_transform),
             _data_server=_data_server,
         )
         for particle_name in sg.metadata.present_group_names:
