@@ -873,11 +873,6 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
         particle_metadata = getattr(
             self._particle_dataset.metadata, f"{particle_name}_properties"
         )
-        # force old mask evaluation to ensure any data loaded during evaluation
-        # are in memory and have the old mask applied, if any:
-        old_mask = getattr(self._swiftgalaxy._extra_mask, particle_name)
-        if old_mask is not None:
-            old_mask._evaluate()
         # apply the new mask to any data already in memory:
         for field_name in particle_metadata.field_names:
             if self._is_namedcolumns(field_name):
@@ -902,26 +897,6 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
                 )
         # also the derived coordinates, if any:
         self._mask_derived_coordinates(mask)
-        if getattr(self._swiftgalaxy._extra_mask, particle_name) is None:
-            setattr(self._swiftgalaxy._extra_mask, particle_name, mask)
-        else:
-            if self._swiftgalaxy._spatial_mask is None:
-                # get a count of particles in the box
-                num_part = getattr(self.metadata, f"n_{particle_metadata.group_name}")
-            else:
-                # get a count of particles in the spatial mask region
-                num_part = np.sum(
-                    self._swiftgalaxy._spatial_mask.get_masked_counts_offsets()[0][
-                        particle_name
-                    ]
-                )
-            # need to convert to an integer mask to combine
-            # (boolean is insufficient in case of re-ordering masks)
-            setattr(
-                self._swiftgalaxy._extra_mask,
-                particle_name,
-                LazyMask(mask=np.arange(num_part, dtype=int)[old_mask.mask][mask.mask]),
-            )
         return
 
     def _apply_transforms(self, data: cosmo_array, dataset_name: str) -> cosmo_array:
@@ -1951,12 +1926,12 @@ class SWIFTGalaxy(SWIFTDataset):
             particle_metadata = getattr(sg.metadata, f"{particle_name}_properties")
             particle_dataset_helper = getattr(self, particle_name)
             new_particle_dataset_helper = getattr(sg, particle_name)
-            if mask_collection is not None:
-                mask = getattr(mask_collection, particle_name)
-                if mask is None:
-                    mask = LazyMask(mask=Ellipsis)
-            else:
-                mask = LazyMask(mask=Ellipsis)
+            mask = (
+                getattr(mask_collection, particle_name)
+                if mask_collection is not None
+                and getattr(mask_collection, particle_name) is not None
+                else LazyMask(mask=Ellipsis)
+            )
             getattr(sg, particle_name)._mask_dataset(mask)
             for field_name in particle_metadata.field_names:
                 if particle_dataset_helper._is_namedcolumns(field_name):
@@ -2009,6 +1984,12 @@ class SWIFTGalaxy(SWIFTDataset):
                     new_particle_dataset_helper._cylindrical_velocities[c] = (
                         particle_dataset_helper._cylindrical_velocities[c][mask.mask]
                     )
+        if mask_collection is not None and sg._extra_mask is not None:
+            sg._extra_mask = sg._extra_mask.combine(mask_collection)
+        elif mask_collection is not None:
+            sg._extra_mask = mask_collection
+        if sg._extra_mask is not None:
+            sg._extra_mask._update_sg(sg)
         return sg
 
     def rotate(self, rotation: Rotation) -> None:
@@ -2359,6 +2340,10 @@ class SWIFTGalaxy(SWIFTDataset):
             mask = getattr(mask_collection, particle_name)
             if mask is not None:
                 getattr(self, particle_name)._mask_dataset(mask)
+        if self._extra_mask is not None:
+            self._extra_mask = self._extra_mask.combine(mask_collection)
+        else:
+            self._extra_mask = mask_collection
         return
 
     def _append_to_coordinate_like_transform(
