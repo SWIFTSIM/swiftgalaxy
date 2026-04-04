@@ -867,7 +867,7 @@ class SOAP(_HaloCatalogue):
                     )._particle_dataset._group_nr_bound[mask]
                 return mask
 
-            return LazyMask(mask_function=lazy_mask)
+            return LazyMask(mask_function=lazy_mask, sg=sg)
 
         return MaskCollection(
             **{
@@ -1262,7 +1262,7 @@ class Velociraptor(_HaloCatalogue):
                     )._particle_dataset._particle_ids[mask]
                 return mask
 
-            return LazyMask(mask_function=lazy_mask)
+            return LazyMask(mask_function=lazy_mask, sg=sg)
 
         return MaskCollection(
             **{
@@ -1888,7 +1888,7 @@ class Caesar(_HaloCatalogue):
                 )
                 return mask
 
-            return LazyMask(mask_function=lazy_mask)
+            return LazyMask(mask_function=lazy_mask, sg=sg)
 
         return MaskCollection(
             **{

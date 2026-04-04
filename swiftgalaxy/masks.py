@@ -40,16 +40,24 @@ class LazyMask(object):
 
     mask_function : Callable, default: ``None``
         A reference to a function that returns a mask when called.
+
+    sg : ~swiftgalaxy.reader.SWIFTGalaxy, default: ``None``
+        A reference to a :class:`~swiftgalaxy.reader.SWIFTGalaxy` that is made available
+        when evaluating the mask. Stored separately from the mask evaluation function so
+        that it can be modified, for example when the :class:`~swiftgalaxy.masks.LazyMask`
+        is copied to a new object.
     """
 
     _mask_function: Optional[Callable]
     _mask: Optional[Union[slice, EllipsisType, ArrayLike]]
     _evaluated: bool
+    _sg: "Optional[SWIFTGalaxy]"
 
     def __init__(
         self,
         mask: Optional[Union[slice, EllipsisType, ArrayLike]] = None,
         mask_function: Optional[Callable] = None,
+        sg: "Optional[SWIFTGalaxy]" = None,
     ) -> None:
         if mask_function is None and mask is None:
             self._mask = None
@@ -62,34 +70,20 @@ class LazyMask(object):
             self._mask = mask
             self._mask_function = mask_function
             self._evaluated = True
+        self._sg = sg
         return
 
-    def _evaluate(self, sg: "SWIFTGalaxy") -> None:
-        """
-        Force evaluation the mask function.
-
-        Parameters
-        ----------
-        sg : ~swiftgalaxy.reader.SWIFTGalaxy
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` to pass to the ``mask_function``
-            during evaluation.
-        """
+    def _evaluate(self) -> None:
+        """Force evaluation the mask function."""
         if not self._evaluated:
             assert self._mask_function is not None  # placate mypy
-            self._mask = self._mask_function(sg)
+            self._mask = self._mask_function(self._sg)
             self._evaluated = True
 
-    def mask(
-        self, sg: "SWIFTGalaxy"
-    ) -> Optional[Union[slice, EllipsisType, ArrayLike]]:
+    @property
+    def mask(self) -> Optional[Union[slice, EllipsisType, ArrayLike]]:
         """
         Get the explicitly evaluated mask, evaluating it if necessary.
-
-        Parameters
-        ----------
-        sg : ~swiftgalaxy.reader.SWIFTGalaxy
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` to pass to the ``mask_function``
-            during evaluation.
 
         Returns
         -------
@@ -97,7 +91,7 @@ class LazyMask(object):
             The explicitly evaluated mask.
         """
         if not self._evaluated:
-            self._evaluate(sg)
+            self._evaluate()
         return self._mask
 
     def __copy__(self) -> "LazyMask":
@@ -112,15 +106,18 @@ class LazyMask(object):
             The copy of the :class:`~swiftgalaxy.masks.LazyMask`.
         """
         if self._evaluated:
-            return LazyMask(mask=self._mask, mask_function=self._mask_function)
+            return LazyMask(
+                mask=self._mask, mask_function=self._mask_function, sg=self._sg
+            )
         else:
-            return LazyMask(mask_function=self._mask_function)
+            return LazyMask(mask_function=self._mask_function, sg=self._sg)
 
     def __deepcopy__(self, memo: Optional[dict] = None) -> "LazyMask":
         """
         Make a copy of the :class:`~swiftgalaxy.masks.LazyMask`.
 
-        This copies data (a "deep" copy).
+        This copies data (a "deep" copy). Does not deep-copy the reference to the
+        swiftgalaxy object, which should be replaced after copying if required.
 
         Parameters
         ----------
@@ -134,10 +131,12 @@ class LazyMask(object):
         """
         if self._evaluated:
             return LazyMask(
-                mask=deepcopy(self._mask), mask_function=deepcopy(self._mask_function)
+                mask=deepcopy(self._mask),
+                mask_function=deepcopy(self._mask_function),
+                sg=self._sg,
             )
         else:
-            return LazyMask(mask_function=deepcopy(self._mask_function))
+            return LazyMask(mask_function=deepcopy(self._mask_function), sg=self._sg)
 
     def __eq__(self, other: object) -> bool:
         """
@@ -212,6 +211,21 @@ class LazyMask(object):
             evaluated.
         """
         return not self.__eq__(other)
+
+    def _update_sg(self, sg: "SWIFTGalaxy") -> None:
+        """
+        Update the :class:`~swiftgalaxy.reader.SWIFTGalaxy` associated to the mask.
+
+        This :class:`~swiftgalaxy.masks.LazyMask` may have a reference to a
+        :class:`~swiftgalaxy.reader.SWIFTGalaxy`. If present, this function updates the
+        reference to a new one.
+
+        Parameters
+        ----------
+        sg : ~swiftgalaxy.reader.SWIFTGalaxy
+            The new :class:`~swiftgalaxy.reader.SWIFTGalaxy` reference to store.
+        """
+        self._sg = sg if self._sg is not None else None
 
 
 class MaskCollection(object):
@@ -319,3 +333,20 @@ class MaskCollection(object):
             The copy of the :class:`~swiftgalaxy.masks.MaskCollection`.
         """
         return MaskCollection(**{k: deepcopy(v) for k, v in self.__dict__.items()})
+
+    def _update_sg(self, sg: "SWIFTGalaxy") -> None:
+        """
+        Update the :class:`~swiftgalaxy.reader.SWIFTGalaxy` associated to masks.
+
+        :class:`~swiftgalaxy.masks.LazyMask` instances contained in this collection may
+        have a reference to a :class:`~swiftgalaxy.reader.SWIFTGalaxy`. This function
+        updates the reference to a new one.
+
+        Parameters
+        ----------
+        sg : ~swiftgalaxy.reader.SWIFTGalaxy
+            The new :class:`~swiftgalaxy.reader.SWIFTGalaxy` reference to store.
+        """
+        for v in self.__dict__.values():
+            if isinstance(v, LazyMask):
+                v._update_sg(sg)

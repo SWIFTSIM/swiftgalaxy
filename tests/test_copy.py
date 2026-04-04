@@ -177,20 +177,20 @@ class TestCopyMaskCollection:
                 assert comparison
             else:
                 assert all(comparison)
-        assert all(mc.lazy_evaluated.mask(None) == mc_copy.lazy_evaluated.mask(None))
-        assert mc.lazy_unevaluated.mask(None) == mc_copy.lazy_unevaluated.mask(None)
+        assert all(mc.lazy_evaluated.mask == mc_copy.lazy_evaluated.mask)
+        assert mc.lazy_unevaluated.mask == mc_copy.lazy_unevaluated.mask
 
 
 class TestCopyHaloCatalogue:
     """Test that halo catalogue classes can be copied."""
 
-    def test_copy(self, web_hf):
+    def test_copy_web_hf(self, web_hf):
         """Test that we can copy a halo catalogue object."""
         c = copy(web_hf)
         assert isinstance(c, type(web_hf))
         assert c is not web_hf
 
-    def test_deepcopy_sg(self, web_sg):
+    def test_deepcopy_web_sg(self, web_sg):
         """
         Test that we can deepcopy a swiftgalaxy object.
 

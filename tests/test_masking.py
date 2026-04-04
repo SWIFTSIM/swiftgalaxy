@@ -391,7 +391,7 @@ class TestLazyMask:
         """Check that accessing mask triggers evaluation if lazy."""
         assert lm._evaluated is False
         assert not hasattr(lm, "_mask")
-        assert (lm.mask(None) == lm._mask_function(None)).all()
+        assert (lm.mask == lm._mask_function(None)).all()
         assert lm._evaluated
         assert (lm._mask == lm._mask_function(None)).all()
 
@@ -400,15 +400,15 @@ class TestLazyMask:
         m = np.ones(10, dtype=bool)
         lm = LazyMask(mask=m)
         assert lm._evaluated
-        assert (lm.mask(None) == m).all()
+        assert (lm.mask == m).all()
 
     def test_manual_trigger_eval(self, lm):
         """Check that accessing mask triggers evaluation if lazy."""
         assert lm._evaluated is False
         assert not hasattr(lm, "_mask")
-        lm._evaluate(None)
+        lm._evaluate()
         assert lm._evaluated
-        assert (lm.mask(None) == lm._mask_function(None)).all()
+        assert (lm.mask == lm._mask_function(None)).all()
         assert (lm._mask == lm._mask_function(None)).all()
 
     def test_trigger_eval_once_only(self):
@@ -440,12 +440,12 @@ class TestLazyMask:
         lm = LazyMask(mask_function=mf)
         assert lm._evaluated is False
         # trigger a mask evaluation:
-        lm.mask(None)
+        lm.mask
         assert lm._evaluated is True
         assert mf.call_counter == 1
         # we shouldn't be able to trigger or force another mask evaluation:
-        lm.mask(None)
-        lm._evaluate(None)
+        lm.mask
+        lm._evaluate()
         assert mf.call_counter == 1
 
     def test_copy(self, lm):
@@ -456,7 +456,7 @@ class TestLazyMask:
         assert not hasattr(lm_unevaluated_copy, "_mask")
         assert lm_unevaluated_copy._mask_function is lm._mask_function
         # trigger evaluated
-        lm._evaluate(None)
+        lm._evaluate()
         assert lm._evaluated
         # now copy after evaluating
         lm_evaluated_copy = copy(lm)
@@ -479,7 +479,7 @@ class TestLazyMask:
         assert not hasattr(lm_unevaluated_copy, "_mask")
         assert lm_unevaluated_copy._mask_function is lm._mask_function
         # trigger evaluated
-        lm._evaluate(None)
+        lm._evaluate()
         assert lm._evaluated
         # now copy after evaluating
         lm_evaluated_copy = deepcopy(lm)
@@ -501,8 +501,8 @@ class TestLazyMask:
             ValueError, match="Cannot compare when one or more masks are not evaluated."
         ):
             lm == lm2
-        lm._evaluate(None)
-        lm2._evaluate(None)
+        lm._evaluate()
+        lm2._evaluate()
         assert lm == lm2
         lmn = LazyMask(mask=None)
         assert lm != lmn
@@ -514,7 +514,7 @@ class TestLazyMask:
             ValueError, match="Cannot compare when one or more masks are not evaluated."
         ):
             lm == m
-        lm._evaluate(None)
+        lm._evaluate()
         assert lm == m
         assert lm != np.zeros(10, dtype=bool)
 

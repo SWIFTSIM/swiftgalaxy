@@ -604,7 +604,7 @@ class ToyHF(_HaloCatalogue):
                 )  # placate mypy
                 return mask
 
-            return LazyMask(mask_function=lazy_mask)
+            return LazyMask(mask_function=lazy_mask, sg=sg)
 
         return MaskCollection(
             **{
