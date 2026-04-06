@@ -49,18 +49,25 @@ class LazyMask(object):
         when evaluating the mask. Stored separately from the mask evaluation function so
         that it can be modified, for example when the :class:`~swiftgalaxy.masks.LazyMask`
         is copied to a new object.
+
+    combinable : bool
+        If ``True``, it declares that for this mask ``data[this_mask][other_mask]`` is
+        equivalent to ``data[this_mask[other_mask]]``. This usually means that it is an
+        array of indices to select from ``data``.
     """
 
     _mask_function: Optional[Callable]
     _mask: MaskType
     _evaluated: bool
     _sg: "Optional[SWIFTGalaxy]"
+    _combinable: bool
 
     def __init__(
         self,
         mask: MaskType = None,
         mask_function: Optional[Callable] = None,
         sg: "Optional[SWIFTGalaxy]" = None,
+        combinable: bool = False,
     ) -> None:
         if mask_function is None and mask is None:
             self._mask = None
@@ -74,6 +81,7 @@ class LazyMask(object):
             self._mask_function = mask_function
             self._evaluated = True
         self._sg = sg
+        self._combinable = combinable
         return
 
     def _evaluate(self) -> None:
@@ -82,6 +90,47 @@ class LazyMask(object):
             assert self._mask_function is not None  # placate mypy
             self._mask = self._mask_function(self._sg)
             self._evaluated = True
+
+    def _make_combinable(
+        self, sg: "Optional[SWIFTGalaxy]", active_sg: "SWIFTGalaxy", mask_type: str
+    ) -> None:
+        """
+        Ensure that the mask can have an arbitrary second mask applied to combine them.
+
+        This is done implicitly if the mask is not already evaluated, or explicitly
+        otherwise.
+
+        Parameters
+        ----------
+        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that mask applies to, if
+            available.
+
+        active_sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` instance being masked right now,
+            used to determine particle counts if `sg` is unavailable.
+
+        mask_type : str
+            The particle type that this mask applies to.
+        """
+        # need to convert to an integer mask to combine
+        # (boolean is insufficient in case of re-ordering masks)
+        if sg is None:
+            num_part = getattr(active_sg.metadata, f"n_{mask_type}")
+        elif sg._spatial_mask is None:
+            # get a count of particles in the box
+            num_part = getattr(sg.metadata, f"n_{mask_type}")
+        else:  # sg._spatial_mask is not None
+            # get a count of particles in the spatial mask region
+            num_part = np.sum(
+                sg._spatial_mask.get_masked_counts_offsets()[0][mask_type]
+            )
+        if self._mask_function is not None:
+            old_mask_function = self._mask_function  # need reference to the current one
+            self._mask_function = lambda sg: np.arange(num_part)[old_mask_function(sg)]
+        if self._evaluated:
+            self._mask = np.arange(num_part)[self._mask]
+        self._combinable = True
 
     @property
     def mask(self) -> MaskType:
@@ -110,10 +159,17 @@ class LazyMask(object):
         """
         if self._evaluated:
             return LazyMask(
-                mask=self._mask, mask_function=self._mask_function, sg=self._sg
+                mask=self._mask,
+                mask_function=self._mask_function,
+                sg=self._sg,
+                combinable=self._combinable,
             )
         else:
-            return LazyMask(mask_function=self._mask_function, sg=self._sg)
+            return LazyMask(
+                mask_function=self._mask_function,
+                sg=self._sg,
+                combinable=self._combinable,
+            )
 
     def __deepcopy__(self, memo: Optional[dict] = None) -> "LazyMask":
         """
@@ -137,9 +193,14 @@ class LazyMask(object):
                 mask=deepcopy(self._mask),
                 mask_function=deepcopy(self._mask_function),
                 sg=self._sg,
+                combinable=self._combinable,
             )
         else:
-            return LazyMask(mask_function=deepcopy(self._mask_function), sg=self._sg)
+            return LazyMask(
+                mask_function=deepcopy(self._mask_function),
+                sg=self._sg,
+                combinable=self._combinable,
+            )
 
     def __eq__(self, other: object) -> bool:
         """
@@ -402,6 +463,9 @@ def _combine_lazy_masks(
     """
     Combine two lazy masks into one, avoiding evaluating them.
 
+    The first mask may be "combinable", which means that the second mask can be applied
+    directly to the first. If this flag is not set we first need to make it combinable.
+
     Parameters
     ----------
     first_mask : ~swiftgalaxy.masks.LazyMask
@@ -445,18 +509,10 @@ def _combine_lazy_masks(
         :class:`~numpy.ndarray`
             The combined mask.
         """
-        # need to convert to an integer mask to combine
-        # (boolean is insufficient in case of re-ordering masks)
-        if sg is None:
-            num_part = getattr(active_sg.metadata, f"n_{mask_type}")
-        elif sg._spatial_mask is None:
-            # get a count of particles in the box
-            num_part = getattr(sg.metadata, f"n_{mask_type}")
-        else:  # sg._spatial_mask is not None
-            # get a count of particles in the spatial mask region
-            num_part = np.sum(
-                sg._spatial_mask.get_masked_counts_offsets()[0][mask_type]
-            )
-        return np.arange(num_part)[first_mask.mask][second_mask.mask]
+        if not first_mask._combinable:
+            first_mask._make_combinable(sg=sg, active_sg=active_sg, mask_type=mask_type)
+        assert isinstance(first_mask.mask, np.ndarray)  # placate mypy
+        assert first_mask.mask.dtype == int
+        return first_mask.mask[second_mask.mask]
 
-    return LazyMask(mask_function=lazy_mask, sg=sg)
+    return LazyMask(mask_function=lazy_mask, sg=sg, combinable=True)
