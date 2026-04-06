@@ -6,12 +6,9 @@ import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
 from swiftsimio import cosmo_quantity
-from swiftgalaxy import SWIFTGalaxy, MaskCollection
+from swiftgalaxy import MaskCollection
 from swiftgalaxy.demo_data import (
     ToyHF,
-    _create_toysnap,
-    _remove_toysnap,
-    _toysnap_filename,
     _present_particle_types,
     _n_g_all,
     _n_dm_all,
@@ -100,44 +97,31 @@ class TestMaskingSWIFTGalaxy:
             neutral_before[mask], neutral, rtol=reltol_nd, atol=abstol_nd
         )
 
-    def test_mask_without_spatial_mask(self, tmp_path_factory):
+    def test_mask_without_spatial_mask(self, sg_no_hf):
         """
         Check that if we have no masks we read everything in the box (and warn about it).
 
         Then that we can still apply an extra mask, and a second one (there's specific
         logic for applying two consecutively).
         """
-        toysnap_filename = (
-            tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
-        )
-        try:
-            _create_toysnap(snapfile=toysnap_filename)
-            sg = SWIFTGalaxy(
-                toysnap_filename,
-                None,  # no halo_catalogue is easiest way to get no mask
-                transforms_like_coordinates={"coordinates", "extra_coordinates"},
-                transforms_like_velocities={"velocities", "extra_velocities"},
-            )
-            # check that extra mask is blank for all particle types:
-            assert sg._extra_mask.gas is None
-            assert sg._extra_mask.dark_matter is None
-            assert sg._extra_mask.stars is None
-            assert sg._extra_mask.black_holes is None
-            # check that cell mask is blank for all particle types:
-            assert sg._spatial_mask is None
-            # check that we read all the particles:
-            assert sg.gas.masses.size == _n_g_all
-            assert sg.dark_matter.masses.size == _n_dm_all
-            assert sg.stars.masses.size == _n_s_all
-            assert sg.black_holes.masses.size == _n_bh_all
-            # now apply an extra mask
-            sg.mask_particles(MaskCollection(gas=np.s_[:1000]))
-            assert sg.gas.masses.size == 1000
-            # and the second consecutive one
-            sg.mask_particles(MaskCollection(gas=np.s_[:100]))
-            assert sg.gas.masses.size == 100
-        finally:
-            _remove_toysnap(snapfile=toysnap_filename)
+        # check that extra mask is blank for all particle types:
+        assert sg_no_hf._extra_mask.gas is None
+        assert sg_no_hf._extra_mask.dark_matter is None
+        assert sg_no_hf._extra_mask.stars is None
+        assert sg_no_hf._extra_mask.black_holes is None
+        # check that cell mask is blank for all particle types:
+        assert sg_no_hf._spatial_mask is None
+        # check that we read all the particles:
+        assert sg_no_hf.gas.masses.size == _n_g_all
+        assert sg_no_hf.dark_matter.masses.size == _n_dm_all
+        assert sg_no_hf.stars.masses.size == _n_s_all
+        assert sg_no_hf.black_holes.masses.size == _n_bh_all
+        # now apply an extra mask
+        sg_no_hf.mask_particles(MaskCollection(gas=np.s_[:1000]))
+        assert sg_no_hf.gas.masses.size == 1000
+        # and the second consecutive one
+        sg_no_hf.mask_particles(MaskCollection(gas=np.s_[:100]))
+        assert sg_no_hf.gas.masses.size == 100
 
     def test_repeated_copy_mask(self, sg_soap):
         """
