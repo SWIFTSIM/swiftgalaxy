@@ -1927,7 +1927,7 @@ class SWIFTGalaxy(SWIFTDataset):
             mask = getattr(
                 mask_collection,
                 particle_name,
-                LazyMask(mask=Ellipsis, mask_type=particle_name),
+                LazyMask(mask=Ellipsis),
             )
             getattr(sg, particle_name)._mask_dataset(mask)
             for field_name in particle_metadata.field_names:

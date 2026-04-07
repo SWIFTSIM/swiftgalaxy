@@ -653,7 +653,7 @@ class TestVelociraptorWithSWIFTGalaxy:
                 ),
             )
             for ptype in _present_particle_types.values():
-                getattr(sg._extra_mask, ptype)._make_combinable(sg)
+                getattr(sg._extra_mask, ptype)._make_combinable(sg=sg, mask_type=ptype)
                 assert np.all(
                     getattr(sg_from_sgs._extra_mask, ptype).mask
                     == getattr(sg._extra_mask, ptype).mask
@@ -893,7 +893,7 @@ class TestCaesarWithSWIFTGalaxy:
                 ),
             )
             for ptype in _present_particle_types.values():
-                getattr(sg._extra_mask, ptype)._make_combinable(sg)
+                getattr(sg._extra_mask, ptype)._make_combinable(sg=sg, mask_type=ptype)
                 assert np.all(
                     getattr(sg_from_sgs._extra_mask, ptype).mask
                     == getattr(sg._extra_mask, ptype).mask
@@ -1354,7 +1354,7 @@ class TestSOAPWithSWIFTGalaxy:
                 ),
             )
             for ptype in _present_particle_types.values():
-                getattr(sg._extra_mask, ptype)._make_combinable(sg)
+                getattr(sg._extra_mask, ptype)._make_combinable(sg=sg, mask_type=ptype)
                 assert np.all(
                     getattr(sg_from_sgs._extra_mask, ptype).mask
                     == getattr(sg._extra_mask, ptype).mask

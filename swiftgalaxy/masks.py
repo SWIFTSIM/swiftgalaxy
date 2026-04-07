@@ -48,16 +48,11 @@ class LazyMask(object):
         If ``True``, it declares that for this mask ``data[this_mask][other_mask]`` is
         equivalent to ``data[this_mask[other_mask]]``. This usually means that it is an
         array of integer indices to select from ``data``.
-
-    mask_type : str, default: ``None``
-        The :mod:`swiftsimio` "group_type" (e.g. ``"gas"``, ``"dark_matter"``, etc.) that
-        this mask applies to.
     """
 
     _mask_function: Optional[Callable]
     _mask: MaskType
     _evaluated: bool
-    _mask_type: "Optional[str]"
     _combinable: bool
 
     def __init__(
@@ -65,7 +60,6 @@ class LazyMask(object):
         mask: MaskType = None,
         mask_function: Optional[Callable] = None,
         combinable: bool = False,
-        mask_type: Optional[str] = None,
     ) -> None:
         if mask_function is None and mask is None:
             self._mask = None
@@ -78,7 +72,6 @@ class LazyMask(object):
             self._mask = mask
             self._mask_function = mask_function
             self._evaluated = True
-        self._mask_type = mask_type
         self._combinable = combinable
         return
 
@@ -89,7 +82,7 @@ class LazyMask(object):
             self._mask = self._mask_function()
             self._evaluated = True
 
-    def _make_combinable(self, sg: "SWIFTGalaxy") -> None:
+    def _make_combinable(self, *, sg: "SWIFTGalaxy", mask_type: str) -> None:
         """
         Ensure that the mask can have an arbitrary second mask applied to combine them.
 
@@ -101,16 +94,20 @@ class LazyMask(object):
         sg : ~swiftgalaxy.reader.SWIFTGalaxy
             The :class:`~swiftgalaxy.reader.SWIFTGalaxy` to use to look up particle count
             metadata.
+
+        mask_type : str
+            The :mod:`swiftsimio` group name that this mask is for (e.g. ``"gas"``,
+            ``"dark_matter"``, etc.), used to look up particle count metadata.
         """
         # need to convert to an integer mask to combine
         # (boolean is insufficient in case of re-ordering masks)
         if sg._spatial_mask is None:
             # get a count of particles in the box
-            num_part = getattr(sg.metadata, f"n_{self._mask_type}")
+            num_part = getattr(sg.metadata, f"n_{mask_type}")
         else:  # sg._spatial_mask is not None
             # get a count of particles in the spatial mask region
             num_part = np.sum(
-                sg._spatial_mask.get_masked_counts_offsets()[0][self._mask_type]
+                sg._spatial_mask.get_masked_counts_offsets()[0][mask_type]
             )
         if self._mask_function is not None:
             old_mask_function = self._mask_function  # need reference to the current one
@@ -120,7 +117,7 @@ class LazyMask(object):
         self._combinable = True
 
     def _combined_with(
-        self, other_mask: "LazyMask", *, sg: "SWIFTGalaxy"
+        self, other_mask: "LazyMask", *, sg: "SWIFTGalaxy", mask_type: str
     ) -> "LazyMask":
         """
         Combine two lazy masks into one, avoiding evaluating them.
@@ -137,6 +134,10 @@ class LazyMask(object):
         sg : ~swiftgalaxy.reader.SWIFTGalaxy
             The :class:`~swiftgalaxy.reader.SWIFTGalaxy` to use to look up particle count
             metadata.
+
+        mask_type : str
+            The :mod:`swiftsimio` group name that this mask is for (e.g. ``"gas"``,
+            ``"dark_matter"``, etc.), used to look up particle count metadata.
 
         Returns
         -------
@@ -155,7 +156,7 @@ class LazyMask(object):
                 The combined mask.
             """
             if not self._combinable:
-                self._make_combinable(sg)
+                self._make_combinable(sg=sg, mask_type=mask_type)
             assert isinstance(self.mask, np.ndarray)  # placate mypy
             assert self.mask.dtype == int
             return self.mask[other_mask.mask]
@@ -163,7 +164,6 @@ class LazyMask(object):
         return LazyMask(
             mask_function=lazy_mask,
             combinable=True,
-            mask_type=self._mask_type,
         )
 
     @property
@@ -196,13 +196,11 @@ class LazyMask(object):
                 mask=self._mask,
                 mask_function=self._mask_function,
                 combinable=self._combinable,
-                mask_type=self._mask_type,
             )
         else:
             return LazyMask(
                 mask_function=self._mask_function,
                 combinable=self._combinable,
-                mask_type=self._mask_type,
             )
 
     def __deepcopy__(self, memo: Optional[dict] = None) -> "LazyMask":
@@ -227,13 +225,11 @@ class LazyMask(object):
                 mask=deepcopy(self._mask),
                 mask_function=deepcopy(self._mask_function),
                 combinable=deepcopy(self._combinable),
-                mask_type=deepcopy(self._mask_type),
             )
         else:
             return LazyMask(
                 mask_function=deepcopy(self._mask_function),
                 combinable=deepcopy(self._combinable),
-                mask_type=deepcopy(self._mask_type),
             )
 
     def __eq__(self, other: object) -> bool:
@@ -362,14 +358,10 @@ class MaskCollection(object):
         for k, v in kwargs.items():
             if isinstance(v, LazyMask):
                 self._masks[k] = v
-                assert getattr(self, k)._mask_type == k, (
-                    f"`LazyMask` for {k} has non-matching "
-                    f"`mask_type` {getattr(self, k)._mark_type}."
-                )
-            elif v is None:  # a literal `None` mask would resolve like `np.newaxis`
-                self._masks[k] = LazyMask(mask=Ellipsis, mask_type=k)
             else:
-                self._masks[k] = LazyMask(mask=v, mask_type=k)
+                # a literal `None` mask would resolve like `np.newaxis`
+                # that would be confusing so replace with Ellipsis
+                self._masks[k] = LazyMask(mask=Ellipsis if v is None else v)
         return
 
     @classmethod
@@ -415,12 +407,7 @@ class MaskCollection(object):
         MaskCollection
             The collection of masks set to provided values, or the default ``Ellipsis``.
         """
-        return cls(
-            **{
-                k: LazyMask(mask=masks.get(k, Ellipsis), mask_type=k)
-                for k in mask_types
-            }
-        )
+        return cls(**{k: LazyMask(mask=masks.get(k, Ellipsis)) for k in mask_types})
 
     def __getattr__(self, attr: str) -> LazyMask:
         """
@@ -479,7 +466,10 @@ class MaskCollection(object):
         return MaskCollection(**{k: deepcopy(v) for k, v in self._masks.items()})
 
     def combine(
-        self, other_mask_collection: "MaskCollection", *, sg: "SWIFTGalaxy"
+        self,
+        other_mask_collection: "MaskCollection",
+        *,
+        sg: "SWIFTGalaxy",
     ) -> "MaskCollection":
         """
         Combine this :class:`~swiftgalaxy.masks.MaskCollection` with another.
@@ -503,7 +493,7 @@ class MaskCollection(object):
             this_mask = getattr(self, k)
             other_mask = getattr(other_mask_collection, k, None)
             return_collection[k] = (
-                this_mask._combined_with(other_mask, sg=sg)
+                this_mask._combined_with(other_mask, sg=sg, mask_type=k)
                 if other_mask is not None
                 else this_mask
             )

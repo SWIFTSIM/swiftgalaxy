@@ -298,21 +298,18 @@ class _HaloCatalogue(ABC):
             )
         elif self.extra_mask is None:
             mask_collection = MaskCollection(
-                **{
-                    k: LazyMask(mask=Ellipsis, mask_type=k)
-                    for k in sg.metadata.present_group_names
-                }
+                **{k: LazyMask(mask=Ellipsis) for k in sg.metadata.present_group_names}
             )
         else:
             # Keep user provided mask. If no mask provided for a particle type
-            # use None (no mask).
+            # use Ellipsis (no mask).
             mask_collection = MaskCollection(
                 **{
                     name: mask
                     if isinstance(
                         mask := getattr(self.extra_mask, name, Ellipsis), LazyMask
                     )
-                    else LazyMask(mask=mask, mask_type=name)
+                    else LazyMask(mask=mask)
                     for name in sg.metadata.present_group_names
                 }
             )
@@ -872,9 +869,7 @@ class SOAP(_HaloCatalogue):
                     )._particle_dataset._group_nr_bound[mask]
                 return mask
 
-            return LazyMask(
-                mask_function=lazy_mask, combinable=False, mask_type=group_name
-            )
+            return LazyMask(mask_function=lazy_mask, combinable=False)
 
         return MaskCollection(
             **{
@@ -1262,9 +1257,7 @@ class Velociraptor(_HaloCatalogue):
                     )._particle_dataset._particle_ids[mask]
                 return mask
 
-            return LazyMask(
-                mask_function=lazy_mask, combinable=False, mask_type=group_name
-            )
+            return LazyMask(mask_function=lazy_mask, combinable=False)
 
         return MaskCollection(
             **{
@@ -1883,9 +1876,7 @@ class Caesar(_HaloCatalogue):
                 )
                 return mask
 
-            return LazyMask(
-                mask_function=lazy_mask, combinable=False, mask_type=group_name
-            )
+            return LazyMask(mask_function=lazy_mask, combinable=False)
 
         return MaskCollection(
             **{
