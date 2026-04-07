@@ -1978,7 +1978,7 @@ class SWIFTGalaxy(SWIFTDataset):
                         particle_dataset_helper._cylindrical_velocities[c][mask.mask]
                     )
         if mask_collection is not None:
-            sg._extra_mask = sg._extra_mask.combine(mask_collection, sg=sg)
+            sg._extra_mask = sg._extra_mask.combined_with(mask_collection, sg=sg)
         return sg
 
     def rotate(self, rotation: Rotation) -> None:
@@ -2328,7 +2328,7 @@ class SWIFTGalaxy(SWIFTDataset):
         for particle_name in self.metadata.present_group_names:
             if (mask := getattr(mask_collection, particle_name, None)) is not None:
                 getattr(self, particle_name)._mask_dataset(mask)
-        self._extra_mask = self._extra_mask.combine(mask_collection, sg=self)
+        self._extra_mask = self._extra_mask.combined_with(mask_collection, sg=self)
         return
 
     def _append_to_coordinate_like_transform(

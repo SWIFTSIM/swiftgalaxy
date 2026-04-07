@@ -532,3 +532,14 @@ class TestLazyMask:
         lm = LazyMask(mask=None)
         assert lm == lm
         assert not lm != lm
+
+
+class TestMaskCollection:
+    """Tests for the MaskCollection class."""
+
+    def test_warning_for_unexpected_field_in_combining_mask_collections(self, sg):
+        """Check that trying to combine with a collection with extra fields warns."""
+        mc1 = MaskCollection(gas=Ellipsis)
+        mc2 = MaskCollection(gas=Ellipsis, dark_matter=Ellipsis)
+        with pytest.warns(UserWarning, match="Unexpected fields"):
+            mc1.combined_with(mc2, sg=sg)

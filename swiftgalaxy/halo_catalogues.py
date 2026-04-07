@@ -293,27 +293,15 @@ class _HaloCatalogue(ABC):
                 raise RuntimeError(
                     "Halo catalogue has multiple galaxies and is not currently masked."
                 )
-            mask_collection = self._generate_bound_only_mask(
-                sg, mask_loaded=mask_loaded
-            )
+            return self._generate_bound_only_mask(sg, mask_loaded=mask_loaded)
         elif self.extra_mask is None:
-            mask_collection = MaskCollection(
-                **{k: LazyMask(mask=Ellipsis) for k in sg.metadata.present_group_names}
+            return MaskCollection._blank_from_mask_types(
+                sg.metadata.present_group_names
             )
         else:
-            # Keep user provided mask. If no mask provided for a particle type
-            # use Ellipsis (no mask).
-            mask_collection = MaskCollection(
-                **{
-                    name: mask
-                    if isinstance(
-                        mask := getattr(self.extra_mask, name, Ellipsis), LazyMask
-                    )
-                    else LazyMask(mask=mask)
-                    for name in sg.metadata.present_group_names
-                }
-            )
-        return mask_collection
+            # Keep user provided mask.
+            assert isinstance(self.extra_mask, MaskCollection)  # placate mypy
+            return self.extra_mask
 
     @property
     def _mask_index(self) -> Optional[Union[int, list[int]]]:
@@ -869,7 +857,7 @@ class SOAP(_HaloCatalogue):
                     )._particle_dataset._group_nr_bound[mask]
                 return mask
 
-            return LazyMask(mask_function=lazy_mask, combinable=False)
+            return LazyMask(mask_function=lazy_mask)
 
         return MaskCollection(
             **{
@@ -1257,7 +1245,7 @@ class Velociraptor(_HaloCatalogue):
                     )._particle_dataset._particle_ids[mask]
                 return mask
 
-            return LazyMask(mask_function=lazy_mask, combinable=False)
+            return LazyMask(mask_function=lazy_mask)
 
         return MaskCollection(
             **{
@@ -1876,7 +1864,7 @@ class Caesar(_HaloCatalogue):
                 )
                 return mask
 
-            return LazyMask(mask_function=lazy_mask, combinable=False)
+            return LazyMask(mask_function=lazy_mask)
 
         return MaskCollection(
             **{

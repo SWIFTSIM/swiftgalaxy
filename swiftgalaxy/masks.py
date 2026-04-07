@@ -13,6 +13,7 @@ selection of particles of different types for use with
 """
 
 from copy import deepcopy
+from warnings import warn
 from typing import Optional, Union, Callable, TYPE_CHECKING
 from types import EllipsisType
 import numpy as np
@@ -465,7 +466,7 @@ class MaskCollection(object):
         """
         return MaskCollection(**{k: deepcopy(v) for k, v in self._masks.items()})
 
-    def combine(
+    def combined_with(
         self,
         other_mask_collection: "MaskCollection",
         *,
@@ -476,7 +477,7 @@ class MaskCollection(object):
 
         ``data[this_mask.<type>.mask][other_mask.<type>.mask]`` and
         ``data[combined_mask.<type>.mask]`` are equivalent, where
-        ``combined_mask = this_mask.combine(other_mask)``.
+        ``combined_mask = this_mask.combined_with(other_mask)``.
 
         Parameters
         ----------
@@ -488,8 +489,14 @@ class MaskCollection(object):
             metadata.
         """
         return_collection = {}
-        all_keys = set(self._masks.keys()) | set(other_mask_collection._masks.keys())
-        for k in all_keys:
+        if not set(other_mask_collection._masks.keys()).issubset(
+            set(self._masks.keys())
+        ):
+            extra_fields = set(
+                other_mask_collection._masks.keys() - set(self._masks.keys())
+            )
+            warn(f"Unexpected fields {extra_fields} in `other_mask_collection`.")
+        for k in self._masks.keys():
             this_mask = getattr(self, k)
             other_mask = getattr(other_mask_collection, k, None)
             return_collection[k] = (
