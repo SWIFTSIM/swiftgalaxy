@@ -432,7 +432,7 @@ class MaskCollection(object):
             return self._masks[attr]
         except KeyError:
             raise AttributeError(
-                f"Attribute {attr} not found (and not a key of `_masks`)"
+                f"'MaskCollection' has no attribute '{attr}' (and not a key of `_masks`)"
             )
 
     def __copy__(self) -> "MaskCollection":
