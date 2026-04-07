@@ -60,6 +60,7 @@ class LazyMask(object):
     _mask: MaskType
     _evaluated: bool
     _sg: "Optional[SWIFTGalaxy]"
+    _mask_type: "Optional[str]"
     _combinable: bool
 
     def __init__(
@@ -81,6 +82,7 @@ class LazyMask(object):
             self._mask_function = mask_function
             self._evaluated = True
         self._sg = sg
+        self._mask_type = None  # intended for MaskCollection to set
         self._combinable = combinable
         return
 
@@ -91,30 +93,23 @@ class LazyMask(object):
             self._mask = self._mask_function(self._sg)
             self._evaluated = True
 
-    def _make_combinable(self, sg: "SWIFTGalaxy", mask_type: str) -> None:
+    def _make_combinable(self) -> None:
         """
         Ensure that the mask can have an arbitrary second mask applied to combine them.
 
         This is done implicitly if the mask is not already evaluated, or explicitly
         otherwise.
-
-        Parameters
-        ----------
-        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that mask applies to.
-
-        mask_type : str
-            The particle type that this mask applies to.
         """
         # need to convert to an integer mask to combine
         # (boolean is insufficient in case of re-ordering masks)
-        if sg._spatial_mask is None:
+        assert self._sg is not None  # placate mypy
+        if self._sg._spatial_mask is None:
             # get a count of particles in the box
-            num_part = getattr(sg.metadata, f"n_{mask_type}")
+            num_part = getattr(self._sg.metadata, f"n_{self._mask_type}")
         else:  # sg._spatial_mask is not None
             # get a count of particles in the spatial mask region
             num_part = np.sum(
-                sg._spatial_mask.get_masked_counts_offsets()[0][mask_type]
+                self._sg._spatial_mask.get_masked_counts_offsets()[0][self._mask_type]
             )
         if self._mask_function is not None:
             old_mask_function = self._mask_function  # need reference to the current one
@@ -123,7 +118,7 @@ class LazyMask(object):
             self._mask = np.arange(num_part)[self._mask]
         self._combinable = True
 
-    def _combined_with(self, other_mask: "LazyMask", mask_type: str) -> "LazyMask":
+    def _combined_with(self, other_mask: "LazyMask") -> "LazyMask":
         """
         Combine two lazy masks into one, avoiding evaluating them.
 
@@ -135,9 +130,6 @@ class LazyMask(object):
         ----------
         other_mask : ~swiftgalaxy.masks.LazyMask
             The second mask to combine.
-
-        mask_type : str
-            The particle type that this mask applies to.
 
         Returns
         -------
@@ -175,7 +167,7 @@ class LazyMask(object):
                 The combined mask.
             """
             if not self._combinable:
-                self._make_combinable(sg=sg, mask_type=mask_type)
+                self._make_combinable()
             assert isinstance(self.mask, np.ndarray)  # placate mypy
             assert self.mask.dtype == int
             return self.mask[other_mask.mask]
@@ -391,9 +383,10 @@ class MaskCollection(object):
             if isinstance(v, LazyMask):
                 setattr(self, k, v)
             elif v is None:
-                pass
+                setattr(self, k, LazyMask(mask=Ellipsis))
             else:
                 setattr(self, k, LazyMask(mask=v))
+            getattr(self, k)._mask_type = k
         return
 
     def __getattr__(self, attr: str) -> None:
@@ -495,7 +488,7 @@ class MaskCollection(object):
                 # both are masks, combine
                 this_mask = getattr(self, k)
                 other_mask = getattr(other_mask_collection, k)
-                return_collection[k] = this_mask._combined_with(other_mask, mask_type=k)
+                return_collection[k] = this_mask._combined_with(other_mask)
             else:
                 # one xor other is mask, assign
                 if isinstance(getattr(self, k), LazyMask):

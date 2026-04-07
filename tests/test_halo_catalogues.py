@@ -208,7 +208,7 @@ class TestHaloCatalogues:
         sg = SWIFTGalaxy(toysnap["toysnap_filename"], hf)
         generated_extra_mask = sg._extra_mask
         for particle_type in _present_particle_types.values():
-            assert getattr(generated_extra_mask, particle_type) is None
+            assert getattr(generated_extra_mask, particle_type).mask is Ellipsis
 
     def test_get_user_extra_mask(self, hf, toysnap):
         """Check that extra masks of different kinds have the right shape or type."""
@@ -221,19 +221,19 @@ class TestHaloCatalogues:
         sg = SWIFTGalaxy(toysnap["toysnap_filename"], hf)
         generated_extra_mask = sg._extra_mask
         for particle_type in _present_particle_types.values():
-            if getattr(generated_extra_mask, particle_type) is None:
+            if getattr(generated_extra_mask, particle_type).mask is Ellipsis:
                 assert (
-                    dict(gas=100, dark_matter=None, stars=100, black_holes=_n_bh_1)[
+                    dict(gas=100, dark_matter=Ellipsis, stars=100, black_holes=_n_bh_1)[
                         particle_type
                     ]
-                    is None
+                    is Ellipsis
                 )
             else:
                 assert (
                     getattr(generated_extra_mask, particle_type).mask.sum()
-                    == dict(gas=100, dark_matter=None, stars=100, black_holes=_n_bh_1)[
-                        particle_type
-                    ]
+                    == dict(
+                        gas=100, dark_matter=Ellipsis, stars=100, black_holes=_n_bh_1
+                    )[particle_type]
                 )
 
     def test_centre(self, hf):
@@ -653,7 +653,7 @@ class TestVelociraptorWithSWIFTGalaxy:
                 ),
             )
             for ptype in _present_particle_types.values():
-                getattr(sg._extra_mask, ptype)._make_combinable(sg, ptype)
+                getattr(sg._extra_mask, ptype)._make_combinable()
                 assert np.all(
                     getattr(sg_from_sgs._extra_mask, ptype).mask
                     == getattr(sg._extra_mask, ptype).mask
@@ -893,7 +893,7 @@ class TestCaesarWithSWIFTGalaxy:
                 ),
             )
             for ptype in _present_particle_types.values():
-                getattr(sg._extra_mask, ptype)._make_combinable(sg, ptype)
+                getattr(sg._extra_mask, ptype)._make_combinable()
                 assert np.all(
                     getattr(sg_from_sgs._extra_mask, ptype).mask
                     == getattr(sg._extra_mask, ptype).mask
@@ -1354,7 +1354,7 @@ class TestSOAPWithSWIFTGalaxy:
                 ),
             )
             for ptype in _present_particle_types.values():
-                getattr(sg._extra_mask, ptype)._make_combinable(sg, ptype)
+                getattr(sg._extra_mask, ptype)._make_combinable()
                 assert np.all(
                     getattr(sg_from_sgs._extra_mask, ptype).mask
                     == getattr(sg._extra_mask, ptype).mask
