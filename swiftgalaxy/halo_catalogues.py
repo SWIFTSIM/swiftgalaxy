@@ -299,7 +299,7 @@ class _HaloCatalogue(ABC):
         elif self.extra_mask is None:
             mask_collection = MaskCollection(
                 **{
-                    k: LazyMask(mask=Ellipsis, sg=sg, mask_type=k)
+                    k: LazyMask(mask=Ellipsis, mask_type=k)
                     for k in sg.metadata.present_group_names
                 }
             )
@@ -312,7 +312,7 @@ class _HaloCatalogue(ABC):
                     if isinstance(
                         mask := getattr(self.extra_mask, name, Ellipsis), LazyMask
                     )
-                    else LazyMask(mask=mask, sg=sg, mask_type=name)
+                    else LazyMask(mask=mask, mask_type=name)
                     for name in sg.metadata.present_group_names
                 }
             )
@@ -873,7 +873,7 @@ class SOAP(_HaloCatalogue):
                 return mask
 
             return LazyMask(
-                mask_function=lazy_mask, sg=sg, combinable=False, mask_type=group_name
+                mask_function=lazy_mask, combinable=False, mask_type=group_name
             )
 
         return MaskCollection(
@@ -1263,7 +1263,7 @@ class Velociraptor(_HaloCatalogue):
                 return mask
 
             return LazyMask(
-                mask_function=lazy_mask, sg=sg, combinable=False, mask_type=group_name
+                mask_function=lazy_mask, combinable=False, mask_type=group_name
             )
 
         return MaskCollection(
@@ -1884,7 +1884,7 @@ class Caesar(_HaloCatalogue):
                 return mask
 
             return LazyMask(
-                mask_function=lazy_mask, sg=sg, combinable=False, mask_type=group_name
+                mask_function=lazy_mask, combinable=False, mask_type=group_name
             )
 
         return MaskCollection(
