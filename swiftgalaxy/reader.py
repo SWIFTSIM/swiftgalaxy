@@ -1924,11 +1924,7 @@ class SWIFTGalaxy(SWIFTDataset):
             particle_metadata = getattr(sg.metadata, f"{particle_name}_properties")
             particle_dataset_helper = getattr(self, particle_name)
             new_particle_dataset_helper = getattr(sg, particle_name)
-            mask = getattr(
-                mask_collection,
-                particle_name,
-                LazyMask(mask=Ellipsis),
-            )
+            mask = getattr(mask_collection, particle_name, LazyMask(mask=Ellipsis))
             getattr(sg, particle_name)._mask_dataset(mask)
             for field_name in particle_metadata.field_names:
                 if particle_dataset_helper._is_namedcolumns(field_name):
@@ -2330,10 +2326,8 @@ class SWIFTGalaxy(SWIFTDataset):
             them from the :class:`swiftgalaxy.masks.MaskCollection`.
         """
         for particle_name in self.metadata.present_group_names:
-            mask = getattr(mask_collection, particle_name, None)
-            if mask is not None:
+            if (mask := getattr(mask_collection, particle_name, None)) is not None:
                 getattr(self, particle_name)._mask_dataset(mask)
-        assert self._extra_mask is not None
         self._extra_mask = self._extra_mask.combine(mask_collection, sg=self)
         return
 
