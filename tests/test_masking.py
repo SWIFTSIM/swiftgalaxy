@@ -532,3 +532,12 @@ class TestLazyMask:
         lm = LazyMask(mask=None)
         assert lm == lm
         assert not lm != lm
+
+    def test_combine_without_sg_fails(self):
+        """Check that trying to combine masks without a SWIFTGalaxy reference fails."""
+        lm1 = LazyMask(mask=None)
+        lm2 = LazyMask(mask=None)
+        with pytest.raises(
+            ValueError, match="LazyMask must have associated SWIFTGalaxy"
+        ):
+            lm1._combined_with(lm2)

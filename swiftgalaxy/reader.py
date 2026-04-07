@@ -804,10 +804,11 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
         """
         mask_collection = MaskCollection(
             **{
-                k: None if k != self.group_name else mask
+                k: Ellipsis if k != self.group_name else mask
                 for k in self.metadata.present_group_names
             }
         )
+        mask_collection._update_sg(self)
         return getattr(
             self._swiftgalaxy._data_copy(mask_collection=mask_collection),
             self.group_name,
@@ -851,9 +852,7 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
             The data with any masks applied.
         """
         mask = getattr(self._swiftgalaxy._extra_mask, self._particle_dataset.group_name)
-        if mask is not None:
-            return data[mask.mask]
-        return data
+        return data[mask.mask]
 
     def _mask_dataset(self, mask: LazyMask) -> None:
         """
@@ -1672,11 +1671,9 @@ class SWIFTGalaxy(SWIFTDataset):
             self._extra_mask = self.halo_catalogue._get_extra_mask(self)
         else:
             self._extra_mask = MaskCollection(
-                **{
-                    k: LazyMask(mask=Ellipsis, sg=self)
-                    for k in self.metadata.present_group_names
-                }
+                **{k: Ellipsis for k in self.metadata.present_group_names}
             )
+            self._extra_mask._update_sg(self)
 
         if auto_recentre and self.halo_catalogue is not None:
             self.recentre(self.halo_catalogue.centre)
@@ -1793,7 +1790,11 @@ class SWIFTGalaxy(SWIFTDataset):
         )
         if _extra_mask is not None:
             sg._extra_mask = _extra_mask
-            sg._extra_mask._update_sg(sg)
+        else:
+            sg._extra_mask = MaskCollection(
+                **{k: Ellipsis for k in sg.metadata.present_group_names}
+            )
+        sg._extra_mask._update_sg(sg)
         if _coordinate_like_transform is not None:
             sg._coordinate_like_transform = _coordinate_like_transform
         if _velocity_like_transform is not None:
@@ -1929,11 +1930,10 @@ class SWIFTGalaxy(SWIFTDataset):
             particle_metadata = getattr(sg.metadata, f"{particle_name}_properties")
             particle_dataset_helper = getattr(self, particle_name)
             new_particle_dataset_helper = getattr(sg, particle_name)
-            mask = (
-                getattr(mask_collection, particle_name)
-                if mask_collection is not None
-                and getattr(mask_collection, particle_name) is not None
-                else LazyMask(mask=Ellipsis)
+            mask = getattr(
+                mask_collection,
+                particle_name,
+                LazyMask(mask=Ellipsis, sg=sg, mask_type=particle_name),
             )
             getattr(sg, particle_name)._mask_dataset(mask)
             for field_name in particle_metadata.field_names:
@@ -2338,7 +2338,7 @@ class SWIFTGalaxy(SWIFTDataset):
             them from the :class:`swiftgalaxy.masks.MaskCollection`.
         """
         for particle_name in self.metadata.present_group_names:
-            mask = getattr(mask_collection, particle_name)
+            mask = getattr(mask_collection, particle_name, None)
             if mask is not None:
                 getattr(self, particle_name)._mask_dataset(mask)
         assert self._extra_mask is not None

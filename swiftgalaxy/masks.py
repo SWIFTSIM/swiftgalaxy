@@ -53,7 +53,11 @@ class LazyMask(object):
     combinable : bool
         If ``True``, it declares that for this mask ``data[this_mask][other_mask]`` is
         equivalent to ``data[this_mask[other_mask]]``. This usually means that it is an
-        array of indices to select from ``data``.
+        array of integer indices to select from ``data``.
+
+    mask_type : str, default: ``None``
+        The :mod:`swiftsimio` "group_type" (e.g. ``"gas"``, ``"dark_matter"``, etc.) that
+        this mask applies to.
     """
 
     _mask_function: Optional[Callable]
@@ -69,6 +73,7 @@ class LazyMask(object):
         mask_function: Optional[Callable] = None,
         sg: "Optional[SWIFTGalaxy]" = None,
         combinable: bool = False,
+        mask_type: Optional[str] = None,
     ) -> None:
         if mask_function is None and mask is None:
             self._mask = None
@@ -82,7 +87,7 @@ class LazyMask(object):
             self._mask_function = mask_function
             self._evaluated = True
         self._sg = sg
-        self._mask_type = None  # intended for MaskCollection to set
+        self._mask_type = mask_type
         self._combinable = combinable
         return
 
@@ -136,18 +141,13 @@ class LazyMask(object):
         ~swiftgalaxy.masks.LazyMask
             The combined mask.
         """
-        if self._sg is not None and other_mask._sg is not None:
+        if self._sg is None:
+            raise ValueError(
+                "LazyMask must have associated SWIFTGalaxy to use _combined_with."
+            )
+        if other_mask._sg is not None:
             assert self._sg is other_mask._sg, (
                 "Masks must be for same SWIFTGalaxy to be combined."
-            )
-            sg = self._sg
-        elif self._sg is not None:
-            sg = self._sg
-        elif other_mask._sg is not None:
-            sg = other_mask._sg
-        else:
-            raise ValueError(
-                "At least one of LazyMask must have associated SWIFTGalaxy to combine."
             )
 
         # may as well always defer evaluating combination until it's asked for
@@ -166,7 +166,12 @@ class LazyMask(object):
             assert self.mask.dtype == int
             return self.mask[other_mask.mask]
 
-        return LazyMask(mask_function=lazy_mask, sg=sg, combinable=True)
+        return LazyMask(
+            mask_function=lazy_mask,
+            sg=self._sg,
+            combinable=True,
+            mask_type=self._mask_type,
+        )
 
     @property
     def mask(self) -> MaskType:
@@ -199,12 +204,14 @@ class LazyMask(object):
                 mask_function=self._mask_function,
                 sg=self._sg,
                 combinable=self._combinable,
+                mask_type=self._mask_type,
             )
         else:
             return LazyMask(
                 mask_function=self._mask_function,
                 sg=self._sg,
                 combinable=self._combinable,
+                mask_type=self._mask_type,
             )
 
     def __deepcopy__(self, memo: Optional[dict] = None) -> "LazyMask":
@@ -229,13 +236,15 @@ class LazyMask(object):
                 mask=deepcopy(self._mask),
                 mask_function=deepcopy(self._mask_function),
                 sg=self._sg,
-                combinable=self._combinable,
+                combinable=deepcopy(self._combinable),
+                mask_type=deepcopy(self._mask_type),
             )
         else:
             return LazyMask(
                 mask_function=deepcopy(self._mask_function),
                 sg=self._sg,
-                combinable=self._combinable,
+                combinable=deepcopy(self._combinable),
+                mask_type=deepcopy(self._mask_type),
             )
 
     def __eq__(self, other: object) -> bool:
@@ -316,16 +325,12 @@ class LazyMask(object):
         """
         Update the :class:`~swiftgalaxy.reader.SWIFTGalaxy` associated to the mask.
 
-        This :class:`~swiftgalaxy.masks.LazyMask` may have a reference to a
-        :class:`~swiftgalaxy.reader.SWIFTGalaxy`. If present, this function updates the
-        reference to a new one.
-
         Parameters
         ----------
         sg : ~swiftgalaxy.reader.SWIFTGalaxy
             The new :class:`~swiftgalaxy.reader.SWIFTGalaxy` reference to store.
         """
-        self._sg = sg if self._sg is not None else None
+        self._sg = sg
 
 
 class MaskCollection(object):
@@ -369,27 +374,32 @@ class MaskCollection(object):
         )
     """
 
+    _masks: dict[str, LazyMask]
+
     def __init__(
         self,
         **kwargs: Optional[Union[MaskType, LazyMask]],
     ) -> None:
+        self._masks = {}
         for k, v in kwargs.items():
             if isinstance(v, LazyMask):
-                setattr(self, k, v)
-            elif v is None:
-                setattr(self, k, LazyMask(mask=Ellipsis))
+                self._masks[k] = v
+                assert getattr(self, k)._mask_type == k, (
+                    f"Provide {k} `LazyMask`'s `mask_type` argument when initializing."
+                )
+            elif v is None:  # a literal `None` mask would resolve like `np.newaxis`
+                self._masks[k] = LazyMask(mask=Ellipsis, mask_type=k)
             else:
-                setattr(self, k, LazyMask(mask=v))
-            getattr(self, k)._mask_type = k
+                self._masks[k] = LazyMask(mask=v, mask_type=k)
         return
 
-    def __getattr__(self, attr: str) -> None:
+    def __getattr__(self, attr: str) -> LazyMask:
         """
-        Return ``None`` if an attribute of the object doesn't exist.
+        Access masks as attributes.
 
-        This function is called if an attribute is asked for and not found.
-        Instead of the usual behaviour of raising a :exc:`AttributeError`,
-        ``None`` is returned.
+        This function is called if an attribute is asked for and not found. In this case
+        the ``_masks`` dictionary is checked for a key matching the requested
+        attribute. It is returned if found, else a ``AttributeError`` is raised as usual.
 
         Parameters
         ----------
@@ -398,11 +408,15 @@ class MaskCollection(object):
 
         Returns
         -------
-        None
-            If we reach calling this function the attribute is not found and we
-            return ``None``.
+        ~swiftgalaxy.masks.LazyMask
+            The requested :class:`~swiftgalaxy.masks.LazyMask` from the ``_masks``.
         """
-        return None
+        try:
+            return self._masks[attr]
+        except KeyError:
+            raise AttributeError(
+                f"Attribute {attr} not found (and not a key of `_masks`)"
+            )
 
     def __copy__(self) -> "MaskCollection":
         """
@@ -415,7 +429,7 @@ class MaskCollection(object):
         :class:`~swiftgalaxy.masks.MaskCollection`
             The copy of the :class:`~swiftgalaxy.masks.MaskCollection`.
         """
-        return MaskCollection(**self.__dict__)
+        return MaskCollection(**self._masks)
 
     def __deepcopy__(self, memo: Optional[dict] = None) -> "MaskCollection":
         """
@@ -433,7 +447,7 @@ class MaskCollection(object):
         :class:`~swiftgalaxy.masks.MaskCollection`
             The copy of the :class:`~swiftgalaxy.masks.MaskCollection`.
         """
-        return MaskCollection(**{k: deepcopy(v) for k, v in self.__dict__.items()})
+        return MaskCollection(**{k: deepcopy(v) for k, v in self._masks.items()})
 
     def _update_sg(self, sg: "SWIFTGalaxy") -> None:
         """
@@ -448,9 +462,8 @@ class MaskCollection(object):
         sg : ~swiftgalaxy.reader.SWIFTGalaxy
             The new :class:`~swiftgalaxy.reader.SWIFTGalaxy` reference to store.
         """
-        for v in self.__dict__.values():
-            if isinstance(v, LazyMask):
-                v._update_sg(sg)
+        for v in self._masks.values():
+            v._update_sg(sg)
 
     def combine(self, other_mask_collection: "MaskCollection") -> "MaskCollection":
         """
@@ -466,27 +479,13 @@ class MaskCollection(object):
             The other mask collection to combine with this one.
         """
         return_collection = {}
-        all_keys = set(self.__dict__.keys()) | set(
-            other_mask_collection.__dict__.keys()
-        )
+        all_keys = set(self._masks.keys()) | set(other_mask_collection._masks.keys())
         for k in all_keys:
-            if not (
-                isinstance(getattr(self, k), LazyMask)
-                or isinstance(getattr(other_mask_collection, k), LazyMask)
-            ):
-                # this is not a mask field, skip
-                continue
-            elif isinstance(getattr(self, k), LazyMask) and isinstance(
-                getattr(other_mask_collection, k), LazyMask
-            ):
-                # both are masks, combine
-                this_mask = getattr(self, k)
-                other_mask = getattr(other_mask_collection, k)
-                return_collection[k] = this_mask._combined_with(other_mask)
-            else:
-                # one xor other is mask, assign
-                if isinstance(getattr(self, k), LazyMask):
-                    return_collection[k] = getattr(self, k)
-                else:  # isinstance(getattr(other_mask_collection, k), LazyMask)
-                    return_collection[k] = getattr(other_mask_collection, k)
+            this_mask = getattr(self, k)
+            other_mask = getattr(other_mask_collection, k, None)
+            return_collection[k] = (
+                this_mask._combined_with(other_mask)
+                if other_mask is not None
+                else this_mask
+            )
         return MaskCollection(**return_collection)

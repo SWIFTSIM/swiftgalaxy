@@ -158,7 +158,7 @@ class TestCopyMaskCollection:
             black_holes=np.arange(3),
         )
         mc_copy = copy(mc)
-        assert set(mc_copy.__dict__.keys()) == set(mc.__dict__.keys())
+        assert set(mc_copy._masks.keys()) == set(mc._masks.keys())
         for k in ("gas", "dark_matter", "stars", "black_holes"):
             comparison = getattr(mc, k) == getattr(mc_copy, k)
             if type(comparison) is bool:
@@ -173,11 +173,15 @@ class TestCopyMaskCollection:
             dark_matter=np.s_[:20],
             stars=None,
             black_holes=np.arange(3),
-            lazy_evaluated=LazyMask(mask=np.ones(100, dtype=bool)),
-            lazy_unevaluated=LazyMask(mask_function=lambda: np.s_[:20]),
+            lazy_evaluated=LazyMask(
+                mask=np.ones(100, dtype=bool), mask_type="lazy_evaluated"
+            ),
+            lazy_unevaluated=LazyMask(
+                mask_function=lambda: np.s_[:20], mask_type="lazy_unevaluated"
+            ),
         )
         mc_copy = deepcopy(mc)
-        assert set(mc_copy.__dict__.keys()) == set(mc.__dict__.keys())
+        assert set(mc_copy._masks.keys()) == set(mc._masks.keys())
         for k in ("gas", "dark_matter", "stars", "black_holes"):
             comparison = getattr(mc, k) == getattr(mc_copy, k)
             if type(comparison) is bool:
@@ -186,6 +190,10 @@ class TestCopyMaskCollection:
                 assert all(comparison)
         assert all(mc.lazy_evaluated.mask == mc_copy.lazy_evaluated.mask)
         assert mc.lazy_unevaluated.mask == mc_copy.lazy_unevaluated.mask
+        for k in mc._masks.keys():
+            assert getattr(mc, k)._mask_type == k
+        for k in mc_copy._masks.keys():
+            assert getattr(mc_copy, k)._mask_type == k
 
 
 class TestCopyHaloCatalogue:
