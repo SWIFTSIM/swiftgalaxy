@@ -802,13 +802,9 @@ class _SWIFTGroupDatasetHelper(__SWIFTGroupDataset):
             A (possibly masked) copy of the
             :class:`~swiftgalaxy.reader._SWIFTGroupDatasetHelper` object.
         """
-        mask_collection = MaskCollection(
-            **{
-                k: Ellipsis if k != self.group_name else mask
-                for k in self.metadata.present_group_names
-            }
+        mask_collection = MaskCollection._from_mask_types_and_values(
+            self.metadata.present_group_names, sg=self, masks={self.group_name: mask}
         )
-        mask_collection._update_sg(self)
         return getattr(
             self._swiftgalaxy._data_copy(mask_collection=mask_collection),
             self.group_name,
@@ -1667,13 +1663,12 @@ class SWIFTGalaxy(SWIFTDataset):
                     ),
                 )
         if self.halo_catalogue is not None:
-            # in server mode we don't have a halo_catalogue yet
             self._extra_mask = self.halo_catalogue._get_extra_mask(self)
         else:
-            self._extra_mask = MaskCollection(
-                **{k: Ellipsis for k in self.metadata.present_group_names}
+            # in server mode we don't have a halo_catalogue yet
+            self._extra_mask = MaskCollection._blank_from_mask_types(
+                self.metadata.present_group_names, sg=self
             )
-            self._extra_mask._update_sg(self)
 
         if auto_recentre and self.halo_catalogue is not None:
             self.recentre(self.halo_catalogue.centre)
@@ -1791,10 +1786,9 @@ class SWIFTGalaxy(SWIFTDataset):
         if _extra_mask is not None:
             sg._extra_mask = _extra_mask
         else:
-            sg._extra_mask = MaskCollection(
-                **{k: Ellipsis for k in sg.metadata.present_group_names}
+            sg._extra_mask = MaskCollection._blank_from_mask_types(
+                sg.metadata.present_group_names, sg=sg
             )
-        sg._extra_mask._update_sg(sg)
         if _coordinate_like_transform is not None:
             sg._coordinate_like_transform = _coordinate_like_transform
         if _velocity_like_transform is not None:
@@ -1988,9 +1982,7 @@ class SWIFTGalaxy(SWIFTDataset):
                         particle_dataset_helper._cylindrical_velocities[c][mask.mask]
                     )
         if mask_collection is not None:
-            mask_collection._update_sg(sg)
             sg._extra_mask = sg._extra_mask.combine(mask_collection)
-        sg._extra_mask._update_sg(sg)
         return sg
 
     def rotate(self, rotation: Rotation) -> None:

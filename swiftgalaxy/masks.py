@@ -145,10 +145,6 @@ class LazyMask(object):
             raise ValueError(
                 "LazyMask must have associated SWIFTGalaxy to use _combined_with."
             )
-        if other_mask._sg is not None:
-            assert self._sg is other_mask._sg, (
-                "Masks must be for same SWIFTGalaxy to be combined."
-            )
 
         # may as well always defer evaluating combination until it's asked for
         def lazy_mask() -> NDArray:
@@ -321,17 +317,6 @@ class LazyMask(object):
         """
         return not self.__eq__(other)
 
-    def _update_sg(self, sg: "SWIFTGalaxy") -> None:
-        """
-        Update the :class:`~swiftgalaxy.reader.SWIFTGalaxy` associated to the mask.
-
-        Parameters
-        ----------
-        sg : ~swiftgalaxy.reader.SWIFTGalaxy
-            The new :class:`~swiftgalaxy.reader.SWIFTGalaxy` reference to store.
-        """
-        self._sg = sg
-
 
 class MaskCollection(object):
     """
@@ -385,13 +370,73 @@ class MaskCollection(object):
             if isinstance(v, LazyMask):
                 self._masks[k] = v
                 assert getattr(self, k)._mask_type == k, (
-                    f"Provide {k} `LazyMask`'s `mask_type` argument when initializing."
+                    f"`LazyMask` for {k} has non-matching "
+                    f"`mask_type` {getattr(self, k)._mark_type}."
                 )
             elif v is None:  # a literal `None` mask would resolve like `np.newaxis`
                 self._masks[k] = LazyMask(mask=Ellipsis, mask_type=k)
             else:
                 self._masks[k] = LazyMask(mask=v, mask_type=k)
         return
+
+    @classmethod
+    def _blank_from_mask_types(
+        cls, mask_types: tuple[str], sg: "Optional[SWIFTGalaxy]" = None
+    ) -> "MaskCollection":
+        """
+        Make a set of masks for a list of types where all the masks are just ``Ellipsis``.
+
+        Parameters
+        ----------
+        mask_types : tuple
+            The list of mask types (strings, e.g. ``"gas"``, ``"dark_matter"``, etc.).
+
+        sg : ~swiftgalaxy.reader.SWIFTGalaxy
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` to associate with the masks.
+
+        Returns
+        -------
+        MaskCollection
+            The collection of masks with all masks set to ``Ellipsis``.
+        """
+        return cls._from_mask_types_and_values(mask_types=mask_types, sg=sg)
+
+    @classmethod
+    def _from_mask_types_and_values(
+        cls,
+        mask_types: tuple[str],
+        sg: "Optional[SWIFTGalaxy]" = None,
+        masks: dict[str, MaskType] = {},
+    ) -> "MaskCollection":
+        """
+        Make a set of masks for a list of mask types, defaulting to ``Ellipsis``.
+
+        Parameters
+        ----------
+        mask_types : tuple
+            The list of mask types (strings, e.g. ``"gas"``, ``"dark_matter"``, etc.).
+
+        sg : ~swiftgalaxy.reader.SWIFTGalaxy
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` to associate with the masks.
+
+        masks : dict
+            A dictionary with keys corresponding to (some of) ``mask_types`` and values
+            containing the masks (boolean array, slice, index array, etc. - not
+            :class:`~swiftgalaxy.masks.LazyMask`) to use for those keys. Any elements of
+            ``mask_types`` without a corresponding entry in this dictionary get a default
+            mask value of ``Ellipsis``.
+
+        Returns
+        -------
+        MaskCollection
+            The collection of masks set to provided values, or the default ``Ellipsis``.
+        """
+        return cls(
+            **{
+                k: LazyMask(mask=masks.get(k, Ellipsis), sg=sg, mask_type=k)
+                for k in mask_types
+            }
+        )
 
     def __getattr__(self, attr: str) -> LazyMask:
         """
@@ -448,22 +493,6 @@ class MaskCollection(object):
             The copy of the :class:`~swiftgalaxy.masks.MaskCollection`.
         """
         return MaskCollection(**{k: deepcopy(v) for k, v in self._masks.items()})
-
-    def _update_sg(self, sg: "SWIFTGalaxy") -> None:
-        """
-        Update the :class:`~swiftgalaxy.reader.SWIFTGalaxy` associated to masks.
-
-        :class:`~swiftgalaxy.masks.LazyMask` instances contained in this collection may
-        have a reference to a :class:`~swiftgalaxy.reader.SWIFTGalaxy`. This function
-        updates the reference to a new one.
-
-        Parameters
-        ----------
-        sg : ~swiftgalaxy.reader.SWIFTGalaxy
-            The new :class:`~swiftgalaxy.reader.SWIFTGalaxy` reference to store.
-        """
-        for v in self._masks.values():
-            v._update_sg(sg)
 
     def combine(self, other_mask_collection: "MaskCollection") -> "MaskCollection":
         """

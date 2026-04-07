@@ -298,18 +298,24 @@ class _HaloCatalogue(ABC):
             )
         elif self.extra_mask is None:
             mask_collection = MaskCollection(
-                **{k: Ellipsis for k in sg.metadata.present_group_names}
+                **{
+                    k: LazyMask(mask=Ellipsis, sg=sg, mask_type=k)
+                    for k in sg.metadata.present_group_names
+                }
             )
         else:
             # Keep user provided mask. If no mask provided for a particle type
             # use None (no mask).
             mask_collection = MaskCollection(
                 **{
-                    name: getattr(self.extra_mask, name, None)
+                    name: mask
+                    if isinstance(
+                        mask := getattr(self.extra_mask, name, Ellipsis), LazyMask
+                    )
+                    else LazyMask(mask=mask, sg=sg, mask_type=name)
                     for name in sg.metadata.present_group_names
                 }
             )
-        mask_collection._update_sg(sg)
         return mask_collection
 
     @property
