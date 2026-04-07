@@ -90,7 +90,7 @@ class LazyMask(object):
         """Force evaluation the mask function."""
         if not self._evaluated:
             assert self._mask_function is not None  # placate mypy
-            self._mask = self._mask_function(self._sg)
+            self._mask = self._mask_function()
             self._evaluated = True
 
     def _make_combinable(self) -> None:
@@ -113,7 +113,7 @@ class LazyMask(object):
             )
         if self._mask_function is not None:
             old_mask_function = self._mask_function  # need reference to the current one
-            self._mask_function = lambda sg: np.arange(num_part)[old_mask_function(sg)]
+            self._mask_function = lambda: np.arange(num_part)[old_mask_function()]
         if self._evaluated:
             self._mask = np.arange(num_part)[self._mask]
         self._combinable = True
@@ -151,15 +151,9 @@ class LazyMask(object):
             )
 
         # may as well always defer evaluating combination until it's asked for
-        def lazy_mask(_sg: "SWIFTGalaxy") -> NDArray:
+        def lazy_mask() -> NDArray:
             """
             Evaluate a mask combining two existing masks.
-
-            Parameters
-            ----------
-            _sg : ~swiftgalaxy.reader.SWIFTGalaxy
-                A reference to a :class:`~swiftgalaxy.reader.SWIFTGalaxy` that is made
-                available when evaluating the mask.
 
             Returns
             -------

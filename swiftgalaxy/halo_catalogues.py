@@ -834,7 +834,7 @@ class SOAP(_HaloCatalogue):
                 The generated function that evaluates a mask.
             """
 
-            def lazy_mask(active_sg: "SWIFTGalaxy") -> NDArray:
+            def lazy_mask() -> NDArray:
                 """
                 Evaluate a mask that selects bound particles.
 
@@ -843,27 +843,20 @@ class SOAP(_HaloCatalogue):
 
                 This function must mask the data (``group_nr_bound``) that it has loaded.
 
-                Parameters
-                ----------
-                active_sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-                    The :class:`~swiftgalaxy.reader.SWIFTGalaxy` instance being masked.
-
                 Returns
                 -------
                 :class:`~numpy.ndarray`
                     The mask that selects bound particles.
                 """
                 mask = getattr(
-                    active_sg, group_name
+                    sg, group_name
                 )._particle_dataset.group_nr_bound.to_value(
                     u.dimensionless
                 ) == self.input_halos.halo_catalogue_index.to_value(u.dimensionless)
                 if mask_loaded:
                     # mask the group_nr_bound array that we loaded
-                    getattr(
-                        active_sg, group_name
-                    )._particle_dataset._group_nr_bound = getattr(
-                        active_sg, group_name
+                    getattr(sg, group_name)._particle_dataset._group_nr_bound = getattr(
+                        sg, group_name
                     )._particle_dataset._group_nr_bound[mask]
                 return mask
 
@@ -1214,7 +1207,7 @@ class Velociraptor(_HaloCatalogue):
                 The generated function that evaluates a mask.
             """
 
-            def lazy_mask(active_sg: "SWIFTGalaxy") -> NDArray:
+            def lazy_mask() -> NDArray:
                 """
                 Evaluate a mask that selects bound particles.
 
@@ -1222,11 +1215,6 @@ class Velociraptor(_HaloCatalogue):
                 IDs.
 
                 This function must mask the data (``particle_ids``) that it has loaded.
-
-                Parameters
-                ----------
-                active_sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-                    The :class:`~swiftgalaxy.reader.SWIFTGalaxy` instance being masked.
 
                 Returns
                 -------
@@ -1245,7 +1233,7 @@ class Velociraptor(_HaloCatalogue):
                     else 1.0
                 )
                 mask = np.isin(
-                    getattr(active_sg, group_name)._particle_dataset.particle_ids,
+                    getattr(sg, group_name)._particle_dataset.particle_ids,
                     cosmo_array(
                         particles.particle_ids,
                         comoving=False,
@@ -1255,10 +1243,8 @@ class Velociraptor(_HaloCatalogue):
                 )
                 if mask_loaded:
                     # mask the particle_ids that we loaded
-                    getattr(
-                        active_sg, group_name
-                    )._particle_dataset._particle_ids = getattr(
-                        active_sg, group_name
+                    getattr(sg, group_name)._particle_dataset._particle_ids = getattr(
+                        sg, group_name
                     )._particle_dataset._particle_ids[mask]
                 return mask
 
@@ -1850,7 +1836,7 @@ class Caesar(_HaloCatalogue):
                 The generated function that evaluates a mask.
             """
 
-            def lazy_mask(active_sg: "SWIFTGalaxy") -> Union[NDArray, slice]:
+            def lazy_mask() -> Union[NDArray, slice]:
                 """
                 Evaluate a mask that selects bound particles.
 
@@ -1858,11 +1844,6 @@ class Caesar(_HaloCatalogue):
                 read in the spatial mask.
 
                 This function must mask the data that it has loaded, but it loads nothing.
-
-                Parameters
-                ----------
-                active_sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-                    The :class:`~swiftgalaxy.reader.SWIFTGalaxy` instance being masked.
 
                 Returns
                 -------
@@ -1873,15 +1854,13 @@ class Caesar(_HaloCatalogue):
                     return null_slice
                 mask = getattr(cat, list_name)
                 mask = mask[
-                    in_one_of_ranges(mask, getattr(active_sg._spatial_mask, group_name))
+                    in_one_of_ranges(mask, getattr(sg._spatial_mask, group_name))
                 ]
                 mask = np.isin(
                     np.concatenate(
                         [
                             np.arange(start, end)
-                            for start, end in getattr(
-                                active_sg._spatial_mask, group_name
-                            )
+                            for start, end in getattr(sg._spatial_mask, group_name)
                         ]
                     ),
                     mask,

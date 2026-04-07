@@ -405,9 +405,9 @@ class TestLazyMask:
         """Check that accessing mask triggers evaluation if lazy."""
         assert lm._evaluated is False
         assert not hasattr(lm, "_mask")
-        assert (lm.mask == lm._mask_function(None)).all()
+        assert (lm.mask == lm._mask_function()).all()
         assert lm._evaluated
-        assert (lm._mask == lm._mask_function(None)).all()
+        assert (lm._mask == lm._mask_function()).all()
 
     def test_access_not_lazy(self):
         """Check that accessing the mask works for a non-lazy mask."""
@@ -422,8 +422,8 @@ class TestLazyMask:
         assert not hasattr(lm, "_mask")
         lm._evaluate()
         assert lm._evaluated
-        assert (lm.mask == lm._mask_function(None)).all()
-        assert (lm._mask == lm._mask_function(None)).all()
+        assert (lm.mask == lm._mask_function()).all()
+        assert (lm._mask == lm._mask_function()).all()
 
     def test_trigger_eval_once_only(self):
         """Check that we can't trigger mask evaluation repeatedly."""
@@ -433,14 +433,9 @@ class TestLazyMask:
 
             call_counter: int = 0
 
-            def __call__(self, arg: None):
+            def __call__(self):
                 """
                 Call the class to behave like a simple mask function.
-
-                Parameters
-                ----------
-                arg : None
-                    An argument is required but its value is unused.
 
                 Returns
                 -------
@@ -475,7 +470,7 @@ class TestLazyMask:
         # now copy after evaluating
         lm_evaluated_copy = copy(lm)
         assert lm_evaluated_copy._evaluated
-        assert (lm_evaluated_copy._mask == lm._mask_function(None)).all()
+        assert (lm_evaluated_copy._mask == lm._mask_function()).all()
         assert lm_evaluated_copy._mask_function is lm._mask_function
         # and test a non-lazy mask
         m = np.ones(10, dtype=bool)
@@ -498,7 +493,7 @@ class TestLazyMask:
         # now copy after evaluating
         lm_evaluated_copy = deepcopy(lm)
         assert lm_evaluated_copy._evaluated
-        assert (lm_evaluated_copy._mask == lm._mask_function(None)).all()
+        assert (lm_evaluated_copy._mask == lm._mask_function()).all()
         assert lm_evaluated_copy._mask_function is lm._mask_function
         # and test a non-lazy mask
         m = np.ones(10, dtype=bool)
