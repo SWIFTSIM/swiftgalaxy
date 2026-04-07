@@ -6,12 +6,9 @@ import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
 from swiftsimio import cosmo_quantity
-from swiftgalaxy import SWIFTGalaxy, MaskCollection
+from swiftgalaxy import MaskCollection, SWIFTGalaxy
 from swiftgalaxy.demo_data import (
     ToyHF,
-    _create_toysnap,
-    _remove_toysnap,
-    _toysnap_filename,
     _present_particle_types,
     _n_g_all,
     _n_dm_all,
@@ -22,6 +19,27 @@ from swiftgalaxy.masks import LazyMask
 
 abstol_nd = 1.0e-4
 reltol_nd = 1.0e-4
+
+
+def assert_no_data_loaded(sg: SWIFTGalaxy) -> None:
+    """
+    Iterate over all datasets and asserts that they are ``None``.
+
+    Parameters
+    ----------
+    sg : ~swiftgalaxy.reader.SWIFTGalaxy
+        The :class:`~swiftgalaxy.reader.SWIFTGalaxy` to check for loaded data.
+
+    Raises
+    ------
+    AssertionError
+        If any datasets are not ``None``.
+    """
+    for ptype in sg.metadata.present_group_names:
+        for field_name in getattr(sg, ptype).group_metadata.field_names:
+            assert (
+                getattr(getattr(sg, ptype)._particle_dataset, f"_{field_name}") is None
+            )
 
 
 class TestMaskingSWIFTGalaxy:
@@ -100,44 +118,31 @@ class TestMaskingSWIFTGalaxy:
             neutral_before[mask], neutral, rtol=reltol_nd, atol=abstol_nd
         )
 
-    def test_mask_without_spatial_mask(self, tmp_path_factory):
+    def test_mask_without_spatial_mask(self, sg_no_hf):
         """
         Check that if we have no masks we read everything in the box (and warn about it).
 
         Then that we can still apply an extra mask, and a second one (there's specific
         logic for applying two consecutively).
         """
-        toysnap_filename = (
-            tmp_path_factory.mktemp(_toysnap_filename.parent) / _toysnap_filename.name
-        )
-        try:
-            _create_toysnap(snapfile=toysnap_filename)
-            sg = SWIFTGalaxy(
-                toysnap_filename,
-                None,  # no halo_catalogue is easiest way to get no mask
-                transforms_like_coordinates={"coordinates", "extra_coordinates"},
-                transforms_like_velocities={"velocities", "extra_velocities"},
-            )
-            # check that extra mask is blank for all particle types:
-            assert sg._extra_mask.gas is None
-            assert sg._extra_mask.dark_matter is None
-            assert sg._extra_mask.stars is None
-            assert sg._extra_mask.black_holes is None
-            # check that cell mask is blank for all particle types:
-            assert sg._spatial_mask is None
-            # check that we read all the particles:
-            assert sg.gas.masses.size == _n_g_all
-            assert sg.dark_matter.masses.size == _n_dm_all
-            assert sg.stars.masses.size == _n_s_all
-            assert sg.black_holes.masses.size == _n_bh_all
-            # now apply an extra mask
-            sg.mask_particles(MaskCollection(gas=np.s_[:1000]))
-            assert sg.gas.masses.size == 1000
-            # and the second consecutive one
-            sg.mask_particles(MaskCollection(gas=np.s_[:100]))
-            assert sg.gas.masses.size == 100
-        finally:
-            _remove_toysnap(snapfile=toysnap_filename)
+        # check that extra mask is blank for all particle types:
+        assert sg_no_hf._extra_mask.gas.mask is Ellipsis
+        assert sg_no_hf._extra_mask.dark_matter.mask is Ellipsis
+        assert sg_no_hf._extra_mask.stars.mask is Ellipsis
+        assert sg_no_hf._extra_mask.black_holes.mask is Ellipsis
+        # check that cell mask is blank for all particle types:
+        assert sg_no_hf._spatial_mask is None
+        # check that we read all the particles:
+        assert sg_no_hf.gas.masses.size == _n_g_all
+        assert sg_no_hf.dark_matter.masses.size == _n_dm_all
+        assert sg_no_hf.stars.masses.size == _n_s_all
+        assert sg_no_hf.black_holes.masses.size == _n_bh_all
+        # now apply an extra mask
+        sg_no_hf.mask_particles(MaskCollection(gas=np.s_[:1000]))
+        assert sg_no_hf.gas.masses.size == 1000
+        # and the second consecutive one
+        sg_no_hf.mask_particles(MaskCollection(gas=np.s_[:100]))
+        assert sg_no_hf.gas.masses.size == 100
 
     def test_repeated_copy_mask(self, sg_soap):
         """
@@ -192,6 +197,58 @@ class TestMaskingSWIFTGalaxy:
                 scale_exponent=1,
             )
         ).all()
+
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_chained_masking(self, sg, before_load):
+        """
+        Check that we can mask repeatedly.
+
+        Check both the case with (sg) and without (sg_no_hf) a spatial mask.
+        """
+        ids_before_sg = sg.gas.particle_ids
+        if before_load:
+            sg.gas._particle_dataset._particle_ids = None
+            del sg._extra_mask.gas._mask
+            sg._extra_mask.gas._evaluated = False
+        sg.mask_particles(MaskCollection(gas=np.s_[::2]))
+        sg.mask_particles(MaskCollection(gas=np.s_[::2]))
+        assert_allclose_units(ids_before_sg[::2][::2], sg.gas.particle_ids)
+
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_chained_masking_without_spatial(self, sg_no_hf, before_load):
+        """
+        Check that we can mask repeatedly.
+
+        Check both the case with (sg) and without (sg_no_hf) a spatial mask.
+        """
+        ids_before_sg_no_hf = sg_no_hf.gas.particle_ids
+        if before_load:
+            sg_no_hf.gas._particle_dataset._particle_ids = None
+        sg_no_hf.mask_particles(MaskCollection(gas=np.s_[::2]))
+        sg_no_hf.mask_particles(MaskCollection(gas=np.s_[::2]))
+        assert_allclose_units(ids_before_sg_no_hf[::2][::2], sg_no_hf.gas.particle_ids)
+
+    def test_mask_combining_is_lazy(self, sg_soap):
+        """Check that no data loading is triggered by lazy masking."""
+        assert sg_soap.halo_catalogue.extra_mask == "bound_only"
+        # check that setting bound_only mask hasn't triggered any data reads:
+        assert_no_data_loaded(sg_soap)
+        # combine existing lazy mask with a new mask:
+        sg_soap.mask_particles(MaskCollection(gas=np.s_[:100]))
+        # check that applying the new mask hasn't triggered any data reads:
+        assert_no_data_loaded(sg_soap)
+        # also check the copy-masking case
+        new_sg = sg_soap[MaskCollection(dark_matter=np.s_[:100])]
+        assert_no_data_loaded(new_sg)
+        # now check that we can load successfully:
+        sg_soap.gas.group_nr_bound
+        assert (
+            sg_soap.gas.group_nr_bound
+            == sg_soap.halo_catalogue.input_halos.halo_catalogue_index
+        ).all()
+        assert sg_soap.gas.group_nr_bound.size == 100
+        # and check we haven't loaded the DM group IDs, just to be sure:
+        assert sg_soap.dark_matter._particle_dataset._group_nr_bound is None
 
 
 class TestMaskingParticleDatasets:
@@ -391,25 +448,25 @@ class TestLazyMask:
         """Check that accessing mask triggers evaluation if lazy."""
         assert lm._evaluated is False
         assert not hasattr(lm, "_mask")
-        assert (lm.mask(None) == lm._mask_function(None)).all()
+        assert (lm.mask == lm._mask_function()).all()
         assert lm._evaluated
-        assert (lm._mask == lm._mask_function(None)).all()
+        assert (lm._mask == lm._mask_function()).all()
 
     def test_access_not_lazy(self):
         """Check that accessing the mask works for a non-lazy mask."""
         m = np.ones(10, dtype=bool)
         lm = LazyMask(mask=m)
         assert lm._evaluated
-        assert (lm.mask(None) == m).all()
+        assert (lm.mask == m).all()
 
     def test_manual_trigger_eval(self, lm):
         """Check that accessing mask triggers evaluation if lazy."""
         assert lm._evaluated is False
         assert not hasattr(lm, "_mask")
-        lm._evaluate(None)
+        lm._evaluate()
         assert lm._evaluated
-        assert (lm.mask(None) == lm._mask_function(None)).all()
-        assert (lm._mask == lm._mask_function(None)).all()
+        assert (lm.mask == lm._mask_function()).all()
+        assert (lm._mask == lm._mask_function()).all()
 
     def test_trigger_eval_once_only(self):
         """Check that we can't trigger mask evaluation repeatedly."""
@@ -419,14 +476,9 @@ class TestLazyMask:
 
             call_counter: int = 0
 
-            def __call__(self, arg: None):
+            def __call__(self):
                 """
                 Call the class to behave like a simple mask function.
-
-                Parameters
-                ----------
-                arg : None
-                    An argument is required but its value is unused.
 
                 Returns
                 -------
@@ -440,12 +492,12 @@ class TestLazyMask:
         lm = LazyMask(mask_function=mf)
         assert lm._evaluated is False
         # trigger a mask evaluation:
-        lm.mask(None)
+        lm.mask
         assert lm._evaluated is True
         assert mf.call_counter == 1
         # we shouldn't be able to trigger or force another mask evaluation:
-        lm.mask(None)
-        lm._evaluate(None)
+        lm.mask
+        lm._evaluate()
         assert mf.call_counter == 1
 
     def test_copy(self, lm):
@@ -456,12 +508,12 @@ class TestLazyMask:
         assert not hasattr(lm_unevaluated_copy, "_mask")
         assert lm_unevaluated_copy._mask_function is lm._mask_function
         # trigger evaluated
-        lm._evaluate(None)
+        lm._evaluate()
         assert lm._evaluated
         # now copy after evaluating
         lm_evaluated_copy = copy(lm)
         assert lm_evaluated_copy._evaluated
-        assert (lm_evaluated_copy._mask == lm._mask_function(None)).all()
+        assert (lm_evaluated_copy._mask == lm._mask_function()).all()
         assert lm_evaluated_copy._mask_function is lm._mask_function
         # and test a non-lazy mask
         m = np.ones(10, dtype=bool)
@@ -479,12 +531,12 @@ class TestLazyMask:
         assert not hasattr(lm_unevaluated_copy, "_mask")
         assert lm_unevaluated_copy._mask_function is lm._mask_function
         # trigger evaluated
-        lm._evaluate(None)
+        lm._evaluate()
         assert lm._evaluated
         # now copy after evaluating
         lm_evaluated_copy = deepcopy(lm)
         assert lm_evaluated_copy._evaluated
-        assert (lm_evaluated_copy._mask == lm._mask_function(None)).all()
+        assert (lm_evaluated_copy._mask == lm._mask_function()).all()
         assert lm_evaluated_copy._mask_function is lm._mask_function
         # and test a non-lazy mask
         m = np.ones(10, dtype=bool)
@@ -501,8 +553,8 @@ class TestLazyMask:
             ValueError, match="Cannot compare when one or more masks are not evaluated."
         ):
             lm == lm2
-        lm._evaluate(None)
-        lm2._evaluate(None)
+        lm._evaluate()
+        lm2._evaluate()
         assert lm == lm2
         lmn = LazyMask(mask=None)
         assert lm != lmn
@@ -514,7 +566,7 @@ class TestLazyMask:
             ValueError, match="Cannot compare when one or more masks are not evaluated."
         ):
             lm == m
-        lm._evaluate(None)
+        lm._evaluate()
         assert lm == m
         assert lm != np.zeros(10, dtype=bool)
 
@@ -523,3 +575,100 @@ class TestLazyMask:
         lm = LazyMask(mask=None)
         assert lm == lm
         assert not lm != lm
+
+    def test_make_combinable_evaluated(self, sg):
+        """Test that making a LazyMask 'combinable' results in an integer index array."""
+        lm = LazyMask(np.s_[:10])
+        assert not isinstance(lm.mask, np.ndarray)
+        assert not lm._combinable
+        lm._make_combinable(sg=sg, mask_type="gas")
+        assert lm._evaluated
+        assert isinstance(lm.mask, np.ndarray)
+        assert lm.mask.dtype == int
+        assert lm._combinable
+        assert len(lm.mask) == 10
+
+    def test_make_combinable_unevaluated(self, sg):
+        """Test that making a LazyMask 'combinable' results in an integer index array."""
+        lm = LazyMask(mask_function=lambda: np.s_[:10])
+        assert not lm._combinable
+        lm._make_combinable(sg=sg, mask_type="gas")
+        assert lm._combinable
+        assert not lm._evaluated
+        assert isinstance(lm.mask, np.ndarray)  # triggers evaluation
+        assert lm.mask.dtype == int
+        assert len(lm.mask) == 10
+
+    def test_combined_with(self, sg):
+        """Check that combining two masks results in 'chaining together' the masks."""
+        lm1 = LazyMask(mask=np.s_[::2])
+        lm2 = LazyMask(mask=np.s_[::2])
+        combined_lm = lm1._combined_with(lm2, sg=sg, mask_type="gas")
+        assert isinstance(combined_lm.mask, np.ndarray)
+        assert combined_lm.mask.dtype == int
+        assert sg._spatial_mask is not None
+        # expect length // 4 since we did [::2] twice:
+        assert (
+            combined_lm.mask.size
+            == np.sum(sg._spatial_mask.get_masked_counts_offsets()[0]["gas"]) // 4
+        )
+
+
+class TestMaskCollection:
+    """Tests for the MaskCollection class."""
+
+    def test_warning_for_unexpected_field_in_combining_mask_collections(self, sg):
+        """Check that trying to combine with a collection with extra fields warns."""
+        mc1 = MaskCollection(gas=Ellipsis)
+        mc2 = MaskCollection(gas=Ellipsis, dark_matter=Ellipsis)
+        with pytest.warns(UserWarning, match="Unexpected fields"):
+            mc1.combined_with(mc2, sg=sg)
+
+    def test_blank_from_mask_types(self):
+        """Test that a set of ``Ellipsis`` masks with desired names is created."""
+        mask_types = ("a", "b", "c")
+        mc = MaskCollection._blank_from_mask_types(mask_types)
+        assert len(mc._masks) == len(mask_types)
+        assert set(mc._masks.keys()) == set(mask_types)
+        for k in mask_types:
+            assert getattr(mc, k) == LazyMask(mask=Ellipsis)
+
+    def test_from_mask_types_and_values(self):
+        """Test that a set of masks with all desired names and mask values is created."""
+        mask_types = ("a", "b", "c")
+        values = {"a": np.s_[:10], "c": np.array([True, False], dtype=bool)}
+        mc = MaskCollection._from_mask_types_and_values(mask_types, values)
+        assert len(mc._masks) == len(mask_types)
+        assert set(mc._masks.keys()) == set(mask_types)
+        for k in mask_types:
+            if k in values:
+                assert getattr(mc, k) == LazyMask(mask=values[k])
+            else:
+                assert getattr(mc, k) == LazyMask(mask=Ellipsis)
+
+    def test_mask_not_found(self):
+        """Test that AttributeError is raised when a non-existant mask is requested."""
+        mc = MaskCollection(a=np.s_[:10])
+        assert "b" not in mc._masks.keys()
+        with pytest.raises(
+            AttributeError, match="'MaskCollection' has no attribute 'b'"
+        ):
+            mc.b
+
+    def test_combined_with(self, sg):
+        """Check that combining two masks results in 'chaining together' the masks."""
+        mc1 = MaskCollection(gas=np.s_[:10], dark_matter=np.s_[::2])
+        mc2 = MaskCollection(gas=np.s_[:5], dark_matter=np.s_[::2])
+        combined_mc = mc1.combined_with(mc2, sg=sg)
+        assert isinstance(combined_mc.gas.mask, np.ndarray)
+        assert combined_mc.gas.mask.dtype == int
+        assert combined_mc.gas.mask.size == 5
+        assert isinstance(combined_mc.dark_matter.mask, np.ndarray)
+        assert combined_mc.dark_matter.mask.dtype == int
+        assert sg._spatial_mask is not None
+        # expect length // 4 since we did [::2] twice:
+        assert (
+            combined_mc.dark_matter.mask.size
+            == np.sum(sg._spatial_mask.get_masked_counts_offsets()[0]["dark_matter"])
+            // 4
+        )

@@ -29,6 +29,13 @@ class TestCopySWIFTGalaxy:
             is None
         )
 
+    def test_copy_sg_without_mask(self, sg_no_hf):
+        """Test that we can handle copying when there is no mask."""
+        copy_hf = deepcopy(sg_no_hf)
+        assert copy_hf.mask is None
+        for ptype in copy_hf.metadata.present_group_names:
+            assert getattr(copy_hf._extra_mask, ptype).mask is Ellipsis
+
     @pytest.mark.parametrize("derived_coords_initialized", [True, False])
     def test_deepcopy_sg(self, sg, derived_coords_initialized):
         """Test that dataset arrays get copied on deep copy."""
@@ -151,7 +158,7 @@ class TestCopyMaskCollection:
             black_holes=np.arange(3),
         )
         mc_copy = copy(mc)
-        assert set(mc_copy.__dict__.keys()) == set(mc.__dict__.keys())
+        assert set(mc_copy._masks.keys()) == set(mc._masks.keys())
         for k in ("gas", "dark_matter", "stars", "black_holes"):
             comparison = getattr(mc, k) == getattr(mc_copy, k)
             if type(comparison) is bool:
@@ -167,30 +174,30 @@ class TestCopyMaskCollection:
             stars=None,
             black_holes=np.arange(3),
             lazy_evaluated=LazyMask(mask=np.ones(100, dtype=bool)),
-            lazy_unevaluated=LazyMask(mask_function=lambda x: np.s_[:20]),
+            lazy_unevaluated=LazyMask(mask_function=lambda: np.s_[:20]),
         )
         mc_copy = deepcopy(mc)
-        assert set(mc_copy.__dict__.keys()) == set(mc.__dict__.keys())
+        assert set(mc_copy._masks.keys()) == set(mc._masks.keys())
         for k in ("gas", "dark_matter", "stars", "black_holes"):
             comparison = getattr(mc, k) == getattr(mc_copy, k)
             if type(comparison) is bool:
                 assert comparison
             else:
                 assert all(comparison)
-        assert all(mc.lazy_evaluated.mask(None) == mc_copy.lazy_evaluated.mask(None))
-        assert mc.lazy_unevaluated.mask(None) == mc_copy.lazy_unevaluated.mask(None)
+        assert all(mc.lazy_evaluated.mask == mc_copy.lazy_evaluated.mask)
+        assert mc.lazy_unevaluated.mask == mc_copy.lazy_unevaluated.mask
 
 
 class TestCopyHaloCatalogue:
     """Test that halo catalogue classes can be copied."""
 
-    def test_copy(self, web_hf):
+    def test_copy_web_hf(self, web_hf):
         """Test that we can copy a halo catalogue object."""
         c = copy(web_hf)
         assert isinstance(c, type(web_hf))
         assert c is not web_hf
 
-    def test_deepcopy_sg(self, web_sg):
+    def test_deepcopy_web_sg(self, web_sg):
         """
         Test that we can deepcopy a swiftgalaxy object.
 

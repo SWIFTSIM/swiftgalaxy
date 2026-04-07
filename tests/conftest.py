@@ -533,6 +533,37 @@ def sgs_caesar(
 
 
 @pytest.fixture(scope="function")
+def sg_no_hf(tmp_path_factory: TempPathFactory) -> SWIFTGalaxy:
+    """
+    Make a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    With no halo catalogue. Useful to test no mask whatsoever.
+
+    Parameters
+    ----------
+    tmp_path_factory : TempPathFactory
+        Pytest fixture to create temporary directories.
+
+    Yields
+    ------
+    ~swiftgalaxy.reader.SWIFTGalaxy
+        A :class:`~swiftgalaxy.reader.SWIFTGalaxy` with no halo catalogue
+    """
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    toysnap_filename = tp / _toysnap_filename.name
+    _create_toysnap(snapfile=toysnap_filename)
+
+    yield SWIFTGalaxy(
+        toysnap_filename,
+        None,  # no halo_catalogue is easiest way to get no mask
+        transforms_like_coordinates={"coordinates", "extra_coordinates"},
+        transforms_like_velocities={"velocities", "extra_velocities"},
+    )
+
+    _remove_toysnap(snapfile=toysnap_filename)
+
+
+@pytest.fixture(scope="function")
 def soap(tmp_path_factory: TempPathFactory) -> SOAP:
     """
     Make a :class:`~swiftgalaxy.halo_catalogues.SOAP` catalogue.
@@ -1590,14 +1621,9 @@ def lm() -> LazyMask:
         A lazy mask.
     """
 
-    def mf(arg: None) -> np.ndarray:
+    def mf() -> np.ndarray:
         """
         Create a simple mask function.
-
-        Parameters
-        ----------
-        arg : None
-            An argument is required, but for this test object its value is unused.
 
         Returns
         -------
