@@ -1526,7 +1526,7 @@ class SWIFTGalaxy(SWIFTDataset):
     coordinates_dataset_name: str
     velocities_dataset_name: str
     _spatial_mask: SWIFTMask
-    _extra_mask: Optional[MaskCollection]
+    _extra_mask: MaskCollection
     _data_server: "SWIFTGalaxy"
 
     def __init__(
@@ -1672,7 +1672,10 @@ class SWIFTGalaxy(SWIFTDataset):
             self._extra_mask = self.halo_catalogue._get_extra_mask(self)
         else:
             self._extra_mask = MaskCollection(
-                **{k: None for k in self.metadata.present_group_names}
+                **{
+                    k: LazyMask(mask=Ellipsis, sg=self)
+                    for k in self.metadata.present_group_names
+                }
             )
 
         if auto_recentre and self.halo_catalogue is not None:
@@ -1984,8 +1987,8 @@ class SWIFTGalaxy(SWIFTDataset):
                     new_particle_dataset_helper._cylindrical_velocities[c] = (
                         particle_dataset_helper._cylindrical_velocities[c][mask.mask]
                     )
-        assert sg._extra_mask is not None
         if mask_collection is not None:
+            mask_collection._update_sg(sg)
             sg._extra_mask = sg._extra_mask.combine(mask_collection)
         sg._extra_mask._update_sg(sg)
         return sg

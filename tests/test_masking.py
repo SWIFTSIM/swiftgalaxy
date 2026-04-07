@@ -105,10 +105,10 @@ class TestMaskingSWIFTGalaxy:
         logic for applying two consecutively).
         """
         # check that extra mask is blank for all particle types:
-        assert sg_no_hf._extra_mask.gas is None
-        assert sg_no_hf._extra_mask.dark_matter is None
-        assert sg_no_hf._extra_mask.stars is None
-        assert sg_no_hf._extra_mask.black_holes is None
+        assert sg_no_hf._extra_mask.gas.mask is Ellipsis
+        assert sg_no_hf._extra_mask.dark_matter.mask is Ellipsis
+        assert sg_no_hf._extra_mask.stars.mask is Ellipsis
+        assert sg_no_hf._extra_mask.black_holes.mask is Ellipsis
         # check that cell mask is blank for all particle types:
         assert sg_no_hf._spatial_mask is None
         # check that we read all the particles:
@@ -176,6 +176,36 @@ class TestMaskingSWIFTGalaxy:
                 scale_exponent=1,
             )
         ).all()
+
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_chained_masking(self, sg, before_load):
+        """
+        Check that we can mask repeatedly.
+
+        Check both the case with (sg) and without (sg_no_hf) a spatial mask.
+        """
+        ids_before_sg = sg.gas.particle_ids
+        if before_load:
+            sg.gas._particle_dataset._particle_ids = None
+            del sg._extra_mask.gas._mask
+            sg._extra_mask.gas._evaluated = False
+        sg.mask_particles(MaskCollection(gas=np.s_[::2]))
+        sg.mask_particles(MaskCollection(gas=np.s_[::2]))
+        assert_allclose_units(ids_before_sg[::2][::2], sg.gas.particle_ids)
+
+    @pytest.mark.parametrize("before_load", (True, False))
+    def test_chained_masking_without_spatial(self, sg_no_hf, before_load):
+        """
+        Check that we can mask repeatedly.
+
+        Check both the case with (sg) and without (sg_no_hf) a spatial mask.
+        """
+        ids_before_sg_no_hf = sg_no_hf.gas.particle_ids
+        if before_load:
+            sg_no_hf.gas._particle_dataset._particle_ids = None
+        sg_no_hf.mask_particles(MaskCollection(gas=np.s_[::2]))
+        sg_no_hf.mask_particles(MaskCollection(gas=np.s_[::2]))
+        assert_allclose_units(ids_before_sg_no_hf[::2][::2], sg_no_hf.gas.particle_ids)
 
 
 class TestMaskingParticleDatasets:

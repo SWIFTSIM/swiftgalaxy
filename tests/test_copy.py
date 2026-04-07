@@ -31,11 +31,10 @@ class TestCopySWIFTGalaxy:
 
     def test_copy_sg_without_mask(self, sg_no_hf):
         """Test that we can handle copying when there is no mask."""
-        print(sg_no_hf._extra_mask)
         copy_hf = deepcopy(sg_no_hf)
         assert copy_hf.mask is None
         for ptype in copy_hf.metadata.present_group_names:
-            assert getattr(copy_hf._extra_mask, ptype) is None
+            assert getattr(copy_hf._extra_mask, ptype).mask is Ellipsis
 
     @pytest.mark.parametrize("derived_coords_initialized", [True, False])
     def test_deepcopy_sg(self, sg, derived_coords_initialized):

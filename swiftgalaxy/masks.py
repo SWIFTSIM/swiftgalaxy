@@ -91,9 +91,7 @@ class LazyMask(object):
             self._mask = self._mask_function(self._sg)
             self._evaluated = True
 
-    def _make_combinable(
-        self, sg: "Optional[SWIFTGalaxy]", active_sg: "SWIFTGalaxy", mask_type: str
-    ) -> None:
+    def _make_combinable(self, sg: "SWIFTGalaxy", mask_type: str) -> None:
         """
         Ensure that the mask can have an arbitrary second mask applied to combine them.
 
@@ -103,21 +101,14 @@ class LazyMask(object):
         Parameters
         ----------
         sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that mask applies to, if
-            available.
-
-        active_sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` instance being masked right now,
-            used to determine particle counts if `sg` is unavailable.
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that mask applies to.
 
         mask_type : str
             The particle type that this mask applies to.
         """
         # need to convert to an integer mask to combine
         # (boolean is insufficient in case of re-ordering masks)
-        if sg is None:
-            num_part = getattr(active_sg.metadata, f"n_{mask_type}")
-        elif sg._spatial_mask is None:
+        if sg._spatial_mask is None:
             # get a count of particles in the box
             num_part = getattr(sg.metadata, f"n_{mask_type}")
         else:  # sg._spatial_mask is not None
@@ -131,6 +122,65 @@ class LazyMask(object):
         if self._evaluated:
             self._mask = np.arange(num_part)[self._mask]
         self._combinable = True
+
+    def _combined_with(self, other_mask: "LazyMask", mask_type: str) -> "LazyMask":
+        """
+        Combine two lazy masks into one, avoiding evaluating them.
+
+        The first mask may be "combinable", which means that the second mask can be
+        applied directly to the first. If this flag is not set we first need to make it
+        combinable.
+
+        Parameters
+        ----------
+        other_mask : ~swiftgalaxy.masks.LazyMask
+            The second mask to combine.
+
+        mask_type : str
+            The particle type that this mask applies to.
+
+        Returns
+        -------
+        ~swiftgalaxy.masks.LazyMask
+            The combined mask.
+        """
+        if self._sg is not None and other_mask._sg is not None:
+            assert self._sg is other_mask._sg, (
+                "Masks must be for same SWIFTGalaxy to be combined."
+            )
+            sg = self._sg
+        elif self._sg is not None:
+            sg = self._sg
+        elif other_mask._sg is not None:
+            sg = other_mask._sg
+        else:
+            raise ValueError(
+                "At least one of LazyMask must have associated SWIFTGalaxy to combine."
+            )
+
+        # may as well always defer evaluating combination until it's asked for
+        def lazy_mask(_sg: "SWIFTGalaxy") -> NDArray:
+            """
+            Evaluate a mask combining two existing masks.
+
+            Parameters
+            ----------
+            _sg : ~swiftgalaxy.reader.SWIFTGalaxy
+                A reference to a :class:`~swiftgalaxy.reader.SWIFTGalaxy` that is made
+                available when evaluating the mask.
+
+            Returns
+            -------
+            :class:`~numpy.ndarray`
+                The combined mask.
+            """
+            if not self._combinable:
+                self._make_combinable(sg=sg, mask_type=mask_type)
+            assert isinstance(self.mask, np.ndarray)  # placate mypy
+            assert self.mask.dtype == int
+            return self.mask[other_mask.mask]
+
+        return LazyMask(mask_function=lazy_mask, sg=sg, combinable=True)
 
     @property
     def mask(self) -> MaskType:
@@ -445,9 +495,7 @@ class MaskCollection(object):
                 # both are masks, combine
                 this_mask = getattr(self, k)
                 other_mask = getattr(other_mask_collection, k)
-                return_collection[k] = _combine_lazy_masks(
-                    this_mask, other_mask, mask_type=k
-                )
+                return_collection[k] = this_mask._combined_with(other_mask, mask_type=k)
             else:
                 # one xor other is mask, assign
                 if isinstance(getattr(self, k), LazyMask):
@@ -455,64 +503,3 @@ class MaskCollection(object):
                 else:  # isinstance(getattr(other_mask_collection, k), LazyMask)
                     return_collection[k] = getattr(other_mask_collection, k)
         return MaskCollection(**return_collection)
-
-
-def _combine_lazy_masks(
-    first_mask: LazyMask, second_mask: LazyMask, mask_type: str
-) -> LazyMask:
-    """
-    Combine two lazy masks into one, avoiding evaluating them.
-
-    The first mask may be "combinable", which means that the second mask can be applied
-    directly to the first. If this flag is not set we first need to make it combinable.
-
-    Parameters
-    ----------
-    first_mask : ~swiftgalaxy.masks.LazyMask
-        The first mask to combine.
-
-    second_mask : ~swiftgalaxy.masks.LazyMask
-        The second mask to combine.
-
-    mask_type : str
-        The particle type that this mask applies to.
-
-    Returns
-    -------
-    ~swiftgalaxy.masks.LazyMask
-        The combined mask.
-    """
-    if first_mask._sg is not None and second_mask._sg is not None:
-        assert first_mask._sg is second_mask._sg, (
-            "Masks must be for same SWIFTGalaxy to be combined."
-        )
-        sg = first_mask._sg
-    elif first_mask._sg is not None:
-        sg = first_mask._sg
-    elif second_mask._sg is not None:
-        sg = second_mask._sg
-    else:
-        sg = None
-
-    # may as well always defer evaluating combination until it's asked for
-    def lazy_mask(active_sg: "SWIFTGalaxy") -> NDArray:
-        """
-        Evaluate a mask combining two existing masks.
-
-        Parameters
-        ----------
-        active_sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
-            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` instance being masked.
-
-        Returns
-        -------
-        :class:`~numpy.ndarray`
-            The combined mask.
-        """
-        if not first_mask._combinable:
-            first_mask._make_combinable(sg=sg, active_sg=active_sg, mask_type=mask_type)
-        assert isinstance(first_mask.mask, np.ndarray)  # placate mypy
-        assert first_mask.mask.dtype == int
-        return first_mask.mask[second_mask.mask]
-
-    return LazyMask(mask_function=lazy_mask, sg=sg, combinable=True)

@@ -653,6 +653,7 @@ class TestVelociraptorWithSWIFTGalaxy:
                 ),
             )
             for ptype in _present_particle_types.values():
+                getattr(sg._extra_mask, ptype)._make_combinable(sg, ptype)
                 assert np.all(
                     getattr(sg_from_sgs._extra_mask, ptype).mask
                     == getattr(sg._extra_mask, ptype).mask
@@ -892,16 +893,11 @@ class TestCaesarWithSWIFTGalaxy:
                 ),
             )
             for ptype in _present_particle_types.values():
-                if isinstance(getattr(sg_from_sgs._extra_mask, ptype), slice):
-                    assert (
-                        getattr(sg_from_sgs._extra_mask, ptype).mask
-                        == getattr(sg._extra_mask, ptype).mask
-                    )
-                else:
-                    assert np.all(
-                        getattr(sg_from_sgs._extra_mask, ptype).mask
-                        == getattr(sg._extra_mask, ptype).mask
-                    )
+                getattr(sg._extra_mask, ptype)._make_combinable(sg, ptype)
+                assert np.all(
+                    getattr(sg_from_sgs._extra_mask, ptype).mask
+                    == getattr(sg._extra_mask, ptype).mask
+                )
 
     @pytest.mark.parametrize("group_type", ["halo", "galaxy"])
     def test_incomplete_catalogue(self, toysnap, group_type):
@@ -1358,6 +1354,7 @@ class TestSOAPWithSWIFTGalaxy:
                 ),
             )
             for ptype in _present_particle_types.values():
+                getattr(sg._extra_mask, ptype)._make_combinable(sg, ptype)
                 assert np.all(
                     getattr(sg_from_sgs._extra_mask, ptype).mask
                     == getattr(sg._extra_mask, ptype).mask
