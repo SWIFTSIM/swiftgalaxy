@@ -2298,17 +2298,17 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def get_bound_only_mask(self) -> MaskCollection:
         """
-        Get a ``bound_only`` mask for this galaxy.
+        Get a ``bound_only`` mask for this galaxy aligned with current particle
+        selection without applying it to the loaded data.
 
-        The returned mask is evaluated lazily in the same way as the internal
-        ``_extra_mask``. The returned masks are mapped into the index
-        space of the currently selected particles so they can be applied directly to
-        currently loaded arrays.
+        The returned mask is evaluated lazily and aligned to currently selected
+        particles so it can be applied directly to currently loaded arrays.
 
         Returns
         -------
         :class:`~swiftgalaxy.masks.MaskCollection`
-            The ``bound_only`` mask collection.
+            The ``bound_only`` mask collection, aligned to the currently selected
+            particle indices and with the current extra mask applied.
 
         Raises
         ------
@@ -2320,35 +2320,81 @@ class SWIFTGalaxy(SWIFTDataset):
                 "Cannot get a bound_only mask without an associated halo catalogue."
             )
 
-        bound_only_mask = self.halo_catalogue._generate_bound_only_mask(
-            self, mask_loaded=False
+        # Build the bound mask in spatial-only index space by temporarily
+        # disabling extra masking and restoring all cached field data afterwards.
+        original_extra_mask = self._extra_mask
+        spatial_only_extra_mask = MaskCollection._blank_from_mask_types(
+            self.metadata.present_group_names
         )
+        cached_particle_fields = {}
+        try:
+            self._extra_mask = spatial_only_extra_mask
 
+            # Ensure bound-mask backends read in spatial space by clearing any
+            # cached, already-masked fields before evaluating lazy masks.
+            for group_name in self.metadata.present_group_names:
+                particle_dataset = getattr(self, group_name)._particle_dataset
+                particle_metadata = getattr(
+                    particle_dataset.metadata, f"{group_name}_properties"
+                )
+                cached_particle_fields[group_name] = {
+                    field_name: getattr(particle_dataset, f"_{field_name}")
+                    for field_name in particle_metadata.field_names
+                }
+                for field_name in particle_metadata.field_names:
+                    setattr(particle_dataset, f"_{field_name}", None)
+
+            bound_only_mask_spatial = self.halo_catalogue._generate_bound_only_mask(
+                self, mask_loaded=False
+            )
+            bound_only_mask_spatial_values = {
+                group_name: deepcopy(getattr(bound_only_mask_spatial, group_name).mask)
+                for group_name in self.metadata.present_group_names
+            }
+        finally:
+            self._extra_mask = original_extra_mask
+            for group_name, fields in cached_particle_fields.items():
+                particle_dataset = getattr(self, group_name)._particle_dataset
+                for field_name, field_data in fields.items():
+                    setattr(particle_dataset, f"_{field_name}", field_data)
+
+        # Map spatial-only bound mask to current selection space by lazy composition.
+        # For each particle type, create a lazy mask that maps the spatial bound indices
+        # to indices in the currently selected particles.
         def n_spatial(group_name: str) -> int:
             """Get number of particles after spatial masking for one particle type."""
             if self._spatial_mask is None:
                 return int(getattr(self.metadata, f"n_{group_name}"))
-            return int(np.sum(self._spatial_mask.get_masked_counts_offsets()[0][group_name]))
+            return int(
+                np.sum(
+                    self._spatial_mask.get_masked_counts_offsets()[0][group_name]
+                )
+            )
 
         current_bound_only_mask = {}
         for group_name in self.metadata.present_group_names:
-            base_mask = getattr(bound_only_mask, group_name)
-            current_mask = getattr(self._extra_mask, group_name)
+            spatial_bound_mask = bound_only_mask_spatial_values[group_name]
+            current_extra_mask = getattr(self._extra_mask, group_name)
 
-            def lazy_mask(
+            def lazy_map(
                 *,
                 _group_name: str = group_name,
-                _base_mask: LazyMask = base_mask,
-                _current_mask: LazyMask = current_mask,
+                _spatial_bound: np.ndarray = spatial_bound_mask,
+                _current_extra: LazyMask = current_extra_mask,
             ) -> np.ndarray:
-                """Map the spatial bound-only mask into the current mask index space."""
+                """Map spatial bound indices to current particle selection."""
                 n_spatial_particles = n_spatial(_group_name)
-                base_mask_bool = np.zeros(n_spatial_particles, dtype=bool)
-                base_mask_bool[_base_mask.mask] = True
-                current_spatial_indices = np.arange(n_spatial_particles)[_current_mask.mask]
-                return base_mask_bool[current_spatial_indices]
+                # Get which particles in spatial space are bound
+                spatial_bound_bool = np.zeros(n_spatial_particles, dtype=bool)
+                spatial_bound_bool[_spatial_bound] = True
+                # Get which spatial particles are in current selection
+                current_spatial_indices = np.arange(n_spatial_particles)[
+                    _current_extra.mask
+                ]
+                # Map: which current particles are bound?
+                return spatial_bound_bool[current_spatial_indices]
 
-            current_bound_only_mask[group_name] = LazyMask(mask_function=lazy_mask)
+            current_bound_only_mask[group_name] = LazyMask(mask_function=lazy_map)
 
         return MaskCollection(**current_bound_only_mask)
 
