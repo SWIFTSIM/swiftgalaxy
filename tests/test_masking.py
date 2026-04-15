@@ -302,13 +302,29 @@ class TestMaskingSWIFTGalaxy:
             assert np.array_equal(got_mask, expected_bound)
 
     def test_get_bound_only_mask_relative_to_current_default(self, sg):
-        """Check that default relative_to_current=True gives all-True for bound-only SG."""
+        """Check that default bound_only mask is all-True for bound-only SWIFTGalaxy instances."""
         current_bound_only = sg.get_bound_only_mask()
         for ptype in sg.metadata.present_group_names:
             got_mask = getattr(current_bound_only, ptype).mask
             assert got_mask.shape == getattr(sg, ptype).particle_ids.shape
             assert got_mask.dtype == bool
             assert got_mask.all()
+
+    def test_get_bound_only_after_manual_masking(self, sg):
+        """Check that we can get a bound_only mask after applying a manual mask."""
+        sg.mask_particles(
+            MaskCollection(
+                gas=np.s_[::3],
+                dark_matter=np.s_[::-2],
+                stars=np.s_[::2],
+                black_holes=np.s_[...],
+            )
+        )
+        current_bound_only = sg.get_bound_only_mask()
+        for ptype in sg.metadata.present_group_names:
+            got_mask = getattr(current_bound_only, ptype).mask
+            assert got_mask.shape == getattr(sg, ptype).particle_ids.shape
+            assert got_mask.dtype == bool
 
 
 class TestMaskingParticleDatasets:

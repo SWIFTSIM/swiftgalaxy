@@ -2296,21 +2296,14 @@ class SWIFTGalaxy(SWIFTDataset):
                     setattr(dataset, f"_{field_name}", field_data)
         return
 
-    def get_bound_only_mask(self, relative_to_current: bool = True) -> MaskCollection:
+    def get_bound_only_mask(self) -> MaskCollection:
         """
         Get a ``bound_only`` mask for this galaxy.
 
         The returned mask is evaluated lazily in the same way as the internal
-        ``_extra_mask``. By default, the returned masks are mapped into the index
+        ``_extra_mask``. The returned masks are mapped into the index
         space of the currently selected particles so they can be applied directly to
         currently loaded arrays.
-
-        Parameters
-        ----------
-        relative_to_current : :obj:`bool`, default: ``True``
-            If ``True``, map the returned ``bound_only`` masks into the index space of
-            currently selected particles (i.e. after any existing extra masks).
-            If ``False``, return masks in the index space after only spatial masking.
 
         Returns
         -------
@@ -2330,9 +2323,6 @@ class SWIFTGalaxy(SWIFTDataset):
         bound_only_mask = self.halo_catalogue._generate_bound_only_mask(
             self, mask_loaded=False
         )
-
-        if not relative_to_current:
-            return bound_only_mask
 
         def n_spatial(group_name: str) -> int:
             """Get number of particles after spatial masking for one particle type."""
