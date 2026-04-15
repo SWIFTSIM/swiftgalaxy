@@ -2298,8 +2298,10 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def get_bound_only_mask(self) -> MaskCollection:
         """
-        Get a ``bound_only`` mask for this galaxy aligned with current particle
-        selection without applying it to the loaded data.
+        Get a ``bound_only`` mask for this galaxy.
+
+        The mask is aligned with the current particle selection without applying
+        it to loaded data.
 
         The returned mask is evaluated lazily and aligned to currently selected
         particles so it can be applied directly to currently loaded arrays.
@@ -2354,28 +2356,40 @@ class SWIFTGalaxy(SWIFTDataset):
         finally:
             # First, restore _extra_mask
             self._extra_mask = original_extra_mask
-            
+
             # Now restore cached fields and fix any that were loaded during generation
             for group_name, fields in cached_particle_fields.items():
                 particle_dataset = getattr(self, group_name)._particle_dataset
                 particle_dataset_helper = getattr(self, group_name)
-                
+
                 for field_name, field_data_originally in fields.items():
-                    field_currently_cached = getattr(particle_dataset, f"_{field_name}", None)
-                    
+                    field_currently_cached = getattr(
+                        particle_dataset, f"_{field_name}", None
+                    )
+
                     if field_data_originally is not None:
                         # Field was originally loaded, restore it
-                        setattr(particle_dataset, f"_{field_name}", field_data_originally)
+                        setattr(
+                            particle_dataset, f"_{field_name}", field_data_originally
+                        )
                     elif field_currently_cached is not None:
-                        # Field was originally not loaded but got loaded during bound generation.
-                        # Re-apply the mask so it's correct IF the mask filters data.
-                        masked_data = particle_dataset_helper._apply_data_mask(field_currently_cached)
-                        
-                        # Only cache the masked result if the mask actually changed the size
-                        # (i.e., filtered particles). If sizes are the same, the data wasn't
-                        # supposed to be loaded, so don't cache it (keeps lazy tests happy).
-                        if (hasattr(masked_data, 'shape') and hasattr(field_currently_cached, 'shape') 
-                            and masked_data.shape != field_currently_cached.shape):
+                        # Field was originally not loaded but got loaded during
+                        # bound generation.
+                        # Re-apply the mask so it is correct if the mask filters
+                        # data.
+                        masked_data = particle_dataset_helper._apply_data_mask(
+                            field_currently_cached
+                        )
+
+                        # Only cache the masked result if the mask actually
+                        # changed the size (i.e., filtered particles). If sizes
+                        # are the same, the data was not supposed to be loaded,
+                        # so do not cache it.
+                        if (
+                            hasattr(masked_data, "shape")
+                            and hasattr(field_currently_cached, "shape")
+                            and masked_data.shape != field_currently_cached.shape
+                        ):
                             # Mask filtered data, so cache the masked version
                             setattr(particle_dataset, f"_{field_name}", masked_data)
                         else:
@@ -2384,18 +2398,27 @@ class SWIFTGalaxy(SWIFTDataset):
                             setattr(particle_dataset, f"_{field_name}", None)
                     # If both original and current are None, leave it as None
 
-
         # Map spatial-only bound mask to current selection space by lazy composition.
         # For each particle type, create a lazy mask that maps the spatial bound indices
         # to indices in the currently selected particles.
         def n_spatial(group_name: str) -> int:
-            """Get number of particles after spatial masking for one particle type."""
+            """
+            Get number of particles after spatial masking for one particle type.
+
+            Parameters
+            ----------
+            group_name : str
+                Particle group name.
+
+            Returns
+            -------
+            int
+                Number of particles in this group after spatial masking.
+            """
             if self._spatial_mask is None:
                 return int(getattr(self.metadata, f"n_{group_name}"))
             return int(
-                np.sum(
-                    self._spatial_mask.get_masked_counts_offsets()[0][group_name]
-                )
+                np.sum(self._spatial_mask.get_masked_counts_offsets()[0][group_name])
             )
 
         current_bound_only_mask = {}

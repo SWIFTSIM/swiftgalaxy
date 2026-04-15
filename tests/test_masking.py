@@ -302,7 +302,7 @@ class TestMaskingSWIFTGalaxy:
             assert np.array_equal(got_mask, expected_bound)
 
     def test_get_bound_only_mask_relative_to_current_default(self, sg):
-        """Check that default bound_only mask is all-True for bound-only SWIFTGalaxy instances."""
+        """Check default bound-only mask is all-True for bound-only SWIFTGalaxy."""
         current_bound_only = sg.get_bound_only_mask()
         for ptype in sg.metadata.present_group_names:
             got_mask = getattr(current_bound_only, ptype).mask
