@@ -71,16 +71,16 @@ def _apply_box_wrap(
     :class:`~swiftsimio.objects.cosmo_array`
         The coordinates wrapped to lie within the box dimensions.
     """
-    rotation_is_identity = (
+    _rotation_is_identity = (
         True
         if current_transform is None
         else current_transform.rotation.approx_equal(Rotation.identity())
     )
     # in scipy 1.16 approx_equal returns bool, in 1.17 returns array of bool, so:
     rotation_is_identity = (
-        rotation_is_identity.all()
-        if hasattr(rotation_is_identity, "all")
-        else rotation_is_identity
+        _rotation_is_identity.all()
+        if hasattr(_rotation_is_identity, "all")
+        else _rotation_is_identity
     )
     if boxsize is None:
         return coords
@@ -1690,8 +1690,8 @@ class SWIFTGalaxy(SWIFTDataset):
         coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
         _spatial_mask: Optional[SWIFTMask] = None,
         _extra_mask: Optional[MaskCollection] = None,
-        _coordinate_like_transform: Optional[np.ndarray] = None,
-        _velocity_like_transform: Optional[np.ndarray] = None,
+        _coordinate_like_transform: Optional[RigidTransform] = None,
+        _velocity_like_transform: Optional[RigidTransform] = None,
         _data_server: Optional["SWIFTGalaxy"] = None,
     ) -> "SWIFTGalaxy":
         """
