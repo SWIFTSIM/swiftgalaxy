@@ -26,7 +26,7 @@ class TestWebExampleData:
     def test_snapshot(self, web_examples_tmpdir):
         """Check that we can create a swiftgalaxy, retrieving a sample snapshot file."""
         sm = mask(web_examples_tmpdir.snapshot)  # just to get an interface to metadata
-        SWIFTGalaxy(
+        sg = SWIFTGalaxy(
             web_examples_tmpdir.snapshot,
             Standalone(
                 centre=cosmo_array(
@@ -52,6 +52,8 @@ class TestWebExampleData:
                 ),
             ),
         )
+        # make sure data readable
+        sg.gas.temperatures
 
     @pytest.mark.parametrize("group_type", ["halo", "galaxy"])
     def test_caesar(self, web_examples_tmpdir, group_type):
@@ -61,21 +63,27 @@ class TestWebExampleData:
         We should retrieve a sample snapshot file and caesar catalogue.
         """
         pytest.importorskip("caesar")
-        SWIFTGalaxy(
+        sg = SWIFTGalaxy(
             web_examples_tmpdir.snapshot,
             Caesar(web_examples_tmpdir.caesar, group_type=group_type, group_index=0),
         )
+        # make sure data readable
+        sg.gas.temperatures
 
     def test_soap(self, web_examples_tmpdir):
         """
         Check that we can create a swiftgalaxy.
 
         We should retrieve a sample virtual snapshot file and a soap catalogue.
+
+        Also acts as regression test for https://github.com/SWIFTSIM/swiftgalaxy/issues/94
         """
-        SWIFTGalaxy(
+        sg = SWIFTGalaxy(
             web_examples_tmpdir.virtual_snapshot,
             SOAP(web_examples_tmpdir.soap, soap_index=0),
         )
+        # make sure data readable
+        sg.gas.temperatures
 
     def test_vr(self, web_examples_tmpdir):
         """
@@ -84,10 +92,12 @@ class TestWebExampleData:
         We should retrieve a sample snapshot file and velociraptor catalogue.
         """
         pytest.importorskip("velociraptor")
-        SWIFTGalaxy(
+        sg = SWIFTGalaxy(
             web_examples_tmpdir.snapshot,
             Velociraptor(web_examples_tmpdir.velociraptor, halo_index=0),
         )
+        # make sure data readable
+        sg.gas.temperatures
 
     def test_remove(self, web_examples_tmpdir):
         """Check that example data files get cleaned up on request."""
