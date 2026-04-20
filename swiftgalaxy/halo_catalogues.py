@@ -793,15 +793,21 @@ class SOAP(_HaloCatalogue):
         is associated with. Check what halo catalogue index the object of interest
         is and use this to define the mask.
 
+        This implementation reads ``GroupNr_bound`` directly from the snapshot with
+        ``h5py`` rather than through ``swiftsimio``. This avoids failures for
+        virtual datasets that do not carry the SWIFT unit metadata attrs expected
+        by ``swiftsimio``.
+
         Parameters
         ----------
         sg : ~swiftgalaxy.reader.SWIFTGalaxy
             The :class:`~swiftgalaxy.reader.SWIFTGalaxy` instance that this halo catalogue
-            is assoiated to.
+            is associated to.
 
         mask_loaded : :obj:`bool`
-            Whether to mask any data loaded while creating the mask. The iterator wants to
-            switch this off.
+            Whether to mask any data loaded while creating the mask. Included for API
+            compatibility; no data are loaded through ``swiftsimio`` here, so this flag
+            has no effect in this implementation.
 
         Returns
         -------
@@ -810,7 +816,7 @@ class SOAP(_HaloCatalogue):
             set of particles.
         """
 
-        def generate_lazy_mask(group_name: str, mask_loaded: bool) -> LazyMask:
+        def generate_lazy_mask(group_name: str) -> LazyMask:
             """
             Generate a function that evaluates a mask for bound particles.
 
@@ -821,47 +827,108 @@ class SOAP(_HaloCatalogue):
             group_name : :obj:`str`
                 The particle type to evaluate a mask for.
 
-            mask_loaded : :obj:`bool`
-                Whether to mask the data loaded while constructing the mask. The iterator
-                wants to switch this off.
-
             Returns
             -------
             Callable
                 The generated function that evaluates a mask.
             """
 
+            def _apply_spatial_mask_to_raw_array(raw: NDArray, group_name: str) -> NDArray:
+                """
+                Apply the SWIFT spatial mask to a raw full-length particle array.
+    
+                Parameters
+                ----------
+                raw : np.ndarray
+                    Full particle array read directly from HDF5.
+                group_name : str
+                    Particle group name, e.g. 'gas'.
+
+                Returns
+                -------
+                np.ndarray
+                    Spatially masked particle array.
+                """
+                spatial_mask = getattr(sg._spatial_mask, group_name, None)
+                if spatial_mask is None:
+                    raise RuntimeError(
+                        f"Failed to construct SOAP bound-only mask for particle group "
+                        f"'{group_name}': no spatial mask information available."
+                    )
+
+                spatial_mask_arr = np.asarray(spatial_mask)
+
+                # Common SWIFTMask representation: ranges [[start, end], ...]
+                if spatial_mask_arr.ndim == 2 and spatial_mask_arr.shape[1] == 2:
+                    if len(spatial_mask_arr) == 0:
+                        return raw[:0]
+                    return np.concatenate(
+                        [raw[start:end] for start, end in spatial_mask_arr], axis=0
+                    )
+
+                # Fall back to direct indexing if mask is already suitable
+                try:
+                    return raw[spatial_mask]
+                except Exception as e:
+                    raise RuntimeError(
+                        f"Failed to construct SOAP bound-only mask for particle group "
+                        f"'{group_name}': unsupported spatial mask format."
+                    ) from e
+
             def lazy_mask() -> NDArray:
                 """
                 Evaluate a mask that selects bound particles.
 
-                This is achieved by comparing the particle group membership dataset
-                ``group_nr_bound`` to the halo catalogue index.
-
-                This function must mask the data (``group_nr_bound``) that it has loaded.
+                Achieved by comparing the ``GroupNr_bound`` values to the target
+                halo catalogue index.
 
                 Returns
                 -------
                 :class:`~numpy.ndarray`
                     The mask that selects bound particles.
                 """
-                mask = getattr(
-                    sg, group_name
-                )._particle_dataset.group_nr_bound.to_value(
-                    u.dimensionless
-                ) == self.input_halos.halo_catalogue_index.to_value(u.dimensionless)
-                if mask_loaded:
-                    # mask the group_nr_bound array that we loaded
-                    getattr(sg, group_name)._particle_dataset._group_nr_bound = getattr(
-                        sg, group_name
-                    )._particle_dataset._group_nr_bound[mask]
-                return mask
+                import h5py
+
+                group_to_parttype = {
+                    "gas": "PartType0",
+                    "dark_matter": "PartType1",
+                    "boundary": "PartType2",
+                    "sinks": "PartType3",
+                    "stars": "PartType4",
+                    "black_holes": "PartType5",
+                    "neutrinos": "PartType6",
+                }
+
+                try:
+                    parttype = group_to_parttype[group_name]
+                except KeyError as e:
+                    raise RuntimeError(
+                        f"Failed to construct SOAP bound-only mask: unknown particle "
+                        f"group '{group_name}'."
+                    ) from e
+
+                field = f"{parttype}/GroupNr_bound"
+
+                with h5py.File(sg.snapshot_filename, "r") as handle:
+                    try:
+                        raw = handle[field][:]
+                    except Exception as e:
+                        raise RuntimeError(
+                            f"Failed to read '{field}' directly from snapshot "
+                            f"'{sg.snapshot_filename}' while constructing the SOAP "
+                            f"bound-only mask."
+                        ) from e
+
+                group_nr_bound = _apply_spatial_mask_to_raw_array(raw, group_name)
+                target = self.input_halos.halo_catalogue_index.to_value(u.dimensionless)
+
+                return group_nr_bound == target
 
             return LazyMask(mask_function=lazy_mask)
 
         return MaskCollection(
             **{
-                group_name: generate_lazy_mask(group_name, mask_loaded)
+                group_name: generate_lazy_mask(group_name)
                 for group_name in sg.metadata.present_group_names
             }
         )
