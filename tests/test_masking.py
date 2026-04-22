@@ -250,6 +250,82 @@ class TestMaskingSWIFTGalaxy:
         # and check we haven't loaded the DM group IDs, just to be sure:
         assert sg_soap.dark_matter._particle_dataset._group_nr_bound is None
 
+    def test_get_bound_only_mask_raises_without_halo_catalogue(self, sg_no_hf):
+        """Check that getting a bound_only mask requires a halo catalogue."""
+        with pytest.raises(RuntimeError, match="without an associated halo catalogue"):
+            sg_no_hf.get_bound_only_mask()
+
+    def test_get_bound_only_mask_is_lazy(self, sg):
+        """Check that creating a bound_only mask does not trigger data loading."""
+        sg_unbound = SWIFTGalaxy(
+            sg.snapshot_filename,
+            ToyHF(snapfile=sg.snapshot_filename, extra_mask=None),
+            transforms_like_coordinates={"coordinates", "extra_coordinates"},
+            transforms_like_velocities={"velocities", "extra_velocities"},
+        )
+        assert_no_data_loaded(sg_unbound)
+        current_bound_only = sg_unbound.get_bound_only_mask()
+        assert_no_data_loaded(sg_unbound)
+        # evaluate one particle type to ensure lazy mask works
+        assert current_bound_only.gas.mask.size > 0
+
+    def test_get_bound_only_mask_compatible_with_current_particles(self, sg):
+        """Check that returned mask is directly applicable to currently selected data."""
+        sg_unbound = SWIFTGalaxy(
+            sg.snapshot_filename,
+            ToyHF(snapfile=sg.snapshot_filename, extra_mask=None),
+            transforms_like_coordinates={"coordinates", "extra_coordinates"},
+            transforms_like_velocities={"velocities", "extra_velocities"},
+        )
+        sg_bound = SWIFTGalaxy(
+            sg.snapshot_filename,
+            ToyHF(snapfile=sg.snapshot_filename, extra_mask="bound_only"),
+            transforms_like_coordinates={"coordinates", "extra_coordinates"},
+            transforms_like_velocities={"velocities", "extra_velocities"},
+        )
+
+        sg_unbound.mask_particles(
+            MaskCollection(
+                gas=np.s_[::3],
+                dark_matter=np.s_[::-2],
+                stars=np.s_[::2],
+                black_holes=np.s_[...],
+            )
+        )
+
+        current_bound_only = sg_unbound.get_bound_only_mask()
+        for ptype in sg_unbound.metadata.present_group_names:
+            current_ids = getattr(sg_unbound, ptype).particle_ids
+            expected_bound = np.isin(current_ids, getattr(sg_bound, ptype).particle_ids)
+            got_mask = getattr(current_bound_only, ptype).mask
+            assert got_mask.shape == current_ids.shape
+            assert np.array_equal(got_mask, expected_bound)
+
+    def test_get_bound_only_mask_relative_to_current_default(self, sg):
+        """Check default bound-only mask is all-True for bound-only SWIFTGalaxy."""
+        current_bound_only = sg.get_bound_only_mask()
+        for ptype in sg.metadata.present_group_names:
+            got_mask = getattr(current_bound_only, ptype).mask
+            assert got_mask.shape == getattr(sg, ptype).particle_ids.shape
+            assert got_mask.dtype == bool
+            assert got_mask.all()
+
+    def test_get_bound_only_after_manual_masking(self, sg):
+        """Check that we can get a bound_only mask after applying a manual mask."""
+        sg.mask_particles(
+            MaskCollection(
+                gas=np.s_[::3],
+                dark_matter=np.s_[::-2],
+                stars=np.s_[::2],
+                black_holes=np.s_[...],
+            )
+        )
+        current_bound_only = sg.get_bound_only_mask()
+        for ptype in sg.metadata.present_group_names:
+            got_mask = getattr(current_bound_only, ptype).mask
+            assert got_mask.shape == getattr(sg, ptype).particle_ids.shape
+            assert got_mask.dtype == bool
+
 
 class TestMaskingParticleDatasets:
     """Test applying masks to particle datasets."""
