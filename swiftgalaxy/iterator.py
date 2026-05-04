@@ -308,7 +308,7 @@ class SWIFTGalaxies(object):
                 )
                 // sm.cell_size[np.newaxis, :, np.newaxis]
             )
-            .to_value(u.dimensionless)
+            .to_comoving_value(u.dimensionless)
             .astype(int)
         )
         unique_region_indices, inv = np.unique(
@@ -377,14 +377,14 @@ class SWIFTGalaxies(object):
         # in the same grid location
         grid_element_dim = (
             np.max(target_sizes // sm.cell_size[np.newaxis], axis=0)
-            .to_value(u.dimensionless)
+            .to_comoving_value(u.dimensionless)
             .astype(int)
             + 1
         )
         # If the grid doesn't fully cover the box need to add one more grid cell to
         # cover "too much".
         target_grid_offsets, target_grid_indices = np.modf(
-            (target_centres / (grid_element_dim * sm.cell_size)).to_value(
+            (target_centres / (grid_element_dim * sm.cell_size)).to_comoving_value(
                 u.dimensionless
             )
         )
@@ -425,7 +425,7 @@ class SWIFTGalaxies(object):
                 np.prod(
                     np.ceil(
                         np.diff(unique_regions, axis=2).squeeze(axis=2) / sm.cell_size
-                    ).to_value(u.dimensionless),
+                    ).to_comoving_value(u.dimensionless),
                     axis=1,
                 )
             )
@@ -435,7 +435,7 @@ class SWIFTGalaxies(object):
                 np.prod(
                     np.ceil(
                         np.diff(unique_regions, axis=2).squeeze(axis=2) / sm.cell_size
-                    ).to_value(u.dimensionless)
+                    ).to_comoving_value(u.dimensionless)
                     + 1,
                     axis=1,
                 )
