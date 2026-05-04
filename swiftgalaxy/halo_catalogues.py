@@ -847,9 +847,11 @@ class SOAP(_HaloCatalogue):
                 """
                 mask = getattr(
                     sg, group_name
-                )._particle_dataset.group_nr_bound.to_value(
+                )._particle_dataset.group_nr_bound.to_physical_value(
                     u.dimensionless
-                ) == self.input_halos.halo_catalogue_index.to_value(u.dimensionless)
+                ) == self.input_halos.halo_catalogue_index.to_physical_value(
+                    u.dimensionless
+                )
                 if mask_loaded:
                     # mask the group_nr_bound array that we loaded
                     getattr(sg, group_name)._particle_dataset._group_nr_bound = getattr(
