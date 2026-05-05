@@ -1031,33 +1031,36 @@ def sg_hf(request: FixtureRequest, tmp_path_factory: TempPathFactory) -> SWIFTGa
         )
         _remove_toyvr(filebase=toyvr_filebase)
     elif request.param == "sa":
-        yield Standalone(
-            extra_mask=MaskCollection(
-                gas=np.s_[_n_g_b // 2 :],
-                dark_matter=np.s_[_n_dm_b // 2 :],
-                stars=None,
-                black_holes=None,
-            ),
-            centre=cosmo_array(
-                [_centre_1, _centre_1, _centre_1],
-                u.Mpc,
-                comoving=True,
-                scale_factor=1.0,
-                scale_exponent=1,
-            ),
-            velocity_centre=cosmo_array(
-                [_vcentre_1, _vcentre_1, _vcentre_1],
-                u.km / u.s,
-                comoving=True,
-                scale_factor=1.0,
-                scale_exponent=0,
-            ),
-            spatial_offsets=cosmo_array(
-                [[-1, 1], [-1, 1], [-1, 1]],
-                u.Mpc,
-                comoving=True,
-                scale_factor=1.0,
-                scale_exponent=1,
+        yield SWIFTGalaxy(
+            toysnap_filename,
+            Standalone(
+                extra_mask=MaskCollection(
+                    gas=np.s_[_n_g_b // 2 :],
+                    dark_matter=np.s_[_n_dm_b // 2 :],
+                    stars=None,
+                    black_holes=None,
+                ),
+                centre=cosmo_array(
+                    [_centre_1, _centre_1, _centre_1],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1,
+                ),
+                velocity_centre=cosmo_array(
+                    [_vcentre_1, _vcentre_1, _vcentre_1],
+                    u.km / u.s,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=0,
+                ),
+                spatial_offsets=cosmo_array(
+                    [[-1, 1], [-1, 1], [-1, 1]],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1,
+                ),
             ),
         )
         _remove_toysnap(snapfile=toysnap_filename)

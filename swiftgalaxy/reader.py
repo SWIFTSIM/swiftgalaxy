@@ -2296,6 +2296,35 @@ class SWIFTGalaxy(SWIFTDataset):
                     setattr(dataset, f"_{field_name}", field_data)
         return
 
+    def get_bound_only_mask(self) -> MaskCollection:
+        """
+        Get a ``bound_only`` mask for this galaxy.
+
+        The mask is aligned with the current particle selection without applying
+        it to loaded data.
+
+        The returned mask is evaluated lazily and aligned to currently selected
+        particles so it can be applied directly to currently loaded arrays.
+
+        Returns
+        -------
+        :class:`~swiftgalaxy.masks.MaskCollection`
+            The ``bound_only`` mask collection, aligned to the currently selected
+            particle indices and with the current extra mask applied.
+
+        Raises
+        ------
+        RuntimeError
+            If no halo catalogue is associated with this :class:`SWIFTGalaxy`.
+        """
+        if self.halo_catalogue is None:
+            raise RuntimeError(
+                "Cannot get a bound_only mask without an associated halo catalogue."
+            )
+        return self.halo_catalogue._generate_bound_only_mask(
+            self, mask_loaded=False, load_masked=True
+        )
+
     def mask_particles(self, mask_collection: MaskCollection) -> None:
         """
         Select a subset of the currently selected particles.
