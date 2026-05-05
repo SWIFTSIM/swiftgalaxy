@@ -7,6 +7,7 @@ import unyt as u
 from unyt.testing import assert_allclose_units
 from swiftsimio import cosmo_quantity
 from swiftgalaxy import MaskCollection, SWIFTGalaxy
+from swiftgalaxy.halo_catalogues import Standalone, Caesar
 from swiftgalaxy.demo_data import (
     ToyHF,
     _present_particle_types,
@@ -60,12 +61,12 @@ class TestMaskingSWIFTGalaxy:
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_slice_mask(self, sg, particle_name, before_load):
         """Test whether a slice mask that re-orders elements works."""
+        em_before = sg._extra_mask
         mask = np.s_[::-1]
         ids_before = getattr(sg, particle_name).particle_ids
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
-            del getattr(sg._extra_mask, particle_name)._mask
-            getattr(sg._extra_mask, particle_name)._evaluated = False
+            sg._extra_mask = em_before
         sg.mask_particles(MaskCollection(**{particle_name: mask}))
         ids = getattr(sg, particle_name).particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -74,6 +75,7 @@ class TestMaskingSWIFTGalaxy:
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_int_mask(self, sg, particle_name, before_load):
         """Test an integer array mask that re-orders elements and changes the length."""
+        em_before = sg._extra_mask
         ids_before = getattr(sg, particle_name).particle_ids
         mask = np.arange(ids_before.size)
         # randomize order (in-place operation)
@@ -82,8 +84,7 @@ class TestMaskingSWIFTGalaxy:
         mask = mask[: mask.size // 2]
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
-            del getattr(sg._extra_mask, particle_name)._mask
-            getattr(sg._extra_mask, particle_name)._evaluated = False
+            sg._extra_mask = em_before
         sg.mask_particles(MaskCollection(**{particle_name: mask}))
         ids = getattr(sg, particle_name).particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -92,26 +93,41 @@ class TestMaskingSWIFTGalaxy:
     @pytest.mark.parametrize("before_load", (True, False))
     def test_bool_mask(self, sg, particle_name, before_load):
         """Test whether a boolean array mask works."""
+        em_before = sg._extra_mask
         ids_before = getattr(sg, particle_name).particle_ids
         # randomly keep about half of particles
         mask = np.random.rand(ids_before.size) > 0.5
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
-            del getattr(sg._extra_mask, particle_name)._mask
-            getattr(sg._extra_mask, particle_name)._evaluated = False
+            sg._extra_mask = em_before
         sg.mask_particles(MaskCollection(**{particle_name: mask}))
         ids = getattr(sg, particle_name).particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
 
     @pytest.mark.parametrize("before_load", (True, False))
+    def test_data_masked(self, sg, before_load):
+        """Test that data get masked."""
+        em_before = sg._extra_mask
+        masses_before = sg.gas.masses
+        mask = np.random.rand(masses_before.size) > 0.5
+        if before_load:
+            sg.gas._particle_dataset._masses = None
+            sg._extra_mask = em_before
+        sg.mask_particles(MaskCollection(**{"gas": mask}))
+        masses = sg.gas.masses
+        assert_allclose_units(
+            masses_before[mask], masses, rtol=reltol_nd, atol=abstol_nd
+        )
+
+    @pytest.mark.parametrize("before_load", (True, False))
     def test_namedcolumn_masked(self, sg, before_load):
         """Test that named columns get masked too."""
+        em_before = sg._extra_mask
         neutral_before = sg.gas.hydrogen_ionization_fractions.neutral
         mask = np.random.rand(neutral_before.size) > 0.5
         if before_load:
             sg.gas.hydrogen_ionization_fractions._named_column_dataset._neutral = None
-            del sg._extra_mask.gas._mask
-            sg._extra_mask.gas._evaluated = False
+            sg._extra_mask = em_before
         sg.mask_particles(MaskCollection(**{"gas": mask}))
         neutral = sg.gas.hydrogen_ionization_fractions.neutral
         assert_allclose_units(
@@ -205,11 +221,11 @@ class TestMaskingSWIFTGalaxy:
 
         Check both the case with (sg) and without (sg_no_hf) a spatial mask.
         """
+        em_before = sg._extra_mask
         ids_before_sg = sg.gas.particle_ids
         if before_load:
             sg.gas._particle_dataset._particle_ids = None
-            del sg._extra_mask.gas._mask
-            sg._extra_mask.gas._evaluated = False
+            sg._extra_mask = em_before
         sg.mask_particles(MaskCollection(gas=np.s_[::2]))
         sg.mask_particles(MaskCollection(gas=np.s_[::2]))
         assert_allclose_units(ids_before_sg[::2][::2], sg.gas.particle_ids)
@@ -249,6 +265,25 @@ class TestMaskingSWIFTGalaxy:
         assert sg_soap.gas.group_nr_bound.size == 100
         # and check we haven't loaded the DM group IDs, just to be sure:
         assert sg_soap.dark_matter._particle_dataset._group_nr_bound is None
+
+    @pytest.mark.parametrize("load_before", (True, False))
+    def test_get_bound_only_mask(self, sg_hf, load_before):
+        """Check applying a bound_only mask from any catalogue (not Standalone)."""
+        if load_before:
+            for ptype in sg_hf.metadata.present_group_names:
+                getattr(sg_hf, ptype).masses
+        if isinstance(sg_hf.halo_catalogue, Standalone):
+            with pytest.raises(NotImplementedError):
+                sg_hf.get_bound_only_mask()
+            return
+        sg_hf.mask_particles(sg_hf.get_bound_only_mask())
+        if isinstance(sg_hf.halo_catalogue, Caesar) and not load_before:
+            with pytest.raises(RuntimeError):
+                for ptype in sg_hf.metadata.present_group_names:
+                    getattr(sg_hf, ptype).masses
+            return
+        for ptype in sg_hf.metadata.present_group_names:
+            getattr(sg_hf, ptype).masses
 
     def test_get_bound_only_mask_raises_without_halo_catalogue(self, sg_no_hf):
         """Check that getting a bound_only mask requires a halo catalogue."""
@@ -323,8 +358,9 @@ class TestMaskingSWIFTGalaxy:
         current_bound_only = sg.get_bound_only_mask()
         for ptype in sg.metadata.present_group_names:
             got_mask = getattr(current_bound_only, ptype).mask
-            assert got_mask.shape == getattr(sg, ptype).particle_ids.shape
             assert got_mask.dtype == bool
+            assert got_mask.dtype == bool
+            assert got_mask.all()
 
 
 class TestMaskingParticleDatasets:
@@ -334,12 +370,12 @@ class TestMaskingParticleDatasets:
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_slice_mask(self, sg, particle_name, before_load):
         """Test whether a slice mask that re-orders elements works."""
+        em_before = sg._extra_mask
         mask = np.s_[::-1]
         ids_before = getattr(sg, particle_name).particle_ids
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
-            del getattr(sg._extra_mask, particle_name)._mask
-            getattr(sg._extra_mask, particle_name)._evaluated = False
+            sg._extra_mask = em_before
         masked_dataset = getattr(sg, particle_name)[mask]
         ids = masked_dataset.particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -348,6 +384,7 @@ class TestMaskingParticleDatasets:
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_int_mask(self, sg, particle_name, before_load):
         """Test masking with an integer array: re-orders elements and changes length."""
+        em_before = sg._extra_mask
         ids_before = getattr(sg, particle_name).particle_ids
         mask = np.arange(ids_before.size)
         # randomize order (in-place operation)
@@ -356,8 +393,7 @@ class TestMaskingParticleDatasets:
         mask = mask[: mask.size // 2]
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
-            del getattr(sg._extra_mask, particle_name)._mask
-            getattr(sg._extra_mask, particle_name)._evaluated = False
+            sg._extra_mask = em_before
         masked_dataset = getattr(sg, particle_name)[mask]
         ids = masked_dataset.particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -366,13 +402,13 @@ class TestMaskingParticleDatasets:
     @pytest.mark.parametrize("before_load", (True, False))
     def test_bool_mask(self, sg, particle_name, before_load):
         """Test whether a boolean array mask works."""
+        em_before = sg._extra_mask
         ids_before = getattr(sg, particle_name).particle_ids
         # randomly keep about half of particles
         mask = np.random.rand(ids_before.size) > 0.5
         if before_load:
             getattr(sg, particle_name)._particle_dataset._particle_ids = None
-            del getattr(sg._extra_mask, particle_name)._mask
-            getattr(sg._extra_mask, particle_name)._evaluated = False
+            sg._extra_mask = em_before
         masked_dataset = getattr(sg, particle_name)[mask]
         ids = masked_dataset.particle_ids
         assert_allclose_units(ids_before[mask], ids, rtol=0, atol=0)
@@ -416,12 +452,12 @@ class TestMaskingNamedColumnDatasets:
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_slice_mask(self, sg, before_load):
         """Test whether a slice mask that re-orders elements works."""
+        em_before = sg._extra_mask
         mask = np.s_[::-1]
         fractions_before = sg.gas.hydrogen_ionization_fractions.neutral
         if before_load:
             sg.gas.hydrogen_ionization_fractions._neutral = None
-            del sg._extra_mask.gas._mask
-            sg._extra_mask.gas._evaluated = False
+            sg._extra_mask = em_before
         masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
         fractions = masked_namedcolumnsdataset.neutral
         assert_allclose_units(
@@ -431,6 +467,7 @@ class TestMaskingNamedColumnDatasets:
     @pytest.mark.parametrize("before_load", (True, False))
     def test_reordering_int_mask(self, sg, before_load):
         """Test masking with an integer array: re-orders and changes the length."""
+        em_before = sg._extra_mask
         fractions_before = sg.gas.hydrogen_ionization_fractions.neutral
         mask = np.arange(fractions_before.size)
         # randomize order (in-place operation)
@@ -439,8 +476,7 @@ class TestMaskingNamedColumnDatasets:
         mask = mask[: mask.size // 2]
         if before_load:
             sg.gas.hydrogen_ionization_fractions._neutral = None
-            del sg._extra_mask.gas._mask
-            sg._extra_mask.gas._evaluated = False
+            sg._extra_mask = em_before
         masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
         fractions = masked_namedcolumnsdataset.neutral
         assert_allclose_units(
@@ -450,13 +486,13 @@ class TestMaskingNamedColumnDatasets:
     @pytest.mark.parametrize("before_load", (True, False))
     def test_bool_mask(self, sg, before_load):
         """Test whether a boolean array mask works."""
+        em_before = sg._extra_mask
         fractions_before = sg.gas.hydrogen_ionization_fractions.neutral
         # randomly keep about half of particles
         mask = np.random.rand(fractions_before.size) > 0.5
         if before_load:
             sg.gas.hydrogen_ionization_fractions._neutral = None
-            del sg._extra_mask.gas._mask
-            sg._extra_mask.gas._evaluated = False
+            sg._extra_mask = em_before
         masked_namedcolumnsdataset = sg.gas.hydrogen_ionization_fractions[mask]
         fractions = masked_namedcolumnsdataset.neutral
         assert_allclose_units(
@@ -652,23 +688,23 @@ class TestLazyMask:
         assert lm == lm
         assert not lm != lm
 
-    def test_make_combinable_evaluated(self, sg):
+    def test_ensure_combinable_evaluated(self, sg):
         """Test that making a LazyMask 'combinable' results in an integer index array."""
         lm = LazyMask(np.s_[:10])
         assert not isinstance(lm.mask, np.ndarray)
         assert not lm._combinable
-        lm._make_combinable(sg=sg, mask_type="gas")
+        lm._ensure_combinable(sg=sg, mask_type="gas")
         assert lm._evaluated
         assert isinstance(lm.mask, np.ndarray)
         assert lm.mask.dtype == int
         assert lm._combinable
         assert len(lm.mask) == 10
 
-    def test_make_combinable_unevaluated(self, sg):
+    def test_ensure_combinable_unevaluated(self, sg):
         """Test that making a LazyMask 'combinable' results in an integer index array."""
         lm = LazyMask(mask_function=lambda: np.s_[:10])
         assert not lm._combinable
-        lm._make_combinable(sg=sg, mask_type="gas")
+        lm._ensure_combinable(sg=sg, mask_type="gas")
         assert lm._combinable
         assert not lm._evaluated
         assert isinstance(lm.mask, np.ndarray)  # triggers evaluation

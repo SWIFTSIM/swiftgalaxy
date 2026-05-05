@@ -71,16 +71,16 @@ def _apply_box_wrap(
     :class:`~swiftsimio.objects.cosmo_array`
         The coordinates wrapped to lie within the box dimensions.
     """
-    rotation_is_identity = (
+    _rotation_is_identity = (
         True
         if current_transform is None
         else current_transform.rotation.approx_equal(Rotation.identity())
     )
     # in scipy 1.16 approx_equal returns bool, in 1.17 returns array of bool, so:
     rotation_is_identity = (
-        rotation_is_identity.all()
-        if hasattr(rotation_is_identity, "all")
-        else rotation_is_identity
+        _rotation_is_identity.all()
+        if hasattr(_rotation_is_identity, "all")
+        else _rotation_is_identity
     )
     if boxsize is None:
         return coords
@@ -1690,8 +1690,8 @@ class SWIFTGalaxy(SWIFTDataset):
         coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
         _spatial_mask: Optional[SWIFTMask] = None,
         _extra_mask: Optional[MaskCollection] = None,
-        _coordinate_like_transform: Optional[np.ndarray] = None,
-        _velocity_like_transform: Optional[np.ndarray] = None,
+        _coordinate_like_transform: Optional[RigidTransform] = None,
+        _velocity_like_transform: Optional[RigidTransform] = None,
         _data_server: Optional["SWIFTGalaxy"] = None,
     ) -> "SWIFTGalaxy":
         """
@@ -2321,132 +2321,9 @@ class SWIFTGalaxy(SWIFTDataset):
             raise RuntimeError(
                 "Cannot get a bound_only mask without an associated halo catalogue."
             )
-
-        # Build the bound mask in spatial-only index space by temporarily
-        # disabling extra masking and restoring all cached field data afterwards.
-        original_extra_mask = self._extra_mask
-        spatial_only_extra_mask = MaskCollection._blank_from_mask_types(
-            self.metadata.present_group_names
+        return self.halo_catalogue._generate_bound_only_mask(
+            self, mask_loaded=False, load_masked=True
         )
-        cached_particle_fields = {}
-        try:
-            self._extra_mask = spatial_only_extra_mask
-
-            # Ensure bound-mask backends read in spatial space by clearing any
-            # cached, already-masked fields before evaluating lazy masks.
-            for group_name in self.metadata.present_group_names:
-                particle_dataset = getattr(self, group_name)._particle_dataset
-                particle_metadata = getattr(
-                    particle_dataset.metadata, f"{group_name}_properties"
-                )
-                cached_particle_fields[group_name] = {
-                    field_name: getattr(particle_dataset, f"_{field_name}")
-                    for field_name in particle_metadata.field_names
-                }
-                for field_name in particle_metadata.field_names:
-                    setattr(particle_dataset, f"_{field_name}", None)
-
-            bound_only_mask_spatial = self.halo_catalogue._generate_bound_only_mask(
-                self, mask_loaded=False
-            )
-            bound_only_mask_spatial_values = {
-                group_name: deepcopy(getattr(bound_only_mask_spatial, group_name).mask)
-                for group_name in self.metadata.present_group_names
-            }
-        finally:
-            # First, restore _extra_mask
-            self._extra_mask = original_extra_mask
-
-            # Now restore cached fields and fix any that were loaded during generation
-            for group_name, fields in cached_particle_fields.items():
-                particle_dataset = getattr(self, group_name)._particle_dataset
-                particle_dataset_helper = getattr(self, group_name)
-
-                for field_name, field_data_originally in fields.items():
-                    field_currently_cached = getattr(
-                        particle_dataset, f"_{field_name}", None
-                    )
-
-                    if field_data_originally is not None:
-                        # Field was originally loaded, restore it
-                        setattr(
-                            particle_dataset, f"_{field_name}", field_data_originally
-                        )
-                    elif field_currently_cached is not None:
-                        # Field was originally not loaded but got loaded during
-                        # bound generation.
-                        # Re-apply the mask so it is correct if the mask filters
-                        # data.
-                        masked_data = particle_dataset_helper._apply_data_mask(
-                            field_currently_cached
-                        )
-
-                        # Only cache the masked result if the mask actually
-                        # changed the size (i.e., filtered particles). If sizes
-                        # are the same, the data was not supposed to be loaded,
-                        # so do not cache it.
-                        if (
-                            hasattr(masked_data, "shape")
-                            and hasattr(field_currently_cached, "shape")
-                            and masked_data.shape != field_currently_cached.shape
-                        ):
-                            # Mask filtered data, so cache the masked version
-                            setattr(particle_dataset, f"_{field_name}", masked_data)
-                        else:
-                            # Mask didn't filter (or unknown), so clear the cache
-                            # The field will be properly loaded/masked when accessed
-                            setattr(particle_dataset, f"_{field_name}", None)
-                    # If both original and current are None, leave it as None
-
-        # Map spatial-only bound mask to current selection space by lazy composition.
-        # For each particle type, create a lazy mask that maps the spatial bound indices
-        # to indices in the currently selected particles.
-        def n_spatial(group_name: str) -> int:
-            """
-            Get number of particles after spatial masking for one particle type.
-
-            Parameters
-            ----------
-            group_name : str
-                Particle group name.
-
-            Returns
-            -------
-            int
-                Number of particles in this group after spatial masking.
-            """
-            if self._spatial_mask is None:
-                return int(getattr(self.metadata, f"n_{group_name}"))
-            return int(
-                np.sum(self._spatial_mask.get_masked_counts_offsets()[0][group_name])
-            )
-
-        current_bound_only_mask = {}
-        for group_name in self.metadata.present_group_names:
-            spatial_bound_mask = bound_only_mask_spatial_values[group_name]
-            current_extra_mask = getattr(self._extra_mask, group_name)
-
-            def lazy_map(
-                *,
-                _group_name: str = group_name,
-                _spatial_bound: np.ndarray = spatial_bound_mask,
-                _current_extra: LazyMask = current_extra_mask,
-            ) -> np.ndarray:
-                """Map spatial bound indices to current particle selection."""
-                n_spatial_particles = n_spatial(_group_name)
-                # Get which particles in spatial space are bound
-                spatial_bound_bool = np.zeros(n_spatial_particles, dtype=bool)
-                spatial_bound_bool[_spatial_bound] = True
-                # Get which spatial particles are in current selection
-                current_spatial_indices = np.arange(n_spatial_particles)[
-                    _current_extra.mask
-                ]
-                # Map: which current particles are bound?
-                return spatial_bound_bool[current_spatial_indices]
-
-            current_bound_only_mask[group_name] = LazyMask(mask_function=lazy_map)
-
-        return MaskCollection(**current_bound_only_mask)
 
     def mask_particles(self, mask_collection: MaskCollection) -> None:
         """
