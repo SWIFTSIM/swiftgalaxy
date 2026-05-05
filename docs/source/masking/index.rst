@@ -156,7 +156,7 @@ the desired particles include some that are not identified as members by the hal
 a modified approach is needed. For example, let's suppose that you want to select *all*
 simulation particles within a 1 Mpc aperture of a galaxy's centre, regardless of their
 membership status according to the halo catalogue. For illustration we'll take a galaxy
-picked from a :class:`~swiftgalaxy.halo_finders.SOAP` catalogue. The first step is to
+picked from a :class:`~swiftgalaxy.halo_catalogues.SOAP` catalogue. The first step is to
 override the default ``extra_mask="bound_only"`` behaviour with ``extra_mask=None``. We
 also need to override the default spatial selection from the simulation, because the 1 Mpc
 spherical region of interest might extend beyond the region occupied by member particles

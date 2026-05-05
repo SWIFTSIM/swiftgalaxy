@@ -135,7 +135,7 @@ class WebExamples(object):
     """
 
     webstorage_location = (
-        "https://virgodb.cosma.dur.ac.uk/swift-webstorage/IOExamples/sg_ci_06_2025/"
+        "https://virgodb.cosma.dur.ac.uk/swift-webstorage/IOExamples/sg_ci_04_2026/"
     )
     # Each example can require one or more files. We store a list of these, and also
     # the string that will be returned by the function for a user-friendly interface.
