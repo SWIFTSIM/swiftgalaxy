@@ -1346,7 +1346,7 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
                     f"{coord}c_gas", data=np.array([0.003, 0.003], dtype=float)
                 )
                 f.create_dataset(
-                    f"{coord}c_stars", data=np.array([0.004, 0.004], dtype=float)
+                    f"{coord}c_star", data=np.array([0.004, 0.004], dtype=float)
                 )
                 f.create_dataset(
                     f"V{coord}c",
@@ -1368,9 +1368,9 @@ def _create_toyvr(filebase: Union[str, Path] = _toyvr_filebase) -> None:
                     f"V{coord}c_gas", data=np.array([3.0, 3.0], dtype=float)
                 )
                 f.create_dataset(
-                    f"V{coord}c_stars", data=np.array([4.0, 4.0], dtype=float)
+                    f"V{coord}c_star", data=np.array([4.0, 4.0], dtype=float)
                 )
-                for ct in ("c", "cminpot", "cmbp", "c_gas", "c_stars"):
+                for ct in ("c", "cminpot", "cmbp", "c_gas", "c_star"):
                     f[f"{coord}{ct}"].attrs["Dimension_Length"] = 1.0
                     f[f"{coord}{ct}"].attrs["Dimension_Mass"] = 0.0
                     f[f"{coord}{ct}"].attrs["Dimension_Time"] = 0.0
