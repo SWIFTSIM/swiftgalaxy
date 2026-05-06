@@ -1226,17 +1226,12 @@ class Velociraptor(_HaloCatalogue):
                     else self._particles
                 )
                 assert not isinstance(particles, list)  # placate mypy
-                scale_factor = (
-                    particles.groups_instance.catalogue.units.a
-                    if not particles.groups_instance.catalogue.units.comoving
-                    else 1.0
-                )
                 mask = np.isin(
                     getattr(sg, group_name)._particle_dataset.particle_ids,
                     cosmo_array(
                         particles.particle_ids,
-                        comoving=False,
-                        scale_factor=scale_factor,
+                        comoving=particles.groups_instance.catalogue.units.comoving,
+                        scale_factor=particles.groups_instance.catalogue.units.a,
                         scale_exponent=0,
                     ),
                 )
@@ -1289,41 +1284,35 @@ class Velociraptor(_HaloCatalogue):
         :class:`~swiftsimio.objects.cosmo_array`
             The coordinates of the centres of the spatial mask regions.
         """
-        length_factor = (
-            self._particles[0].groups_instance.catalogue.units.a
-            if not self._particles[0].groups_instance.catalogue.units.comoving
-            else 1.0
-        )
         if self._multi_galaxy_catalogue_mask is None:
-            return cosmo_array(
+            # set units manually for nested array
+            retval = cosmo_array(
                 [
                     [
-                        particles.x.to(u.Mpc) / length_factor,
-                        particles.y.to(u.Mpc) / length_factor,
-                        particles.z.to(u.Mpc) / length_factor,
+                        particles.x.to_value(u.Mpc),
+                        particles.y.to_value(u.Mpc),
+                        particles.z.to_value(u.Mpc),
                     ]
                     for particles in self._particles
                 ],
                 u.Mpc,
-                comoving=True,
-                scale_factor=length_factor,
+                comoving=self._particles[0].groups_instance.catalogue.units.comoving,
+                scale_factor=self._particles[0].groups_instance.catalogue.units.a,
                 scale_exponent=1,
             ).squeeze()
         else:
-            return cosmo_array(
+            retval = cosmo_array(
                 [
-                    self._particles[self._multi_galaxy_catalogue_mask].x.to_value(u.Mpc)
-                    / length_factor,
-                    self._particles[self._multi_galaxy_catalogue_mask].y.to_value(u.Mpc)
-                    / length_factor,
-                    self._particles[self._multi_galaxy_catalogue_mask].z.to_value(u.Mpc)
-                    / length_factor,
+                    self._particles[self._multi_galaxy_catalogue_mask].x.to(u.Mpc),
+                    self._particles[self._multi_galaxy_catalogue_mask].y.to(u.Mpc),
+                    self._particles[self._multi_galaxy_catalogue_mask].z.to(u.Mpc),
                 ],
-                u.Mpc,
-                comoving=True,
-                scale_factor=length_factor,
+                comoving=self._particles[0].groups_instance.catalogue.units.comoving,
+                scale_factor=self._particles[0].groups_instance.catalogue.units.a,
                 scale_exponent=1,
             )
+        print(retval)
+        return retval
 
     @property
     def _region_aperture(self) -> cosmo_array:
@@ -1340,31 +1329,18 @@ class Velociraptor(_HaloCatalogue):
             The half-length of the bounding box to use to construct the spatial mask
             regions.
         """
-        length_factor = (
-            self._particles[0].groups_instance.catalogue.units.a
-            if not self._particles[0].groups_instance.catalogue.units.comoving
-            else 1.0
-        )
         if self._multi_galaxy_catalogue_mask is None:
             return cosmo_array(
-                [
-                    particles.r_size.to_value(u.Mpc) / length_factor
-                    for particles in self._particles
-                ],
-                u.Mpc,
-                comoving=True,
-                scale_factor=length_factor,
+                [particles.r_size.to(u.Mpc) for particles in self._particles],
+                comoving=self._particles[0].groups_instance.catalogue.units.comoving,
+                scale_factor=self._particles[0].groups_instance.catalogue.units.a,
                 scale_exponent=1,
             ).squeeze()
         else:
             return cosmo_quantity(
-                self._particles[self._multi_galaxy_catalogue_mask].r_size.to_value(
-                    u.Mpc
-                )
-                / length_factor,
-                u.Mpc,
-                comoving=True,
-                scale_factor=length_factor,
+                self._particles[self._multi_galaxy_catalogue_mask].r_size.to(u.Mpc),
+                comoving=self._particles[0].groups_instance.catalogue.units.comoving,
+                scale_factor=self._particles[0].groups_instance.catalogue.units.a,
                 scale_exponent=1,
             )
 
@@ -1382,12 +1358,12 @@ class Velociraptor(_HaloCatalogue):
             The centre(s) of the object(s) of interest.
         """
         # According to Velociraptor documentation:
-        if self.centre_type in ("_gas", "_stars"):
-            # {XYZ}c_gas and {XYZ}c_stars are relative to {XYZ}c
+        if self.centre_type in ("_gas", "_star"):
+            # {XYZ}c_gas and {XYZ}c_star are relative to {XYZ}c
             relative_to = np.hstack(
                 [
                     cosmo_array(
-                        getattr(self._catalogue.positions, "{:s}c".format(c)),
+                        getattr(self._catalogue.positions, f"{c}c"),
                         comoving=self._catalogue.units.comoving,
                         scale_factor=self._catalogue.units.a,
                         scale_exponent=1,
@@ -1413,7 +1389,7 @@ class Velociraptor(_HaloCatalogue):
                         cosmo_array(
                             getattr(
                                 self._catalogue.positions,
-                                "{:s}c{:s}".format(c, self.centre_type),
+                                f"{c}c{self.centre_type}",
                             ),
                             comoving=self._catalogue.units.comoving,
                             scale_factor=self._catalogue.units.a,
@@ -1422,11 +1398,7 @@ class Velociraptor(_HaloCatalogue):
                         for c in "xyz"
                     ]
                 ).T
-            ).to_value(u.Mpc),
-            u.Mpc,
-            comoving=False,  # velociraptor gives physical centres!
-            scale_factor=self.scale_factor,
-            scale_exponent=1,
+            )
         ).to_comoving()
         if self._multi_galaxy and self._multi_galaxy_catalogue_mask is None:
             return centre
@@ -1451,12 +1423,12 @@ class Velociraptor(_HaloCatalogue):
             The centre(s) of the object(s) of interest.
         """
         # According to Velociraptor documentation:
-        if self.centre_type in ("_gas", "_stars"):
-            # V{XYZ}c_gas and V{XYZ}c_stars are relative to {XYZ}c
+        if self.centre_type in ("_gas", "_star"):
+            # V{XYZ}c_gas and V{XYZ}c_star are relative to {XYZ}c
             relative_to = np.hstack(
                 [
                     cosmo_array(
-                        getattr(self._catalogue.velocities, "v{:s}c".format(c)),
+                        getattr(self._catalogue.velocities, f"v{c}c"),
                         comoving=self._catalogue.units.comoving,
                         scale_factor=self._catalogue.units.a,
                         scale_exponent=0,
@@ -1469,7 +1441,7 @@ class Velociraptor(_HaloCatalogue):
             relative_to = cosmo_array(
                 [0.0, 0.0, 0.0],
                 u.km / u.s,
-                comoving=False,
+                comoving=False,  # scale_exponent=0, so this can be set arbitrarily
                 scale_factor=self.scale_factor,
                 scale_exponent=0,
             )
@@ -1481,7 +1453,7 @@ class Velociraptor(_HaloCatalogue):
                         cosmo_array(
                             getattr(
                                 self._catalogue.velocities,
-                                "v{:s}c{:s}".format(c, self.centre_type),
+                                f"v{c}c{self.centre_type}",
                             ),
                             comoving=self._catalogue.units.comoving,
                             scale_factor=self._catalogue.units.a,
@@ -1490,11 +1462,7 @@ class Velociraptor(_HaloCatalogue):
                         for c in "xyz"
                     ]
                 ).T
-            ).to_value(u.km / u.s),
-            u.km / u.s,
-            comoving=False,
-            scale_factor=self.scale_factor,
-            scale_exponent=0,
+            )
         ).to_comoving()
         if self._multi_galaxy and self._multi_galaxy_catalogue_mask is None:
             return vcentre
@@ -1709,17 +1677,13 @@ class Caesar(_HaloCatalogue):
         if "total_rmax" in cat.radii.keys():
             # spatial extent information is present, define the mask
             pos = cosmo_array(
-                cat.pos.to_value(u.kpc),  # maybe comoving, ensure physical
-                u.kpc,
+                cat.pos,  # maybe comoving, ensure physical
                 comoving=False,
                 scale_factor=self._caesar.simulation.scale_factor,
                 scale_exponent=1,
             ).to_comoving()
             rmax = cosmo_quantity(
-                cat.radii["total_rmax"].to_value(
-                    u.kpc
-                ),  # maybe comoving, ensure physical
-                u.kpc,
+                cat.radii["total_rmax"],  # maybe comoving, ensure physical
                 comoving=False,
                 scale_factor=self._caesar.simulation.scale_factor,
                 scale_exponent=1,
