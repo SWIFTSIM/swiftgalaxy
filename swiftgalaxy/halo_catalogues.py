@@ -671,7 +671,7 @@ class SOAP(_HaloCatalogue):
         """
         sm = mask(self.soap_file)
         if self._multi_galaxy:
-            sm.constrain_indices(self._soap_index)
+            sm.constrain_indices(np.array(self._soap_index, dtype=np.dtype("int")))
         else:
             sm.constrain_index(self._soap_index)
         self._catalogue = SWIFTDataset(self.soap_file, mask=sm)
