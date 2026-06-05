@@ -288,7 +288,7 @@ class SWIFTGalaxies(object):
                 (-np.repeat(aperture, 3), np.repeat(aperture, 3))
             ).T.reshape((-1, 3, 2))
         # SWIFTMask gives us a lightweight interface to metadata & cell metadata
-        sm = mask(self.snapshot_filename, spatial_only=True)
+        sm = mask(self.snapshot_filename)
         # get the lower cell vertex, probably at origin but not guaranteed
         cell_vertex_origin = sm.centers.min(axis=0) - sm.cell_size / 2
         # align origin with the cell grid, we allow going out the upper bounds of the
