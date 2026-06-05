@@ -108,7 +108,7 @@ class LazyMask(object):
         else:  # sg._spatial_mask is not None
             # get a count of particles in the spatial mask region
             num_part = np.sum(
-                sg._spatial_mask.get_masked_counts_offsets()[0][mask_type]
+                sg._spatial_mask._get_masked_counts_offsets()[0][mask_type]
             )
         if self._mask_function is not None:
             old_mask_function = self._mask_function  # need reference to the current one

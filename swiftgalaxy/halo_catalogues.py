@@ -222,7 +222,7 @@ class _HaloCatalogue(ABC):
         :class:`~swiftsimio.masks.SWIFTMask`
             The spatial mask to select particles in the region of interest.
         """
-        sm = mask(snapshot_filename, spatial_only=True)
+        sm = mask(snapshot_filename)
         # this is only supposed to be called if:
         assert self._user_spatial_offsets is not None
         region = [
@@ -669,7 +669,7 @@ class SOAP(_HaloCatalogue):
         Set up the :class:`~swiftsimio.reader.SWIFTDataset` that will handle the SOAP
         catalogue, including the appropriate mask to select only the rows of interest.
         """
-        sm = mask(self.soap_file, spatial_only=not self._multi_galaxy)
+        sm = mask(self.soap_file)
         if self._multi_galaxy:
             sm.constrain_indices(self._soap_index)
         else:
@@ -778,7 +778,7 @@ class SOAP(_HaloCatalogue):
             The spatial mask to select particles in the region of interest.
         """
         pos, rmax = (self._region_centre, self._region_aperture)
-        sm = mask(snapshot_filename, spatial_only=True)
+        sm = mask(snapshot_filename)
         load_region = cosmo_array([pos - rmax, pos + rmax]).T
         sm.constrain_spatial(load_region)
         return sm
@@ -1673,7 +1673,7 @@ class Caesar(_HaloCatalogue):
             The spatial mask to select particles in the region of interest.
         """
         cat = self._mask_catalogue()
-        sm = mask(snapshot_filename, spatial_only=True)
+        sm = mask(snapshot_filename)
         if "total_rmax" in cat.radii.keys():
             # spatial extent information is present, define the mask
             pos = cosmo_array(
@@ -2235,7 +2235,7 @@ class Standalone(_HaloCatalogue):
             The spatial mask to select particles in the region of interest.
         """
         # if we're here then the user didn't provide a mask, read the whole box
-        sm = mask(snapshot_filename, spatial_only=True)
+        sm = mask(snapshot_filename)
         boxsize = sm.metadata.boxsize
         region = cosmo_array([np.zeros_like(boxsize), boxsize]).T
         sm.constrain_spatial(region)
