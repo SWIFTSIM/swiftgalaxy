@@ -502,7 +502,7 @@ class ToyHF(_HaloCatalogue):
                 scale_factor=_a,
                 scale_exponent=1,
             )
-        swift_mask = swiftsimio.mask(self.snapfile, spatial_only=True)
+        swift_mask = swiftsimio.mask(self.snapfile)
         swift_mask.constrain_spatial(spatial_mask)
         return swift_mask
 

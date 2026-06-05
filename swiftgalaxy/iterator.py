@@ -503,10 +503,10 @@ class SWIFTGalaxies(object):
         iteration_order
         map
         """
-        region_mask = mask(self.snapshot_filename)
         for region, target_indices in zip(
             self._solution["regions"], self._solution["region_target_indices"]
         ):
+            region_mask = mask(self.snapshot_filename)
             region_mask.constrain_spatial(region)
             self._start_server(region_mask)
             for igalaxy in target_indices:

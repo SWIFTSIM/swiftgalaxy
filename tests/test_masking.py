@@ -610,7 +610,7 @@ class TestLazyMask:
         # expect length // 4 since we did [::2] twice:
         assert (
             combined_lm.mask.size
-            == np.sum(sg._spatial_mask.get_masked_counts_offsets()[0]["gas"]) // 4
+            == np.sum(sg._spatial_mask._get_masked_counts_offsets()[0]["gas"]) // 4
         )
 
 
@@ -669,6 +669,6 @@ class TestMaskCollection:
         # expect length // 4 since we did [::2] twice:
         assert (
             combined_mc.dark_matter.mask.size
-            == np.sum(sg._spatial_mask.get_masked_counts_offsets()[0]["dark_matter"])
+            == np.sum(sg._spatial_mask._get_masked_counts_offsets()[0]["dark_matter"])
             // 4
         )
