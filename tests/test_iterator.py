@@ -405,10 +405,13 @@ class TestSWIFTGalaxies:
                 soap_index=1,
             ),
         ]
-        soap_both = SOAP(
-            soap_file=toysoap_with_virtual_snapshot["toysoap_filename"],
-            soap_index=[1, 0],
-        )
+        with pytest.warns(
+            UserWarning, match="`constrain_indices` selects indices in order"
+        ):
+            soap_both = SOAP(
+                soap_file=toysoap_with_virtual_snapshot["toysoap_filename"],
+                soap_index=[1, 0],
+            )
         sgs_individual = [
             SWIFTGalaxy(
                 toysoap_with_virtual_snapshot["toysoap_virtual_snapshot_filename"], soap
