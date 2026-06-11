@@ -229,6 +229,9 @@ class TestExampleNotebooks:
     def test_caesar_web_example_notebook(self):
         """Check that the example notebook with caesar web data runs without error."""
         pytest.importorskip(
+            "caesar", reason="caesar (optional dependency) not available"
+        )
+        pytest.importorskip(
             "nbmake", reason="nbmake (optional dependency) not available"
         )
         from nbmake.nb_run import NotebookRun
