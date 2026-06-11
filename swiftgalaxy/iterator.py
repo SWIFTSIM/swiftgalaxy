@@ -372,7 +372,7 @@ class SWIFTGalaxies(object):
                 )
             ).squeeze(2)
         # SWIFTMask gives us a lightweight interface to metadata & cell metadata
-        sm = mask(self.snapshot_filename, spatial_only=True)
+        sm = mask(self.snapshot_filename)
         # grid should be at least 1 cell in size so that we efficiently group targets
         # in the same grid location
         grid_element_dim = (
