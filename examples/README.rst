@@ -1,9 +1,13 @@
 Examples
 ========
 
-You can view the notebooks by opening them on github, or locally.
+You can view static notebooks by opening them on github, or locally.
 
-The SWIFTGalaxy demo is also available as an `interactive notebook`_ on Colab_.
+Interactive versions are also available on Colab_:
 
-.. _interactive notebook: https://githubtocolab.com/SWIFTSIM/swiftgalaxy/blob/main/examples/SWIFTGalaxy_demo.ipynb
+ - `SWIFTGalaxy demo with SOAP`_ (and lightweight procedurally generated example data)
+ - `SWIFTGalaxy demo with Caesar`_ (and downloaded example data)
+
 .. _CoLab: https://colab.google/
+.. _SWIFTGalaxy demo with SOAP: https://githubtocolab.com/SWIFTSIM/swiftgalaxy/blob/main/examples/SWIFTGalaxy_demo.ipynb
+.. _SWIFTGalaxy demo with Caesar: https://githubtocolab.com/SWIFTSIM/swiftgalaxy/blob/main/examples/SWIFTGalaxy_Caesar_demo.ipynb
