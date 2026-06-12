@@ -195,7 +195,7 @@ class WebExamples(object):
         from requests.exceptions import HTTPError
 
         try:
-            from tqdm.autonotebook import tqdm
+            from tqdm.auto import tqdm
         except ImportError:  # pragma: no cover
             show_progressbar = False
         else:
