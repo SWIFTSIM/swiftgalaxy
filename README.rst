@@ -2,7 +2,7 @@
    :width: 100%
    :alt: Banner with logo showing a swift in a spiral and the text SWIFTGalaxy.
 
-|Python version| |PyPI version| |JOSS| |pyOpenSci| |ASCL| |Repostatus| |Zenodo| |Build status| |Documentation status| |codecov| |Ruff|
+|Python version| |PyPI version| |JOSS| |pyOpenSci| |ASCL| |Repostatus| |Downloads| |Zenodo| |Build status| |Documentation status| |codecov| |Ruff|
 
 .. |Build status| image:: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml/badge.svg
     :target: https://github.com/SWIFTSIM/swiftgalaxy/actions/workflows/lint_and_test.yml
@@ -18,6 +18,9 @@
 .. |Repostatus| image:: https://www.repostatus.org/badges/latest/active.svg
    :target: https://www.repostatus.org/#active
    :alt: Project Status: Active – The project has reached a stable, usable state and is being actively developed.
+.. |Downloads| image:: https://img.shields.io/pypi/dm/swiftgalaxy.svg
+   :target: https://pypi.org/project/swiftgalaxy/
+   :alt: Monthly downloads
 .. |codecov| image:: https://codecov.io/gh/SWIFTSIM/swiftgalaxy/graph/badge.svg?token=YV3YYEK78Z 
    :target: https://codecov.io/gh/SWIFTSIM/swiftgalaxy
    :alt: CodeCov status
