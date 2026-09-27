@@ -3241,9 +3241,9 @@ def _create_toysoap(
             membership_filepattern = str(membership_filebase) + ".{file_nr}.hdf5"
             make_virtual_snapshot(
                 create_virtual_snapshot_from,
-                [membership_filepattern],
+                membership_filepattern,
                 virtual_snapshot_filename,
-                absolute_paths=True,
+                0,  # snap_nr
             )
     return
 

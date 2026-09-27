@@ -121,6 +121,12 @@ class _HaloCatalogue(ABC):
     """
 
     _user_spatial_offsets: Optional[cosmo_array] = None
+    #: Maps ``__init__`` keyword names to the attribute holding that value, so that a
+    #: catalogue can be rebuilt from plain data (e.g. in a worker process). The target
+    #: index keyword is handled separately via :attr:`_index_attr`.
+    _reconstruct_kwargs: dict = {}
+    #: Name of the ``__init__`` keyword corresponding to :attr:`_index_attr`.
+    _index_kwarg: Optional[str] = None
     _multi_galaxy: bool = False
     _multi_galaxy_catalogue_mask: Optional[int] = None
     _multi_galaxy_index_mask: Optional[Union[int, slice]] = None
@@ -201,6 +207,41 @@ class _HaloCatalogue(ABC):
         self._multi_galaxy_catalogue_mask = None
         self._multi_galaxy_index_mask = None
         return
+
+    def _subset_spec(self, target_indices: Sequence[int]) -> tuple:
+        """
+        Describe this catalogue, restricted to some targets, as picklable plain data.
+
+        Live catalogue objects hold :mod:`h5py` handles and cannot be pickled, so a
+        worker process cannot receive one. This returns the class and the keyword
+        arguments needed to rebuild an equivalent catalogue containing only the
+        requested targets, all of which are picklable.
+
+        Parameters
+        ----------
+        target_indices : :obj:`~collections.abc.Sequence`
+            Positions (into this catalogue's target list) of the targets to keep.
+
+        Returns
+        -------
+        :obj:`tuple`
+            A ``(class, kwargs)`` pair; ``class(**kwargs)`` rebuilds the catalogue.
+
+        See Also
+        --------
+        swiftgalaxy.halo_catalogues._HaloCatalogue._index_attr
+        """
+        kwargs = {
+            kwarg: getattr(self, attr)
+            for kwarg, attr in self._reconstruct_kwargs.items()
+        }
+        if self._index_attr is not None and self._index_kwarg is not None:
+            index = getattr(self, self._index_attr)
+            index_arr = np.atleast_1d(np.asarray(index))
+            kwargs[self._index_kwarg] = [
+                type(index_arr[0].item())(index_arr[i]) for i in target_indices
+            ]
+        return type(self), kwargs
 
     def _get_user_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
         """
@@ -635,6 +676,14 @@ class SOAP(_HaloCatalogue):
     velocity_centre_type: str
     _catalogue: SWIFTDataset
     _index_attr = "_soap_index"
+    _index_kwarg = "soap_index"
+    _reconstruct_kwargs = {
+        "soap_file": "soap_file",
+        "extra_mask": "extra_mask",
+        "centre_type": "centre_type",
+        "velocity_centre_type": "velocity_centre_type",
+        "custom_spatial_offsets": "_user_spatial_offsets",
+    }
     input_halos: "__SWIFTGroupDataset"
     bound_subhalo: "__SWIFTGroupDataset"
 
@@ -696,6 +745,36 @@ class SOAP(_HaloCatalogue):
         assert index is not None  # placate mypy
         squeezed_index = np.squeeze(index)
         return int(squeezed_index) if squeezed_index.ndim == 0 else list(squeezed_index)
+
+    def _subset_spec(self, target_indices: Sequence[int]) -> tuple:
+        """
+        Describe this catalogue, restricted to some targets, as picklable plain data.
+
+        :mod:`swiftsimio`'s masking reads SOAP catalogue rows in sorted order rather
+        than in the order the ``soap_index`` list was given, and the rest of
+        :class:`~swiftgalaxy.halo_catalogues.SOAP` follows that convention: a target's
+        position refers to the sorted list, not to the list the user supplied. Selecting
+        a subset therefore has to sort before indexing, or a reordered ``soap_index``
+        would rebuild the catalogue around the wrong haloes.
+
+        Parameters
+        ----------
+        target_indices : :obj:`~collections.abc.Sequence`
+            Positions (into the sorted target list) of the targets to keep.
+
+        Returns
+        -------
+        :obj:`tuple`
+            A ``(class, kwargs)`` pair; ``class(**kwargs)`` rebuilds the catalogue.
+
+        See Also
+        --------
+        swiftgalaxy.halo_catalogues.SOAP._mask_multi_galaxy
+        """
+        cls, kwargs = super()._subset_spec(target_indices)
+        ordered = np.sort(np.atleast_1d(np.asarray(self._soap_index)))
+        kwargs["soap_index"] = [int(ordered[i]) for i in target_indices]
+        return cls, kwargs
 
     def _mask_multi_galaxy(self, index: int) -> None:
         """
@@ -1051,6 +1130,13 @@ class Velociraptor(_HaloCatalogue):
     velocity_centre_type: str
     _catalogue: "VelociraptorCatalogue"
     _index_attr = "_halo_index"
+    _index_kwarg = "halo_index"
+    _reconstruct_kwargs = {
+        "velociraptor_files": "velociraptor_files",
+        "extra_mask": "extra_mask",
+        "centre_type": "centre_type",
+        "custom_spatial_offsets": "_user_spatial_offsets",
+    }
 
     def __init__(
         self,
@@ -1601,6 +1687,14 @@ class Caesar(_HaloCatalogue):
         "CaesarHalo", "CaesarGalaxy", List[Union["CaesarHalo", "CaesarGalaxy"]]
     ]
     _index_attr = "_group_index"
+    _index_kwarg = "group_index"
+    _reconstruct_kwargs = {
+        "caesar_file": "caesar_file",
+        "group_type": "group_type",
+        "extra_mask": "extra_mask",
+        "centre_type": "centre_type",
+        "custom_spatial_offsets": "_user_spatial_offsets",
+    }
 
     def __init__(
         self,
@@ -2175,6 +2269,34 @@ class Standalone(_HaloCatalogue):
     """
 
     _index_attr = None
+    _reconstruct_kwargs = {
+        "spatial_offsets": "_user_spatial_offsets",
+        "extra_mask": "extra_mask",
+    }
+
+    def _subset_spec(self, target_indices: Sequence[int]) -> tuple:
+        """
+        Describe this catalogue, restricted to some targets, as picklable plain data.
+
+        :class:`~swiftgalaxy.halo_catalogues.Standalone` has no catalogue file or index
+        to reference, so the centres of the requested targets are sliced out and passed
+        by value instead.
+
+        Parameters
+        ----------
+        target_indices : :obj:`~collections.abc.Sequence`
+            Positions (into this catalogue's target list) of the targets to keep.
+
+        Returns
+        -------
+        :obj:`tuple`
+            A ``(class, kwargs)`` pair; ``class(**kwargs)`` rebuilds the catalogue.
+        """
+        cls, kwargs = super()._subset_spec(target_indices)
+        sel = np.asarray(target_indices, dtype=int)
+        kwargs["centre"] = np.atleast_2d(self._centre)[sel]
+        kwargs["velocity_centre"] = np.atleast_2d(self._velocity_centre)[sel]
+        return cls, kwargs
 
     def __init__(
         self,

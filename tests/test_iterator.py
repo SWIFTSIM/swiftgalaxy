@@ -2,6 +2,9 @@
 
 import pytest
 import re
+import pickle
+import multiprocessing
+from scipy.spatial.transform import Rotation
 from pathlib import Path
 import numpy as np
 import unyt as u
@@ -27,7 +30,11 @@ from swiftgalaxy.demo_data import (
 from conftest import hfs
 from swiftsimio.objects import cosmo_array
 from swiftgalaxy.reader import SWIFTGalaxy
-from swiftgalaxy.iterator import SWIFTGalaxies
+from swiftgalaxy.iterator import (
+    SWIFTGalaxies,
+    _CoordinateFrameSpec,
+    _worker_context,
+)
 from swiftgalaxy.halo_catalogues import Standalone, SOAP, Velociraptor, Caesar
 
 
@@ -737,3 +744,682 @@ class TestSWIFTGalaxies:
             != server.gas._internal_dataset._masses.shape
         )
         assert np.all(client2.gas._internal_dataset._masses == 0)
+
+
+def _n_dm(sg):
+    """
+    Count dark matter particles.
+
+    Defined at module level so that it can be pickled and sent to worker processes.
+
+    Parameters
+    ----------
+    sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        The galaxy to count particles for.
+
+    Returns
+    -------
+    :obj:`int`
+        Number of dark matter particles.
+    """
+    return int(sg.dark_matter.coordinates.shape[0])
+
+
+def _scaled_n_dm(sg, factor, offset=0.0):
+    """
+    Count dark matter particles, with extra arguments, to check argument routing.
+
+    Parameters
+    ----------
+    sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        The galaxy to count particles for.
+
+    factor : :obj:`float`
+        Multiplied into the result.
+
+    offset : :obj:`float` (optional), default: ``0.0``
+        Added to the result.
+
+    Returns
+    -------
+    :obj:`float`
+        The scaled particle count.
+    """
+    return _n_dm(sg) * factor + offset
+
+
+def _assorted_types(sg):
+    """
+    Return a mixture of container types, to check that results survive transport.
+
+    Parameters
+    ----------
+    sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        The galaxy to summarise.
+
+    Returns
+    -------
+    :obj:`dict`
+        A dictionary containing a tuple, an array and ``None``.
+    """
+    return {
+        "pair": (_n_dm(sg), "label"),
+        "array": np.arange(3) + _n_dm(sg),
+        "nothing": None,
+    }
+
+
+def _sum_x(sg):
+    """
+    Sum of x coordinates over all present particle types.
+
+    Sensitive to the coordinate frame, but unlike a mean it stays finite when a
+    particle type is empty. Caesar galaxies, for instance, contain no dark matter at
+    all, and a mean over those would be NaN in both the serial and parallel results,
+    which compare unequal and would mask a real disagreement.
+
+    Parameters
+    ----------
+    sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        The galaxy to summarise.
+
+    Returns
+    -------
+    :obj:`float`
+        Summed x coordinate, in the galaxy's length units.
+    """
+    total = 0.0
+    for particle_type in ("dark_matter", "stars", "gas"):
+        if not hasattr(sg, particle_type):
+            continue
+        xyz = getattr(sg, particle_type).coordinates
+        if xyz.shape[0]:
+            total += float(np.sum(xyz.to_value(xyz.units)[:, 0]))
+    return total
+
+
+def _always_raises(sg):
+    """
+    Raise an error, to check that worker exceptions reach the caller.
+
+    Parameters
+    ----------
+    sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        Ignored.
+
+    Raises
+    ------
+    RuntimeError
+        Always.
+    """
+    raise RuntimeError("failure inside worker")
+
+
+def _snapshot_dir(hf_multi, tmp_path_factory):
+    """
+    Locate the directory holding the toy snapshot for a halo catalogue.
+
+    Parameters
+    ----------
+    hf_multi : :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+        A halo catalogue containing several targets.
+
+    tmp_path_factory : :class:`pytest.TempPathFactory`
+        Factory for temporary directories.
+
+    Returns
+    -------
+    :class:`pathlib.Path`
+        The directory containing the snapshot.
+    """
+    if isinstance(hf_multi, SOAP):
+        return hf_multi.soap_file.parent
+    elif isinstance(hf_multi, Caesar):
+        return hf_multi.caesar_file.parent
+    elif isinstance(hf_multi, Velociraptor):
+        return Path(hf_multi.velociraptor_files["properties"]).parent
+    tp = tmp_path_factory.mktemp(_toysnap_filename.parent)
+    _create_toysnap(snapfile=tp / _toysnap_filename.name)
+    return tp
+
+
+def _snapshot_file(hf_multi, tmp_path_factory):
+    """
+    Locate the snapshot file to open for a halo catalogue.
+
+    Parameters
+    ----------
+    hf_multi : :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+        A halo catalogue containing several targets.
+
+    tmp_path_factory : :class:`pytest.TempPathFactory`
+        Factory for temporary directories.
+
+    Returns
+    -------
+    :class:`pathlib.Path`
+        The snapshot (or virtual snapshot) file.
+    """
+    tp = _snapshot_dir(hf_multi, tmp_path_factory)
+    if isinstance(hf_multi, SOAP):
+        return tp / _toysoap_virtual_snapshot_filename.name
+    return tp / _toysnap_filename.name
+
+
+def _sgs_for(hf_multi, tmp_path_factory, **kwargs):
+    """
+    Build a :class:`~swiftgalaxy.iterator.SWIFTGalaxies` for a multi-target catalogue.
+
+    Parameters
+    ----------
+    hf_multi : :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+        A halo catalogue containing several targets.
+
+    tmp_path_factory : :class:`pytest.TempPathFactory`
+        Factory for temporary directories.
+
+    **kwargs : :obj:`dict`
+        Extra keyword arguments for
+        :class:`~swiftgalaxy.iterator.SWIFTGalaxies`.
+
+    Returns
+    -------
+    :class:`~swiftgalaxy.iterator.SWIFTGalaxies`
+        Iterator over the catalogue's targets.
+    """
+    return SWIFTGalaxies(_snapshot_file(hf_multi, tmp_path_factory), hf_multi, **kwargs)
+
+
+class TestParallelMapEquivalence:
+    """Check that ``map(nproc>1)`` agrees with serial evaluation."""
+
+    @pytest.mark.parametrize("nproc", [2, 3])
+    def test_parallel_matches_serial(self, tmp_path_factory, hf_multi, nproc):
+        """Check that parallel results equal serial results for several worker counts."""
+        sgs = _sgs_for(hf_multi, tmp_path_factory)
+        assert sgs.map(_n_dm, nproc=nproc) == sgs.map(_n_dm)
+
+    def test_nproc_one_matches_default(self, tmp_path_factory, hf_multi):
+        """Check that an explicit ``nproc=1`` is the same as omitting it."""
+        sgs = _sgs_for(hf_multi, tmp_path_factory)
+        assert sgs.map(_n_dm, nproc=1) == sgs.map(_n_dm)
+
+    def test_more_workers_than_regions(self, tmp_path_factory, hf_multi):
+        """Check that asking for more workers than there is work is harmless."""
+        sgs = _sgs_for(hf_multi, tmp_path_factory)
+        assert sgs.map(_n_dm, nproc=6) == sgs.map(_n_dm)
+
+    def test_repeated_calls_are_stable(self, tmp_path_factory, hf_multi):
+        """Check that mapping twice in a row gives the same answer both times."""
+        sgs = _sgs_for(hf_multi, tmp_path_factory)
+        first = sgs.map(_n_dm, nproc=2)
+        assert sgs.map(_n_dm, nproc=2) == first
+
+    def test_serial_iteration_still_works_after_parallel(
+        self, tmp_path_factory, hf_multi
+    ):
+        """Check that a parallel map leaves the object usable for serial iteration."""
+        sgs = _sgs_for(hf_multi, tmp_path_factory)
+        sgs.map(_n_dm, nproc=2)
+        assert [_n_dm(sg) for sg in sgs] == [
+            sgs.map(_n_dm)[i] for i in sgs.iteration_order
+        ]
+
+
+class TestParallelMapOrdering:
+    """Check that results follow the user's input order, not the iteration order."""
+
+    def test_input_order_preserved(
+        self, tmp_path_factory, hf_multi_forwards_and_backwards
+    ):
+        """Check that reversing the target list reverses the results."""
+        hf_forwards, hf_backwards = hf_multi_forwards_and_backwards
+        forwards = _sgs_for(hf_forwards, tmp_path_factory).map(_n_dm, nproc=2)
+        backwards = _sgs_for(hf_backwards, tmp_path_factory).map(_n_dm, nproc=2)
+        assert forwards == backwards[::-1]
+
+    def test_order_independent_of_iteration_order(self, tmp_path_factory, hf_multi):
+        """Check that results are ordered by input even when iteration is reordered."""
+        sgs = _sgs_for(hf_multi, tmp_path_factory)
+        serial = sgs.map(_n_dm)
+        parallel = sgs.map(_n_dm, nproc=3)
+        assert parallel == serial
+        assert len(parallel) == len(sgs.iteration_order)
+
+
+class TestParallelMapArguments:
+    """Check that extra arguments reach the galaxy that they belong to."""
+
+    def test_args_and_kwargs(self, tmp_path_factory, hf_multi):
+        """Check that args and kwargs are routed per-target in parallel."""
+        sgs = _sgs_for(hf_multi, tmp_path_factory)
+        ntargets = len(sgs.iteration_order)
+        args = [(i + 1,) for i in range(ntargets)]
+        kwargs = [dict(offset=10.0 * i) for i in range(ntargets)]
+        assert sgs.map(_scaled_n_dm, args=args, kwargs=kwargs, nproc=2) == sgs.map(
+            _scaled_n_dm, args=args, kwargs=kwargs
+        )
+
+    def test_args_only(self, tmp_path_factory, hf_multi):
+        """Check that positional arguments alone are routed correctly."""
+        sgs = _sgs_for(hf_multi, tmp_path_factory)
+        args = [(i + 1,) for i in range(len(sgs.iteration_order))]
+        assert sgs.map(_scaled_n_dm, args=args, nproc=2) == sgs.map(
+            _scaled_n_dm, args=args
+        )
+
+    def test_kwargs_only(self, tmp_path_factory, hf_multi):
+        """Check that keyword arguments alone are routed correctly."""
+        sgs = _sgs_for(hf_multi, tmp_path_factory)
+        ntargets = len(sgs.iteration_order)
+        args = [(1.0,)] * ntargets
+        kwargs = [dict(offset=100.0 * i) for i in range(ntargets)]
+        assert sgs.map(_scaled_n_dm, args=args, kwargs=kwargs, nproc=2) == sgs.map(
+            _scaled_n_dm, args=args, kwargs=kwargs
+        )
+
+
+class TestParallelMapReturnValues:
+    """Check that non-trivial return values survive the trip back from a worker."""
+
+    def test_container_return_values(self, tmp_path_factory, hf_multi):
+        """Check that dicts, tuples, arrays and ``None`` come back intact."""
+        sgs = _sgs_for(hf_multi, tmp_path_factory)
+        serial = sgs.map(_assorted_types)
+        parallel = sgs.map(_assorted_types, nproc=2)
+        assert len(serial) == len(parallel)
+        for expected, got in zip(serial, parallel):
+            assert expected["pair"] == got["pair"]
+            assert expected["nothing"] is None and got["nothing"] is None
+            assert np.array_equal(expected["array"], got["array"])
+
+
+class TestParallelMapEdgeCases:
+    """Check target lists of unusual length, and invalid arguments."""
+
+    def test_single_target(self, tmp_path_factory, hf_multi_onetarget):
+        """Check that a one-target catalogue works in parallel."""
+        sgs = _sgs_for(hf_multi_onetarget, tmp_path_factory)
+        parallel = sgs.map(_n_dm, nproc=2)
+        assert len(parallel) == 1
+        assert parallel == sgs.map(_n_dm)
+
+    def test_zero_targets(self, tmp_path_factory, hf_multi_zerotarget):
+        """Check that an empty target list gives an empty result, not an error."""
+        sgs = _sgs_for(hf_multi_zerotarget, tmp_path_factory)
+        assert sgs.map(_n_dm, nproc=2) == []
+
+    @pytest.mark.parametrize("nproc", [0, -1])
+    def test_invalid_nproc(self, tmp_path_factory, hf_multi, nproc):
+        """Check that a nonsensical number of processes is rejected."""
+        sgs = _sgs_for(hf_multi, tmp_path_factory)
+        with pytest.raises(ValueError, match="nproc"):
+            sgs.map(_n_dm, nproc=nproc)
+
+    def test_worker_exception_propagates(self, tmp_path_factory, hf_multi):
+        """Check that an error raised inside a worker reaches the caller."""
+        sgs = _sgs_for(hf_multi, tmp_path_factory)
+        with pytest.raises(RuntimeError, match="failure inside worker"):
+            sgs.map(_always_raises, nproc=2)
+
+    def test_unpicklable_function_rejected(self, tmp_path_factory, hf_multi):
+        """Check that a lambda cannot be smuggled into a worker process."""
+        sgs = _sgs_for(hf_multi, tmp_path_factory)
+        with pytest.raises(Exception):
+            sgs.map(lambda sg: _n_dm(sg), nproc=2)
+
+
+class TestParallelMapCoordinateFrame:
+    """Check that a copied coordinate frame survives transport to a worker."""
+
+    def _reference_galaxy(self, hf_multi, tmp_path_factory):
+        """
+        Build a galaxy with a non-trivial coordinate frame to copy from.
+
+        Parameters
+        ----------
+        hf_multi : :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
+            Used only to locate the snapshot file.
+
+        tmp_path_factory : :class:`pytest.TempPathFactory`
+            Factory for temporary directories.
+
+        Returns
+        -------
+        :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            A galaxy that has been rotated and translated.
+        """
+        snap = _snapshot_file(hf_multi, tmp_path_factory)
+        ref = SWIFTGalaxy(
+            snap,
+            Standalone(
+                centre=cosmo_array(
+                    [2.0, 2.0, 2.0],
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1,
+                ),
+                velocity_centre=cosmo_array(
+                    [0.0, 0.0, 0.0],
+                    u.km / u.s,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=0,
+                ),
+                spatial_offsets=cosmo_array(
+                    [[-1.0, 1.0]] * 3,
+                    u.Mpc,
+                    comoving=True,
+                    scale_factor=1.0,
+                    scale_exponent=1,
+                ),
+            ),
+        )
+        ref.rotate(Rotation.from_euler("z", 37, degrees=True))
+        ref.translate(
+            cosmo_array(
+                [0.31, -0.12, 0.05],
+                u.Mpc,
+                comoving=True,
+                scale_factor=1.0,
+                scale_exponent=1,
+            )
+        )
+        return ref
+
+    def test_coordinate_frame_from_matches_serial(self, tmp_path_factory, hf_multi):
+        """Check that a copied coordinate frame gives the same answer in parallel."""
+        ref = self._reference_galaxy(hf_multi, tmp_path_factory)
+        sgs = _sgs_for(
+            hf_multi, tmp_path_factory, auto_recentre=False, coordinate_frame_from=ref
+        )
+        assert np.allclose(sgs.map(_sum_x, nproc=2), sgs.map(_sum_x))
+
+    def test_coordinate_frame_actually_applied(self, tmp_path_factory, hf_multi):
+        """Check that copying a frame changes the answer, so the test above has teeth."""
+        ref = self._reference_galaxy(hf_multi, tmp_path_factory)
+        framed = _sgs_for(
+            hf_multi, tmp_path_factory, auto_recentre=False, coordinate_frame_from=ref
+        ).map(_sum_x, nproc=2)
+        unframed = _sgs_for(hf_multi, tmp_path_factory, auto_recentre=False).map(
+            _sum_x, nproc=2
+        )
+        assert not np.allclose(framed, unframed)
+
+    @pytest.mark.parametrize("nproc", [1, 2])
+    def test_frame_with_auto_recentre_raises(self, tmp_path_factory, hf_multi, nproc):
+        """Check that combining a copied frame with auto_recentre is still rejected."""
+        ref = self._reference_galaxy(hf_multi, tmp_path_factory)
+        sgs = _sgs_for(
+            hf_multi, tmp_path_factory, auto_recentre=True, coordinate_frame_from=ref
+        )
+        with pytest.raises(ValueError, match="coordinate_frame_from"):
+            sgs.map(_sum_x, nproc=nproc)
+
+
+class TestCoordinateFrameSpec:
+    """Unit tests for the picklable stand-in for ``coordinate_frame_from``."""
+
+    def test_spec_is_picklable_and_small(self, tmp_path_factory, hf_multi):
+        """Check the spec pickles, unlike the galaxy, and does not carry a registry."""
+        ref = TestParallelMapCoordinateFrame()._reference_galaxy(
+            hf_multi, tmp_path_factory
+        )
+        with pytest.raises(TypeError, match="h5py"):
+            pickle.dumps(ref)
+        blob = pickle.dumps(_CoordinateFrameSpec.from_swift_galaxy(ref))
+        # a unyt quantity would drag a unit registry of tens of kilobytes
+        assert len(blob) < 5000
+
+    def test_spec_round_trip_preserves_transforms(self, tmp_path_factory, hf_multi):
+        """Check that the transforms are unchanged by pickling."""
+        ref = TestParallelMapCoordinateFrame()._reference_galaxy(
+            hf_multi, tmp_path_factory
+        )
+        spec = _CoordinateFrameSpec.from_swift_galaxy(ref)
+        back = pickle.loads(pickle.dumps(spec))
+        assert np.allclose(
+            back.coordinate_transform.as_matrix(), spec.coordinate_transform.as_matrix()
+        )
+        assert np.allclose(
+            back.velocity_transform.as_matrix(), spec.velocity_transform.as_matrix()
+        )
+        assert (back.length_unit, back.time_unit) == (spec.length_unit, spec.time_unit)
+
+    def test_unit_mismatch_raises(self, tmp_path_factory, hf_multi):
+        """Check that mismatched internal units are still detected."""
+        ref = TestParallelMapCoordinateFrame()._reference_galaxy(
+            hf_multi, tmp_path_factory
+        )
+        spec = _CoordinateFrameSpec.from_swift_galaxy(ref)._replace(
+            length_unit="not_the_same_unit"
+        )
+        with pytest.raises(ValueError, match="don't match"):
+            spec.apply_to(ref)
+
+
+class TestSubsetSpec:
+    """Unit tests for describing a halo catalogue as picklable plain data."""
+
+    def test_spec_is_picklable(self, hf_multi):
+        """Check that the spec pickles even though the catalogue itself does not."""
+        spec = hf_multi._subset_spec([0])
+        pickle.dumps(spec)
+
+    def test_rebuilds_an_equivalent_catalogue(self, hf_multi):
+        """Check that rebuilding from the spec selects the requested targets."""
+        catalogue_class, kwargs = hf_multi._subset_spec([0])
+        rebuilt = catalogue_class(**kwargs)
+        assert isinstance(rebuilt, type(hf_multi))
+        if hf_multi._index_attr is not None:
+            assert len(np.atleast_1d(getattr(rebuilt, hf_multi._index_attr))) == 1
+        else:  # Standalone carries its centres by value instead of an index
+            assert np.atleast_2d(rebuilt._centre).shape[0] == 1
+
+    def test_selects_the_requested_targets(self, hf_multi):
+        """Check that a subset picks out the targets asked for, in order."""
+        catalogue_class, kwargs = hf_multi._subset_spec([1, 0])
+        rebuilt = catalogue_class(**kwargs)
+        if hf_multi._index_attr is not None:
+            full = np.atleast_1d(np.asarray(getattr(hf_multi, hf_multi._index_attr)))
+            got = np.atleast_1d(np.asarray(getattr(rebuilt, hf_multi._index_attr)))
+            assert list(got) == [full[1], full[0]]
+        else:
+            full = np.atleast_2d(hf_multi._centre)
+            got = np.atleast_2d(rebuilt._centre)
+            assert np.allclose(got[0], full[1]) and np.allclose(got[1], full[0])
+
+
+class TestWorkerStartMethod:
+    """Check the process start method chosen for workers."""
+
+    def test_avoids_fork(self):
+        """Check that we do not fork, which is unsafe with open HDF5 handles."""
+        context = _worker_context()
+        if "forkserver" in multiprocessing.get_all_start_methods():
+            assert context.get_start_method() == "forkserver"
+        else:
+            assert context.get_start_method() in ("spawn", "forkserver")
+
+
+def _own_index(sg):
+    """
+    Report the catalogue's own identifier for the galaxy being processed.
+
+    Confirms that a worker rebuilt its catalogue around the target it was actually
+    given, rather than silently processing a different one.
+
+    Parameters
+    ----------
+    sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        The galaxy being processed.
+
+    Returns
+    -------
+    :obj:`int`
+        The catalogue index of this galaxy.
+    """
+    catalogue = sg.halo_catalogue
+    return int(np.atleast_1d(getattr(catalogue, catalogue._index_attr[1:]))[0])
+
+
+def _own_centre_x(sg):
+    """
+    Report the x coordinate of the centre the worker's catalogue was built around.
+
+    :class:`~swiftgalaxy.halo_catalogues.Standalone` has no catalogue index, and a
+    worker's rebuilt catalogue holds only its own target, so identity is checked by
+    centre rather than by position in a list.
+
+    Parameters
+    ----------
+    sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        The galaxy being processed.
+
+    Returns
+    -------
+    :obj:`float`
+        The x coordinate of this galaxy's centre.
+    """
+    centre = np.atleast_2d(sg.halo_catalogue.centre)
+    return float(centre[0, 0].to_value(centre.units))
+
+
+def _catalogue_class_name(sg):
+    """
+    Report the class of the halo catalogue seen inside the worker.
+
+    Parameters
+    ----------
+    sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+        The galaxy being processed.
+
+    Returns
+    -------
+    :obj:`str`
+        Name of the halo catalogue class.
+    """
+    return type(sg.halo_catalogue).__name__
+
+
+class TestParallelMapSOAP:
+    """Parallel iteration specifics for the SOAP backend."""
+
+    def test_targets_not_mixed_up(self, sgs_soap):
+        """Check that each worker processes the SOAP target it was given."""
+        assert sgs_soap.map(_own_index, nproc=2) == [0, 1]
+
+    def test_catalogue_available_in_worker(self, sgs_soap):
+        """Check that the rebuilt catalogue is a SOAP catalogue in the worker."""
+        assert sgs_soap.map(_catalogue_class_name, nproc=2) == ["SOAP", "SOAP"]
+
+    def test_results_match_serial(self, sgs_soap):
+        """Check that parallel and serial agree for SOAP."""
+        assert sgs_soap.map(_n_dm, nproc=2) == sgs_soap.map(_n_dm)
+
+    def test_centre_types_survive_reconstruction(self, soap_multi):
+        """Check that SOAP's two centre-type options are carried to the worker."""
+        soap_class, kwargs = soap_multi._subset_spec([0])
+        assert kwargs["centre_type"] == soap_multi.centre_type
+        assert kwargs["velocity_centre_type"] == soap_multi.velocity_centre_type
+        assert Path(kwargs["soap_file"]) == Path(soap_multi.soap_file)
+        assert soap_class is SOAP
+
+
+class TestParallelMapVelociraptor:
+    """Parallel iteration specifics for the Velociraptor backend."""
+
+    def test_targets_not_mixed_up(self, sgs_vr):
+        """Check that each worker processes the Velociraptor target it was given."""
+        assert sgs_vr.map(_own_index, nproc=2) == [0, 1]
+
+    def test_catalogue_available_in_worker(self, sgs_vr):
+        """Check that the rebuilt catalogue is a Velociraptor catalogue."""
+        assert sgs_vr.map(_catalogue_class_name, nproc=2) == [
+            "Velociraptor",
+            "Velociraptor",
+        ]
+
+    def test_results_match_serial(self, sgs_vr):
+        """Check that parallel and serial agree for Velociraptor."""
+        assert sgs_vr.map(_n_dm, nproc=2) == sgs_vr.map(_n_dm)
+
+    def test_both_catalogue_files_survive_reconstruction(self, vr_multi):
+        """Check that both of Velociraptor's file paths reach the worker.
+
+        Velociraptor is the only backend built from a pair of files, and it can be
+        constructed from a filebase instead, so the rebuilt catalogue has to carry the
+        resolved pair rather than the filebase it was given.
+        """
+        vr_class, kwargs = vr_multi._subset_spec([0])
+        assert set(kwargs["velociraptor_files"]) == {"properties", "catalog_groups"}
+        assert kwargs["velociraptor_files"] == vr_multi.velociraptor_files
+        assert isinstance(vr_class(**kwargs), Velociraptor)
+
+
+class TestParallelMapCaesar:
+    """Parallel iteration specifics for the Caesar backend."""
+
+    def test_targets_not_mixed_up(self, sgs_caesar):
+        """Check that each worker processes the Caesar target it was given."""
+        assert sgs_caesar.map(_own_index, nproc=2) == [0, 1]
+
+    def test_catalogue_available_in_worker(self, sgs_caesar):
+        """Check that the rebuilt catalogue is a Caesar catalogue."""
+        assert sgs_caesar.map(_catalogue_class_name, nproc=2) == ["Caesar", "Caesar"]
+
+    def test_results_match_serial(self, sgs_caesar):
+        """Check that parallel and serial agree for both Caesar group types."""
+        assert sgs_caesar.map(_n_dm, nproc=2) == sgs_caesar.map(_n_dm)
+
+    def test_group_type_reaches_the_worker(self, sgs_caesar):
+        """Check that halo/galaxy selection actually changes what a worker sees.
+
+        Caesar galaxies contain no dark matter while haloes do, so the particle counts
+        distinguish the two. If ``group_type`` were lost when the catalogue was rebuilt,
+        workers would quietly analyse the wrong kind of object and this would catch it.
+        """
+        counts = sgs_caesar.map(_n_dm, nproc=2)
+        if sgs_caesar.halo_catalogue.group_type == "galaxy":
+            assert set(counts) == {0}
+        else:
+            assert max(counts) > 0
+
+    def test_group_type_survives_reconstruction(self, caesar_multi):
+        """Check that the group type is present in the reconstruction spec."""
+        caesar_class, kwargs = caesar_multi._subset_spec([0])
+        assert kwargs["group_type"] == caesar_multi.group_type
+        assert caesar_class(**kwargs).group_type == caesar_multi.group_type
+
+
+class TestParallelMapStandalone:
+    """Parallel iteration specifics for the Standalone backend."""
+
+    def test_targets_not_mixed_up(self, sgs_sa):
+        """Check that each worker processes the centre it was given, in input order."""
+        centres = np.atleast_2d(sgs_sa.halo_catalogue._centre)
+        expected = [float(c.to_value(centres.units)) for c in centres[:, 0]]
+        assert np.allclose(sgs_sa.map(_own_centre_x, nproc=2), expected)
+
+    def test_results_match_serial(self, sgs_sa):
+        """Check that parallel and serial agree for Standalone."""
+        assert sgs_sa.map(_n_dm, nproc=2) == sgs_sa.map(_n_dm)
+
+    def test_centres_passed_by_value(self, sa_multi):
+        """Check that centres are sliced and sent, there being no file to reopen."""
+        _, kwargs = sa_multi._subset_spec([1])
+        assert "centre" in kwargs and "velocity_centre" in kwargs
+        assert np.allclose(
+            np.atleast_2d(kwargs["centre"])[0], np.atleast_2d(sa_multi._centre)[1]
+        )
+        assert np.allclose(
+            np.atleast_2d(kwargs["velocity_centre"])[0],
+            np.atleast_2d(sa_multi._velocity_centre)[1],
+        )
+
+    def test_centres_keep_their_units(self, sa_multi):
+        """Check that the sliced centres remain cosmo_arrays with units."""
+        _, kwargs = sa_multi._subset_spec([0])
+        assert isinstance(kwargs["centre"], cosmo_array)
+        assert kwargs["centre"].units == np.atleast_2d(sa_multi._centre).units
