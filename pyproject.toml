@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "swiftgalaxy"
-version="3.0.1"
+version="3.0.2"
 authors = [
     { name="Kyle Oman", email="kyle.a.oman@durham.ac.uk" },
 ]
@@ -20,7 +20,7 @@ dependencies = [
     "numpy",
     "scipy",
     "unyt",
-    "swiftsimio>=12.0.0",
+    "swiftsimio>=12.1.4",
     "requests",
 ]
 

@@ -288,7 +288,7 @@ class SWIFTGalaxies(object):
                 (-np.repeat(aperture, 3), np.repeat(aperture, 3))
             ).T.reshape((-1, 3, 2))
         # SWIFTMask gives us a lightweight interface to metadata & cell metadata
-        sm = mask(self.snapshot_filename, spatial_only=True)
+        sm = mask(self.snapshot_filename)
         # get the lower cell vertex, probably at origin but not guaranteed
         cell_vertex_origin = sm.centers.min(axis=0) - sm.cell_size / 2
         # align origin with the cell grid, we allow going out the upper bounds of the
@@ -372,7 +372,7 @@ class SWIFTGalaxies(object):
                 )
             ).squeeze(2)
         # SWIFTMask gives us a lightweight interface to metadata & cell metadata
-        sm = mask(self.snapshot_filename, spatial_only=True)
+        sm = mask(self.snapshot_filename)
         # grid should be at least 1 cell in size so that we efficiently group targets
         # in the same grid location
         grid_element_dim = (
@@ -503,10 +503,10 @@ class SWIFTGalaxies(object):
         iteration_order
         map
         """
-        region_mask = mask(self.snapshot_filename)
         for region, target_indices in zip(
             self._solution["regions"], self._solution["region_target_indices"]
         ):
+            region_mask = mask(self.snapshot_filename)
             region_mask.constrain_spatial(region)
             self._start_server(region_mask)
             for igalaxy in target_indices:
