@@ -1319,16 +1319,19 @@ def hf_multi_forwards_and_backwards(
             virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
         )
 
-        yield (
-            SOAP(
-                soap_file=toysoap_filename,
-                soap_index=[0, 1],
-            ),
-            SOAP(
-                soap_file=toysoap_filename,
-                soap_index=[1, 0],
-            ),
-        )
+        with pytest.warns(
+            UserWarning, match="`constrain_indices` selects indices in order"
+        ):
+            yield (
+                SOAP(
+                    soap_file=toysoap_filename,
+                    soap_index=[0, 1],
+                ),
+                SOAP(
+                    soap_file=toysoap_filename,
+                    soap_index=[1, 0],
+                ),
+            )
 
         _remove_toysoap(
             filename=toysoap_filename,
