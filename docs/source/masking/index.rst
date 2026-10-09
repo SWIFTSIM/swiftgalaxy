@@ -79,8 +79,79 @@ Therefore, if attempting to minimize memory usage, keep in mind:
     sg.mask_particles(mask)  # memory-efficient
     sg = sg[mask]  # equivalent result, but memory-inefficient
 
-Masking individual SWIFTParticleDatasets
-----------------------------------------
+Generating a mask for bound/unbound particles from a SWIFTGalaxy
+----------------------------------------------------------------
+
+Often, the user may wish to select only those particles that are gravitationally bound to
+a galaxy (or other object). By default, the
+:class:`~swiftgalaxy.reader.SWIFTGalaxy` constructor uses the halo catalogue interface to
+select particles identified as bound to the object of interest. Sometimes, however, it is
+useful to initially load all particles within the spatial region selected by the halo catalogue,
+regardless of their bound status. This can be achieved by setting ``extra_mask=None`` when
+creating the :class:`~swiftgalaxy.reader.SWIFTGalaxy`. The bound-only mask can then be
+obtained separately using the
+:meth:`~swiftgalaxy.reader.SWIFTGalaxy.get_bound_only_mask` method.
+
+For example, using a SOAP catalogue:
+
+.. code-block:: python
+
+    from swiftgalaxy import SWIFTGalaxy
+    from swiftgalaxy.halo_catalogues import SOAP
+
+    sg = SWIFTGalaxy(
+        "my_snapshot.hdf5",
+        SOAP(
+            "my_soap.hdf5",
+            soap_index=3,
+            extra_mask=None,
+        ),
+    )
+
+    bound_mask = sg.get_bound_only_mask()
+
+Here, ``soap_index=3`` selects the fourth object in the catalogue (indices start at zero). The
+``SWIFTGalaxy`` initially includes all particles in the spatially selected region, while
+``bound_mask`` contains the additional selection identifying the bound particles.
+
+The returned :class:`~swiftgalaxy.masks.MaskCollection` can be used in the same ways as other
+particle masks. For example, to select bound gas particles from an array:
+
+.. code-block:: python
+
+    bound_gas_temperatures = sg.gas.temperatures[bound_mask.gas]
+
+This returns a masked copy of the temperature array, without masking the other particle data or
+changing the selection applied to ``sg``.
+
+Alternatively, the mask can be applied to the entire
+:class:`~swiftgalaxy.reader.SWIFTGalaxy`:
+
+.. code-block:: python
+
+    bound_sg = sg[bound_mask]
+
+This creates a masked copy of the galaxy containing only the bound particles. As this operation
+copies the galaxy and its already-loaded data, it can be relatively memory-intensive. If the
+intention is to permanently restrict the particles available through ``sg``, use
+:meth:`~swiftgalaxy.reader.SWIFTGalaxy.mask_particles` instead:
+
+.. code-block:: python
+
+    sg.mask_particles(bound_mask)
+
+This applies the mask in-place, permanently restricting the particle selection without copying
+the entire galaxy.
+
+.. note::
+
+    The mask returned by ``get_bound_only_mask()`` is aligned with the currently selected
+    particles and takes the current ``extra_mask`` into account. It is therefore intended to be
+    applied to arrays belonging to the same
+    :class:`~swiftgalaxy.reader.SWIFTGalaxy` selection from which it was obtained.
+
+    Calling ``get_bound_only_mask()`` requires an associated halo catalogue; otherwise, a
+    ``RuntimeError`` is raised.
 
 Passing masks to the :class:`~swiftgalaxy.reader.SWIFTGalaxy` directly (possibly via the
 :meth:`~swiftgalaxy.reader.SWIFTGalaxy.mask_particles` method) is usually the best way to
@@ -108,7 +179,7 @@ brackets). For example:
    somewhat memory-inefficient.
 
 Masking and SWIFTNamedColumnDatasets
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------
 
 Named column datasets can be masked just like particle datasets, using the named column
 dataset's :meth:`~swiftgalaxy.reader.SWIFTNamedColumnDatasetHelper.__getattr__` method.
