@@ -362,6 +362,12 @@ class TestMaskingSWIFTGalaxy:
             assert got_mask.dtype == bool
             assert got_mask.all()
 
+    def test_invalid_particle_type(self, sg):
+        """Check that an unknown particle type in masking is refused."""
+        sg.metadata.num_part[2] = 1  # claim that there's a "boundary" particle
+        with pytest.raises(ValueError, match="Unknown particle type."):
+            sg.halo_catalogue._generate_bound_only_mask(sg).boundary.mask
+            
 
 class TestMaskingParticleDatasets:
     """Test applying masks to particle datasets."""

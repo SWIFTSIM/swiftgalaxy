@@ -625,6 +625,8 @@ class ToyHF(_HaloCatalogue):
                             dtype=int,
                         ),
                     ][self._mask_index]
+                else:
+                    raise ValueError("Unknown particle type.")
                 if load_masked:
                     particle_ids = getattr(
                         getattr(sg, group_name), sg.id_particle_dataset_name
