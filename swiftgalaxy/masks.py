@@ -83,7 +83,7 @@ class LazyMask(object):
             self._mask = self._mask_function()
             self._evaluated = True
 
-    def _make_combinable(self, *, sg: "SWIFTGalaxy", mask_type: str) -> None:
+    def _ensure_combinable(self, *, sg: "SWIFTGalaxy", mask_type: str) -> None:
         """
         Ensure that the mask can have an arbitrary second mask applied to combine them.
 
@@ -100,6 +100,8 @@ class LazyMask(object):
             The :mod:`swiftsimio` group name that this mask is for (e.g. ``"gas"``,
             ``"dark_matter"``, etc.), used to look up particle count metadata.
         """
+        if self._combinable:
+            return
         # need to convert to an integer mask to combine
         # (boolean is insufficient in case of re-ordering masks)
         if sg._spatial_mask is None:
@@ -145,6 +147,7 @@ class LazyMask(object):
         ~swiftgalaxy.masks.LazyMask
             The combined mask.
         """
+        self._ensure_combinable(sg=sg, mask_type=mask_type)
 
         # may as well always defer evaluating combination until it's asked for
         def lazy_mask() -> NDArray:
@@ -156,8 +159,6 @@ class LazyMask(object):
             :class:`~numpy.ndarray`
                 The combined mask.
             """
-            if not self._combinable:
-                self._make_combinable(sg=sg, mask_type=mask_type)
             assert isinstance(self.mask, np.ndarray)  # placate mypy
             assert self.mask.dtype == int
             return self.mask[other_mask.mask]
