@@ -21,7 +21,22 @@ from swiftsimio.optional_packages import HDFSTREAM_AVAILABLE, hdfstream
 def open_with_hdfstream(
     filename: str, request: pytest.FixtureRequest
 ) -> "hdfstream.RemoteFile":
-    """Open a remote file using hdfstream."""
+    """
+    Open a remote file using hdfstream.
+
+    Parameters
+    ----------
+    filename : str
+        The name of the remote file to open.
+
+    request : ~pytest.fixtures.FixtureRequest
+        Parameter value(s) from the fixture.
+
+    Returns
+    -------
+    ~hdfstream.RemoteFile
+        The hdfstream remote file.
+    """
     if not HDFSTREAM_AVAILABLE:
         pytest.skip("hdfstream (optional dependency) not available.")
     server = request.config.getoption("--hdfstream-server")
@@ -32,14 +47,28 @@ def open_with_hdfstream(
 
 
 def test_soap_with_hdfstream(request: pytest.FixtureRequest):
-    """Load a remote file with :class:`~swiftgalaxy.halo_catalogues.SOAP`."""
+    """
+    Load a remote file with :class:`~swiftgalaxy.halo_catalogues.SOAP`.
+
+    Paramters
+    ---------
+    request : ~pytest.fixtures.FixtureRequest
+        Parameter value(s) from the fixture.
+    """
     soap = SOAP(open_with_hdfstream("SOAPEagleSingle.hdf5", request), soap_index=0)
     assert soap.bound_subhalo.stellar_mass.size == 1
     return
 
 
 def test_sg_with_hdfstream(request: pytest.FixtureRequest):
-    """Load a remote file with :class:`~swiftgalaxy.reader.SWIFTGalaxy`."""
+    """
+    Load a remote file with :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+
+    Paramters
+    ---------
+    request : ~pytest.fixtures.FixtureRequest
+        Parameter value(s) from the fixture.
+    """
     sg = SWIFTGalaxy(
         open_with_hdfstream("EagleSingleVirtual.hdf5", request),
         SOAP(open_with_hdfstream("SOAPEagleSingle.hdf5", request), soap_index=0),
@@ -49,7 +78,14 @@ def test_sg_with_hdfstream(request: pytest.FixtureRequest):
 
 
 def test_sgs_with_hdfstream(request: pytest.FixtureRequest):
-    """Load a remote file with :class:`~swiftgalaxy.iterator.SWIFTGalaxies`."""
+    """
+    Load a remote file with :class:`~swiftgalaxy.iterator.SWIFTGalaxies`.
+
+    Paramters
+    ---------
+    request : ~pytest.fixtures.FixtureRequest
+        Parameter value(s) from the fixture.
+    """
     sgs = SWIFTGalaxies(
         open_with_hdfstream("EagleSingleVirtual.hdf5", request),
         SOAP(open_with_hdfstream("SOAPEagleSingle.hdf5", request), soap_index=[0, 1]),
