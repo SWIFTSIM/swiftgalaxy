@@ -162,9 +162,64 @@ by adding additional :obj:`dict` entries.
 Parallel iteration
 ------------------
 
-There is an obvious opportunity to support iterating over
-:class:`~swiftgalaxy.reader.SWIFTGalaxy` objects in parallel through the
-:class:`~swiftgalaxy.iterator.SWIFTGalaxies` interface. The initial release of the
-:class:`~swiftgalaxy.iterator.SWIFTGalaxies` feature has omitted this to focus on a
-working serial implementation first. Tools for parallel analysis are planned for a future
-release.
+Iteration can be spread across worker processes by passing ``nproc`` to
+:func:`~swiftgalaxy.iterator.SWIFTGalaxies.map`. The default of ``nproc=1`` evaluates
+serially in the current process, exactly as before:
+
+.. code-block:: python
+
+    from swiftgalaxy import SWIFTGalaxies, SOAP
+
+    def sigma_los(sg):
+        return float(sg.stars.velocities[:, 2].std())
+
+    sgs = SWIFTGalaxies(
+        "colibre_with_SOAP_membership_0127.hdf5",
+        SOAP("halo_properties_0127.hdf5", soap_index=targets),
+    )
+    result = sgs.map(sigma_los, nproc=16)
+
+The results are ordered to match the input target list, just as they are for a serial
+:func:`~swiftgalaxy.iterator.SWIFTGalaxies.map`.
+
+The unit of parallel work is a *region*, not a galaxy. Each worker process reads one
+region, then iterates that region's galaxies one at a time within the worker. This
+preserves the grouping that :class:`~swiftgalaxy.iterator.SWIFTGalaxies` exists to
+provide: each set of top-level cells is still read exactly once, no matter how many
+galaxies share it. Where a region contains a single galaxy, one process per region is
+simply one process per galaxy, so nothing is lost by working at region granularity.
+
+Each worker opens its own files and constructs its own halo catalogue covering only the
+targets in its region. Nothing is shared between workers, and no locking is involved.
+
+Requirements on the function
+............................
+
+Two constraints follow from the function and its results having to travel to and from
+another process:
+
++ The function must be defined at module level. A :obj:`lambda` or a function defined
+  inside another function cannot be sent to a worker process.
++ The function should return small, reduced values: a mass, a velocity dispersion, a
+  profile, a few numbers per galaxy. Returning particle-sized arrays from every region
+  can cost more in inter-process communication than the parallelism saves. Reduce inside
+  the function rather than returning particle data to be reduced afterwards.
+
+Choosing a number of processes
+..............................
+
+Memory is usually the binding constraint rather than the number of cores available:
+every worker holds a full region of particles at once. Reading a large region in each of
+many workers simultaneously can exhaust the memory of a node well before the processes
+themselves become a limit.
+
+Speedup also falls short of the number of workers, because part of the work of setting up
+each galaxy is not shared. On a 25 Mpc COLIBRE volume, ninety-six target haloes and one
+worker per region, wall-clock time fell by a factor of about 2, 4.3, 6.8 and 9.3 for 2, 4,
+8 and 16 workers respectively.
+
+Note that iterating a :class:`~swiftgalaxy.iterator.SWIFTGalaxies` directly
+(``for sg in sgs``) is always serial. The objects that it yields hold open file handles
+and cannot be transferred between processes, so
+:func:`~swiftgalaxy.iterator.SWIFTGalaxies.map` is the interface to use for parallel
+analysis.

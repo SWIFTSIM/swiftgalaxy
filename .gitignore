@@ -5,9 +5,11 @@
 *~
 \#*
 /docs/build
+graphify-out
 *.hdf5
 /examples/.ipynb_checkpoints/
 *.ewah
 demo_data/
 .coverage
 pytest.ini
+CLAUDE.md
