@@ -64,7 +64,7 @@ jobs:
       run: |
         python -c "from tests.conftest import preload_test_data; preload_test_data()"
     - name: Start hdfstream service
-      uses ./.github/actions/start-hdfstream
+      uses: ./.github/actions/start-hdfstream
       with:
         data-dir: ./demo_data
 	virtual-prefix: demo_data
@@ -96,7 +96,7 @@ jobs:
       run: |
         python -c "from tests.conftest import preload_test_data; preload_test_data()"
     - name: Start hdfstream service
-      uses ./.github/actions/start-hdfstream
+      uses: ./.github/actions/start-hdfstream
       with:
          data-dir: ./demo_data
          virtual-prefix: demo_data
@@ -135,7 +135,7 @@ jobs:
       run: |
         python -c "from tests.conftest import preload_test_data; preload_test_data()"
     - name: Start hdfstream service
-      uses ./.github/actions/start-hdfstream
+      uses: ./.github/actions/start-hdfstream
       with:
          data-dir: ./demo_data
          virtual-prefix: demo_data
@@ -171,7 +171,7 @@ jobs:
       run: |
         python -c "from tests.conftest import preload_test_data; preload_test_data()"
     - name: Start hdfstream service
-      uses ./.github/actions/start-hdfstream
+      uses: ./.github/actions/start-hdfstream
       with:
          data-dir: ./demo_data
          virtual-prefix: demo_data
