@@ -131,21 +131,9 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install -e .[all,testing]
         python -m pip install git+https://github.com/SWIFTSIM/soap.git
-    - name: Preload test data files for hdfstream
-      run: |
-        python -c "from tests.conftest import preload_remote_data; preload_remote_data()"
-    - name: Start hdfstream service
-      uses: ./.github/actions/start-hdfstream
-      with:
-         data-dir: ./demo_data
-         virtual-prefix: demo_data
-         image: ghcr.io/jchelly/hdfstream-api:0.0.6
     - name: Test with pytest
       run: |
-        pytest -n 2 --hdfstream-server=http://localhost:8080/hdfstream
-    - name: Stop hdfstream service
-      uses: ./.github/actions/stop-hdfstream
-      if: always()
+        pytest -n 2
 
   macos-tests:
     needs: lint
@@ -167,18 +155,6 @@ jobs:
         python -m pip install -e .[all,testing]
         python -m pip install git+https://github.com/SWIFTSIM/soap.git
         python -m pip install git+https://github.com/dnarayanan/caesar.git
-    - name: Preload test data files for hdfstream
-      run: |
-        python -c "from tests.conftest import preload_remote_data; preload_remote_data()"
-    - name: Start hdfstream service
-      uses: ./.github/actions/start-hdfstream
-      with:
-         data-dir: ./demo_data
-         virtual-prefix: demo_data
-         image: ghcr.io/jchelly/hdfstream-api:0.0.6
     - name: Test with pytest
       run: |
-        pytest -n 2 --hdfstream-server=http://localhost:8080/hdfstream
-    - name: Stop hdfstream service
-      uses: ./.github/actions/stop-hdfstream
-      if: always()
+        pytest -n 2
