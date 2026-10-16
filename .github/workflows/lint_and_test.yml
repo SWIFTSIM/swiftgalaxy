@@ -67,8 +67,8 @@ jobs:
       uses: ./.github/actions/start-hdfstream
       with:
         data-dir: ./demo_data
-	virtual-prefix: demo_data
-	image: ghcr.io/jchelly/hdfstream-api:0.0.6
+        virtual-prefix: demo_data
+        image: ghcr.io/jchelly/hdfstream-api:0.0.6
     - name: Test with pytest
       run: |
         pytest -n 2 --hdfstream-server=http://localhost:8080/hdfstream
