@@ -78,7 +78,7 @@ def pytest_addoption(parser: ArgumentParser) -> None:
     return
 
 
-def preload_test_data() -> None:
+def preload_remote_data() -> None:
     """
     Download required test data in advance for remote file tests.
 

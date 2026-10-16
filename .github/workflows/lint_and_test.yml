@@ -62,7 +62,7 @@ jobs:
         python -m pip install git+https://github.com/SWIFTSIM/soap.git
     - name: Preload test data files for hdfstream
       run: |
-        python -c "from tests.conftest import preload_test_data; preload_test_data()"
+        python -c "from tests.conftest import preload_remote_data; preload_remote_data()"
     - name: Start hdfstream service
       uses: ./.github/actions/start-hdfstream
       with:
@@ -94,7 +94,7 @@ jobs:
         python -m pip install git+https://github.com/dnarayanan/caesar.git
     - name: Preload test data files for hdfstream
       run: |
-        python -c "from tests.conftest import preload_test_data; preload_test_data()"
+        python -c "from tests.conftest import preload_remote_data; preload_remote_data()"
     - name: Start hdfstream service
       uses: ./.github/actions/start-hdfstream
       with:
@@ -133,7 +133,7 @@ jobs:
         python -m pip install git+https://github.com/SWIFTSIM/soap.git
     - name: Preload test data files for hdfstream
       run: |
-        python -c "from tests.conftest import preload_test_data; preload_test_data()"
+        python -c "from tests.conftest import preload_remote_data; preload_remote_data()"
     - name: Start hdfstream service
       uses: ./.github/actions/start-hdfstream
       with:
@@ -169,7 +169,7 @@ jobs:
         python -m pip install git+https://github.com/dnarayanan/caesar.git
     - name: Preload test data files for hdfstream
       run: |
-        python -c "from tests.conftest import preload_test_data; preload_test_data()"
+        python -c "from tests.conftest import preload_remote_data; preload_remote_data()"
     - name: Start hdfstream service
       uses: ./.github/actions/start-hdfstream
       with:
