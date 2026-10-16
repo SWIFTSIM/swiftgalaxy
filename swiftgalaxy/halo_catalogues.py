@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 import numpy as np
 import unyt as u
-from swiftsimio import SWIFTMask, SWIFTDataset, mask
+from swiftsimio import SWIFTMask, SWIFTDataset, mask, load
 from swiftgalaxy.masks import MaskCollection, LazyMask
 from swiftsimio.reader import __SWIFTGroupDataset
 from swiftsimio.objects import cosmo_array, cosmo_quantity
@@ -674,7 +674,7 @@ class SOAP(_HaloCatalogue):
             sm.constrain_indices(np.array(self._soap_index, dtype=np.dtype("int")))
         else:
             sm.constrain_index(self._soap_index)
-        self._catalogue = SWIFTDataset(self.soap_file, mask=sm)
+        self._catalogue = load(self.soap_file, mask=sm)
 
     @property
     def soap_index(self) -> Union[int, List[int]]:

@@ -31,6 +31,7 @@ from swiftsimio.reader import (
 )
 from swiftsimio.objects import cosmo_array
 from swiftsimio.masks import SWIFTMask
+from swiftsimio._file_utils import open_path_or_handle
 from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftgalaxy.masks import MaskCollection, LazyMask
 
@@ -1562,7 +1563,8 @@ class SWIFTGalaxy(SWIFTDataset):
                 self.snapshot_filename
             )
         self._data_server = _data_server if _data_server is not None else self
-        super().__init__(snapshot_filename, mask=self._spatial_mask)
+        with open_path_or_handle(snapshot_filename) as handle:
+            super().__init__(handle.filename, mask=self._spatial_mask, handle=handle)
         if auto_recentre is True and coordinate_frame_from is not None:
             raise ValueError(
                 "Cannot use coordinate_frame_from with auto_recentre=True."
