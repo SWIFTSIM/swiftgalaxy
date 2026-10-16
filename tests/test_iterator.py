@@ -24,7 +24,7 @@ from swiftgalaxy.demo_data import (
     _remove_toyvr,
     _remove_toycaesar,
 )
-from conftest import hfs
+from .conftest import hfs
 from swiftsimio.objects import cosmo_array
 from swiftgalaxy.reader import SWIFTGalaxy
 from swiftgalaxy.iterator import SWIFTGalaxies
