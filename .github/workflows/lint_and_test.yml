@@ -64,11 +64,11 @@ jobs:
       run: |
         python -c "from tests.conftest import preload_test_data; preload_test_data()"
     - name: Start hdfstream service
-        uses ./.github/actions/start-hdfstream
-	with:
-	   data-dir: ./demo_data
-	   virtual-prefix: demo_data
-	   image: ghcr.io/jchelly/hdfstream-api:0.0.6
+      uses ./.github/actions/start-hdfstream
+      with:
+        data-dir: ./demo_data
+	virtual-prefix: demo_data
+	image: ghcr.io/jchelly/hdfstream-api:0.0.6
     - name: Test with pytest
       run: |
         pytest -n 2 --hdfstream-server=http://localhost:8080/hdfstream
@@ -96,11 +96,11 @@ jobs:
       run: |
         python -c "from tests.conftest import preload_test_data; preload_test_data()"
     - name: Start hdfstream service
-        uses ./.github/actions/start-hdfstream
-	with:
-	   data-dir: ./demo_data
-	   virtual-prefix: demo_data
-	   image: ghcr.io/jchelly/hdfstream-api:0.0.6
+      uses ./.github/actions/start-hdfstream
+      with:
+         data-dir: ./demo_data
+         virtual-prefix: demo_data
+         image: ghcr.io/jchelly/hdfstream-api:0.0.6
     - name: Test with pytest including coverage report
       run: |
         pytest -n 2 --cov --cov-branch --cov-report=xml --hdfstream-server=http://localhost:8080/hdfstream
@@ -135,11 +135,11 @@ jobs:
       run: |
         python -c "from tests.conftest import preload_test_data; preload_test_data()"
     - name: Start hdfstream service
-        uses ./.github/actions/start-hdfstream
-	with:
-	   data-dir: ./demo_data
-	   virtual-prefix: demo_data
-	   image: ghcr.io/jchelly/hdfstream-api:0.0.6
+      uses ./.github/actions/start-hdfstream
+      with:
+         data-dir: ./demo_data
+         virtual-prefix: demo_data
+         image: ghcr.io/jchelly/hdfstream-api:0.0.6
     - name: Test with pytest
       run: |
         pytest -n 2 --hdfstream-server=http://localhost:8080/hdfstream
@@ -171,11 +171,11 @@ jobs:
       run: |
         python -c "from tests.conftest import preload_test_data; preload_test_data()"
     - name: Start hdfstream service
-        uses ./.github/actions/start-hdfstream
-	with:
-	   data-dir: ./demo_data
-	   virtual-prefix: demo_data
-	   image: ghcr.io/jchelly/hdfstream-api:0.0.6
+      uses ./.github/actions/start-hdfstream
+      with:
+         data-dir: ./demo_data
+         virtual-prefix: demo_data
+         image: ghcr.io/jchelly/hdfstream-api:0.0.6
     - name: Test with pytest
       run: |
         pytest -n 2 --hdfstream-server=http://localhost:8080/hdfstream
