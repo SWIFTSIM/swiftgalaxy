@@ -3,6 +3,7 @@
 import pytest
 from pytest import TempPathFactory, FixtureRequest
 from pathlib import Path
+from argparse import ArgumentParser
 import numpy as np
 import unyt as u
 from swiftsimio import mask
@@ -47,6 +48,49 @@ from swiftgalaxy.demo_data import (
 )
 
 hfs = ("vr", "caesar_halo", "caesar_galaxy", "sa", "soap")
+
+
+def pytest_addoption(parser: ArgumentParser) -> None:
+    """
+    Define command line flags to set the server URL and path to test data.
+
+    No persistent remote server is currently available.
+    To test against a local server (e.g. in a github workflow), use::
+
+        --hdfstream-server=http://localhost:8080/hdfstream
+        --hdfstream-prefix=demo_data
+
+    Omit the server URL to skip remote file tests.
+
+    Parameters
+    ----------
+    parser : argparse.ArgumentParser
+        The argument parser.
+    """
+    parser.addoption(
+        "--hdfstream-server", default=None, help="Hdfstream server URL for tests"
+    )
+    parser.addoption(
+        "--hdfstream-prefix",
+        default="demo_data/",
+        help="Directory with test data on the server",
+    )
+    return
+
+
+def preload_test_data() -> None:
+    """
+    Download required test data in advance for remote file tests.
+
+    Tests using the hdfstream service are implemented by running a local copy of the
+    server in a container when run through github actions. In that case we need to ensure
+    that required files are present before the server is started.
+    """
+    web_examples.virtual_snapshot
+    web_examples.soap
+    # caesar reader does not support hdfstream access
+    # vr reader does not support hdfstream access
+    return
 
 
 @pytest.fixture(scope="function")

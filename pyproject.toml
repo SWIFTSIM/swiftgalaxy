@@ -52,6 +52,7 @@ testing = [
     "numpydoc",
     "nbmake",
     "sphinx-lint",
+    "hdfstream",
 ]
 docs = [
     "sphinx",
