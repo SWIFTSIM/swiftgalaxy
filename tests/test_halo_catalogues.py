@@ -140,7 +140,7 @@ class TestHaloCatalogues:
             pytest.importorskip("SOAP.compression")
             from SOAP.compression.make_virtual_snapshot import make_virtual_snapshot
 
-            tp = hf.soap_file.parent
+            tp = Path(hf.soap_file).parent
             toysnap_filename = tp / _toysnap_filename.name
             _create_toysnap(snapfile=toysnap_filename, withfof=True)
             membership_filepattern = tp / (
@@ -370,7 +370,7 @@ class TestHaloCataloguesMulti:
             pytest.importorskip("SOAP.compression")
             from SOAP.compression.make_virtual_snapshot import make_virtual_snapshot
 
-            tp = hf_multi.soap_file.parent
+            tp = Path(hf_multi.soap_file).parent
             toysnap_filename = tp / _toysnap_filename.name
             _create_toysnap(snapfile=toysnap_filename, withfof=True)
             membership_filepattern = tp / (
