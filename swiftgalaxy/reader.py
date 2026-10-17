@@ -1562,14 +1562,10 @@ class SWIFTGalaxy(SWIFTDataset):
                 # in server mode we don't have a halo_catalogue yet
                 self._spatial_mask = getattr(self, "_spatial_mask", None)
             elif self.halo_catalogue._user_spatial_offsets is not None:
-                self._spatial_mask = self.halo_catalogue._get_user_spatial_mask(
-                    self.snapshot_filename
-                )
+                self._spatial_mask = self.halo_catalogue._get_user_spatial_mask(handle)
             else:
-                self._spatial_mask = self.halo_catalogue._get_spatial_mask(
-                    self.snapshot_filename
-                )
-                self._data_server = _data_server if _data_server is not None else self
+                self._spatial_mask = self.halo_catalogue._get_spatial_mask(handle)
+            self._data_server = _data_server if _data_server is not None else self
             super().__init__(handle.filename, mask=self._spatial_mask, handle=handle)
         if auto_recentre is True and coordinate_frame_from is not None:
             raise ValueError(
