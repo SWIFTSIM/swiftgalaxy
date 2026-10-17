@@ -82,4 +82,5 @@ intersphinx_mapping = dict(
     unyt=("https://unyt.readthedocs.io/en/stable/", None),
     numpy=("https://numpy.org/doc/stable/", None),
     caesar=("https://caesar.readthedocs.io/en/latest/", None),
+    hdfstream=("https://hdfstream-python.readthedocs.io/en/latest", None),
 )
