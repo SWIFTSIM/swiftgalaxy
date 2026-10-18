@@ -568,10 +568,10 @@ class SOAP(_HaloCatalogue):
     Parameters
     ----------
     soap_file : :obj:`str` or :class:`~pathlib.Path` or \
-    :class:`~hdfstream.remote_file.RemoteFile`, default: ``None``
+    :class:`~hdfstream.remote_file.RemoteFile`
         The path to a :mod:`SOAP` catalogue file. May be a remote file accessed using
         :mod:`hdfstream`.
-    soap_index : :obj:`int` or :obj:`list`, default: ``None``
+    soap_index : :obj:`int` or :obj:`list`
         The position (row) in the SOAP catalogue corresponding to the object of interest.
         Duplicate entries are not allowed.
     extra_mask : :obj:`str` or :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
@@ -645,23 +645,17 @@ class SOAP(_HaloCatalogue):
 
     def __init__(
         self,
-        soap_file: "Optional[Union[str, Path, hdfstream.RemoteFile]]" = None,
-        soap_index: Optional[Union[int, Sequence[int]]] = None,
+        soap_file: "Optional[Union[str, Path, hdfstream.RemoteFile]]",
+        *,
+        soap_index: Optional[Union[int, Sequence[int]]],
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "input_halos.halo_centre",
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
         custom_spatial_offsets: Optional[cosmo_array] = None,
     ) -> None:
-        if soap_file is not None:
-            with open_path_or_handle(soap_file) as handle:
-                self.soap_file = handle.filename
-        else:
-            raise ValueError("Provide a soap_file.")
-
-        if soap_index is not None:
-            self._soap_index = soap_index
-        else:
-            raise ValueError("Provide a soap_index.")
+        with open_path_or_handle(soap_file) as handle:
+            self.soap_file = handle.filename
+        self._soap_index = soap_index
         self.centre_type = centre_type
         self.velocity_centre_type = velocity_centre_type
         self._user_spatial_offsets = custom_spatial_offsets
