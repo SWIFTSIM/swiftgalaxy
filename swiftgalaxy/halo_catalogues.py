@@ -17,6 +17,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 import numpy as np
 import unyt as u
+import h5py
 from swiftsimio import SWIFTMask, SWIFTDataset, mask, load
 from swiftgalaxy.masks import MaskCollection, LazyMask
 from swiftsimio.reader import __SWIFTGroupDataset
@@ -647,7 +648,7 @@ class SOAP(_HaloCatalogue):
         cosmo_array([6.72e+12], dtype=float32, units='1.98841586e+30*kg', comoving=False)
     """
 
-    soap_file: str
+    soap_file: "Union[h5py.File, hdfstream.RemoteFile]"
     _soap_index: Union[int, Sequence[int]]
     centre_type: str
     velocity_centre_type: str
@@ -668,12 +669,13 @@ class SOAP(_HaloCatalogue):
         custom_spatial_offsets: Optional[cosmo_array] = None,
     ) -> None:
         with open_path_or_handle(soap_file) as handle:
-            self.soap_file = handle.filename
+            self.soap_file = handle
         if soap_mask is None:
             self._soap_index = soap_index
-        elif soap_mask.filename != self.soap_file:
+        elif soap_mask.handle.filename != self.soap_file.filename:
             raise ValueError(
-                f"Opening {soap_file}, but `soap_mask` is for {soap_mask.filename}."
+                f"Opening {self.soap_file.filename}, but `soap_mask` is for "
+                f"{soap_mask.filename}."
             )
         else:
             self._soap_index = self._get_unmasked_index(soap_index, soap_mask)
@@ -1386,7 +1388,6 @@ class Velociraptor(_HaloCatalogue):
                 scale_factor=self._particles[0].groups_instance.catalogue.units.a,
                 scale_exponent=1,
             )
-        print(retval)
         return retval
 
     @property

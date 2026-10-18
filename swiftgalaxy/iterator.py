@@ -185,6 +185,7 @@ class SWIFTGalaxies(object):
 
     count: int
     halo_catalogue: _HaloCatalogue
+    snapshot_file: "Union[str, Path, hdfstream.RemoteFile]"
 
     def __init__(
         self,
@@ -214,7 +215,7 @@ class SWIFTGalaxies(object):
             )
         self.halo_catalogue = halo_catalogue
         with open_path_or_handle(snapshot_filename) as handle:
-            self.snapshot_filename = handle.filename
+            self.snapshot_file = handle
         self.auto_recentre = auto_recentre
         self.transforms_like_coordinates = transforms_like_coordinates
         self.transforms_like_velocities = transforms_like_velocities
@@ -308,7 +309,7 @@ class SWIFTGalaxies(object):
                 (-np.repeat(aperture, 3), np.repeat(aperture, 3))
             ).T.reshape((-1, 3, 2))
         # SWIFTMask gives us a lightweight interface to metadata & cell metadata
-        sm = mask(self.snapshot_filename)
+        sm = mask(self.snapshot_file)
         # get the lower cell vertex, probably at origin but not guaranteed
         cell_vertex_origin = sm.centers.min(axis=0) - sm.cell_size / 2
         # align origin with the cell grid, we allow going out the upper bounds of the
@@ -392,7 +393,7 @@ class SWIFTGalaxies(object):
                 )
             ).squeeze(2)
         # SWIFTMask gives us a lightweight interface to metadata & cell metadata
-        sm = mask(self.snapshot_filename)
+        sm = mask(self.snapshot_file)
         # grid should be at least 1 cell in size so that we efficiently group targets
         # in the same grid location
         grid_element_dim = (
@@ -485,7 +486,7 @@ class SWIFTGalaxies(object):
             The spatial mask object for the server.
         """
         self._server = SWIFTGalaxy._copyinit(
-            snapshot_filename=self.snapshot_filename,
+            snapshot_filename=self.snapshot_file,
             halo_catalogue=None,
             auto_recentre=False,
             transforms_like_coordinates=self.transforms_like_coordinates,
@@ -526,7 +527,7 @@ class SWIFTGalaxies(object):
         for region, target_indices in zip(
             self._solution["regions"], self._solution["region_target_indices"]
         ):
-            region_mask = mask(self.snapshot_filename)
+            region_mask = mask(self.snapshot_file)
             region_mask.constrain_spatial(region)
             self._start_server(region_mask)
             for igalaxy in target_indices:

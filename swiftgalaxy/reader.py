@@ -1520,7 +1520,7 @@ class SWIFTGalaxy(SWIFTDataset):
     documentation pages.
     """
 
-    snapshot_filename: str
+    snapshot_file: "Union[str, Path, hdfstream.RemoteFile]"
     halo_catalogue: Optional[_HaloCatalogue]
     transforms_like_coordinates: Set[str]
     transforms_like_velocities: Set[str]
@@ -1545,7 +1545,7 @@ class SWIFTGalaxy(SWIFTDataset):
         _data_server: Optional["SWIFTGalaxy"] = None,
     ) -> None:
         with open_path_or_handle(snapshot_filename) as handle:
-            self.snapshot_filename = handle.filename
+            self.snapshot_file = handle
             self.halo_catalogue = halo_catalogue
             self.transforms_like_coordinates = {coordinates_dataset_name}.union(
                 transforms_like_coordinates
@@ -1683,7 +1683,7 @@ class SWIFTGalaxy(SWIFTDataset):
     @classmethod
     def _copyinit(
         cls,
-        snapshot_filename: str,
+        snapshot_filename: "Union[str, Path, hdfstream.RemoteFile]",
         halo_catalogue: Optional[_HaloCatalogue],
         auto_recentre: bool = True,
         transforms_like_coordinates: Set[str] = set(),
@@ -1705,7 +1705,8 @@ class SWIFTGalaxy(SWIFTDataset):
 
         Parameters
         ----------
-        snapshot_filename : :obj:`str`
+        snapshot_filename : :obj:`str` or :class:`~pathlib.Path` or \
+        :class:`~hdfstream.remote_file.RemoteFile`
             Name of file containing snapshot.
 
         halo_catalogue : :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue` \
@@ -1809,7 +1810,7 @@ class SWIFTGalaxy(SWIFTDataset):
         :obj:`str`
             The string representation.
         """
-        return f"SWIFTGalaxy at {self.snapshot_filename}."
+        return f"SWIFTGalaxy at {self.snapshot_file}."
 
     def __repr__(self) -> str:
         """
@@ -1849,7 +1850,7 @@ class SWIFTGalaxy(SWIFTDataset):
             The copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object.
         """
         sg = self._copyinit(
-            self.snapshot_filename,
+            self.snapshot_file,
             self.halo_catalogue,
             auto_recentre=False,  # transforms overwritten below
             transforms_like_coordinates=self.transforms_like_coordinates,
@@ -1910,7 +1911,7 @@ class SWIFTGalaxy(SWIFTDataset):
             object.
         """
         sg = self._copyinit(
-            deepcopy(self.snapshot_filename),
+            self.snapshot_file,
             copy(self.halo_catalogue),
             auto_recentre=False,  # transforms overwritten below
             transforms_like_coordinates=deepcopy(self.transforms_like_coordinates),
