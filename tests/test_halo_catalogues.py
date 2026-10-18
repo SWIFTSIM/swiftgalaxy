@@ -1322,9 +1322,19 @@ class TestSOAP:
 
     def test_required_args(self):
         """Check that the soap_file and soap_index arguments are mandatory."""
-        with pytest.raises(ValueError, match="Provide a soap_file."):
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "SOAP.__init__() missing 1 required positional argument: 'soap_file'"
+            ),
+        ):
             SOAP(soap_index=1)
-        with pytest.raises(ValueError, match="Provide a soap_index."):
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "SOAP.__init__() missing 1 required keyword-only argument: 'soap_index"
+            ),
+        ):
             SOAP(soap_file=_toysoap_filename)
 
 
