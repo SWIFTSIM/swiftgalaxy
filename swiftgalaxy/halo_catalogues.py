@@ -17,10 +17,11 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 import numpy as np
 import unyt as u
-from swiftsimio import SWIFTMask, SWIFTDataset, mask
+from swiftsimio import SWIFTMask, SWIFTDataset, mask, load
 from swiftgalaxy.masks import MaskCollection, LazyMask
 from swiftsimio.reader import __SWIFTGroupDataset
 from swiftsimio.objects import cosmo_array, cosmo_quantity
+from swiftsimio._file_utils import open_path_or_handle
 
 from typing import Union, Optional, TYPE_CHECKING, List, Dict
 from numpy.typing import NDArray
@@ -29,6 +30,8 @@ if TYPE_CHECKING:  # pragma: no cover
     from swiftgalaxy.reader import SWIFTGalaxy
     from velociraptor.catalogue.catalogue import Catalogue as VelociraptorCatalogue
     from caesar.loader import Galaxy as CaesarGalaxy, Halo as CaesarHalo
+    from pathlib import Path
+    import hdfstream
 
 
 class _MaskHelper:
@@ -574,9 +577,11 @@ class SOAP(_HaloCatalogue):
 
     Parameters
     ----------
-    soap_file : :obj:`str`, default: ``None``
-        The filename of a SOAP catalogue file, possibly including the path.
-    soap_index : :obj:`int` or :obj:`list`, default: ``None``
+    soap_file : :obj:`str` or :class:`~pathlib.Path` or \
+    :class:`~hdfstream.remote_file.RemoteFile`
+        The path to a :mod:`SOAP` catalogue file. May be a remote file accessed using
+        :mod:`hdfstream`.
+    soap_index : :obj:`int` or :obj:`list`
         The position (row) in the SOAP catalogue corresponding to the object of interest.
         Duplicate entries are not allowed.
     extra_mask : :obj:`str` or :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
@@ -650,22 +655,17 @@ class SOAP(_HaloCatalogue):
 
     def __init__(
         self,
-        soap_file: Optional[str] = None,
-        soap_index: Optional[Union[int, Sequence[int]]] = None,
+        soap_file: "Optional[Union[str, Path, hdfstream.RemoteFile]]",
+        *,
+        soap_index: Union[int, Sequence[int]],
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "input_halos.halo_centre",
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
         custom_spatial_offsets: Optional[cosmo_array] = None,
     ) -> None:
-        if soap_file is not None:
-            self.soap_file = soap_file
-        else:
-            raise ValueError("Provide a soap_file.")
-
-        if soap_index is not None:
-            self._soap_index = soap_index
-        else:
-            raise ValueError("Provide a soap_index.")
+        with open_path_or_handle(soap_file) as handle:
+            self.soap_file = handle.filename
+        self._soap_index = soap_index
         self.centre_type = centre_type
         self.velocity_centre_type = velocity_centre_type
         self._user_spatial_offsets = custom_spatial_offsets
@@ -684,7 +684,7 @@ class SOAP(_HaloCatalogue):
             sm.constrain_indices(np.array(self._soap_index, dtype=np.dtype("int")))
         else:
             sm.constrain_index(self._soap_index)
-        self._catalogue = SWIFTDataset(self.soap_file, mask=sm)
+        self._catalogue = load(self.soap_file, mask=sm)
 
     @property
     def soap_index(self) -> Union[int, List[int]]:

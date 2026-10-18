@@ -140,7 +140,7 @@ class TestHaloCatalogues:
             pytest.importorskip("SOAP.compression")
             from SOAP.compression.make_virtual_snapshot import make_virtual_snapshot
 
-            tp = hf.soap_file.parent
+            tp = Path(hf.soap_file).parent
             toysnap_filename = tp / _toysnap_filename.name
             _create_toysnap(snapfile=toysnap_filename, withfof=True)
             membership_filepattern = tp / (
@@ -370,7 +370,7 @@ class TestHaloCataloguesMulti:
             pytest.importorskip("SOAP.compression")
             from SOAP.compression.make_virtual_snapshot import make_virtual_snapshot
 
-            tp = hf_multi.soap_file.parent
+            tp = Path(hf_multi.soap_file).parent
             toysnap_filename = tp / _toysnap_filename.name
             _create_toysnap(snapfile=toysnap_filename, withfof=True)
             membership_filepattern = tp / (
@@ -1326,9 +1326,19 @@ class TestSOAP:
 
     def test_required_args(self):
         """Check that the soap_file and soap_index arguments are mandatory."""
-        with pytest.raises(ValueError, match="Provide a soap_file."):
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "SOAP.__init__() missing 1 required positional argument: 'soap_file'"
+            ),
+        ):
             SOAP(soap_index=1)
-        with pytest.raises(ValueError, match="Provide a soap_index."):
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "SOAP.__init__() missing 1 required keyword-only argument: 'soap_index"
+            ),
+        ):
             SOAP(soap_file=_toysoap_filename)
 
 

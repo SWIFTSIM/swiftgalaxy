@@ -11,12 +11,29 @@ Parallelization is not yet implemented but is prioritized for future release.
 import numpy as np
 import unyt as u
 from swiftsimio import mask, cosmo_array
+from swiftsimio._file_utils import open_path_or_handle
 from .reader import SWIFTGalaxy
 from .halo_catalogues import _HaloCatalogue
 from warnings import warn
 
-from typing import Optional, Set, Any, List, Callable, Dict, Tuple, Generator, TypedDict
+from typing import (
+    Optional,
+    Union,
+    Set,
+    Any,
+    List,
+    Callable,
+    Dict,
+    Tuple,
+    Generator,
+    TypedDict,
+    TYPE_CHECKING,
+)
 from swiftsimio.masks import SWIFTMask
+
+if TYPE_CHECKING:
+    import hdfstream
+    from pathlib import Path
 
 
 class _IterationSolution(TypedDict):
@@ -57,8 +74,10 @@ class SWIFTGalaxies(object):
 
     Parameters
     ----------
-    snapshot_filename : :obj:`str`
-        Name of file containing snapshot.
+    snapshot_filename : :obj:`str` or :class:`~pathlib.Path` or \
+    :class:`~hdfstream.remote_file.RemoteFile`
+        Name of file containing snapshot. May be a remote file accessed using
+        :mod:`hdfstream`.
 
     halo_catalogue : :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue`
         A halo catalogue instance from :mod:`swiftgalaxy.halo_catalogues`, e.g. a
@@ -169,7 +188,7 @@ class SWIFTGalaxies(object):
 
     def __init__(
         self,
-        snapshot_filename: str,
+        snapshot_filename: "Union[str, Path, hdfstream.RemoteFile]",
         halo_catalogue: _HaloCatalogue,
         auto_recentre: bool = True,
         preload: Set[str] = set(),
@@ -194,7 +213,8 @@ class SWIFTGalaxies(object):
                 DeprecationWarning,
             )
         self.halo_catalogue = halo_catalogue
-        self.snapshot_filename = snapshot_filename
+        with open_path_or_handle(snapshot_filename) as handle:
+            self.snapshot_filename = handle.filename
         self.auto_recentre = auto_recentre
         self.transforms_like_coordinates = transforms_like_coordinates
         self.transforms_like_velocities = transforms_like_velocities

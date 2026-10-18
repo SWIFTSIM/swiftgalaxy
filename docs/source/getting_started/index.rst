@@ -10,7 +10,9 @@ halo finder, and more, easy. It is built upon the :class:`~swiftsimio.reader.SWI
 from :mod:`swiftsimio` and takes advantage of that module's lazy-loading and
 unit-awareness features. Users already familiar with usage of :mod:`swiftsimio` will find
 that any syntax to interact with a :class:`~swiftsimio.reader.SWIFTDataset` also works
-with a :class:`~swiftgalaxy.reader.SWIFTGalaxy`.
+with a :class:`~swiftgalaxy.reader.SWIFTGalaxy`. This :mod:`swiftgalaxy` documentation
+is intended to be read alongside the :mod:`swiftsimio` documentation, it does not
+duplicate its content.
 
 .. _SWIFT: http://swift.dur.ac.uk
 
@@ -41,6 +43,7 @@ Optional:
   support for Caesar_ catalogues.
 + :mod:`astropy`, used in generating example data sets.
 + :mod:`h5py`, used to generate example data sets.
++ :mod:`hdfstream`, used for access to remotely hosted data sets.
 
 .. _Velociraptor: https://ui.adsabs.harvard.edu/abs/2019PASA...36...21E/abstract
 .. _soap on github: https://github.com/SWIFTSIM/SOAP
@@ -73,7 +76,9 @@ Installing
 :mod:`swiftgalaxy` can be installed using the python packaging manager, ``pip``, or any
 other packaging manager that you wish to use:
 
-``pip install swiftgalaxy``
+.. code-block::
+
+   pip install swiftgalaxy
 
 Note that this will also install required dependencies. To install optional dependencies
 to support Velociraptor catalogues use ``pip install swiftgalaxy[velociraptor]``. For
@@ -134,7 +139,7 @@ You may wish to set up the following `pre-commit hook`_:
    ruff format --check || exit 1
    ruff check || exit 1
    mypy || exit 1
-   python -m numpydoc lint swiftgalaxy**/*.py || exit 1
+   python -m numpydoc lint **/*.py || exit 1
    sphinx-lint --max-line-length 90 -e all docs/source/ || exit 1
 
    exit 0
@@ -152,7 +157,7 @@ and `pre-push hook`_:
    ruff format --check || exit 1
    ruff check || exit 1
    mypy || exit 1
-   python -m numpydoc lint swiftgalaxy**/*.py || exit 1
+   python -m numpydoc lint **/*.py || exit 1
    sphinx-lint --max-line-length 90 -e all docs/source/ || exit 1
    pytest || exit 1
 
@@ -187,14 +192,19 @@ information are available:
     sg.units
     sg.metadata
 
-:mod:`swiftgalaxy` supports Python's tab completion features. This means that you can
-browse the available attributes of objects in an interactive interpreter by starting to
-type an attribute (or just a trailing dot) and pressing tab twice. A few examples to help
-start exploring:
+Tab completion features are supported. This means that you can browse the available
+attributes of objects in an interactive interpreter by starting to type an attribute (or
+just a trailing dot) and pressing tab twice. A few examples to help start exploring:
 
    - ``sg.<tab><tab>``
    - ``sg.gas.<tab><tab>``
    - ``sg.halo_catalogue.<tab><tab>``
+
+Access to remote SWIFT snapshot files and SOAP catalogues hosted on a :mod:`hdfstream`
+server is supported. The `FLAMINGO data release`_ provides such a server, for instance.
+
+.. _FLAMINGO data release: https://dataweb.cosma.dur.ac.uk:8443/flamingo/\
+                           introduction.html#accessing-subsets-of-the-data
 
 The further features of a :class:`~swiftgalaxy.reader.SWIFTGalaxy` are detailed in the
 next sections.

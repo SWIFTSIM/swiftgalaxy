@@ -24,7 +24,7 @@ from swiftgalaxy.demo_data import (
     _remove_toyvr,
     _remove_toycaesar,
 )
-from conftest import hfs
+from .conftest import hfs
 from swiftsimio.objects import cosmo_array
 from swiftgalaxy.reader import SWIFTGalaxy
 from swiftgalaxy.iterator import SWIFTGalaxies
@@ -279,7 +279,7 @@ class TestSWIFTGalaxies:
         the input list order.
         """
         if isinstance(hf_multi, SOAP):
-            tp = hf_multi.soap_file.parent
+            tp = Path(hf_multi.soap_file).parent
         elif isinstance(hf_multi, Caesar):
             tp = hf_multi.caesar_file.parent
         elif isinstance(hf_multi, Velociraptor):
@@ -339,7 +339,7 @@ class TestSWIFTGalaxies:
         """
         hf_multi, hf_multi_backwards = hf_multi_forwards_and_backwards
         if isinstance(hf_multi, SOAP):
-            tp = hf_multi.soap_file.parent
+            tp = Path(hf_multi.soap_file).parent
         elif isinstance(hf_multi, Caesar):
             tp = hf_multi.caesar_file.parent
         elif isinstance(hf_multi, Velociraptor):
@@ -530,7 +530,7 @@ class TestSWIFTGalaxies:
         Instead iterate over zero elements.
         """
         if isinstance(hf_multi_zerotarget, SOAP):
-            tp = hf_multi_zerotarget.soap_file.parent
+            tp = Path(hf_multi_zerotarget.soap_file).parent
         elif isinstance(hf_multi_zerotarget, Caesar):
             tp = hf_multi_zerotarget.caesar_file.parent
         elif isinstance(hf_multi_zerotarget, Velociraptor):
@@ -560,7 +560,7 @@ class TestSWIFTGalaxies:
     def test_one_target(self, tmp_path_factory, hf_multi_onetarget):
         """Make sure that we don't crash with a single target. Instead iterate over it."""
         if isinstance(hf_multi_onetarget, SOAP):
-            tp = hf_multi_onetarget.soap_file.parent
+            tp = Path(hf_multi_onetarget.soap_file).parent
         elif isinstance(hf_multi_onetarget, Caesar):
             tp = hf_multi_onetarget.caesar_file.parent
         elif isinstance(hf_multi_onetarget, Velociraptor):

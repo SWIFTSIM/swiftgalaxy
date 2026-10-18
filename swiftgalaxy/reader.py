@@ -31,10 +31,15 @@ from swiftsimio.reader import (
 )
 from swiftsimio.objects import cosmo_array
 from swiftsimio.masks import SWIFTMask
+from swiftsimio._file_utils import open_path_or_handle
 from swiftgalaxy.halo_catalogues import _HaloCatalogue
 from swiftgalaxy.masks import MaskCollection, LazyMask
 
-from typing import Union, Optional, Set, Callable
+from typing import Union, Optional, Set, Callable, TYPE_CHECKING
+from pathlib import Path
+
+if TYPE_CHECKING:
+    import hdfstream
 
 
 def _apply_box_wrap(
@@ -1396,8 +1401,10 @@ class SWIFTGalaxy(SWIFTDataset):
 
     Parameters
     ----------
-    snapshot_filename : :obj:`str`
-        Name of file containing snapshot.
+    snapshot_filename : :obj:`str` or :class:`~pathlib.Path` or \
+    :class:`~hdfstream.remote_file.RemoteFile`
+        Name of file containing snapshot. May be a remote file accessed using
+        :mod:`hdfstream`.
 
     halo_catalogue : :class:`~swiftgalaxy.halo_catalogues._HaloCatalogue` (optional), \
     default: ``None``
@@ -1526,7 +1533,7 @@ class SWIFTGalaxy(SWIFTDataset):
 
     def __init__(
         self,
-        snapshot_filename: str,
+        snapshot_filename: "Union[str, Path, hdfstream.RemoteFile]",
         halo_catalogue: Optional[_HaloCatalogue],
         auto_recentre: bool = True,
         transforms_like_coordinates: Set[str] = set(),
@@ -1537,32 +1544,29 @@ class SWIFTGalaxy(SWIFTDataset):
         coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
         _data_server: Optional["SWIFTGalaxy"] = None,
     ) -> None:
-        self.snapshot_filename = snapshot_filename
-        self.halo_catalogue = halo_catalogue
-        self.transforms_like_coordinates = {coordinates_dataset_name}.union(
-            transforms_like_coordinates
-        )
-        self.transforms_like_velocities = {velocities_dataset_name}.union(
-            transforms_like_velocities
-        )
-        self.id_particle_dataset_name = id_particle_dataset_name
-        self.coordinates_dataset_name = coordinates_dataset_name
-        self.velocities_dataset_name = velocities_dataset_name
-        self._coordinate_like_transform = RigidTransform.identity()
-        self._velocity_like_transform = RigidTransform.identity()
-        if self.halo_catalogue is None:
-            # in server mode we don't have a halo_catalogue yet
-            self._spatial_mask = getattr(self, "_spatial_mask", None)
-        elif self.halo_catalogue._user_spatial_offsets is not None:
-            self._spatial_mask = self.halo_catalogue._get_user_spatial_mask(
-                self.snapshot_filename
+        with open_path_or_handle(snapshot_filename) as handle:
+            self.snapshot_filename = handle.filename
+            self.halo_catalogue = halo_catalogue
+            self.transforms_like_coordinates = {coordinates_dataset_name}.union(
+                transforms_like_coordinates
             )
-        else:
-            self._spatial_mask = self.halo_catalogue._get_spatial_mask(
-                self.snapshot_filename
+            self.transforms_like_velocities = {velocities_dataset_name}.union(
+                transforms_like_velocities
             )
-        self._data_server = _data_server if _data_server is not None else self
-        super().__init__(snapshot_filename, mask=self._spatial_mask)
+            self.id_particle_dataset_name = id_particle_dataset_name
+            self.coordinates_dataset_name = coordinates_dataset_name
+            self.velocities_dataset_name = velocities_dataset_name
+            self._coordinate_like_transform = RigidTransform.identity()
+            self._velocity_like_transform = RigidTransform.identity()
+            if self.halo_catalogue is None:
+                # in server mode we don't have a halo_catalogue yet
+                self._spatial_mask = getattr(self, "_spatial_mask", None)
+            elif self.halo_catalogue._user_spatial_offsets is not None:
+                self._spatial_mask = self.halo_catalogue._get_user_spatial_mask(handle)
+            else:
+                self._spatial_mask = self.halo_catalogue._get_spatial_mask(handle)
+            self._data_server = _data_server if _data_server is not None else self
+            super().__init__(handle.filename, mask=self._spatial_mask, handle=handle)
         if auto_recentre is True and coordinate_frame_from is not None:
             raise ValueError(
                 "Cannot use coordinate_frame_from with auto_recentre=True."

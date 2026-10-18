@@ -1,0 +1,1 @@
+"""The swiftgalaxy test suite."""
