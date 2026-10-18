@@ -647,7 +647,7 @@ class SOAP(_HaloCatalogue):
         self,
         soap_file: "Optional[Union[str, Path, hdfstream.RemoteFile]]",
         *,
-        soap_index: Optional[Union[int, Sequence[int]]],
+        soap_index: Union[int, Sequence[int]],
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "input_halos.halo_centre",
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
