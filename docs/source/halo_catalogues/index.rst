@@ -48,7 +48,7 @@ in the galaxy at row ``6`` in this masked catalogue:
 .. code-block:: python
 
     from swiftsimio import load, mask
-    
+
     catalogue_file = "halo_properties_0123.hdf5"
     m = mask(catalogue_file)
     m.constrain_spatial([[0.5 * b, 1.0 * b] for b in m.metadata.boxsize])
@@ -61,10 +61,10 @@ up with row ``6`` in the unmasked catalogue, which is probably a different galax
 
     soap = SOAP(
         soap_file=catalogue_file,
-	soap_index=6,
+        soap_index=6,
         soap_mask=m,
     )
-      
+
 The properties of the object of interest are made conveniently available with the
 :meth:`~swiftgalaxy.halo_catalogues.SOAP.__getattr__` (dot) syntax, which exposes the
 interface provided by the :class:`~swiftsimio.reader.SWIFTDataset` object handling the
