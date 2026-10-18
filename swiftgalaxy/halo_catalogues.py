@@ -267,7 +267,7 @@ class _HaloCatalogue(ABC):
         return self._generate_spatial_mask(snapshot_filename)
 
     def _get_extra_mask(
-        self, sg: "SWIFTGalaxy", mask_loaded: bool = True
+        self, sg: "SWIFTGalaxy", mask_loaded: bool = True, load_masked: bool = False
     ) -> MaskCollection:
         """
         Evaluate the extra (in the sense of in addition to spatial masking) mask.
@@ -286,6 +286,10 @@ class _HaloCatalogue(ABC):
             Whether to mask any data loaded while creating the mask. The iterator wants to
             switch this off.
 
+        load_masked : :obj:`bool`
+            If ``True``, any data loaded to evaluate the mask are loaded in their masked
+            state, otherwise masking is bypassed during loading.
+
         Returns
         -------
         :class:`~swiftgalaxy.masks.MaskCollection`
@@ -296,7 +300,9 @@ class _HaloCatalogue(ABC):
                 raise RuntimeError(
                     "Halo catalogue has multiple galaxies and is not currently masked."
                 )
-            return self._generate_bound_only_mask(sg, mask_loaded=mask_loaded)
+            return self._generate_bound_only_mask(
+                sg, mask_loaded=mask_loaded, load_masked=load_masked
+            )
         elif self.extra_mask is None:
             return MaskCollection._blank_from_mask_types(
                 sg.metadata.present_group_names
@@ -458,7 +464,7 @@ class _HaloCatalogue(ABC):
 
     @abstractmethod
     def _generate_bound_only_mask(
-        self, sg: "SWIFTGalaxy", mask_loaded: bool = True
+        self, sg: "SWIFTGalaxy", mask_loaded: bool = True, load_masked: bool = False
     ) -> MaskCollection:
         """
         Abstract method.
@@ -479,6 +485,10 @@ class _HaloCatalogue(ABC):
         mask_loaded : :obj:`bool`
             Whether to mask any data loaded while creating the mask. The iterator wants to
             switch this off.
+
+        load_masked : :obj:`bool`
+            If ``True``, any data loaded to evaluate the mask are loaded in their masked
+            state, otherwise masking is bypassed during loading.
 
         Returns
         -------
@@ -846,7 +856,7 @@ class SOAP(_HaloCatalogue):
         return sm
 
     def _generate_bound_only_mask(
-        self, sg: "SWIFTGalaxy", mask_loaded: bool = True
+        self, sg: "SWIFTGalaxy", mask_loaded: bool = True, load_masked: bool = False
     ) -> MaskCollection:
         """
         Evaluate the mask to select gravitationally bound particles.
@@ -865,6 +875,10 @@ class SOAP(_HaloCatalogue):
             Whether to mask any data loaded while creating the mask. The iterator wants to
             switch this off.
 
+        load_masked : :obj:`bool`
+            If ``True``, any data loaded to evaluate the mask are loaded in their masked
+            state, otherwise masking is bypassed during loading.
+
         Returns
         -------
         :class:`~swiftgalaxy.masks.MaskCollection`
@@ -872,7 +886,7 @@ class SOAP(_HaloCatalogue):
             set of particles.
         """
 
-        def generate_lazy_mask(group_name: str, mask_loaded: bool) -> LazyMask:
+        def generate_lazy_mask(group_name: str) -> LazyMask:
             """
             Generate a function that evaluates a mask for bound particles.
 
@@ -882,10 +896,6 @@ class SOAP(_HaloCatalogue):
             ----------
             group_name : :obj:`str`
                 The particle type to evaluate a mask for.
-
-            mask_loaded : :obj:`bool`
-                Whether to mask the data loaded while constructing the mask. The iterator
-                wants to switch this off.
 
             Returns
             -------
@@ -907,9 +917,12 @@ class SOAP(_HaloCatalogue):
                 :class:`~numpy.ndarray`
                     The mask that selects bound particles.
                 """
-                mask = getattr(
-                    sg, group_name
-                )._particle_dataset.group_nr_bound.to_physical_value(
+                group_nr_bound = (
+                    getattr(sg, group_name).group_nr_bound
+                    if load_masked
+                    else getattr(sg, group_name)._particle_dataset.group_nr_bound
+                )
+                mask = group_nr_bound.to_physical_value(
                     u.dimensionless
                 ) == self.input_halos.halo_catalogue_index.to_physical_value(
                     u.dimensionless
@@ -925,7 +938,7 @@ class SOAP(_HaloCatalogue):
 
         return MaskCollection(
             **{
-                group_name: generate_lazy_mask(group_name, mask_loaded)
+                group_name: generate_lazy_mask(group_name)
                 for group_name in sg.metadata.present_group_names
             }
         )
@@ -1217,7 +1230,7 @@ class Velociraptor(_HaloCatalogue):
         )
 
     def _generate_bound_only_mask(
-        self, sg: "SWIFTGalaxy", mask_loaded: bool = True
+        self, sg: "SWIFTGalaxy", mask_loaded: bool = True, load_masked: bool = False
     ) -> MaskCollection:
         """
         Evaluate the mask to select gravitationally bound particles.
@@ -1237,6 +1250,10 @@ class Velociraptor(_HaloCatalogue):
             Whether to mask any data loaded while creating the mask. The iterator wants to
             switch this off.
 
+        load_masked : :obj:`bool`
+            If ``True``, any data loaded to evaluate the mask are loaded in their masked
+            state, otherwise masking is bypassed during loading.
+
         Returns
         -------
         :class:`~swiftgalaxy.masks.MaskCollection`
@@ -1247,7 +1264,7 @@ class Velociraptor(_HaloCatalogue):
         # because we need a lazy version and to bypass swiftgalaxy masking on read
         # while we construct the mask
 
-        def generate_lazy_mask(group_name: str, mask_loaded: bool) -> LazyMask:
+        def generate_lazy_mask(group_name: str) -> LazyMask:
             """
             Generate a function that evaluates a mask for bound particles.
 
@@ -1257,10 +1274,6 @@ class Velociraptor(_HaloCatalogue):
             ----------
             group_name : :obj:`str`
                 The particle type to evaluate a mask for.
-
-            mask_loaded : :obj:`bool`
-                Whether to mask the data loaded while constructing the mask. The iterator
-                wants to switch this off.
 
             Returns
             -------
@@ -1308,7 +1321,7 @@ class Velociraptor(_HaloCatalogue):
 
         return MaskCollection(
             **{
-                group_name: generate_lazy_mask(group_name, mask_loaded)
+                group_name: generate_lazy_mask(group_name)
                 for group_name in sg.metadata.present_group_names
             }
         )
@@ -1765,7 +1778,7 @@ class Caesar(_HaloCatalogue):
         return sm
 
     def _generate_bound_only_mask(
-        self, sg: "SWIFTGalaxy", mask_loaded: bool = True
+        self, sg: "SWIFTGalaxy", mask_loaded: bool = True, load_masked: bool = False
     ) -> MaskCollection:
         """
         Evaluate the mask to select gravitationally bound particles.
@@ -1784,6 +1797,10 @@ class Caesar(_HaloCatalogue):
         mask_loaded : :obj:`bool`
             Whether to mask any data loaded while creating the mask. The iterator wants to
             switch this off.
+
+        load_masked : :obj:`bool`
+            If ``True``, any data loaded to evaluate the mask are loaded in their masked
+            state, otherwise masking is bypassed during loading.
 
         Returns
         -------
@@ -1834,9 +1851,7 @@ class Caesar(_HaloCatalogue):
             "black_holes": "bhlist",
         }
 
-        def generate_lazy_mask(
-            group_name: str, list_name: str, mask_loaded: bool
-        ) -> LazyMask:
+        def generate_lazy_mask(group_name: str) -> LazyMask:
             """
             Generate a function that evaluates a mask for bound particles.
 
@@ -1846,14 +1861,6 @@ class Caesar(_HaloCatalogue):
             ----------
             group_name : :obj:`str`
                 The particle type to evaluate a mask for.
-
-            list_name : :obj:`str`
-                The name of the list in the caesar catalogue that stores the membership
-                information.
-
-            mask_loaded : :obj:`bool`
-                Whether to mask the data loaded while constructing the mask. The iterator
-                wants to switch this off.
 
             Returns
             -------
@@ -1875,30 +1882,41 @@ class Caesar(_HaloCatalogue):
                 :class:`~numpy.ndarray`
                     The mask that selects bound particles.
                 """
-                if not hasattr(cat, list_name):
+                if not hasattr(cat, list_names[group_name]):
                     return null_slice
-                mask = getattr(cat, list_name)
+                mask = getattr(cat, list_names[group_name])
                 mask = mask[
                     in_one_of_ranges(mask, getattr(sg._spatial_mask, group_name))
                 ]
+                spatial_ranges = np.concatenate(
+                    [
+                        np.arange(start, end)
+                        for start, end in getattr(sg._spatial_mask, group_name)
+                    ]
+                )
                 mask = np.isin(
-                    np.concatenate(
-                        [
-                            np.arange(start, end)
-                            for start, end in getattr(sg._spatial_mask, group_name)
-                        ]
-                    ),
+                    spatial_ranges,
                     mask,
                 )
-                return mask
+                if load_masked:
+                    # RecursionError unless the _extra_mask was previously evaluated,
+                    # but if we've combined masks before that happens it's too late now.
+                    if not getattr(sg._extra_mask, group_name)._evaluated:
+                        raise RuntimeError(
+                            f"Cannot evaluate mask for {group_name}. Try loading at "
+                            "least one particle property (e.g. "
+                            f"`{group_name}.particle_ids`) before calling "
+                            "`get_bound_only_mask`."
+                        )
+                    return mask[getattr(sg._extra_mask, group_name).mask]
+                else:
+                    return mask
 
             return LazyMask(mask_function=lazy_mask)
 
         return MaskCollection(
             **{
-                group_name: generate_lazy_mask(
-                    group_name, list_names[group_name], mask_loaded
-                )
+                group_name: generate_lazy_mask(group_name)
                 for group_name in sg.metadata.present_group_names
             }
         )
@@ -2304,7 +2322,7 @@ class Standalone(_HaloCatalogue):
         return sm
 
     def _generate_bound_only_mask(
-        self, sg: "SWIFTGalaxy", mask_loaded: bool = True
+        self, sg: "SWIFTGalaxy", mask_loaded: bool = True, load_masked: bool = False
     ) -> MaskCollection:
         """
         Undefined for :class:`~swiftgalaxy.halo_catalogues.Standalone`.
@@ -2322,6 +2340,10 @@ class Standalone(_HaloCatalogue):
         mask_loaded : :obj:`bool`
             Whether to mask any data loaded while creating the mask. The iterator wants to
             switch this off.
+
+        load_masked : :obj:`bool`
+            If ``True``, any data loaded to evaluate the mask are loaded in their masked
+            state, otherwise masking is bypassed during loading.
 
         Raises
         ------
