@@ -7,7 +7,7 @@ import h5py
 import numpy as np
 import unyt as u
 from unyt.testing import assert_allclose_units
-from swiftsimio import mask
+from swiftsimio import mask, load
 from swiftgalaxy.demo_data import (
     _toysnap_filename,
     _toysoap_filename,
@@ -17,6 +17,7 @@ from swiftgalaxy.demo_data import (
     _toysoap_membership_filebase,
     _create_toysnap,
     _remove_toysnap,
+    _create_toysoap,
     _create_toycaesar,
     _remove_toycaesar,
     _n_g_1,
@@ -1336,6 +1337,65 @@ class TestSOAP:
             ),
         ):
             SOAP(soap_file=_toysoap_filename)
+
+    def test_get_unmasked_index(self):  # , web_examples_tmpdir):
+        """Check that inferring the index for the unmasked catalogue works."""
+        from swiftgalaxy import demo_data
+
+        web_examples_tmpdir = demo_data.web_examples
+
+        m = mask(web_examples_tmpdir.soap)
+        part_soap = load(web_examples_tmpdir.soap, mask=m)
+        full_soap = load(web_examples_tmpdir.soap)
+        part_index = 5
+        full_index = SOAP._get_unmasked_index(part_index, m)
+        assert (
+            part_soap.input_halos_hbtplus.track_id[part_index]
+            == full_soap.input_halos_hbtplus.track_id[full_index]
+        ).all()
+
+        m = mask(web_examples_tmpdir.soap)
+        m.constrain_spatial([[0.0 * b, 0.5 * b] for b in m.metadata.boxsize])
+        part_soap = load(web_examples_tmpdir.soap, mask=m)
+        full_soap = load(web_examples_tmpdir.soap)
+        part_index = 5
+        full_index = SOAP._get_unmasked_index(part_index, m)
+        assert (
+            part_soap.input_halos_hbtplus.track_id[part_index]
+            == full_soap.input_halos_hbtplus.track_id[full_index]
+        ).all()
+
+        m = mask(web_examples_tmpdir.soap)
+        m.constrain_spatial([[0.0 * b, 0.5 * b] for b in m.metadata.boxsize])
+        part_soap = load(web_examples_tmpdir.soap, mask=m)
+        full_soap = load(web_examples_tmpdir.soap)
+        part_index = [3, 5, 7]
+        full_index = SOAP._get_unmasked_index(part_index, m)
+        assert (
+            part_soap.input_halos_hbtplus.track_id[part_index]
+            == full_soap.input_halos_hbtplus.track_id[full_index]
+        ).all()
+
+        m = mask(web_examples_tmpdir.soap)
+        m.constrain_index(3)
+        part_soap = load(web_examples_tmpdir.soap, mask=m)
+        part_index = 3
+        with pytest.raises(
+            ValueError,
+            match="swiftgalaxy.halo_catalogues.SOAP does not support masks where",
+        ):
+            full_index = SOAP._get_unmasked_index(part_index, m)
+
+    def test_incompatible_mask(self, tmp_path_factory):
+        """Check that SOAP rejects a mask for a different file."""
+        tp = tmp_path_factory.mktemp(_toysoap_filename.parent)
+        toysoap_filename = tp / _toysoap_filename.name
+        incompatible_filename = tp / Path("incompatible.hdf5")
+        _create_toysoap(toysoap_filename)
+        _create_toysoap(incompatible_filename)
+        m = mask(incompatible_filename)
+        with pytest.raises(ValueError, match="Opening"):
+            SOAP(toysoap_filename, soap_index=0, soap_mask=m)
 
 
 class TestSOAPWithSWIFTGalaxy:

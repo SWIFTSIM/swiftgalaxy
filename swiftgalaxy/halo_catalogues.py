@@ -574,6 +574,9 @@ class SOAP(_HaloCatalogue):
     soap_index : :obj:`int` or :obj:`list`
         The position (row) in the SOAP catalogue corresponding to the object of interest.
         Duplicate entries are not allowed.
+    soap_mask : :class:`~swiftsimio.masks.SWIFTMask` (optional), default: ``None``
+        If provided, the ``soap_index`` refers to the index into the catalogue when this
+        mask has been applied to the catalogue.
     extra_mask : :obj:`str` or :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
     default: ``"bound_only"``
         Mask to apply to particles after spatial masking. If ``"bound_only"``,
@@ -648,6 +651,7 @@ class SOAP(_HaloCatalogue):
         soap_file: "Optional[Union[str, Path, hdfstream.RemoteFile]]",
         *,
         soap_index: Union[int, Sequence[int]],
+        soap_mask: Optional[SWIFTMask] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "input_halos.halo_centre",
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
@@ -655,7 +659,14 @@ class SOAP(_HaloCatalogue):
     ) -> None:
         with open_path_or_handle(soap_file) as handle:
             self.soap_file = handle.filename
-        self._soap_index = soap_index
+        if soap_mask is None:
+            self._soap_index = soap_index
+        elif soap_mask.filename != self.soap_file:
+            raise ValueError(
+                f"Opening {soap_file}, but `soap_mask` is for {soap_mask.filename}."
+            )
+        else:
+            self._soap_index = self._get_unmasked_index(soap_index, soap_mask)
         self.centre_type = centre_type
         self.velocity_centre_type = velocity_centre_type
         self._user_spatial_offsets = custom_spatial_offsets
@@ -675,6 +686,57 @@ class SOAP(_HaloCatalogue):
         else:
             sm.constrain_index(self._soap_index)
         self._catalogue = load(self.soap_file, mask=sm)
+
+    @staticmethod
+    def _get_unmasked_index(
+        soap_index: Union[int, Sequence[int]],
+        soap_mask: SWIFTMask,
+    ) -> Union[int, Sequence[int]]:
+        """
+        Convert an index for a masked catalogue to one for the parent unmasked catalogue.
+
+        Parameters
+        ----------
+        soap_index : :obj:`int` or :obj:`list`
+            The index or list of indices that select from a catalogue with a mask applied.
+
+        soap_mask : :class:`~swiftsimio.masks.SWIFTMask`
+            The mask that was applied to the catalogue.
+
+        Returns
+        -------
+        :obj:`int` or np.ndarray
+            The index or list of indices that would select the same items from the
+            unmasked catalogue.
+
+        Raises
+        ------
+        ValueError
+            If the mask is constrained, and the constraint is a method other than
+            ``"constrain_spatial"``.
+        """
+        if soap_mask.constrained is None:
+            return soap_index
+        elif soap_mask.constrained != "constrain_spatial":
+            raise ValueError(
+                "swiftgalaxy.halo_catalogues.SOAP does not support masks where "
+                f"{soap_mask.constrained} was used."
+            )
+        masked_offsets = np.r_[
+            0,
+            np.cumsum(
+                np.where(soap_mask.cell_mask["shared"], soap_mask.counts["shared"], 0)[
+                    :-1
+                ]
+            ),
+        ]
+        cell_index = np.searchsorted(masked_offsets, soap_index, side="right") - 1
+        offset_in_cell = soap_index - masked_offsets[cell_index]
+        full_index = soap_mask.offsets["shared"][cell_index] + offset_in_cell
+        if full_index.size == 1:
+            return full_index
+        else:
+            return full_index
 
     @property
     def soap_index(self) -> Union[int, List[int]]:
