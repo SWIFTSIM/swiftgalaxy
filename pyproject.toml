@@ -20,7 +20,7 @@ dependencies = [
     "numpy",
     "scipy",
     "unyt",
-    "swiftsimio>=12.1.4",
+    "swiftsimio>=12.2.0",
     "requests",
 ]
 
