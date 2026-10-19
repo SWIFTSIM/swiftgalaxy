@@ -1520,6 +1520,7 @@ class SWIFTGalaxy(SWIFTDataset):
     documentation pages.
     """
 
+    snapshot_filename: "Union[str, Path, hdfstream.RemoteFile]"
     halo_catalogue: Optional[_HaloCatalogue]
     transforms_like_coordinates: Set[str]
     transforms_like_velocities: Set[str]
@@ -1543,6 +1544,7 @@ class SWIFTGalaxy(SWIFTDataset):
         coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
         _data_server: Optional["SWIFTGalaxy"] = None,
     ) -> None:
+        self.snapshot_filename = snapshot_filename
         self.halo_catalogue = halo_catalogue
         self.transforms_like_coordinates = {coordinates_dataset_name}.union(
             transforms_like_coordinates
@@ -1848,7 +1850,7 @@ class SWIFTGalaxy(SWIFTDataset):
             The copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object.
         """
         sg = self._copyinit(
-            self._handle,
+            self.snapshot_filename,
             self.halo_catalogue,
             auto_recentre=False,  # transforms overwritten below
             transforms_like_coordinates=self.transforms_like_coordinates,
@@ -1909,7 +1911,7 @@ class SWIFTGalaxy(SWIFTDataset):
             object.
         """
         sg = self._copyinit(
-            self._handle,
+            self.snapshot_filename,
             copy(self.halo_catalogue),
             auto_recentre=False,  # transforms overwritten below
             transforms_like_coordinates=deepcopy(self.transforms_like_coordinates),

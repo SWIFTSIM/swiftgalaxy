@@ -669,13 +669,14 @@ class SOAP(_HaloCatalogue, HandleProvider):
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
         custom_spatial_offsets: Optional[cosmo_array] = None,
     ) -> None:
+        self.soap_file = soap_file
         with open_path_or_handle(soap_file) as handle:
             HandleProvider.__init__(self, handle.filename, handle=handle)
             if soap_mask is None:
                 self._soap_index = soap_index
-            elif soap_mask.handle.filename != handle.filename:
+            elif soap_mask.filename != self.filename:
                 raise ValueError(
-                    f"Opening {self.soap_file.filename}, but `soap_mask` is for "
+                    f"Opening {self.filename}, but `soap_mask` is for "
                     f"{soap_mask.filename}."
                 )
             else:

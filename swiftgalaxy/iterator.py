@@ -185,6 +185,7 @@ class SWIFTGalaxies(HandleProvider):
         result = sgs.map(analysis)
     """
 
+    snapshot_filename: "Union[str, Path, hdfstream.RemoteFile]"
     count: int
     halo_catalogue: _HaloCatalogue
 
@@ -202,6 +203,7 @@ class SWIFTGalaxies(HandleProvider):
         coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
         optimize_iteration: str = "auto",
     ) -> None:
+        self.snapshot_filename = snapshot_filename
         if not halo_catalogue._multi_galaxy:
             raise ValueError(
                 "halo_catalogue target list is not iterable, create halo_catalogue with "
@@ -495,7 +497,7 @@ class SWIFTGalaxies(HandleProvider):
             The spatial mask object for the server.
         """
         self._server = SWIFTGalaxy._copyinit(
-            snapshot_filename=self._handle,
+            snapshot_filename=self.snapshot_filename,
             halo_catalogue=None,
             auto_recentre=False,
             transforms_like_coordinates=self.transforms_like_coordinates,
@@ -536,7 +538,7 @@ class SWIFTGalaxies(HandleProvider):
         for region, target_indices in zip(
             self._solution["regions"], self._solution["region_target_indices"]
         ):
-            region_mask = mask(self._handle)
+            region_mask = mask(self.snapshot_filename)
             region_mask.constrain_spatial(region)
             self._start_server(region_mask)
             for igalaxy in target_indices:
