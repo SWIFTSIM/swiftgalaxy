@@ -12,6 +12,8 @@ import numpy as np
 import unyt as u
 from swiftsimio import mask, cosmo_array
 from swiftsimio._file_utils import open_path_or_handle
+from swiftsimio._handle_provider import HandleProvider
+from swiftsimio.metadata.objects import _metadata_discriminator, SWIFTUnits
 from .reader import SWIFTGalaxy
 from .halo_catalogues import _HaloCatalogue
 from warnings import warn
@@ -44,7 +46,7 @@ class _IterationSolution(TypedDict):
     cost: int
 
 
-class SWIFTGalaxies(object):
+class SWIFTGalaxies(HandleProvider):
     """
     Facilitates efficiently iterating over many objects of interest from a simulation.
 
@@ -183,6 +185,7 @@ class SWIFTGalaxies(object):
         result = sgs.map(analysis)
     """
 
+    snapshot_filename: "Union[str, Path, hdfstream.RemoteFile]"
     count: int
     halo_catalogue: _HaloCatalogue
 
@@ -200,6 +203,7 @@ class SWIFTGalaxies(object):
         coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
         optimize_iteration: str = "auto",
     ) -> None:
+        self.snapshot_filename = snapshot_filename
         if not halo_catalogue._multi_galaxy:
             raise ValueError(
                 "halo_catalogue target list is not iterable, create halo_catalogue with "
@@ -213,8 +217,6 @@ class SWIFTGalaxies(object):
                 DeprecationWarning,
             )
         self.halo_catalogue = halo_catalogue
-        with open_path_or_handle(snapshot_filename) as handle:
-            self.snapshot_filename = handle.filename
         self.auto_recentre = auto_recentre
         self.transforms_like_coordinates = transforms_like_coordinates
         self.transforms_like_velocities = transforms_like_velocities
@@ -222,48 +224,50 @@ class SWIFTGalaxies(object):
         self.coordinates_dataset_name = coordinates_dataset_name
         self.velocities_dataset_name = velocities_dataset_name
         self.coordinate_frame_from = coordinate_frame_from
-        if optimize_iteration not in ("dense", "sparse", "auto"):
-            raise ValueError(
-                "optimize_iteration must be one of 'dense', 'sparse' or 'auto'."
-            )
+        with open_path_or_handle(snapshot_filename) as handle:
+            super().__init__(handle.filename, handle=handle)
+            if optimize_iteration not in ("dense", "sparse", "auto"):
+                raise ValueError(
+                    "optimize_iteration must be one of 'dense', 'sparse' or 'auto'."
+                )
 
-        if self.halo_catalogue._index_attr is not None:
-            num_targets = len(
-                getattr(self.halo_catalogue, self.halo_catalogue._index_attr)
-            )
-        else:
-            num_targets = len(self.halo_catalogue._region_centre)
-        # before evaluating optimized solutions:
-        if num_targets == 0:
-            # if we have 0 targets short-circuit
-            self._solution = _IterationSolution(
-                regions=np.array([]),
-                region_target_indices=[np.array([])],
-                cost=-1,
-            )
-            return
-        if num_targets == 1:
-            # if we have 1 target best strategy is sparse
-            optimize_iteration = "sparse"
+            if self.halo_catalogue._index_attr is not None:
+                num_targets = len(
+                    getattr(self.halo_catalogue, self.halo_catalogue._index_attr)
+                )
+            else:
+                num_targets = len(self.halo_catalogue._region_centre)
+            # before evaluating optimized solutions:
+            if num_targets == 0:
+                # if we have 0 targets short-circuit
+                self._solution = _IterationSolution(
+                    regions=np.array([]),
+                    region_target_indices=[np.array([])],
+                    cost=-1,
+                )
+                return
+            if num_targets == 1:
+                # if we have 1 target best strategy is sparse
+                optimize_iteration = "sparse"
 
-        if optimize_iteration in ("dense", "auto"):
-            self._eval_dense_optimized_solution()
-        if optimize_iteration in ("sparse", "auto"):
-            self._eval_sparse_optimized_solution()
-        if optimize_iteration == "auto":
-            # typical cost of the dense solution expected to be average of the minimum
-            # and maxiumum costs (one grid aligns with the cell grid), use sparse solution
-            # if it costs less than this
-            self._solution = (
-                self._sparse_optimized_solution
-                if self._sparse_optimized_solution["cost"]
-                < self._dense_optimized_solution["cost"]
-                else self._dense_optimized_solution
-            )
-        elif optimize_iteration == "dense":
-            self._solution = self._dense_optimized_solution
-        else:  # optimize_iteration == "sparse"
-            self._solution = self._sparse_optimized_solution
+            if optimize_iteration in ("dense", "auto"):
+                self._eval_dense_optimized_solution()
+            if optimize_iteration in ("sparse", "auto"):
+                self._eval_sparse_optimized_solution()
+            if optimize_iteration == "auto":
+                # typical cost of the dense solution expected to be average of the minimum
+                # and maxiumum costs (one grid aligns with the cell grid), use sparse
+                # solution if it costs less than this
+                self._solution = (
+                    self._sparse_optimized_solution
+                    if self._sparse_optimized_solution["cost"]
+                    < self._dense_optimized_solution["cost"]
+                    else self._dense_optimized_solution
+                )
+            elif optimize_iteration == "dense":
+                self._solution = self._dense_optimized_solution
+            else:  # optimize_iteration == "sparse"
+                self._solution = self._sparse_optimized_solution
         return
 
     @property
@@ -308,7 +312,11 @@ class SWIFTGalaxies(object):
                 (-np.repeat(aperture, 3), np.repeat(aperture, 3))
             ).T.reshape((-1, 3, 2))
         # SWIFTMask gives us a lightweight interface to metadata & cell metadata
-        sm = mask(self.snapshot_filename)
+        units = SWIFTUnits(self._handle.filename, handle=self._handle)
+        metadata = _metadata_discriminator(
+            self._handle.filename, units, handle=self._handle
+        )
+        sm = SWIFTMask(self._handle.filename, metadata=metadata, handle=self._handle)
         # get the lower cell vertex, probably at origin but not guaranteed
         cell_vertex_origin = sm.centers.min(axis=0) - sm.cell_size / 2
         # align origin with the cell grid, we allow going out the upper bounds of the
@@ -392,7 +400,11 @@ class SWIFTGalaxies(object):
                 )
             ).squeeze(2)
         # SWIFTMask gives us a lightweight interface to metadata & cell metadata
-        sm = mask(self.snapshot_filename)
+        units = SWIFTUnits(self._handle.filename, handle=self._handle)
+        metadata = _metadata_discriminator(
+            self._handle.filename, units, handle=self._handle
+        )
+        sm = SWIFTMask(self._handle.filename, metadata=metadata, handle=self._handle)
         # grid should be at least 1 cell in size so that we efficiently group targets
         # in the same grid location
         grid_element_dim = (

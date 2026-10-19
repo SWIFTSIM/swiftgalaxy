@@ -12,9 +12,11 @@ read any files.
 
 import pytest
 from pathlib import Path
+import numpy as np
 from swiftgalaxy.halo_catalogues import SOAP
 from swiftgalaxy.reader import SWIFTGalaxy
 from swiftgalaxy.iterator import SWIFTGalaxies
+from swiftgalaxy.masks import MaskCollection
 from swiftsimio.optional_packages import HDFSTREAM_AVAILABLE, hdfstream
 
 
@@ -75,6 +77,22 @@ def test_sg_with_hdfstream(request: pytest.FixtureRequest):
     )
     assert sg.gas.coordinates.size > 0
     assert sg.halo_catalogue.bound_subhalo.stellar_mass.size == 1
+
+
+def test_copying_with_hdfstream(request: pytest.FixtureRequest):
+    """
+    Copy a dataset based on a remote file.
+
+    Paramters
+    ---------
+    request : ~pytest.fixtures.FixtureRequest
+        Parameter value(s) from the fixture.
+    """
+    sg = SWIFTGalaxy(
+        open_with_hdfstream("EagleSingleVirtual.hdf5", request),
+        SOAP(open_with_hdfstream("SOAPEagleSingle.hdf5", request), soap_index=0),
+    )
+    sg[MaskCollection(gas=np.s_[...])]
 
 
 def test_sgs_with_hdfstream(request: pytest.FixtureRequest):

@@ -17,11 +17,13 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 import numpy as np
 import unyt as u
+import h5py
 from swiftsimio import SWIFTMask, SWIFTDataset, mask, load
 from swiftgalaxy.masks import MaskCollection, LazyMask
 from swiftsimio.reader import __SWIFTGroupDataset
 from swiftsimio.objects import cosmo_array, cosmo_quantity
 from swiftsimio._file_utils import open_path_or_handle
+from swiftsimio._handle_provider import HandleProvider
 
 from typing import Union, Optional, TYPE_CHECKING, List, Dict
 from numpy.typing import NDArray
@@ -566,7 +568,7 @@ class _HaloCatalogue(ABC):
         """
 
 
-class SOAP(_HaloCatalogue):
+class SOAP(_HaloCatalogue, HandleProvider):
     """
     Interface to SOAP halo catalogues for use with :mod:`swiftgalaxy`.
 
@@ -584,6 +586,9 @@ class SOAP(_HaloCatalogue):
     soap_index : :obj:`int` or :obj:`list`
         The position (row) in the SOAP catalogue corresponding to the object of interest.
         Duplicate entries are not allowed.
+    soap_mask : :class:`~swiftsimio.masks.SWIFTMask` (optional), default: ``None``
+        If provided, the ``soap_index`` refers to the index into the catalogue when this
+        mask has been applied to the catalogue.
     extra_mask : :obj:`str` or :class:`~swiftgalaxy.masks.MaskCollection` (optional), \
     default: ``"bound_only"``
         Mask to apply to particles after spatial masking. If ``"bound_only"``,
@@ -644,7 +649,7 @@ class SOAP(_HaloCatalogue):
         cosmo_array([6.72e+12], dtype=float32, units='1.98841586e+30*kg', comoving=False)
     """
 
-    soap_file: str
+    soap_file: "Union[h5py.File, hdfstream.RemoteFile]"
     _soap_index: Union[int, Sequence[int]]
     centre_type: str
     velocity_centre_type: str
@@ -658,18 +663,28 @@ class SOAP(_HaloCatalogue):
         soap_file: "Optional[Union[str, Path, hdfstream.RemoteFile]]",
         *,
         soap_index: Union[int, Sequence[int]],
+        soap_mask: Optional[SWIFTMask] = None,
         extra_mask: Union[str, MaskCollection] = "bound_only",
         centre_type: str = "input_halos.halo_centre",
         velocity_centre_type: str = "bound_subhalo.centre_of_mass_velocity",
         custom_spatial_offsets: Optional[cosmo_array] = None,
     ) -> None:
+        self.soap_file = soap_file
         with open_path_or_handle(soap_file) as handle:
-            self.soap_file = handle.filename
-        self._soap_index = soap_index
+            HandleProvider.__init__(self, handle.filename, handle=handle)
+            if soap_mask is None:
+                self._soap_index = soap_index
+            elif soap_mask.filename != self.filename:
+                raise ValueError(
+                    f"Opening {self.filename}, but `soap_mask` is for "
+                    f"{soap_mask.filename}."
+                )
+            else:
+                self._soap_index = self._get_unmasked_index(soap_index, soap_mask)
+            _HaloCatalogue.__init__(self, extra_mask=extra_mask)
         self.centre_type = centre_type
         self.velocity_centre_type = velocity_centre_type
         self._user_spatial_offsets = custom_spatial_offsets
-        super().__init__(extra_mask=extra_mask)
         return
 
     def _load(self) -> None:
@@ -679,12 +694,63 @@ class SOAP(_HaloCatalogue):
         Set up the :class:`~swiftsimio.reader.SWIFTDataset` that will handle the SOAP
         catalogue, including the appropriate mask to select only the rows of interest.
         """
-        sm = mask(self.soap_file)
+        sm = mask(self._handle)
         if self._multi_galaxy:
             sm.constrain_indices(np.array(self._soap_index, dtype=np.dtype("int")))
         else:
             sm.constrain_index(self._soap_index)
-        self._catalogue = load(self.soap_file, mask=sm)
+        self._catalogue = load(self._handle, mask=sm)
+
+    @staticmethod
+    def _get_unmasked_index(
+        soap_index: Union[int, Sequence[int]],
+        soap_mask: SWIFTMask,
+    ) -> Union[int, Sequence[int]]:
+        """
+        Convert an index for a masked catalogue to one for the parent unmasked catalogue.
+
+        Parameters
+        ----------
+        soap_index : :obj:`int` or :obj:`list`
+            The index or list of indices that select from a catalogue with a mask applied.
+
+        soap_mask : :class:`~swiftsimio.masks.SWIFTMask`
+            The mask that was applied to the catalogue.
+
+        Returns
+        -------
+        :obj:`int` or np.ndarray
+            The index or list of indices that would select the same items from the
+            unmasked catalogue.
+
+        Raises
+        ------
+        ValueError
+            If the mask is constrained, and the constraint is a method other than
+            ``"constrain_spatial"``.
+        """
+        if soap_mask.constrained is None:
+            return soap_index
+        elif soap_mask.constrained != "constrain_spatial":
+            raise ValueError(
+                "swiftgalaxy.halo_catalogues.SOAP does not support masks where "
+                f"{soap_mask.constrained} was used."
+            )
+        masked_offsets = np.r_[
+            0,
+            np.cumsum(
+                np.where(soap_mask.cell_mask["shared"], soap_mask.counts["shared"], 0)[
+                    :-1
+                ]
+            ),
+        ]
+        cell_index = np.searchsorted(masked_offsets, soap_index, side="right") - 1
+        offset_in_cell = soap_index - masked_offsets[cell_index]
+        full_index = soap_mask.offsets["shared"][cell_index] + offset_in_cell
+        if full_index.size == 1:
+            return full_index
+        else:
+            return full_index
 
     @property
     def soap_index(self) -> Union[int, List[int]]:
@@ -1324,7 +1390,6 @@ class Velociraptor(_HaloCatalogue):
                 scale_factor=self._particles[0].groups_instance.catalogue.units.a,
                 scale_exponent=1,
             )
-        print(retval)
         return retval
 
     @property
