@@ -71,7 +71,7 @@ jobs:
         image: ghcr.io/jchelly/hdfstream-api:0.0.6
     - name: Test with pytest
       run: |
-        pytest -n 2 --hdfstream-server=http://localhost:8080/hdfstream
+        pytest -n 2 --hdfstream-server=http://localhost:8080/hdfstream --hdfstream-prefix=remote_data/
     - name: Stop hdfstream service
       uses: ./.github/actions/stop-hdfstream
       if: always()
@@ -103,7 +103,7 @@ jobs:
          image: ghcr.io/jchelly/hdfstream-api:0.0.6
     - name: Test with pytest including coverage report
       run: |
-        pytest -n 2 --cov --cov-branch --cov-report=xml --hdfstream-server=http://localhost:8080/hdfstream
+        pytest -n 2 --cov --cov-branch --cov-report=xml --hdfstream-server=http://localhost:8080/hdfstream --hdfstream-prefix=remote_data/
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
       env:
