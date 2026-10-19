@@ -1342,7 +1342,7 @@ class TestSOAP:
         ):
             SOAP(soap_file=_toysoap_filename)
 
-    def test_get_unmasked_index(self):  # , web_examples_tmpdir):
+    def test_get_unmasked_index(self):
         """Check that inferring the index for the unmasked catalogue works."""
         from swiftgalaxy import demo_data
 
@@ -1400,6 +1400,25 @@ class TestSOAP:
         m = mask(incompatible_filename)
         with pytest.raises(ValueError, match="Opening"):
             SOAP(toysoap_filename, soap_index=0, soap_mask=m)
+
+    def test_unmasking_soap_index(self, tmp_path_factory):
+        """Check selecting by soap_index on a masked catalogue gets unmasked index."""
+        tp = tmp_path_factory.mktemp(_toysoap_filename.parent)
+        toysoap_filename = tp / _toysoap_filename.name
+        _create_toysoap(toysoap_filename)
+        m = mask(toysoap_filename)
+        m.constrain_spatial(
+            [
+                [0.5 * m.metadata.boxsize[0], 1.0 * m.metadata.boxsize[0]],
+                [0 * m.metadata.boxsize[0], 1 * m.metadata.boxsize[1]],
+                [0 * m.metadata.boxsize[2], 1 * m.metadata.boxsize[2]],
+            ]
+        )
+        soap = SOAP(toysoap_filename, soap_index=0, soap_mask=m)
+        # There are 2 galaxies in the box, one in each half. This is the "second" half.
+        # So the unmasked soap index for galaxy 0 in the second half should be 1 in the
+        # whole box.
+        assert soap.soap_index == 1
 
 
 class TestSOAPWithSWIFTGalaxy:
