@@ -67,7 +67,7 @@ jobs:
       uses: ./.github/actions/start-hdfstream
       with:
         data-dir: ./demo_data
-        virtual-prefix: demo_data
+        virtual-prefix: remote_data
         image: ghcr.io/jchelly/hdfstream-api:0.0.6
     - name: Test with pytest
       run: |
@@ -99,7 +99,7 @@ jobs:
       uses: ./.github/actions/start-hdfstream
       with:
          data-dir: ./demo_data
-         virtual-prefix: demo_data
+         virtual-prefix: remote_data
          image: ghcr.io/jchelly/hdfstream-api:0.0.6
     - name: Test with pytest including coverage report
       run: |

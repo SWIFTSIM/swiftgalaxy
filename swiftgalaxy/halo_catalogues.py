@@ -23,6 +23,7 @@ from swiftgalaxy.masks import MaskCollection, LazyMask
 from swiftsimio.reader import __SWIFTGroupDataset
 from swiftsimio.objects import cosmo_array, cosmo_quantity
 from swiftsimio._file_utils import open_path_or_handle
+from swiftsimio._handle_provider import HandleProvider
 
 from typing import Union, Optional, TYPE_CHECKING, List, Dict
 from numpy.typing import NDArray
@@ -567,7 +568,7 @@ class _HaloCatalogue(ABC):
         """
 
 
-class SOAP(_HaloCatalogue):
+class SOAP(_HaloCatalogue, HandleProvider):
     """
     Interface to SOAP halo catalogues for use with :mod:`swiftgalaxy`.
 
@@ -669,20 +670,20 @@ class SOAP(_HaloCatalogue):
         custom_spatial_offsets: Optional[cosmo_array] = None,
     ) -> None:
         with open_path_or_handle(soap_file) as handle:
-            self.soap_file = handle
-        if soap_mask is None:
-            self._soap_index = soap_index
-        elif soap_mask.handle.filename != self.soap_file.filename:
-            raise ValueError(
-                f"Opening {self.soap_file.filename}, but `soap_mask` is for "
-                f"{soap_mask.filename}."
-            )
-        else:
-            self._soap_index = self._get_unmasked_index(soap_index, soap_mask)
+            HandleProvider.__init__(self, handle.filename, handle=handle)
+            if soap_mask is None:
+                self._soap_index = soap_index
+            elif soap_mask.handle.filename != handle.filename:
+                raise ValueError(
+                    f"Opening {self.soap_file.filename}, but `soap_mask` is for "
+                    f"{soap_mask.filename}."
+                )
+            else:
+                self._soap_index = self._get_unmasked_index(soap_index, soap_mask)
+            _HaloCatalogue.__init__(self, extra_mask=extra_mask)
         self.centre_type = centre_type
         self.velocity_centre_type = velocity_centre_type
         self._user_spatial_offsets = custom_spatial_offsets
-        super().__init__(extra_mask=extra_mask)
         return
 
     def _load(self) -> None:
@@ -692,12 +693,12 @@ class SOAP(_HaloCatalogue):
         Set up the :class:`~swiftsimio.reader.SWIFTDataset` that will handle the SOAP
         catalogue, including the appropriate mask to select only the rows of interest.
         """
-        sm = mask(self.soap_file)
+        sm = mask(self._handle)
         if self._multi_galaxy:
             sm.constrain_indices(np.array(self._soap_index, dtype=np.dtype("int")))
         else:
             sm.constrain_index(self._soap_index)
-        self._catalogue = load(self.soap_file, mask=sm)
+        self._catalogue = load(self._handle, mask=sm)
 
     @staticmethod
     def _get_unmasked_index(

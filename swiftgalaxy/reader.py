@@ -1544,20 +1544,19 @@ class SWIFTGalaxy(SWIFTDataset):
         coordinate_frame_from: Optional["SWIFTGalaxy"] = None,
         _data_server: Optional["SWIFTGalaxy"] = None,
     ) -> None:
+        self.halo_catalogue = halo_catalogue
+        self.transforms_like_coordinates = {coordinates_dataset_name}.union(
+            transforms_like_coordinates
+        )
+        self.transforms_like_velocities = {velocities_dataset_name}.union(
+            transforms_like_velocities
+        )
+        self.id_particle_dataset_name = id_particle_dataset_name
+        self.coordinates_dataset_name = coordinates_dataset_name
+        self.velocities_dataset_name = velocities_dataset_name
+        self._coordinate_like_transform = RigidTransform.identity()
+        self._velocity_like_transform = RigidTransform.identity()
         with open_path_or_handle(snapshot_filename) as handle:
-            self.snapshot_file = handle
-            self.halo_catalogue = halo_catalogue
-            self.transforms_like_coordinates = {coordinates_dataset_name}.union(
-                transforms_like_coordinates
-            )
-            self.transforms_like_velocities = {velocities_dataset_name}.union(
-                transforms_like_velocities
-            )
-            self.id_particle_dataset_name = id_particle_dataset_name
-            self.coordinates_dataset_name = coordinates_dataset_name
-            self.velocities_dataset_name = velocities_dataset_name
-            self._coordinate_like_transform = RigidTransform.identity()
-            self._velocity_like_transform = RigidTransform.identity()
             if self.halo_catalogue is None:
                 # in server mode we don't have a halo_catalogue yet
                 self._spatial_mask = getattr(self, "_spatial_mask", None)
@@ -1810,7 +1809,7 @@ class SWIFTGalaxy(SWIFTDataset):
         :obj:`str`
             The string representation.
         """
-        return f"SWIFTGalaxy at {self.snapshot_file}."
+        return f"SWIFTGalaxy at {self.filename}."
 
     def __repr__(self) -> str:
         """
@@ -1850,7 +1849,7 @@ class SWIFTGalaxy(SWIFTDataset):
             The copy of the :class:`~swiftgalaxy.reader.SWIFTGalaxy` object.
         """
         sg = self._copyinit(
-            self.snapshot_file,
+            self._handle,
             self.halo_catalogue,
             auto_recentre=False,  # transforms overwritten below
             transforms_like_coordinates=self.transforms_like_coordinates,
@@ -1911,7 +1910,7 @@ class SWIFTGalaxy(SWIFTDataset):
             object.
         """
         sg = self._copyinit(
-            self.snapshot_file,
+            self._handle,
             copy(self.halo_catalogue),
             auto_recentre=False,  # transforms overwritten below
             transforms_like_coordinates=deepcopy(self.transforms_like_coordinates),
