@@ -1520,7 +1520,6 @@ class SWIFTGalaxy(SWIFTDataset):
     documentation pages.
     """
 
-    snapshot_file: "Union[str, Path, hdfstream.RemoteFile]"
     halo_catalogue: Optional[_HaloCatalogue]
     transforms_like_coordinates: Set[str]
     transforms_like_velocities: Set[str]

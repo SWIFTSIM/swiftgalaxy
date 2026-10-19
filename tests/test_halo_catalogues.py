@@ -647,7 +647,7 @@ class TestVelociraptorWithSWIFTGalaxy:
         """Check that velociraptor catalogue work with the iteration helper."""
         for sg_from_sgs in sgs_vr:
             sg = SWIFTGalaxy(
-                sg_from_sgs.snapshot_filename,
+                sg_from_sgs.filename,
                 Velociraptor(
                     velociraptor_files=sg_from_sgs.halo_catalogue.velociraptor_files,
                     halo_index=sg_from_sgs.halo_catalogue.halo_index,
@@ -917,7 +917,7 @@ class TestCaesarWithSWIFTGalaxy:
         """Check that Caesar is compatible with the iteration helper."""
         for sg_from_sgs in sgs_caesar:
             sg = SWIFTGalaxy(
-                sg_from_sgs.snapshot_filename,
+                sg_from_sgs.filename,
                 Caesar(
                     caesar_file=sg_from_sgs.halo_catalogue.caesar_file,
                     group_type=sg_from_sgs.halo_catalogue.group_type,
@@ -1450,7 +1450,7 @@ class TestSOAPWithSWIFTGalaxy:
         """Test that SOAP is compatible with the iteration helper."""
         for sg_from_sgs in sgs_soap:
             sg = SWIFTGalaxy(
-                sg_from_sgs.snapshot_filename,
+                sg_from_sgs.filename,
                 SOAP(
                     soap_file=sg_from_sgs.halo_catalogue.soap_file,
                     soap_index=sg_from_sgs.halo_catalogue.soap_index,

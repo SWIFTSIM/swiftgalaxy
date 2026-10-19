@@ -187,7 +187,6 @@ class SWIFTGalaxies(HandleProvider):
 
     count: int
     halo_catalogue: _HaloCatalogue
-    snapshot_file: "Union[str, Path, hdfstream.RemoteFile]"
 
     def __init__(
         self,
