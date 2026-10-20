@@ -72,7 +72,7 @@ def pytest_addoption(parser: ArgumentParser) -> None:
     )
     parser.addoption(
         "--hdfstream-prefix",
-        default="demo_data/",
+        default="remote_data/",
         help="Directory with test data on the server",
     )
     return

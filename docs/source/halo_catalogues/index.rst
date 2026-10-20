@@ -42,6 +42,29 @@ the first object in the catalogue (row ``0``):
 The first argument could also include a path if needed, e.g.
 :file:`/path/to/halo_properties_0123.hdf5`.
 
+We could also choose a row from a masked catalogue, for example if you are interested
+in the galaxy at row ``6`` in this masked catalogue:
+
+.. code-block:: python
+
+    from swiftsimio import load, mask
+
+    catalogue_file = "halo_properties_0123.hdf5"
+    m = mask(catalogue_file)
+    m.constrain_spatial([[0.5 * b, 1.0 * b] for b in m.metadata.boxsize])
+    masked_soap_catalogue = load(catalogue_file, mask=m)
+
+Then we can create the helper class like this (without ``soap_mask`` we would instead end
+up with row ``6`` in the unmasked catalogue, which is probably a different galaxy):
+
+.. code-block:: python
+
+    soap = SOAP(
+        soap_file=catalogue_file,
+        soap_index=6,
+        soap_mask=m,
+    )
+
 The properties of the object of interest are made conveniently available with the
 :meth:`~swiftgalaxy.halo_catalogues.SOAP.__getattr__` (dot) syntax, which exposes the
 interface provided by the :class:`~swiftsimio.reader.SWIFTDataset` object handling the

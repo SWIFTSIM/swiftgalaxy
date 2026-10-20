@@ -293,8 +293,8 @@ class TestMaskingSWIFTGalaxy:
     def test_get_bound_only_mask_is_lazy(self, sg):
         """Check that creating a bound_only mask does not trigger data loading."""
         sg_unbound = SWIFTGalaxy(
-            sg.snapshot_filename,
-            ToyHF(snapfile=sg.snapshot_filename, extra_mask=None),
+            sg.filename,
+            ToyHF(snapfile=sg.filename, extra_mask=None),
             transforms_like_coordinates={"coordinates", "extra_coordinates"},
             transforms_like_velocities={"velocities", "extra_velocities"},
         )
@@ -307,14 +307,14 @@ class TestMaskingSWIFTGalaxy:
     def test_get_bound_only_mask_compatible_with_current_particles(self, sg):
         """Check that returned mask is directly applicable to currently selected data."""
         sg_unbound = SWIFTGalaxy(
-            sg.snapshot_filename,
-            ToyHF(snapfile=sg.snapshot_filename, extra_mask=None),
+            sg.filename,
+            ToyHF(snapfile=sg.filename, extra_mask=None),
             transforms_like_coordinates={"coordinates", "extra_coordinates"},
             transforms_like_velocities={"velocities", "extra_velocities"},
         )
         sg_bound = SWIFTGalaxy(
-            sg.snapshot_filename,
-            ToyHF(snapfile=sg.snapshot_filename, extra_mask="bound_only"),
+            sg.filename,
+            ToyHF(snapfile=sg.filename, extra_mask="bound_only"),
             transforms_like_coordinates={"coordinates", "extra_coordinates"},
             transforms_like_velocities={"velocities", "extra_velocities"},
         )

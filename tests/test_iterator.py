@@ -231,9 +231,9 @@ class TestSWIFTGalaxies:
         count = 0
         for sg_from_sgs in sgs:
             sg = SWIFTGalaxy(
-                sgs.snapshot_filename,
+                sgs.filename,
                 ToyHF(
-                    snapfile=sgs.snapshot_filename,
+                    snapfile=sgs.filename,
                     index=sg_from_sgs.halo_catalogue.index,
                 ),
             )
