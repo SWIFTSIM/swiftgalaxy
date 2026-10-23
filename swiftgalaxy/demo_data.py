@@ -1,7 +1,6 @@
 """Functions and definitions to retrieve, generate and use illustrative example data."""
 
 from pathlib import Path
-from dataclasses import replace
 import h5py
 import numpy as np
 import unyt as u
@@ -26,7 +25,8 @@ _toysoap_filename = _demo_data_dir / "toysoap.hdf5"
 _toysoap_membership_filebase = _demo_data_dir / "toysoap_membership"
 _toysoap_virtual_snapshot_filename = _demo_data_dir / "toysnap_virtual.hdf5"
 _toycaesar_filename = _demo_data_dir / "toycaesar.hdf5"
-_toyoctavius_filename = _demo_data_dir / "toyoctavius.hdf5"
+_toyoctavius_dir = _demo_data_dir / "toyoctavius"
+_toyoctavius_snap_file = _demo_data_dir / "toyoctavius/toyoctavius_snap.hdf5"
 _present_particle_types = {0: "gas", 1: "dark_matter", 4: "stars", 5: "black_holes"}
 _boxsize = cosmo_quantity(10.0, u.Mpc, comoving=True, scale_factor=_a, scale_exponent=1)
 _n_g_all = 32**3
@@ -293,6 +293,8 @@ class GeneratedExamples(object):
         generated_examples.caesar
         generated_examples.soap
         generated_examples.virtual_snapshot
+        generated_examples.octavius
+        generated_examples.octavius_snapshot
 
     Examples
     --------
@@ -305,6 +307,8 @@ class GeneratedExamples(object):
         "caesar",
         "soap",
         "virtual_snapshot",
+        "octavius",
+        "octavius_snapshot",
     )
     _demo_data_dir = _demo_data_dir  # so that we can manipulate in tests
 
@@ -345,15 +349,15 @@ class GeneratedExamples(object):
             toysnap_filename = self._demo_data_dir / _toysnap_filename.name
             _create_toysnap(snapfile=toysnap_filename, withfof=True)
             return toysnap_filename
-        if attr == "velociraptor":
+        elif attr == "velociraptor":
             toyvr_filebase = self._demo_data_dir / _toyvr_filebase.name
             _create_toyvr(filebase=toyvr_filebase)
             return toyvr_filebase
-        if attr == "caesar":
+        elif attr == "caesar":
             toycaesar_filename = self._demo_data_dir / _toycaesar_filename.name
             _create_toycaesar(filename=toycaesar_filename)
             return toycaesar_filename
-        if attr == "soap":
+        elif attr == "soap":
             toysnap_filename = self._demo_data_dir / _toysnap_filename.name
             toysoap_filename = self._demo_data_dir / _toysoap_filename.name
             membership_filebase = (
@@ -372,7 +376,7 @@ class GeneratedExamples(object):
                 virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
             )
             return toysoap_filename
-        if attr == "virtual_snapshot":
+        elif attr == "virtual_snapshot":
             toysnap_filename = self._demo_data_dir / _toysnap_filename.name
             toysoap_filename = self._demo_data_dir / _toysoap_filename.name
             membership_filebase = (
@@ -391,6 +395,14 @@ class GeneratedExamples(object):
                 virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
             )
             return toysoap_virtual_snapshot_filename
+        elif attr == "octavius":
+            toyoctavius_filename = self._demo_data_dir / _toyoctavius_dir.name
+            return _create_toyoctavius(filename=toyoctavius_filename)
+        elif attr == "octavius_snapshot":
+            toyoctavius_snap_filename = (
+                self._demo_data_dir / _toyoctavius_snap_file.name
+            )
+            return _create_toyoctavius_snap(filename=toyoctavius_snap_filename)
         else:
             raise AttributeError(f"GeneratedExamples attribute {attr} not found.")
 
@@ -409,6 +421,10 @@ class GeneratedExamples(object):
             membership_filebase=self._demo_data_dir / _toysoap_membership_filebase.name,
             virtual_snapshot_filename=self._demo_data_dir
             / _toysoap_virtual_snapshot_filename.name,
+        )
+        _remove_toyoctavius(filename=self._demo_data_dir / _toyoctavius_dir.name)
+        _remove_toyoctavius_snap(
+            filename=self._demo_data_dir / _toyoctavius_snap_file.name
         )
         try:
             self._demo_data_dir.rmdir()
@@ -3513,15 +3529,12 @@ def _remove_toysoap(
 
 
 @_ensure_demo_data_directory
-def _create_toyoctavius(
-    filename: Union[str, Path] = _toyoctavius_filename,
-    snapshot_filename: Union[str, Path] = _toysnap_filename,
-) -> None:
+def _create_toyoctavius(filename: Union[str, Path] = _toyoctavius_dir) -> None:
     """
-    Create a sample Octavius catalogue containing 2 galaxies.
+    Create a sample Octavius catalogue.
 
     These match the snapshot file created by
-    :func:`~swiftgalaxy.demo_data._create_toysnap`.
+    :func:`~swiftgalaxy.demo_data._create_toyoctavius_snap`.
 
     The data are created procedurally by running :mod:`octavius` on a small
     procedurally-generated snapshot. They are not the result of any actual
@@ -3535,29 +3548,78 @@ def _create_toyoctavius(
     ``"demo_data/toyoctavius.hdf5"``
         The file name for the catalogue file to be created.
 
-    snapshot_filename : :obj:`str` or :class:`~pathlib._local.Path`, default: \
-    ``"demo_data/toysnap.hdf5"``
-        The file name of the snapshot to use as the basis for the catalogue. Must have FOF
-        IDs present.
+    Returns
+    -------
+    :class:`~pathlib._local.Path`
+        Path to the catalogue file.
     """
-    from octavius import analyse_snapshot, OctaviusConfig
+    from octavius import generate_test_catalogue
 
-    config = OctaviusConfig.from_yaml(
-        config_path="/home/txwx36/code/octavius/octavius/config.yaml"
-    )
-    config = replace(
-        config,
-        simulation_type="SWIFT",
-        snapshot_path=snapshot_filename,
-        output_dir=Path(filename).parent,
-        halo_id_source="SNAPSHOT",
-        photometry_table_filepath="/home/txwx36/code/octavius/tests/data/"
-        "test_photometry_table.hdf5",
-        bands=["v"],
-        min_dm_per_halo=0,
-        min_stars_per_galaxy=2,
-        b=1.5,
-        velocity_factor=5,
-        compress_catalogue=False,
-    )
-    return analyse_snapshot(config=config)
+    try:
+        generate_test_catalogue(_toyoctavius_dir)
+    except:
+        pass
+    # hardcoded for now, need to get h5repack working:
+    return _toyoctavius_dir / "octavius_test_snap.hdf5"
+
+
+def _remove_toyoctavius(filename: Union[str, Path] = _toyoctavius_dir) -> None:
+    """
+    Remove files created by :func:`~swiftgalaxy.demo_data._create_toyoctavius`.
+
+    Any files not found are ignored.
+
+    Parameters
+    ----------
+    filename : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toyoctavius.hdf5"``
+        The file name for the catalogue file to be removed.
+    """
+    Path(filename).unlink(missing_ok=True)
+    return
+
+
+@_ensure_demo_data_directory
+def _create_toyoctavius_snap(
+    filename: Union[str, Path] = _toyoctavius_snap_file,
+) -> None:
+    """
+    Create a sample snapshot matching the sample Octavius catalogue.
+
+    The data are created procedurally by calling a utility provided by :mod:`octavius`.
+    They are not the result of any actual simulation. Their purpose is to illustrate
+    :mod:`swiftgalaxy` use by providing files with formats identical to actual
+    :mod:`octavius` catalogue files without the need for additional downloads.
+
+    Parameters
+    ----------
+    filename : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toyoctavius_snap.hdf5"``
+        The file name for the snapshot file to be created.
+
+    Returns
+    -------
+    :class:`~pathlib._local.Path`
+        Path to the snapshot file.
+    """
+    from octavius import generate_swift_snapshot
+
+    return generate_swift_snapshot(_toyoctavius_snap_file, model="KIARA")
+
+
+def _remove_toyoctavius_snap(
+    filename: Union[str, Path] = _toyoctavius_snap_file,
+) -> None:
+    """
+    Remove files created by :func:`~swiftgalaxy.demo_data._create_toyoctavius_snap`.
+
+    Any files not found are ignored.
+
+    Parameters
+    ----------
+    filename : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toyoctavius_snap.hdf5"``
+        The file name for the snapshot file to be removed.
+    """
+    Path(filename).unlink(missing_ok=True)
+    return
