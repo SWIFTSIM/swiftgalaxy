@@ -32,6 +32,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from swiftgalaxy.reader import SWIFTGalaxy
     from velociraptor.catalogue.catalogue import Catalogue as VelociraptorCatalogue
     from caesar.loader import Galaxy as CaesarGalaxy, Halo as CaesarHalo
+    from octavius.loader import Galaxy as OctaviusGalaxy, Halo as OctaviusHalo
     from pathlib import Path
     import hdfstream
 
@@ -1556,6 +1557,458 @@ class Velociraptor(_HaloCatalogue):
         Delegates creating a string representation to the internal
         :class:`~velociraptor.catalogue.catalogue.Catalogue` holding the Velociraptor
         data.
+
+        Returns
+        -------
+        :obj:`str`
+            The string representation of the catalogue.
+        """
+        return self._catalogue.__repr__()
+
+
+class Octavius(_HaloCatalogue):
+    _index_attr = "_group_index"
+
+    def __init__(
+        self,
+        octavius_file: Optional[str] = None,
+        group_type: Optional[str] = None,  # halos galaxies
+        group_index: Optional[Union[int, Sequence[int]]] = None,
+        centre_type: str = "minpot",  # "" "minpot"
+        extra_mask: Union[str, MaskCollection] = "bound_only",
+        custom_spatial_offsets: Optional[cosmo_array] = None,
+    ) -> None:
+        import octavius
+
+        if octavius_file is not None:
+            self.octavius_file = octavius_file
+        else:
+            raise ValueError("Provide an octavius_file.")
+        self._octavius = octavius.load_catalogue(octavius_file)
+
+        valid_group_types = dict(halo="halos", galaxy="galaxies")
+        if group_type not in valid_group_types:
+            raise ValueError(
+                "group_type required, valid values are 'halo' or 'galaxy'."
+            )
+        self.group_type = group_type
+        if group_index is None:
+            raise ValueError("group_index (int or list) required.")
+        else:
+            self._group_index = group_index
+
+        self.centre_type = centre_type
+        self._user_spatial_offsets = custom_spatial_offsets
+
+        super().__init__(extra_mask=extra_mask)
+        self._catalogue = getattr(self._octavius, valid_group_types[group_type])
+        if self._multi_galaxy:  # set in super().__init__
+            assert not isinstance(group_index, int)  # placate mypy
+            self._catalogue = [self._catalogue[gi] for gi in group_index]
+        else:
+            self._catalogue = self._catalogue[group_index]
+        return
+
+    def _load(self) -> None:
+        """
+        Do non-trivial I/O operations needed at initialization.
+
+        Nothing needed for Octavius catalogues, do nothing.
+        """
+        pass
+
+    def _generate_spatial_mask(self, snapshot_filename: str) -> SWIFTMask:
+        """
+        Evaluate the spatial mask.
+
+        Returns a mask object to select the particles from the snapshot in the region of
+        interest.
+
+        Parameters
+        ----------
+        snapshot_filename : :obj:`str`
+            The location of the SWIFT snapshot file.
+
+        Returns
+        -------
+        :class:`~swiftsimio.masks.SWIFTMask`
+            The spatial mask to select particles in the region of interest.
+        """
+        cat = self._mask_catalogue()
+        sm = mask(snapshot_filename)
+        pos = cosmo_array(
+            cat.pos,  # maybe comoving, ensure physical
+            comoving=False,
+            scale_factor=self._octavius.simulation.scale_factor,
+            scale_exponent=1,
+        ).to_comoving()
+        rmax = cosmo_quantity(
+            cat.radii["total_rmax"],  # maybe comoving, ensure physical
+            comoving=False,
+            scale_factor=self._octavius.simulation.scale_factor,
+            scale_exponent=1,
+        ).to_comoving()
+        load_region = cosmo_array([pos - rmax, pos + rmax]).T
+        sm.constrain_spatial(load_region)
+        return sm
+
+    def _generate_bound_only_mask(
+        self, sg: "SWIFTGalaxy", mask_loaded: bool = True, load_masked: bool = False
+    ) -> MaskCollection:
+        """
+        Evaluate the mask to select gravitationally bound particles.
+
+        Octavius stores the starts and ends of ranges containing the particles belonging
+        to each object. We define a function that can efficiently (CPU efficient, at
+        the cost of memory efficiency) check which particles are in any of the specified
+        ranges and use it to evaluate the masks.
+
+        Parameters
+        ----------
+        sg : :class:`~swiftgalaxy.reader.SWIFTGalaxy`
+            The :class:`~swiftgalaxy.reader.SWIFTGalaxy` that this halo finder
+            interface is associated to.
+
+        mask_loaded : :obj:`bool`
+            Whether to mask any data loaded while creating the mask. The iterator wants to
+            switch this off.
+
+        load_masked : :obj:`bool`
+            If ``True``, any data loaded to evaluate the mask are loaded in their masked
+            state, otherwise masking is bypassed during loading.
+
+        Returns
+        -------
+        :class:`~swiftgalaxy.masks.MaskCollection`
+            The mask object that selects bound particles from the spatially-masked
+            set of particles.
+        """
+
+        def in_one_of_ranges(
+            ints: NDArray[np.int_], int_ranges: NDArray[np.int_]
+        ) -> NDArray[np.bool_]:
+            """
+            Produce a boolean mask corresponding to ``ints``.
+
+            For each element in ``ints``, the mask is ``True`` if the value is between (at
+            least) one of the pairs of integers in ``int_ranges``. This is potentially
+            memory intensive with a footprint proportional to
+            ``ints.size * int_ranges.size``.
+
+            Parameters
+            ----------
+            ints : :class:`~numpy.ndarray`
+                Array of integers for which to check membership in the ranges.
+
+            int_ranges : :class:`~numpy.ndarray`
+                2D array with shape (N, 2) of half-open ranges ``[min, max[`` in
+                which to check membership.
+
+            Returns
+            -------
+            :class:`~numpy.ndarray`
+                Boolean array with same shape as ``ints``, ``True`` if the integer is in
+                at least one of the ranges, ``False`` otherwise.
+            """
+            retval = np.logical_and(
+                ints >= int_ranges[:, 0, np.newaxis],
+                ints < int_ranges[:, 1, np.newaxis],
+            ).any(axis=0)
+            assert not isinstance(retval, np.bool_)  # placate mypy
+            return retval
+
+        cat = self._mask_catalogue()
+        null_slice = np.s_[:0]  # mask that selects no particles
+        list_names = {
+            "gas": "glist",
+            "dark_matter": "dlist" if hasattr(cat, "dlist") else "dmlist",
+            "stars": "slist",
+            "black_holes": "bhlist",
+        }
+
+        def generate_lazy_mask(group_name: str) -> LazyMask:
+            """
+            Generate a function that evaluates a mask for bound particles.
+
+            Applies to a specified particle type.
+
+            Parameters
+            ----------
+            group_name : :obj:`str`
+                The particle type to evaluate a mask for.
+
+            Returns
+            -------
+            Callable
+                The generated function that evaluates a mask.
+            """
+
+            def lazy_mask() -> Union[NDArray, slice]:
+                """
+                Evaluate a mask that selects bound particles.
+
+                Achieved by comparing the lists of bound particle indices to the ranges
+                read in the spatial mask.
+
+                This function must mask the data that it has loaded, but it loads nothing.
+
+                Returns
+                -------
+                :class:`~numpy.ndarray`
+                    The mask that selects bound particles.
+                """
+                if not hasattr(cat, list_names[group_name]):
+                    return null_slice
+                mask = getattr(cat, list_names[group_name])
+                mask = mask[
+                    in_one_of_ranges(mask, getattr(sg._spatial_mask, group_name))
+                ]
+                spatial_ranges = np.concatenate(
+                    [
+                        np.arange(start, end)
+                        for start, end in getattr(sg._spatial_mask, group_name)
+                    ]
+                )
+                mask = np.isin(
+                    spatial_ranges,
+                    mask,
+                )
+                if load_masked:
+                    # RecursionError unless the _extra_mask was previously evaluated,
+                    # but if we've combined masks before that happens it's too late now.
+                    if not getattr(sg._extra_mask, group_name)._evaluated:
+                        raise RuntimeError(
+                            f"Cannot evaluate mask for {group_name}. Try loading at "
+                            "least one particle property (e.g. "
+                            f"`{group_name}.particle_ids`) before calling "
+                            "`get_bound_only_mask`."
+                        )
+                    return mask[getattr(sg._extra_mask, group_name).mask]
+                else:
+                    return mask
+
+            return LazyMask(mask_function=lazy_mask)
+
+        return MaskCollection(
+            **{
+                group_name: generate_lazy_mask(group_name)
+                for group_name in sg.metadata.present_group_names
+            }
+        )
+
+    @property
+    def group_index(self) -> Union[List[int], int]:
+        """
+        Get the index of the object of interest in the halo catalogue.
+
+        In multi-galaxy mode when no mask is active this gets the list of indices. This is
+        just the position in the arrays stored in the Octavius halo or galaxy lists
+        (according to the ``group_type`` given at initialization).
+
+        Returns
+        -------
+        :obj:`int` or :obj:`list`
+            The index or indices of the object(s) of interest in the halo catalogue.
+        """
+        index = self._mask_index
+        assert index is not None  # placate mypy
+        return index
+
+    @property
+    def _region_centre(self) -> cosmo_array:
+        """
+        Get the centre(s) of the bounding box regions for spatial masking.
+
+        Octavius stores the "default" centre coordinates in the ``pos`` attribute of
+        the catalogue, retrieve this for the object(s) of interest.
+
+        Returns
+        -------
+        :class:`~swiftsimio.objects.cosmo_array`
+            The coordinates of the centres of the spatial mask regions.
+        """
+        cats = [self._catalogue] if not self._multi_galaxy else self._catalogue
+        assert isinstance(cats, List)  # placate mypy
+        if self._multi_galaxy_catalogue_mask is None:
+            return cosmo_array(
+                [cat.pos.to(u.kpc) for cat in cats],  # maybe comoving, ensure physical
+                comoving=False,
+                scale_factor=self._octavius.simulation.scale_factor,
+                scale_exponent=1,
+            ).to_comoving()
+        else:
+            return cosmo_array(
+                cats[self._multi_galaxy_catalogue_mask].pos.to(
+                    u.kpc
+                ),  # maybe comoving, ensure physical
+                comoving=False,
+                scale_factor=self._octavius.simulation.scale_factor,
+                scale_exponent=1,
+            ).to_comoving()
+
+    @property
+    def _region_aperture(self) -> cosmo_array:
+        """
+        Get the half-length(s) of the bounding box regions for spatial masking.
+
+        Octavius stores the maximum radius of any particle from the ``pos`` centre in
+        the ``radii.total_rmax`` attribute of the catalogue, retrieve this for the
+        object(s) of interest.
+
+        Returns
+        -------
+        :class:`~swiftsimio.objects.cosmo_array`
+            The half-length of the bounding box to use to construct the spatial mask
+            regions.
+        """
+        cats = [self._catalogue] if not self._multi_galaxy else self._catalogue
+        assert isinstance(cats, List)  # placate mypy
+        # spatial extent information is present
+        if self._multi_galaxy_catalogue_mask is None:
+            return cosmo_array(
+                [
+                    cat.radii["total_rmax"].to(u.kpc) for cat in cats
+                ],  # maybe comoving, ensure physical
+                comoving=False,
+                scale_factor=self._octavius.simulation.scale_factor,
+                scale_exponent=1,
+            ).to_comoving()
+        else:
+            return cosmo_array(
+                cats[self._multi_galaxy_catalogue_mask]
+                .radii["total_rmax"]
+                .to(u.kpc),  # maybe comoving, ensure physical
+                comoving=False,
+                scale_factor=self._octavius.simulation.scale_factor,
+                scale_exponent=1,
+            ).to_comoving()
+
+    def _mask_catalogue(self) -> Union["OctaviusHalo", "OctaviusGalaxy"]:
+        """
+        Select an item from the Octavius lists.
+
+        If in multi-galaxy mode and not currently masked this is an error.
+
+        Returns
+        -------
+        :class:`~loader.Halo` or :class:`~loader.Galaxy`
+            The item from the octavius list selected by the mask.
+        """
+        if self._multi_galaxy and self._multi_galaxy_catalogue_mask is not None:
+            cat = self._catalogue[self._multi_galaxy_catalogue_mask]
+        elif self._multi_galaxy and self._multi_galaxy_catalogue_mask is None:
+            raise RuntimeError("Tried to mask catalogue without mask index!")
+        else:
+            cat = self._catalogue
+        return cat
+
+    @property
+    def centre(self) -> cosmo_array:
+        """
+        Obtain the centre specified by the ``centre_type`` from the halo catalogue.
+
+        In multi-galaxy mode if no mask is active return the centres of all objects of
+        interest, otherwise return the centre of the (current) object of interest.
+
+        Returns
+        -------
+        :class:`~swiftsimio.objects.cosmo_array`
+            The centre(s) of the object(s) of interest.
+        """
+        centre_attr = {"": "pos", "minpot": "minpotpos"}[self.centre_type]
+        if self._multi_galaxy_catalogue_mask is not None:
+            return cosmo_array(
+                getattr(
+                    self._catalogue[self._multi_galaxy_catalogue_mask], centre_attr
+                ).to(u.kpc),  # maybe comoving, ensure physical
+                comoving=False,
+                scale_factor=self._octavius.simulation.scale_factor,
+                scale_exponent=1,
+            ).to_comoving()
+        cat = [self._catalogue] if not self._multi_galaxy else self._catalogue
+        centre = cosmo_array(
+            [
+                getattr(cat_i, centre_attr).to(u.kpc) for cat_i in cat
+            ],  # maybe comoving, ensure physical
+            comoving=False,
+            scale_factor=self._octavius.simulation.scale_factor,
+            scale_exponent=1,
+        ).to_comoving()
+        if not self._multi_galaxy:
+            return centre.squeeze()
+        return centre
+
+    @property
+    def velocity_centre(self) -> cosmo_array:
+        """
+        Obtain the velocity centre from the halo catalogue.
+
+        It is specified by the ``velocity_centre_type``.
+
+        Returns
+        -------
+        :class:`~swiftsimio.objects.cosmo_array`
+            The velocity centre provided by the halo catalogue.
+        """
+        vcentre_attr = {"": "vel", "minpot": "minpotvel"}[self.centre_type]
+        if self._multi_galaxy_catalogue_mask is not None:
+            return cosmo_array(
+                getattr(
+                    self._catalogue[self._multi_galaxy_catalogue_mask], vcentre_attr
+                ).to(u.km / u.s),
+                comoving=False,
+                scale_factor=self._octavius.simulation.scale_factor,
+                scale_exponent=0,
+            ).to_comoving()
+        cat = [self._catalogue] if not self._multi_galaxy else self._catalogue
+        vcentre = cosmo_array(
+            [getattr(cat_i, vcentre_attr).to(u.km / u.s) for cat_i in cat],
+            comoving=False,
+            scale_factor=self._octavius.simulation.scale_factor,
+            scale_exponent=0,
+        ).to_comoving()
+        if not self._multi_galaxy:
+            return vcentre.squeeze()
+        return vcentre
+
+    def __getattr__(self, attr: str) -> object:
+        """
+        Expose the masked halo catalogue.
+
+        Invoked only if the attribute is not found on the interface class (it is then
+        assumed to be a request for a halo catalogue property and delegated). If in
+        multi-galaxy mode and not currently masked, use a comprehension to return the
+        list of properties, Octavius-style.
+
+        Note that :class:`~swiftgalaxy.reader.Octavius`'s ``__getattr__`` overrides
+        the ``__getattr__`` from :class:`~swiftgalaxy.reader._HaloCatalogue`.
+
+        Parameters
+        ----------
+        attr : :obj:`str`
+            The name of the requested attribute.
+
+        Returns
+        -------
+        :obj:`object`
+            The requested attribute.
+        """
+        if attr == "_catalogue":  # guard infinite recursion
+            # we got here so self._catalogue doesn't exist
+            return None
+        if self._multi_galaxy_catalogue_mask is not None:
+            return getattr(self._catalogue[self._multi_galaxy_catalogue_mask], attr)
+        elif self._multi_galaxy and self._multi_galaxy_catalogue_mask is None:
+            return [getattr(cat, attr) for cat in self._catalogue]
+        else:
+            return getattr(self._catalogue, attr)
+
+    def __repr__(self) -> str:
+        """
+        Expose the catalogue ``__repr__`` for interactive use.
+
+        Delegates creating a string repreesntation to the internal
+        :class:`~loader.CAESAR` holding the Octavius data.
 
         Returns
         -------

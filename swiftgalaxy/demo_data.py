@@ -25,6 +25,8 @@ _toysoap_filename = _demo_data_dir / "toysoap.hdf5"
 _toysoap_membership_filebase = _demo_data_dir / "toysoap_membership"
 _toysoap_virtual_snapshot_filename = _demo_data_dir / "toysnap_virtual.hdf5"
 _toycaesar_filename = _demo_data_dir / "toycaesar.hdf5"
+_toyoctavius_dir = _demo_data_dir / "toyoctavius"
+_toyoctavius_snap_file = _demo_data_dir / "toyoctavius/toyoctavius_snap.hdf5"
 _present_particle_types = {0: "gas", 1: "dark_matter", 4: "stars", 5: "black_holes"}
 _boxsize = cosmo_quantity(10.0, u.Mpc, comoving=True, scale_factor=_a, scale_exponent=1)
 _n_g_all = 32**3
@@ -291,6 +293,8 @@ class GeneratedExamples(object):
         generated_examples.caesar
         generated_examples.soap
         generated_examples.virtual_snapshot
+        generated_examples.octavius
+        generated_examples.octavius_snapshot
 
     Examples
     --------
@@ -303,6 +307,8 @@ class GeneratedExamples(object):
         "caesar",
         "soap",
         "virtual_snapshot",
+        "octavius",
+        "octavius_snapshot",
     )
     _demo_data_dir = _demo_data_dir  # so that we can manipulate in tests
 
@@ -343,15 +349,15 @@ class GeneratedExamples(object):
             toysnap_filename = self._demo_data_dir / _toysnap_filename.name
             _create_toysnap(snapfile=toysnap_filename, withfof=True)
             return toysnap_filename
-        if attr == "velociraptor":
+        elif attr == "velociraptor":
             toyvr_filebase = self._demo_data_dir / _toyvr_filebase.name
             _create_toyvr(filebase=toyvr_filebase)
             return toyvr_filebase
-        if attr == "caesar":
+        elif attr == "caesar":
             toycaesar_filename = self._demo_data_dir / _toycaesar_filename.name
             _create_toycaesar(filename=toycaesar_filename)
             return toycaesar_filename
-        if attr == "soap":
+        elif attr == "soap":
             toysnap_filename = self._demo_data_dir / _toysnap_filename.name
             toysoap_filename = self._demo_data_dir / _toysoap_filename.name
             membership_filebase = (
@@ -370,7 +376,7 @@ class GeneratedExamples(object):
                 virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
             )
             return toysoap_filename
-        if attr == "virtual_snapshot":
+        elif attr == "virtual_snapshot":
             toysnap_filename = self._demo_data_dir / _toysnap_filename.name
             toysoap_filename = self._demo_data_dir / _toysoap_filename.name
             membership_filebase = (
@@ -389,6 +395,14 @@ class GeneratedExamples(object):
                 virtual_snapshot_filename=toysoap_virtual_snapshot_filename,
             )
             return toysoap_virtual_snapshot_filename
+        elif attr == "octavius":
+            toyoctavius_filename = self._demo_data_dir / _toyoctavius_dir.name
+            return _create_toyoctavius(filename=toyoctavius_filename)
+        elif attr == "octavius_snapshot":
+            toyoctavius_snap_filename = (
+                self._demo_data_dir / _toyoctavius_snap_file.name
+            )
+            return _create_toyoctavius_snap(filename=toyoctavius_snap_filename)
         else:
             raise AttributeError(f"GeneratedExamples attribute {attr} not found.")
 
@@ -407,6 +421,10 @@ class GeneratedExamples(object):
             membership_filebase=self._demo_data_dir / _toysoap_membership_filebase.name,
             virtual_snapshot_filename=self._demo_data_dir
             / _toysoap_virtual_snapshot_filename.name,
+        )
+        _remove_toyoctavius(filename=self._demo_data_dir / _toyoctavius_dir.name)
+        _remove_toyoctavius_snap(
+            filename=self._demo_data_dir / _toyoctavius_snap_file.name
         )
         try:
             self._demo_data_dir.rmdir()
@@ -1061,6 +1079,176 @@ def _create_toysnap(
     sd.write(snapfile)
 
     with h5py.File(snapfile, "r+") as f:
+        f["PartType0/InternalEnergies"] = f["PartType0/InternalEnergy"]
+        f.create_group("Cosmology")
+        f["Cosmology"].attrs["Cosmological run"] = np.array([1])
+        f["Cosmology"].attrs["Critical density [internal units]"] = np.array(
+            [12.87106552]
+        )
+        f["Cosmology"].attrs["H [internal units]"] = np.array([68.09999997])
+        f["Cosmology"].attrs["H0 [internal units]"] = np.array([68.09999997])
+        f["Cosmology"].attrs["Hubble time [internal units]"] = np.array([0.01468429])
+        f["Cosmology"].attrs["Lookback time [internal units]"] = np.array(
+            [9.02056208e-16]
+        )
+        f["Cosmology"].attrs["M_nu_eV"] = np.array([0.06])
+        f["Cosmology"].attrs["N_eff"] = np.array([3.04400163])
+        f["Cosmology"].attrs["N_nu"] = np.array([1.0])
+        f["Cosmology"].attrs["N_ur"] = np.array([2.0308])
+        f["Cosmology"].attrs["Omega_b"] = np.array([0.0486])
+        f["Cosmology"].attrs["Omega_cdm"] = np.array([0.256011])
+        f["Cosmology"].attrs["Omega_g"] = np.array([5.33243487e-05])
+        f["Cosmology"].attrs["Omega_k"] = np.array([2.5212783e-09])
+        f["Cosmology"].attrs["Omega_lambda"] = np.array([0.693922])
+        f["Cosmology"].attrs["Omega_m"] = np.array([0.304611])
+        f["Cosmology"].attrs["Omega_nu"] = np.array([0.00138908])
+        f["Cosmology"].attrs["Omega_nu_0"] = np.array([0.00138908])
+        f["Cosmology"].attrs["Omega_r"] = np.array([7.79180471e-05])
+        f["Cosmology"].attrs["Omega_ur"] = np.array([2.45936984e-05])
+        f["Cosmology"].attrs["Redshift"] = np.array([0.0])
+        f["Cosmology"].attrs["Scale-factor"] = np.array([1.0])
+        f["Cosmology"].attrs["T_CMB_0 [K]"] = np.array([2.7255])
+        f["Cosmology"].attrs["T_CMB_0 [internal units]"] = np.array([2.7255])
+        f["Cosmology"].attrs["T_nu_0 [eV]"] = np.array([0.00016819])
+        f["Cosmology"].attrs["T_nu_0 [internal units]"] = np.array([1.9517578])
+        f["Cosmology"].attrs["Universe_age [internal units]"] = np.array([0.01407376])
+        f["Cosmology"].attrs["a_beg"] = np.array([0.03125])
+        f["Cosmology"].attrs["a_end"] = np.array([1.0])
+        f["Cosmology"].attrs["deg_nu"] = np.array([1.0])
+        f["Cosmology"].attrs["deg_nu_tot"] = np.array([1.0])
+        f["Cosmology"].attrs["h"] = np.array([0.681])
+        f["Cosmology"].attrs["time_beg [internal units]"] = np.array([9.66296122e-05])
+        f["Cosmology"].attrs["time_end [internal units]"] = np.array([0.01407376])
+        f["Cosmology"].attrs["w"] = np.array([-1.0])
+        f["Cosmology"].attrs["w_0"] = np.array([-1.0])
+        f["Cosmology"].attrs["w_a"] = np.array([0.0])
+
+        f["PartType0"].create_dataset(
+            "ElementMassFractions",
+            data=np.array([[0.7, 0.25, 0.05]] * _n_g_all),
+            dtype=float,
+        )
+        f["PartType0/ElementMassFractions"].attrs[
+            "Conversion factor to CGS (not including cosmological corrections)"
+        ] = [1.0]
+        f["PartType0/ElementMassFractions"].attrs[
+            "Conversion factor to physical CGS (including cosmological corrections)"
+        ] = [1.0]
+        f["PartType0/ElementMassFractions"].attrs["Description"] = (
+            b"Fractions of the particles' masses that are in the given element"
+        )
+        f["PartType0/ElementMassFractions"].attrs[
+            "Expression for physical CGS units"
+        ] = b"[ - ] "
+        f["PartType0/ElementMassFractions"].attrs["Lossy compression filter"] = b"None"
+        f["PartType0/ElementMassFractions"].attrs[
+            "Property can be converted to comoving"
+        ] = np.array([1])
+        f["PartType0/ElementMassFractions"].attrs["U_I exponent"] = np.array([0.0])
+        f["PartType0/ElementMassFractions"].attrs["U_L exponent"] = np.array([0.0])
+        f["PartType0/ElementMassFractions"].attrs["U_M exponent"] = np.array([0.0])
+        f["PartType0/ElementMassFractions"].attrs["U_T exponent"] = np.array([0.0])
+        f["PartType0/ElementMassFractions"].attrs["U_t exponent"] = np.array([0.0])
+        f["PartType0/ElementMassFractions"].attrs["Value stored as physical"] = (
+            np.array([0])
+        )
+        f["PartType0/ElementMassFractions"].attrs["a-scale exponent"] = np.array([0.0])
+        f["PartType0/ElementMassFractions"].attrs["h-scale exponent"] = np.array([0.0])
+        f["PartType5"].create_dataset(
+            "DynamicalMasses", data=np.ones(_n_bh_all) * 0.001, dtype=float
+        )
+        f["PartType5/DynamicalMasses"].attrs[
+            "Conversion factor to CGS (not including cosmological corrections)"
+        ] = 1.98841e43
+        f["PartType5/DynamicalMasses"].attrs["a-scale exponent"] = 0
+        f["PartType5/DynamicalMasses"].attrs["h-scale exponent"] = 0
+        f["PartType0"].create_dataset(
+            "MetalMassFractions", data=np.ones(_n_g_all) * 0.05, dtype=float
+        )
+        f["PartType0/MetalMassFractions"].attrs[
+            "Conversion factor to CGS (not including cosmological corrections)"
+        ] = 1
+        f["PartType0/MetalMassFractions"].attrs["a-scale exponent"] = 0
+        f["PartType0/MetalMassFractions"].attrs["h-scale exponent"] = 0
+        f["PartType0"].create_dataset(
+            "Densities", data=np.ones(_n_g_all) * 5e-3, dtype=float
+        )
+        f["PartType0/Densities"].attrs[
+            "Conversion factor to CGS (not including cosmological corrections)"
+        ] = 6.767905773162602e-31
+        f["PartType0/Densities"].attrs["a-scale exponent"] = -3
+        f["PartType0/Densities"].attrs["h-scale exponent"] = 0
+        f["PartType0"].create_dataset(
+            "StarFormationRates", data=np.ones(_n_g_all) * 0.1, dtype=float
+        )
+        f["PartType0/StarFormationRates"].attrs[
+            "Conversion factor to CGS (not including cosmological corrections)"
+        ] = 6.443997950038578e23
+        f["PartType0/StarFormationRates"].attrs["a-scale exponent"] = 0
+        f["PartType0/StarFormationRates"].attrs["h-scale exponent"] = 0
+        for ptype, count in (
+            (0, _n_g_all),
+            (1, _n_dm_all),
+            (4, _n_s_all),
+            (5, _n_bh_all),
+        ):
+            f[f"PartType{ptype}"].create_dataset(
+                "Potentials", data=np.ones(count) * -5000.0, dtype=float
+            )
+            f[f"PartType{ptype}/Potentials"].attrs[
+                "Conversion factor to CGS (not including cosmological corrections)"
+            ] = 9999999999.999998
+            f[f"PartType{ptype}/Potentials"].attrs["a-scale exponent"] = -1
+            f[f"PartType{ptype}/Potentials"].attrs["h-scale exponent"] = 0
+        f["PartType0"].create_dataset(
+            "MolecularHydrogenFractions", data=np.ones(_n_g_all) * 0.1, dtype=float
+        )
+        f["PartType0/MolecularHydrogenFractions"].attrs[
+            "Conversion factor to CGS (not including cosmological corrections)"
+        ] = 1
+        f["PartType0/MolecularHydrogenFractions"].attrs["a-scale exponent"] = 0
+        f["PartType0/MolecularHydrogenFractions"].attrs["h-scale exponent"] = 0
+        f["PartType0"].create_dataset(
+            "AtomicHydrogenMasses", data=np.ones(_n_g_all) * _m_g * 0.5, dtype=float
+        )
+        f["PartType0/AtomicHydrogenMasses"].attrs[
+            "Conversion factor to CGS (not including cosmological corrections)"
+        ] = 1.98841e43
+        f["PartType0/AtomicHydrogenMasses"].attrs["a-scale exponent"] = 0
+        f["PartType0/AtomicHydrogenMasses"].attrs["h-scale exponent"] = 0
+        f["PartType4"].create_dataset(
+            "BirthScaleFactors", data=np.ones(_n_s_all) * 0.5, dtype=float
+        )
+        f["PartType4/BirthScaleFactors"].attrs[
+            "Conversion factor to CGS (not including cosmological corrections)"
+        ] = 1
+        f["PartType4/BirthScaleFactors"].attrs["a-scale exponent"] = 0
+        f["PartType4/BirthScaleFactors"].attrs["h-scale exponent"] = 0
+        f["PartType4"].create_dataset(
+            "MetalMassFractions", data=np.ones(_n_s_all) * 0.05, dtype=float
+        )
+        f["PartType4/MetalMassFractions"].attrs[
+            "Conversion factor to CGS (not including cosmological corrections)"
+        ] = 1
+        f["PartType4/MetalMassFractions"].attrs["a-scale exponent"] = 0
+        f["PartType4/MetalMassFractions"].attrs["h-scale exponent"] = 0
+        f["PartType5"].create_dataset(
+            "SubgridMasses", data=np.ones(_n_bh_all) * 0.001, dtype=float
+        )
+        f["PartType5/SubgridMasses"].attrs[
+            "Conversion factor to CGS (not including cosmological corrections)"
+        ] = 1.98841e43
+        f["PartType5/SubgridMasses"].attrs["a-scale exponent"] = 0
+        f["PartType5/SubgridMasses"].attrs["h-scale exponent"] = 0
+        f["PartType5"].create_dataset(
+            "AccretionRates", data=np.ones(_n_bh_all) * 0.0, dtype=float
+        )
+        f["PartType5/AccretionRates"].attrs[
+            "Conversion factor to CGS (not including cosmological corrections)"
+        ] = 6.443997950038578e23
+        f["PartType5/AccretionRates"].attrs["a-scale exponent"] = 0
+        f["PartType5/AccretionRates"].attrs["h-scale exponent"] = 0
+
         g = f.create_group("Cells")
         g.create_dataset(
             "Centres", data=np.array([[2.5, 5, 5], [7.5, 5, 5]], dtype=float)
@@ -3338,3 +3526,100 @@ def _remove_toysoap(
     for path in membership_path.parent.glob(f"{membership_path.name}.*.hdf5"):
         path.unlink(missing_ok=True)
     Path(virtual_snapshot_filename).unlink(missing_ok=True)
+
+
+@_ensure_demo_data_directory
+def _create_toyoctavius(filename: Union[str, Path] = _toyoctavius_dir) -> None:
+    """
+    Create a sample Octavius catalogue.
+
+    These match the snapshot file created by
+    :func:`~swiftgalaxy.demo_data._create_toyoctavius_snap`.
+
+    The data are created procedurally by running :mod:`octavius` on a small
+    procedurally-generated snapshot. They are not the result of any actual
+    simulation. Their purpose is to illustrate :mod:`swiftgalaxy` use by providing files
+    with formats identical to actual :mod:`octavius` catalogue files without the need for
+    additional downloads.
+
+    Parameters
+    ----------
+    filename : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toyoctavius.hdf5"``
+        The file name for the catalogue file to be created.
+
+    Returns
+    -------
+    :class:`~pathlib._local.Path`
+        Path to the catalogue file.
+    """
+    from octavius import generate_test_catalogue
+
+    try:
+        generate_test_catalogue(_toyoctavius_dir)
+    except:
+        pass
+    # hardcoded for now, need to get h5repack working:
+    return _toyoctavius_dir / "octavius_test_snap.hdf5"
+
+
+def _remove_toyoctavius(filename: Union[str, Path] = _toyoctavius_dir) -> None:
+    """
+    Remove files created by :func:`~swiftgalaxy.demo_data._create_toyoctavius`.
+
+    Any files not found are ignored.
+
+    Parameters
+    ----------
+    filename : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toyoctavius.hdf5"``
+        The file name for the catalogue file to be removed.
+    """
+    Path(filename).unlink(missing_ok=True)
+    return
+
+
+@_ensure_demo_data_directory
+def _create_toyoctavius_snap(
+    filename: Union[str, Path] = _toyoctavius_snap_file,
+) -> None:
+    """
+    Create a sample snapshot matching the sample Octavius catalogue.
+
+    The data are created procedurally by calling a utility provided by :mod:`octavius`.
+    They are not the result of any actual simulation. Their purpose is to illustrate
+    :mod:`swiftgalaxy` use by providing files with formats identical to actual
+    :mod:`octavius` catalogue files without the need for additional downloads.
+
+    Parameters
+    ----------
+    filename : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toyoctavius_snap.hdf5"``
+        The file name for the snapshot file to be created.
+
+    Returns
+    -------
+    :class:`~pathlib._local.Path`
+        Path to the snapshot file.
+    """
+    from octavius import generate_swift_snapshot
+
+    return generate_swift_snapshot(_toyoctavius_snap_file, model="KIARA")
+
+
+def _remove_toyoctavius_snap(
+    filename: Union[str, Path] = _toyoctavius_snap_file,
+) -> None:
+    """
+    Remove files created by :func:`~swiftgalaxy.demo_data._create_toyoctavius_snap`.
+
+    Any files not found are ignored.
+
+    Parameters
+    ----------
+    filename : :obj:`str` or :class:`~pathlib._local.Path`, default: \
+    ``"demo_data/toyoctavius_snap.hdf5"``
+        The file name for the snapshot file to be removed.
+    """
+    Path(filename).unlink(missing_ok=True)
+    return
